@@ -5,6 +5,11 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Phone, Clock, Globe, Users } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
+import SocialShare from '@/components/SocialShare';
+import ImageGallery from '@/components/ImageGallery';
+import Ratings from '@/components/Ratings';
+import BookingForm from '@/components/BookingForm';
+import EventCalendar from '@/components/EventCalendar';
 
 interface Attraction {
   id: number;
@@ -271,12 +276,120 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           )}
         </motion.div>
 
+        {/* Social Share */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mb-8 sm:mb-12 p-4 sm:p-6 bg-gray-50 rounded-lg sm:rounded-xl"
+        >
+          <SocialShare title={attraction.attributes.name} description={attraction.attributes.description} />
+        </motion.div>
+
+        {/* Image Gallery */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="mb-8 sm:mb-12"
+        >
+          <ImageGallery
+            images={[
+              {
+                src: 'https://images.unsplash.com/photo-1469022563428-aa0e26e5c742?w=1200&h=800&fit=crop',
+                alt: `${attraction.attributes.name} - Main view`,
+                caption: 'Main view'
+              },
+              {
+                src: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&h=800&fit=crop',
+                alt: `${attraction.attributes.name} - Secondary view`,
+                caption: 'Detail view'
+              },
+              {
+                src: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=800&fit=crop',
+                alt: `${attraction.attributes.name} - Additional view`,
+                caption: 'Experience'
+              },
+            ]}
+            title="Gallery"
+          />
+        </motion.div>
+
+        {/* Booking Section */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mb-8 sm:mb-12"
+        >
+          <BookingForm
+            tourName={attraction.attributes.name}
+            tourId={String(attraction.id)}
+            price={2500}
+            maxParticipants={50}
+          />
+        </motion.div>
+
+        {/* Ratings & Reviews */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.45 }}
+          className="mb-8 sm:mb-12"
+        >
+          <Ratings
+            itemId={String(attraction.id)}
+            itemName={attraction.attributes.name}
+            ratings={[
+              {
+                id: '1',
+                author: 'Maria Santos',
+                rating: 5,
+                date: 'March 2024',
+                comment: 'Absolutely stunning place! Worth the visit. Friendly locals and amazing views.',
+                verified: true
+              },
+              {
+                id: '2',
+                author: 'John Dela Cruz',
+                rating: 4,
+                date: 'February 2024',
+                comment: 'Beautiful location with good facilities. Recommended for families.',
+                verified: true
+              },
+            ]}
+          />
+        </motion.div>
+
+        {/* Event Calendar */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="mb-8 sm:mb-12"
+        >
+          <EventCalendar events={[
+            {
+              date: new Date().toISOString().split('T')[0],
+              title: 'Guided Heritage Tour',
+              description: 'Expert-led tour through the attraction',
+              category: 'Tour'
+            },
+            {
+              date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+              title: 'Photography Workshop',
+              description: 'Learn photography tips with local experts',
+              category: 'Workshop'
+            },
+          ]} />
+        </motion.div>
+
         {/* Related Attractions */}
         {relatedAttractions.length > 0 && (
           <motion.section
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
             className="mb-12"
           >
             <h2 className="text-3xl font-bold mb-8" style={{ color: '#0F1F3C' }}>Similar Attractions</h2>
@@ -315,7 +428,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
           className="flex gap-4 justify-center"
         >
           <Link
