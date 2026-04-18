@@ -58,19 +58,29 @@ export default function ImmersivePage() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="sticky top-0 z-40 border-b-2"
-        style={{ borderBottomColor: '#00BFB3', backgroundColor: '#0F1F3C' }}
+        className="sticky top-0 z-40 border-b-2 backdrop-blur-sm"
+        style={{ 
+          borderBottomColor: '#00BFB3', 
+          backgroundColor: 'rgba(15, 31, 60, 0.95)',
+          boxShadow: '0 4px 12px rgba(0, 191, 179, 0.1)'
+        }}
       >
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/attractions" className="flex items-center gap-2 text-white hover:opacity-75 transition">
-            <ChevronLeft className="w-5 h-5" />
-            Back
-          </Link>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <motion.div whileHover={{ x: -2 }} whileTap={{ x: -4 }}>
+            <Link href="/attractions" className="inline-flex items-center gap-2 text-white hover:opacity-100 opacity-80 font-semibold transition px-3 py-2 rounded-lg hover:bg-white/10">
+              <ChevronLeft className="w-5 h-5" />
+              <span className="hidden sm:inline">Back</span>
+            </Link>
+          </motion.div>
+          <motion.h1 
+            className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2"
+            whileHover={{ scale: 1.02 }}
+          >
             <Layers className="w-6 h-6" style={{ color: '#00BFB3' }} />
-            3D Immersive Tours
-          </h1>
-          <div className="w-12" />
+            <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent hidden sm:inline">3D Tours</span>
+            <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent sm:hidden">3D</span>
+          </motion.h1>
+          <div className="w-12 sm:w-16" />
         </div>
       </motion.nav>
 

@@ -119,39 +119,47 @@ export default function AttractionsPage() {
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="sticky top-0 z-50 shadow-lg"
-        style={{ backgroundColor: '#0F1F3C' }}
+        className="sticky top-0 z-50 backdrop-blur-sm border-b-2 transition-all duration-300"
+        style={{ 
+          backgroundColor: 'rgba(15, 31, 60, 0.98)',
+          borderBottomColor: '#00BFB3',
+          boxShadow: '0 4px 12px rgba(0, 191, 179, 0.1)'
+        }}
       >
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center flex-wrap gap-4">
-          <h1 className="text-2xl font-bold text-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center gap-4">
+          <motion.h1 
+            className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white via-gray-100 to-gray-200 bg-clip-text text-transparent whitespace-nowrap"
+            whileHover={{ scale: 1.05 }}
+          >
             Liliw
-          </h1>
-          <div className="flex items-center gap-6 flex-wrap">
-            <Link href="/" className="text-white hover:opacity-80 font-semibold transition text-sm">
+          </motion.h1>
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end overflow-x-auto">
+            <Link href="/" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
               Home
             </Link>
-            <Link href="/about" className="text-white hover:opacity-80 font-semibold transition text-sm">
+            <Link href="/about" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
               About
             </Link>
-            <Link href="/attractions" className="text-white hover:opacity-80 font-semibold transition text-sm">
+            <Link href="/attractions" className="text-white font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap" style={{ backgroundColor: 'rgba(0, 191, 179, 0.2)', color: '#00BFB3' }}>
               Attractions
             </Link>
-            <Link href="/culture" className="text-white hover:opacity-80 font-semibold transition text-sm">
+            <Link href="/culture" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
               Culture
             </Link>
-            <Link href="/itineraries" className="text-white hover:opacity-80 font-semibold transition text-sm">
+            <Link href="/itineraries" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
               Tours
             </Link>
-            <Link href="/news" className="text-white hover:opacity-80 font-semibold transition text-sm">
+            <Link href="/news" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
               News
             </Link>
-            <Link href="/faq" className="text-white hover:opacity-80 font-semibold transition text-sm">
+            <Link href="/faq" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
               FAQ
             </Link>
-            <Link href="/immersive" className="text-white hover:opacity-80 font-semibold transition text-sm" style={{ color: '#00BFB3' }}>
-              🥽 3D Tours
+            <Link href="/immersive" className="font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg flex items-center gap-1 hover:scale-105 whitespace-nowrap" style={{ color: '#00BFB3', backgroundColor: 'rgba(0, 191, 179, 0.15)' }}>
+              <span>🥽</span>
+              <span className="hidden sm:inline">3D</span>
             </Link>
-            <Link href="/community" className="text-white hover:opacity-80 font-semibold transition text-sm">
+            <Link href="/community" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
               Community
             </Link>
           </div>
