@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Mail, Phone, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
 import { motion } from 'framer-motion';
+import NewsletterSignup from './NewsletterSignup';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -22,6 +23,11 @@ export default function Footer() {
 
   return (
     <footer className="mt-20 text-white" style={{ backgroundColor: '#0F1F3C' }}>
+      {/* Newsletter Section */}
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <NewsletterSignup />
+      </div>
+
       {/* Main Footer Content */}
       <div className="max-w-6xl mx-auto px-4 py-16">
         <motion.div

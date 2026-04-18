@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "ts-node scripts/seed-data.ts",
+    "seed:dev": "cross-env STRAPI_URL=http://localhost:1337 STRAPI_TOKEN=$NEXT_PUBLIC_STRAPI_API_TOKEN ts-node scripts/seed-data.ts"
   },
   "dependencies": {
     "@mapbox/mapbox-gl-draw": "^1.5.1",
