@@ -148,6 +148,9 @@ export default function AttractionsPage() {
             <Link href="/faq" className="text-white hover:opacity-80 font-semibold transition text-sm">
               FAQ
             </Link>
+            <Link href="/immersive" className="text-white hover:opacity-80 font-semibold transition text-sm" style={{ color: '#00BFB3' }}>
+              🥽 3D Tours
+            </Link>
             <Link href="/community" className="text-white hover:opacity-80 font-semibold transition text-sm">
               Community
             </Link>
