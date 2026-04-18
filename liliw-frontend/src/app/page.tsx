@@ -60,6 +60,13 @@ export default function Home() {
               Attractions
             </Link>
             <Link
+              href="/immersive"
+              className="text-white hover:opacity-80 font-semibold transition text-sm flex items-center gap-1"
+              style={{ color: '#00BFB3' }}
+            >
+              🥽 3D Tours
+            </Link>
+            <Link
               href="/culture"
               className="text-white hover:opacity-80 font-semibold transition text-sm"
             >
