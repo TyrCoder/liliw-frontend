@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
+import { Mail, Phone, MapPin, Share2, MessageCircle, Send } from 'lucide-react';
 import { motion } from 'framer-motion';
 import NewsletterSignup from './NewsletterSignup';
 
@@ -143,9 +143,9 @@ export default function Footer() {
           {/* Social Links */}
           <motion.div variants={itemVariants} className="flex gap-4">
             {[
-              { icon: Facebook, href: 'https://facebook.com', label: 'Facebook' },
-              { icon: Instagram, href: 'https://instagram.com', label: 'Instagram' },
-              { icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
+              { icon: Share2, href: 'https://facebook.com/liliwtourism', label: 'Facebook' },
+              { icon: MessageCircle, href: 'https://instagram.com/liliwtourism', label: 'Instagram' },
+              { icon: Send, href: 'https://twitter.com/liliwtourism', label: 'Twitter' },
             ].map((social) => (
               <a
                 key={social.label}
