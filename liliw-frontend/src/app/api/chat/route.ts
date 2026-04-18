@@ -1,87 +1,93 @@
 import { NextRequest, NextResponse } from 'next/server';
+import Groq from 'groq-sdk';
 
-// Liliw-specific knowledge base - Only answers about Liliw tourism
-const liliwKnowledgeBase = {
-  greetings: {
-    keywords: ['hello', 'hi', 'hey', 'magandang', 'araw', 'gabi', 'umaga'],
-    response: 'Magandang araw! Welcome to Liliw! 🏝️ I\'m Lilio, your local guide. What would you like to know about our beautiful town?',
-  },
-  heritage: {
-    keywords: ['heritage', 'tsinela', 'craft', 'history', 'cultural', 'tradition'],
-    response: '🏛️ **Tsinelas Craft Heritage District** is our pride! It\'s a heritage area where skilled artisans craft traditional Filipino slippers (tsinelas). Perfect for visitors who want to experience authentic craftsmanship. Located in Footwear District, Liliw. Open 9 AM - 5 PM daily.',
-  },
-  church: {
-    keywords: ['church', 'baptist', 'religious', 'spiritual', 'faith', 'prayer'],
-    response: '⛪ **St. John the Baptist Church** is a historic Roman Catholic church in Liliw. It\'s an architectural gem and important pilgrimage site. Great for photography and experiencing local spiritual culture. A must-visit for heritage lovers!',
-  },
-  attractions: {
-    keywords: ['attraction', 'place', 'visit', 'see', 'where', 'what to do', 'thing', 'spot', 'destination'],
-    response: '🎯 **Popular Attractions in Liliw:**\n\n1. 🏛️ Tsinelas Craft Heritage District\n   - Watch artisans create handmade slippers\n   - Buy authentic Filipino footwear\n   \n2. ⛪ St. John the Baptist Church\n   - Historic architecture\n   - Beautiful interior design\n   \n3. 🌾 Local Markets\n   - Fresh produce & handicrafts\n   - Authentic Filipino experience\n   \n4. 🏞️ Liliw Town Center\n   - Cultural events & festivals\n   - Local dining & shopping\n\nWhich one interests you most?',
-  },
-  tours: {
-    keywords: ['tour', 'guide', 'booking', 'book', 'itinerary', 'package', 'trip', 'travel'],
-    response: '🎒 **Book a Tour with Us!**\n\nWe offer various tour packages:\n• Heritage Site Tours (2-3 hours)\n• Artisan Workshop Visits\n• Cultural Experience Tours\n• Full Day Liliw Exploration\n\nVisit our itineraries page to see all options and prices. Tours are led by local guides who know Liliw inside out!',
-  },
-  events: {
-    keywords: ['event', 'news', 'happening', 'festival', 'celebration', 'celebration', 'fiesta', 'event', 'party'],
-    response: '🎉 **Events & Celebrations in Liliw:**\n\nWe celebrate our local culture throughout the year:\n• Fiesta celebrations\n• Heritage festivals\n• Craft fairs\n• Cultural performances\n\nCheck our News & Events page for current happenings and schedules!',
-  },
-  restaurants: {
-    keywords: ['restaurant', 'food', 'eat', 'dining', 'meal', 'lunch', 'dinner', 'cuisine', 'dish'],
-    response: '🍽️ **Local Dining in Liliw:**\n\nEnjoy authentic Filipino cuisine at local eateries:\n• Traditional Filipino restaurants\n• Local specialty restaurants\n• Street food vendors\n• Cafes with local flavor\n\nVisitors love our local specialties and affordable meals. Ask around town for recommendations!',
-  },
-  accommodation: {
-    keywords: ['hotel', 'stay', 'accommodation', 'room', 'resort', 'lodge', 'homestay', 'place to sleep', 'lodging'],
-    response: '🏨 **Where to Stay in Liliw:**\n\nLiliw offers various accommodation options:\n• Budget-friendly hotels\n• Comfortable guesthouses\n• Local homestays\n• Family-run accommodations\n\nMost are within walking distance of major attractions. Check our website or contact us for current availability!',
-  },
-  hours: {
-    keywords: ['hour', 'open', 'close', 'time', 'operating', 'schedule', 'when', 'availability'],
-    response: '⏰ **Liliw Attraction Hours:**\n\n**General Hours:**\n• Most attractions: 9 AM - 5 PM\n• Weekends: 8 AM - 6 PM\n• Some shops: 6 AM - 8 PM\n\n**Closed:** Some attractions closed on Mondays\n\nBest time to visit: Early morning (less crowded) or late afternoon (beautiful light).',
-  },
-  contact: {
-    keywords: ['contact', 'phone', 'email', 'reach', 'call', 'number', 'address', 'location'],
-    response: '📞 **Contact Liliw Tourism:**\n\n📧 Email: info@liliwtourism.com\n📱 Phone: +63 (0)2 XXXX XXXX\n📍 Address: Liliw, Laguna, Philippines\n\nYou can also find us on:\n• Facebook: Liliw Tourism\n• Instagram: @liliewtravel\n• Website: liliwtourism.com\n\nHappy to help!',
-  },
-  location: {
-    keywords: ['location', 'province', 'where', 'address', 'situated', 'distance', 'near', 'laguna'],
-    response: '📍 **Liliw Location:**\n\nLiliw is a charming town in **Laguna Province**, Philippines.\n\n**Easy Access:**\n• 60 km southeast of Manila\n• 1.5 hours by car from Manila City\n• Near major highways\n• Close to Laguna Bay\n\nPerfect for day trips or weekend getaways from the metro!',
-  },
-  transport: {
-    keywords: ['transport', 'travel', 'bus', 'car', 'taxi', 'ride', 'how to get', 'directions', 'drive'],
-    response: '🚗 **Getting to Liliw:**\n\n**By Car:**\n• From Manila: Take South Luzon Expressway\n• ~1.5 hours drive\n• Parking available in town center\n\n**By Bus:**\n• Bus lines from Manila\n• Comfortable air-conditioned buses\n• Affordable fares\n\n**Local Transport:**\n• Tricycles for getting around town\n• Walking friendly town center\n• Bike rentals available',
-  },
-  artisans: {
-    keywords: ['artisan', 'maker', 'craft', 'handmade', 'slipper', 'tsinela', 'worker', 'local'],
-    response: '👩‍🏭 **Local Artisans of Liliw:**\n\nLiliw is famous for master artisans who:\n• Create handmade slippers (tsinelas)\n• Use traditional techniques passed down for generations\n• Work with quality materials\n• Customize orders\n\nVisit the Craft Heritage District to meet the artisans, see their workshops, and support local craftsmanship!',
-  },
-  shopping: {
-    keywords: ['shop', 'shopping', 'buy', 'purchase', 'market', 'store', 'souvenir', 'gift'],
-    response: '🛍️ **Shopping in Liliw:**\n\n**Must-Buy Items:**\n• 👟 Handmade tsinelas (slippers) - Our specialty!\n• 🎨 Local handicrafts\n• 🏺 Pottery & ceramics\n• 🎁 Souvenir items\n• 🍜 Local food products\n\nBest places: Heritage District shops, local markets, artisan workshops. Great prices and authentic quality!',
-  },
-  weather: {
-    keywords: ['weather', 'climate', 'rain', 'season', 'temperature', 'best time'],
-    response: '🌤️ **Liliw Weather:**\n\n**Best Time to Visit:**\n• November - March (Dry season)\n• Cool, pleasant weather\n• Clear skies\n• Perfect for sightseeing\n\n**Monsoon Season:**\n• June - September (Rainy)\n• Still visitable, fewer tourists\n• Bring umbrella/raincoat\n\n**Average Temperature:** 25-32°C year-round',
-  },
-};
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
+
+// System prompt that constrains Lilio to Liliw-only knowledge
+const LILIO_SYSTEM_PROMPT = `You are Lilio, the official Liliw tour guide. You ONLY answer questions about Liliw, Laguna Province, Philippines.
+
+**Your Name & Purpose:**
+- Name: Lilio 🏝️
+- Role: Official Liliw Tourism Guide
+- Goal: Help tourists learn about and visit Liliw
+
+**Liliw Knowledge Base:**
+
+**Heritage & Attractions:**
+- Tsinelas Craft Heritage District - Traditional Filipino slipper makers using 100+ year old techniques
+- St. John the Baptist Church - Historic architecture and pilgrimage site
+- Local Markets - Fresh produce, handicrafts, authentic Filipino experience
+- Liliw Town Center - Cultural hub for events and local dining
+
+**Key Information:**
+- Location: Laguna Province, Philippines (60km from Manila, 1.5 hours by car)
+- Coordinates: 14.3086°N, 121.2286°E
+- Operating Hours: Most attractions 9 AM - 5 PM daily, weekends 8 AM - 6 PM
+- Best Time to Visit: November - March (dry season, 25-32°C)
+
+**Things to Do:**
+1. Visit artisan workshops and watch handmade tsinelas being created
+2. Explore St. John the Baptist Church
+3. Shop at local markets for authentic souvenirs
+4. Take guided cultural tours
+5. Experience authentic Filipino cuisine at local restaurants
+6. Book heritage site tours (2-3 hours)
+7. Meet local artisans
+8. Attend fiesta celebrations
+
+**Accommodation & Dining:**
+- Budget-friendly hotels and guesthouses available
+- Local homestays and family-run accommodations
+- Traditional Filipino restaurants with local specialties
+- Street food vendors and local cafes
+
+**Transportation:**
+- By car: South Luzon Expressway from Manila
+- By bus: Comfortable air-conditioned buses available
+- Local tricycles for getting around town
+- Walking-friendly town center
+
+**Shopping:**
+- Handmade tsinelas (slippers) - our specialty
+- Local handicrafts and pottery
+- Ceramics and souvenirs
+- Local food products
+
+**Culture & Events:**
+- Fiesta celebrations throughout the year
+- Heritage festivals
+- Craft fairs
+- Cultural performances
+- Local artisan workshops open to visitors
+
+**Contact & Hours:**
+- Email: info@liliwtourism.com
+- General hours: 9 AM - 5 PM (most attractions)
+- Some attractions closed Mondays
+- Tours bookable through website
+
+**CRITICAL RULES:**
+1. ONLY answer questions about Liliw tourism and attractions
+2. If someone asks about unrelated topics, politely redirect to Liliw-related information
+3. Always be helpful, friendly, and enthusiastic
+4. Suggest relevant attractions/activities based on visitor interests
+5. Provide practical travel tips
+6. Never pretend to have information outside Liliw tourism
+7. Use emojis and friendly language to match the cheerful Liliw brand
+8. If asked about something not Liliw-related, say: "I appreciate your question, but I'm Lilio - Liliw's official tour guide! I only have expertise about Liliw tourism. Is there anything about visiting Liliw I can help with?"
+
+**Response Style:**
+- Friendly and welcoming
+- Informative and practical
+- Include relevant emojis
+- Suggest activities and attractions
+- Provide helpful tips
+- Keep responses concise but informative`;
 
 interface ChatRequest {
   message: string;
-}
-
-function findLiliwResponse(message: string): string {
-  const lowerMessage = message.toLowerCase();
-
-  // Check each category for keyword matches
-  for (const [key, data] of Object.entries(liliwKnowledgeBase)) {
-    for (const keyword of data.keywords) {
-      if (lowerMessage.includes(keyword)) {
-        return data.response;
-      }
-    }
-  }
-
-  // If no Liliw-related keyword found, politely redirect
-  return `🏝️ I appreciate your question, but I'm **Lilio**, **Liliw's official tour guide** - I only have knowledge about Liliw tourism and attractions!\n\nI can help with:\n✅ Heritage sites & attractions\n✅ Tours & bookings\n✅ Local dining & shopping\n✅ Events & celebrations\n✅ Travel tips for Liliw\n✅ Artisan workshops\n✅ Accommodation\n✅ How to get here\n\nPlease ask me something about visiting Liliw! 😊`;
 }
 
 export async function POST(request: NextRequest) {
@@ -96,17 +102,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get Liliw-focused response from knowledge base
-    const reply = findLiliwResponse(message);
+    // Call Groq API with LLaMA 3.3 70B model
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: 'system',
+          content: LILIO_SYSTEM_PROMPT,
+        },
+        {
+          role: 'user',
+          content: message,
+        },
+      ],
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.7,
+      max_tokens: 500,
+      top_p: 0.9,
+    });
 
-    // Simulate slight delay for better UX
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    const reply = completion.choices[0]?.message?.content || 'I apologize, I had trouble understanding that. Could you ask me something about visiting Liliw?';
 
     return NextResponse.json({
       success: true,
       reply,
       timestamp: new Date().toISOString(),
-      source: 'Lilio - Liliw Tour Guide',
+      source: 'Lilio - Liliw Tour Guide (Powered by Groq LLaMA 3.3)',
+      model: 'llama-3.3-70b-versatile',
     });
   } catch (error) {
     console.error('Chat API error:', error);
@@ -124,16 +145,24 @@ export async function GET() {
     message: 'Lilio Chat API is running',
     guide: 'Lilio - Official Liliw Tour Guide',
     scope: 'Liliw tourism and attractions only',
+    model: 'Groq LLaMA 3.3 70B (Fast AI)',
+    features: [
+      'Natural language understanding (NLP)',
+      'Liliw-only knowledge boundary',
+      'Helpful tourist recommendations',
+      'Context-aware responses',
+      'Efficient & fast processing'
+    ],
     knowledge_areas: [
-      'Heritage sites',
-      'Tourist attractions',
+      'Heritage sites & attractions',
+      'Tourist spots & things to do',
       'Tours & bookings',
-      'Local artisans',
+      'Local artisans & crafts',
       'Dining & shopping',
       'Events & celebrations',
-      'Accommodation',
-      'Transportation',
-      'Travel tips'
+      'Accommodation & lodging',
+      'Transportation & directions',
+      'Travel tips & best times to visit'
     ],
     endpoints: {
       POST: 'Submit a chat message with { message: string }',
