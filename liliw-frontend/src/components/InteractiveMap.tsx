@@ -51,16 +51,18 @@ export default function InteractiveMap({
   return (
     <div className="w-full space-y-4">
       {/* Map Embed */}
-      <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200">
-        <iframe
-          width="100%"
-          height="500"
-          style={{ border: 0 }}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          src={mapUrl}
-          title="Liliw Attractions Map"
-        ></iframe>
+      <div className="rounded-2xl overflow-hidden shadow-lg border-2" style={{ borderColor: '#E0F7F5' }}>
+        <div className="aspect-video w-full">
+          <iframe
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            src={mapUrl}
+            title="Liliw Attractions Map"
+          ></iframe>
+        </div>
       </div>
 
       {/* Attractions List */}
@@ -74,21 +76,22 @@ export default function InteractiveMap({
               key={idx}
               whileHover={{ scale: 1.02 }}
               onClick={() => setSelectedAttraction(attraction)}
-              className="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:shadow-lg transition"
+              className="p-4 bg-white border-2 rounded-xl cursor-pointer hover:shadow-lg transition"
+              style={{ borderColor: '#E0F7F5' }}
             >
               <div className="flex items-start gap-3">
                 <MapPin size={20} style={{ color: '#00BFB3' }} className="flex-shrink-0 mt-1" />
                 <div className="flex-1 min-w-0">
                   <h4 className="font-semibold text-gray-900 truncate">{attraction.name}</h4>
                   {attraction.category && (
-                    <p className="text-xs text-gray-500">{attraction.category}</p>
+                    <p className="text-xs text-gray-600">{attraction.category}</p>
                   )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       getDirections(attraction.lat, attraction.lng, attraction.name);
                     }}
-                    className="mt-2 flex items-center gap-1 px-3 py-1 text-xs font-semibold text-white rounded transition"
+                    className="mt-2 flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white rounded-lg transition hover:shadow-md"
                     style={{ backgroundColor: '#00BFB3' }}
                   >
                     <Navigation size={14} />
@@ -106,7 +109,7 @@ export default function InteractiveMap({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border-l-4"
+          className="p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl border-l-4 shadow-md"
           style={{ borderLeftColor: '#00BFB3' }}
         >
           <h4 className="font-bold text-lg mb-2" style={{ color: '#0F1F3C' }}>
@@ -122,7 +125,7 @@ export default function InteractiveMap({
             onClick={() =>
               getDirections(selectedAttraction.lat, selectedAttraction.lng, selectedAttraction.name)
             }
-            className="w-full py-2 text-white font-semibold rounded-lg transition hover:opacity-90"
+            className="w-full py-2.5 text-white font-semibold rounded-lg transition hover:opacity-90 shadow-md"
             style={{ backgroundColor: '#00BFB3' }}
           >
             Get Directions
