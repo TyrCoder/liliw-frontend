@@ -72,9 +72,50 @@ export const getAllAttractions = async () => {
     getTouristSpots(),
   ]);
 
+  // Transform Strapi data to match frontend expectations
+  const transformAttraction = (item: any, type: string) => {
+    // Extract text from rich text blocks
+    const extractText = (richText: any) => {
+      if (!richText) return '';
+      if (Array.isArray(richText)) {
+        return richText
+          .map((block: any) =>
+            block.children?.map((child: any) => child.text).join(' ') || ''
+          )
+          .join(' ');
+      }
+      return richText;
+    };
+
+    return {
+      id: item.id,
+      attributes: {
+        name: item.name || 'Unnamed Attraction',
+        description: extractText(item.description),
+        location: item.location || '',
+        category: item.category || 'uncategorized',
+        rating: item.rating || 0,
+        is_featured: item.is_featured || false,
+        phone: item.phone || '',
+        hours: item.opening_hours || '',
+        website: item.website || '',
+        best_for: item.best_time_to_visit || item.tips || '',
+      },
+      type,
+    };
+  };
+
   return [
-    ...heritage.map((h: any) => ({ ...h, type: 'heritage' })),
-    ...spots.map((s: any) => ({ ...s, type: 'spot' })),
+    ...heritage.map((h: any) => {
+      const transformed = transformAttraction(h, 'heritage');
+      transformed.id = `heritage-${h.id}`; // Make ID unique
+      return transformed;
+    }),
+    ...spots.map((s: any) => {
+      const transformed = transformAttraction(s, 'spot');
+      transformed.id = `spot-${s.id}`; // Make ID unique
+      return transformed;
+    }),
   ];
 };
 
