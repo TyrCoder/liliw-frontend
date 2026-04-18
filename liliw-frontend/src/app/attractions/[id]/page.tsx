@@ -10,6 +10,8 @@ import ImageGallery from '@/components/ImageGallery';
 import Ratings from '@/components/Ratings';
 import BookingForm from '@/components/BookingForm';
 import EventCalendar from '@/components/EventCalendar';
+import InteractiveMap from '@/components/InteractiveMap';
+import QRCodeGenerator from '@/components/QRCodeGenerator';
 
 interface Attraction {
   id: number;
@@ -312,6 +314,43 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
               },
             ]}
             title="Gallery"
+          />
+        </motion.div>
+
+        {/* Interactive Map */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.38 }}
+          className="mb-8 sm:mb-12"
+        >
+          <h2 className="text-2xl font-bold mb-4" style={{ color: '#0F1F3C' }}>
+            📍 Location & Directions
+          </h2>
+          <InteractiveMap
+            attractions={[
+              {
+                name: attraction.attributes.name,
+                lat: attraction.type === 'heritage' ? 14.3086 : 14.3089,
+                lng: 121.2286,
+                category: attraction.attributes.category,
+                description: attraction.attributes.description,
+              },
+            ]}
+          />
+        </motion.div>
+
+        {/* QR Code Share */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.40 }}
+          className="mb-8 sm:mb-12 flex gap-4 flex-wrap items-center"
+        >
+          <QRCodeGenerator
+            itemId={String(attraction.id)}
+            itemName={attraction.attributes.name}
+            itemType={attraction.type === 'heritage' ? 'attraction' : 'attraction'}
           />
         </motion.div>
 
