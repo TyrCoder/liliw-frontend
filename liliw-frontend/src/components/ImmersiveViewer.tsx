@@ -70,25 +70,70 @@ export default function ImmersiveViewer({ title, imageUrl, description }: Immers
         let mouseY = 0;
         let targetX = 0;
         let targetY = 0;
+        let isDragging = false;
+        let previousMouseX = 0;
+        let previousMouseY = 0;
 
-        const onMouseMove = (event: MouseEvent) => {
-          const x = (event.clientX / window.innerWidth) * 2 - 1;
-          const y = -(event.clientY / window.innerHeight) * 2 + 1;
-          targetX = x * 0.5;
-          targetY = y * 0.5;
+        const onMouseDown = () => {
+          isDragging = true;
         };
 
-        const onTouchMove = (event: TouchEvent) => {
+        const onMouseUp = () => {
+          isDragging = false;
+        };
+
+        const onMouseMove = (event: MouseEvent) => {
+          if (!isDragging) return;
+
+          const deltaX = event.clientX - previousMouseX;
+          const deltaY = event.clientY - previousMouseY;
+
+          targetX += deltaX * 0.005;
+          targetY += deltaY * 0.005;
+
+          previousMouseX = event.clientX;
+          previousMouseY = event.clientY;
+        };
+
+        const onMouseEnter = (event: MouseEvent) => {
+          previousMouseX = event.clientX;
+          previousMouseY = event.clientY;
+        };
+
+        const onTouchStart = (event: TouchEvent) => {
+          isDragging = true;
           if (event.touches.length > 0) {
-            const x = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
-            const y = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
-            targetX = x * 0.5;
-            targetY = y * 0.5;
+            previousMouseX = event.touches[0].clientX;
+            previousMouseY = event.touches[0].clientY;
           }
         };
 
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('touchmove', onTouchMove);
+        const onTouchEnd = () => {
+          isDragging = false;
+        };
+
+        const onTouchMove = (event: TouchEvent) => {
+          if (!isDragging || event.touches.length === 0) return;
+
+          const deltaX = event.touches[0].clientX - previousMouseX;
+          const deltaY = event.touches[0].clientY - previousMouseY;
+
+          targetX += deltaX * 0.005;
+          targetY += deltaY * 0.005;
+
+          previousMouseX = event.touches[0].clientX;
+          previousMouseY = event.touches[0].clientY;
+        };
+
+        // Attach canvas-specific listeners
+        canvas.addEventListener('mousedown', onMouseDown);
+        canvas.addEventListener('mouseup', onMouseUp);
+        canvas.addEventListener('mousemove', onMouseMove);
+        canvas.addEventListener('mouseenter', onMouseEnter);
+        canvas.addEventListener('mouseleave', onMouseUp);
+        canvas.addEventListener('touchstart', onTouchStart);
+        canvas.addEventListener('touchend', onTouchEnd);
+        canvas.addEventListener('touchmove', onTouchMove);
 
         const handleResize = () => {
           if (!canvas.parentElement) return;
@@ -123,8 +168,14 @@ export default function ImmersiveViewer({ title, imageUrl, description }: Immers
 
         return () => {
           cancelAnimationFrame(animationId);
-          window.removeEventListener('mousemove', onMouseMove);
-          window.removeEventListener('touchmove', onTouchMove);
+          canvas.removeEventListener('mousedown', onMouseDown);
+          canvas.removeEventListener('mouseup', onMouseUp);
+          canvas.removeEventListener('mousemove', onMouseMove);
+          canvas.removeEventListener('mouseenter', onMouseEnter);
+          canvas.removeEventListener('mouseleave', onMouseUp);
+          canvas.removeEventListener('touchstart', onTouchStart);
+          canvas.removeEventListener('touchend', onTouchEnd);
+          canvas.removeEventListener('touchmove', onTouchMove);
           window.removeEventListener('resize', handleResize);
           geometry.dispose();
           renderer.dispose();
@@ -197,6 +248,7 @@ export default function ImmersiveViewer({ title, imageUrl, description }: Immers
         <canvas
           ref={canvasRef}
           className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
+          style={{ touchAction: 'none' }}
         />
 
         {/* Overlay Controls */}
