@@ -123,18 +123,18 @@ export default function AIChat() {
                     className={`max-w-xs px-4 py-3 rounded-2xl ${
                       msg.sender === 'user'
                         ? 'text-white rounded-br-none shadow-md'
-                        : 'bg-white border-2 rounded-bl-none shadow-sm'
+                        : 'bg-white border-2 rounded-bl-none shadow-md'
                     }`}
                     style={
                       msg.sender === 'user'
                         ? { backgroundColor: '#00BFB3' }
-                        : { borderColor: '#E0F7F5' }
+                        : { borderColor: '#00BFB3' }
                     }
                   >
-                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                    <p className="text-sm leading-relaxed text-black">{msg.text}</p>
                     <span
                       className={`text-xs opacity-70 block mt-1.5 ${
-                        msg.sender === 'user' ? 'text-white text-right' : 'text-gray-500'
+                        msg.sender === 'user' ? 'text-white text-right' : 'text-gray-600'
                       }`}
                     >
                       {msg.timestamp.toLocaleTimeString([], {
@@ -147,7 +147,7 @@ export default function AIChat() {
               ))}
               {loading && (
                 <div className="flex justify-start">
-                  <div className="bg-white border border-gray-200 rounded-lg rounded-bl-none p-4">
+                  <div className="bg-white border-2 rounded-lg rounded-bl-none p-4 shadow-md" style={{ borderColor: '#00BFB3' }}>
                     <Loader className="animate-spin" size={20} style={{ color: '#00BFB3' }} />
                   </div>
                 </div>
@@ -156,24 +156,26 @@ export default function AIChat() {
             </div>
 
             {/* Input */}
-            <form onSubmit={handleSendMessage} className="border-t-2 p-4" style={{ borderTopColor: '#E0F7F5' }}>
-              <div className="flex gap-3">
+            <form onSubmit={handleSendMessage} className="border-t-2 p-4" style={{ borderTopColor: '#00BFB3' }}>
+              <div className="flex gap-3 items-center">
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask about Liliw..."
-                  className="flex-1 px-4 py-2.5 border-2 rounded-full focus:outline-none transition"
-                  style={{ borderColor: '#E0F7F5', '--tw-ring-color': '#00BFB3' } as any}
+                  className="flex-1 px-4 py-2.5 border-2 rounded-full focus:outline-none transition text-black placeholder-gray-400"
+                  style={{ borderColor: '#00BFB3', '--tw-ring-color': '#00BFB3' } as any}
                 />
-                <button
+                <motion.button
                   type="submit"
                   disabled={loading}
-                  className="p-2.5 text-white rounded-full transition hover:shadow-lg active:scale-95"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-3 text-white rounded-full transition shadow-lg hover:shadow-2xl disabled:opacity-50 disabled:scale-100"
                   style={{ backgroundColor: '#00BFB3' }}
                 >
-                  <Send size={18} />
-                </button>
+                  <Send size={20} strokeWidth={2.5} />
+                </motion.button>
               </div>
             </form>
           </motion.div>
