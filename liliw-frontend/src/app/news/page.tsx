@@ -203,13 +203,16 @@ export default function NewsPage() {
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-3">
                     <div className="flex items-center gap-3">
                       <Bell className="w-5 h-5 flex-shrink-0" style={{ color: '#00BFB3' }} />
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        item.category === 'Cultural' ? 'text-white' :
-                        item.category === 'Festival' ? 'bg-red-100 text-red-700' :
-                        item.category === 'Workshop' ? 'bg-blue-100 text-blue-700' :
-                        item.category === 'Competition' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`} style={item.category === 'Cultural' ? { backgroundColor: '#00BFB3' } : {}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          item.category === 'Cultural' ? 'text-white' :
+                          item.category === 'Festival' ? 'bg-red-100 text-red-700' :
+                          item.category === 'Workshop' ? 'bg-blue-100 text-blue-700' :
+                          item.category === 'Competition' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}
+                        style={item.category === 'Cultural' ? { backgroundColor: '#00BFB3' } : {}}
+                      >
                         {item.category}
                       </span>
                     </div>
