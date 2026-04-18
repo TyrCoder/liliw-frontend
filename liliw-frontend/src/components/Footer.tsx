@@ -24,12 +24,12 @@ export default function Footer() {
   return (
     <footer className="mt-20 text-white" style={{ backgroundColor: '#0F1F3C' }}>
       {/* Newsletter Section */}
-      <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="max-w-6xl mx-auto px-4 pt-12 pb-8">
         <NewsletterSignup />
       </div>
 
       {/* Main Footer Content */}
-      <div className="max-w-6xl mx-auto px-4 py-16">
+      <div className="max-w-6xl mx-auto px-4 py-12 border-t border-gray-700">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -119,16 +119,13 @@ export default function Footer() {
           </motion.div>
         </motion.div>
 
-        {/* Divider */}
-        <div className="border-t border-gray-700 my-8"></div>
-
         {/* Bottom Section */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          className="flex flex-col md:flex-row md:items-center md:justify-between gap-6"
+          className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 pt-8 border-t border-gray-700"
         >
           {/* Copyright */}
           <motion.div variants={itemVariants} className="text-sm text-gray-400">
@@ -173,9 +170,6 @@ export default function Footer() {
           </motion.div>
         </motion.div>
       </div>
-
-      {/* Top Border Accent */}
-      <div className="h-1" style={{ background: 'linear-gradient(90deg, #00BFB3 0%, rgba(0, 191, 179, 0) 100%)' }}></div>
     </footer>
   );
 }
