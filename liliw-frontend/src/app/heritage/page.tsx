@@ -182,7 +182,7 @@ export default function HeritageHeritagePages() {
                       </div>
 
                       {/* Title */}
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2 transition-colors" style={{ color: 'inherit' }}>
+                      <h2 className="text-2xl font-bold mb-2 transition-colors" style={{ color: '#00BFB3' }}>
                         {site.attributes.name}
                       </h2>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Star, User, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -24,9 +24,51 @@ export default function Ratings({ itemId, itemName, ratings = [] }: RatingsProps
   const [userComment, setUserComment] = useState('');
   const [userName, setUserName] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [dbRatings, setDbRatings] = useState<Rating[]>(ratings);
+  const [loading, setLoading] = useState(false);
 
-  const avgRating = ratings.length > 0 
-    ? (ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1)
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/reviews?filters[item_id][$eq]=${itemId}&populate=*`,
+          {
+            headers: {
+              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`,
+            },
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          const formattedReviews: Rating[] = data.data.map((review: any) => ({
+            id: review.id,
+            author: review.attributes.author,
+            rating: review.attributes.rating,
+            date: new Date(review.attributes.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+            }),
+            comment: review.attributes.comment,
+            verified: review.attributes.verified || false,
+          }));
+          setDbRatings(formattedReviews);
+        }
+      } catch (error) {
+        console.error('Failed to fetch reviews:', error);
+        setDbRatings(ratings);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, [itemId]);
+
+  const displayRatings = dbRatings.length > 0 ? dbRatings : ratings;
+  const avgRating = displayRatings.length > 0 
+    ? (displayRatings.reduce((sum, r) => sum + r.rating, 0) / displayRatings.length).toFixed(1)
     : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,7 +122,7 @@ export default function Ratings({ itemId, itemName, ratings = [] }: RatingsProps
             </div>
           </div>
           <div>
-            <p className="text-sm text-gray-600">{ratings.length} reviews</p>
+            <p className="text-sm text-gray-600">{displayRatings.length} reviews</p>
             <p className="text-xs text-gray-500">Based on visitor feedback</p>
           </div>
         </div>
@@ -151,8 +193,8 @@ export default function Ratings({ itemId, itemName, ratings = [] }: RatingsProps
 
         {/* Reviews List */}
         <div className="space-y-4">
-          {ratings.length > 0 ? (
-            ratings.map((review, idx) => (
+          {displayRatings.length > 0 ? (
+            displayRatings.map((review, idx) => (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, y: 10 }}
