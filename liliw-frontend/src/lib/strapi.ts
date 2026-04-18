@@ -100,6 +100,17 @@ export const getAllAttractions = async () => {
         hours: item.opening_hours || '',
         website: item.website || '',
         best_for: item.best_time_to_visit || item.tips || '',
+        photos: item.photos && Array.isArray(item.photos) 
+          ? item.photos.map((photo: any) => ({
+              id: photo.id,
+              name: photo.name,
+              url: photo.url,
+              width: photo.width,
+              height: photo.height,
+              formats: photo.formats,
+              mime: photo.mime,
+            }))
+          : [],
       },
       type,
     };

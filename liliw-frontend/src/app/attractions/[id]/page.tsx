@@ -26,6 +26,15 @@ interface Attraction {
     hours?: string;
     website?: string;
     best_for?: string;
+    photos?: Array<{
+      id: number;
+      name: string;
+      url: string;
+      width?: number;
+      height?: number;
+      formats?: any;
+      mime?: string;
+    }>;
   };
   type: 'heritage' | 'spot';
 }
@@ -295,26 +304,21 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           transition={{ duration: 0.6, delay: 0.35 }}
           className="mb-8 sm:mb-12"
         >
-          <ImageGallery
-            images={[
-              {
-                src: 'https://images.unsplash.com/photo-1469022563428-aa0e26e5c742?w=1200&h=800&fit=crop',
-                alt: `${attraction.attributes.name} - Main view`,
-                caption: 'Main view'
-              },
-              {
-                src: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&h=800&fit=crop',
-                alt: `${attraction.attributes.name} - Secondary view`,
-                caption: 'Detail view'
-              },
-              {
-                src: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=800&fit=crop',
-                alt: `${attraction.attributes.name} - Additional view`,
-                caption: 'Experience'
-              },
-            ]}
-            title="Gallery"
-          />
+          {attraction.attributes.photos && attraction.attributes.photos.length > 0 ? (
+            <ImageGallery
+              images={attraction.attributes.photos.map((photo) => ({
+                src: `${process.env.NEXT_PUBLIC_STRAPI_URL}${photo.url}`,
+                alt: photo.name,
+                caption: photo.name,
+              }))}
+              title="Photo Gallery"
+            />
+          ) : (
+            <div className="p-8 bg-gray-50 rounded-lg text-center text-gray-500">
+              <p>No photos available for this attraction yet.</p>
+              <p className="text-sm mt-2">Upload photos in the Strapi admin panel to see them here.</p>
+            </div>
+          )}
         </motion.div>
 
         {/* Interactive Map */}
