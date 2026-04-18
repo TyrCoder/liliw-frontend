@@ -136,14 +136,14 @@ export default function FaqPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="text-white py-12\" style={{ background: 'linear-gradient(to right, #00BFB3, #0F1F3C)' }}>
-        <div className="max-w-6xl mx-auto px-4\">
-          <Link href="/" className=\"flex items-center gap-2 mb-4 hover:opacity-80\">
+      <div className="text-white py-12" style={{ background: 'linear-gradient(to right, #00BFB3, #0F1F3C)' }}>
+        <div className="max-w-6xl mx-auto px-4">
+          <Link href="/" className="flex items-center gap-2 mb-4 hover:opacity-80">
             <ChevronLeft size={20} />
             Back to Home
           </Link>
-          <h1 className=\"text-4xl font-bold mb-4\">Frequently Asked Questions</h1>
-          <p className=\"text-lg\">
+          <h1 className="text-4xl font-bold mb-4">Frequently Asked Questions</h1>
+          <p className="text-lg">
             Find answers to common questions about visiting Liliw
           </p>
         </div>
