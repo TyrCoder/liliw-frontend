@@ -1,6 +1,6 @@
 'use client';
 
-import { Share2, Facebook, Zap } from 'lucide-react';
+import { Share2, MessageCircle, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 
@@ -19,7 +19,7 @@ export default function SocialShare({ title, description, url }: SocialShareProp
   const shareLinks = [
     {
       name: 'Facebook',
-      icon: Facebook,
+      icon: MessageCircle,
       url: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
       color: 'bg-blue-600 hover:bg-blue-700',
     },
