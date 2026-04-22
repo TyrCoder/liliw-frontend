@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import algoliasearch from 'algoliasearch';
 
 const client = algoliasearch(
@@ -21,7 +22,7 @@ async function fetchFromStrapi(endpoint: string) {
     if (!response.ok) throw new Error(`Failed to fetch ${endpoint}`);
     return await response.json();
   } catch (error) {
-    console.error(`Error fetching ${endpoint}:`, error);
+    logger.error(`Error fetching ${endpoint}:`, error);
     return { data: [] };
   }
 }
@@ -124,7 +125,7 @@ export async function POST() {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Algolia indexing error:', error);
+    logger.error('Algolia indexing error:', error);
     return NextResponse.json(
       { error: 'Failed to index to Algolia', details: String(error) },
       { status: 500 }

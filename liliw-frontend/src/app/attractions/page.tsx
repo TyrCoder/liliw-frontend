@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Layers, Star } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
+import { logger } from '@/lib/logger';
 import SearchBar from '@/components/SearchBar';
 
 interface Attraction {
-  id: number;
+  id: string | number;
   attributes: {
     name: string;
     description?: string;
@@ -77,7 +78,7 @@ export default function AttractionsPage() {
         setFilteredAttractions(data);
       } catch (err) {
         setError('Failed to load attractions');
-        console.error(err);
+        logger.error('Failed to load attractions:', err);
       } finally {
         setLoading(false);
       }
@@ -114,58 +115,6 @@ export default function AttractionsPage() {
 
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
-      {/* Navigation */}
-      <motion.nav
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="sticky top-0 z-50 backdrop-blur-sm border-b-2 transition-all duration-300"
-        style={{ 
-          backgroundColor: 'rgba(15, 31, 60, 0.98)',
-          borderBottomColor: '#00BFB3',
-          boxShadow: '0 4px 12px rgba(0, 191, 179, 0.1)'
-        }}
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center gap-4">
-          <motion.h1 
-            className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white via-gray-100 to-gray-200 bg-clip-text text-transparent whitespace-nowrap"
-            whileHover={{ scale: 1.05 }}
-          >
-            Liliw
-          </motion.h1>
-          <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end overflow-x-auto">
-            <Link href="/" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
-              Home
-            </Link>
-            <Link href="/about" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
-              About
-            </Link>
-            <Link href="/attractions" className="text-white font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap" style={{ backgroundColor: 'rgba(0, 191, 179, 0.2)', color: '#00BFB3' }}>
-              Attractions
-            </Link>
-            <Link href="/culture" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
-              Culture
-            </Link>
-            <Link href="/itineraries" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
-              Tours
-            </Link>
-            <Link href="/news" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
-              News
-            </Link>
-            <Link href="/faq" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
-              FAQ
-            </Link>
-            <Link href="/immersive" className="font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg flex items-center gap-1 hover:scale-105 whitespace-nowrap" style={{ color: '#00BFB3', backgroundColor: 'rgba(0, 191, 179, 0.15)' }}>
-              <span>🥽</span>
-              <span className="hidden sm:inline">3D</span>
-            </Link>
-            <Link href="/community" className="text-gray-200 hover:text-white hover:bg-white/10 font-semibold transition text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap">
-              Community
-            </Link>
-          </div>
-        </div>
-      </motion.nav>
-
       {/* Page Header */}
       <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12">
         <motion.div

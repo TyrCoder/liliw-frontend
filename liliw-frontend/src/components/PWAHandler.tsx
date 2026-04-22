@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { logger } from '@/lib/logger';
 
 export default function PWAHandler() {
   const [isInstalled, setIsInstalled] = useState(false);
@@ -12,10 +13,10 @@ export default function PWAHandler() {
       navigator.serviceWorker
         .register('/sw.js', { scope: '/' })
         .then((registration) => {
-          console.log('✓ Service Worker registered:', registration);
+          logger.info('Service Worker registered');
         })
         .catch((error) => {
-          console.log('✗ Service Worker registration failed:', error);
+          logger.error('Service Worker registration failed:', error);
         });
     }
 
@@ -25,9 +26,9 @@ export default function PWAHandler() {
     }
 
     // PWA install prompt
-    const handleBeforeInstallPrompt = (e: any) => {
+    const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as any);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -43,7 +44,7 @@ export default function PWAHandler() {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        console.log('✓ App installed');
+        logger.info('App installed');
       }
       setDeferredPrompt(null);
     }

@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ChevronLeft, Layers } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
+import { logger } from '@/lib/logger';
+import { COLORS } from '@/lib/constants';
 import ImmersiveViewer from '@/components/ImmersiveViewer';
 
 interface Attraction {
@@ -37,7 +39,7 @@ export default function ImmersivePage() {
           setSelectedAttractionId(data[0].id);
         }
       } catch (error) {
-        console.error('Error fetching attractions:', error);
+        logger.error('Error fetching attractions:', error);
       } finally {
         setLoading(false);
       }
@@ -60,9 +62,9 @@ export default function ImmersivePage() {
         transition={{ duration: 0.4 }}
         className="sticky top-0 z-40 border-b-2 backdrop-blur-sm"
         style={{ 
-          borderBottomColor: '#00BFB3', 
+          borderBottomColor: COLORS.primary, 
           backgroundColor: 'rgba(15, 31, 60, 0.95)',
-          boxShadow: '0 4px 12px rgba(0, 191, 179, 0.1)'
+          boxShadow: `0 4px 12px ${COLORS.primary}1a`
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -76,7 +78,7 @@ export default function ImmersivePage() {
             className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2"
             whileHover={{ scale: 1.02 }}
           >
-            <Layers className="w-6 h-6" style={{ color: '#00BFB3' }} />
+            <Layers className="w-6 h-6" style={{ color: COLORS.primary }} />
             <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent hidden sm:inline">3D Tours</span>
             <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent sm:hidden">3D</span>
           </motion.h1>

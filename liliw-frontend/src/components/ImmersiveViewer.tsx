@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Headphones, Camera, Download } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface ImmersiveViewerProps {
   title: string;
@@ -181,7 +182,7 @@ export default function ImmersiveViewer({ title, imageUrl, description }: Immers
           renderer.dispose();
         };
       } catch (error) {
-        console.error('Error loading 3D viewer:', error);
+        logger.error('Error loading 3D viewer:', error);
         setIsLoading(false);
       }
     };
@@ -204,7 +205,7 @@ export default function ImmersiveViewer({ title, imageUrl, description }: Immers
         setIsFullscreen(false);
       }
     } catch (error) {
-      console.error('Fullscreen error:', error);
+      logger.error('Fullscreen error:', error);
     }
   };
 
@@ -218,7 +219,7 @@ export default function ImmersiveViewer({ title, imageUrl, description }: Immers
       });
 
       // VR session would continue rendering with WebXR
-      console.log('VR session started:', session);
+      logger.info('VR session started:', session as any);
     } catch (error) {
       console.error('VR session error:', error);
     }
