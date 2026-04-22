@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Booking error:', error);
+    logger.error('Booking error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Booking failed' },
       { status: 500 }

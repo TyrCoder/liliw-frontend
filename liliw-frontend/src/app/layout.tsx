@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Footer from "@/components/Footer";
+import Navbar from "@/components/Navbar";
 import SearchProvider from "@/components/SearchProvider";
 import AIChat from "@/components/AIChat";
 import PWAHandler from "@/components/PWAHandler";
@@ -63,6 +64,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <PWAHandler />
         <SearchProvider />
+        <Navbar />
         {children}
         <Footer />
         <AIChat />

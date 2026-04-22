@@ -5,15 +5,9 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronDown, Clock, HelpCircle } from 'lucide-react'
 import { getFaqs } from '@/lib/strapi'
+import { logger } from '@/lib/logger'
 import SearchBar from '@/components/SearchBar'
-
-interface FaqItem {
-  id: number
-  question: string
-  answer: any
-  category: string
-  keywords?: string
-}
+import type { FAQ as FaqItem } from '@/lib/types'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -32,9 +26,18 @@ const itemVariants = {
   },
 }
 
+// Transform FAQ from Strapi format to display format
+interface DisplayFaq {
+  id: string | number
+  question: string
+  answer: string
+  category?: string
+  keywords?: string
+}
+
 export default function FaqPage() {
-  const [faqs, setFaqs] = useState<FaqItem[]>([])
-  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [faqs, setFaqs] = useState<DisplayFaq[]>([])
+  const [expandedId, setExpandedId] = useState<string | number | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
@@ -42,16 +45,28 @@ export default function FaqPage() {
   useEffect(() => {
     const fetchFaqs = async () => {
       setIsLoading(true)
-      const data = await getFaqs()
-      setFaqs(data)
+      try {
+        const data = await getFaqs()
+        // Transform Strapi FAQ to display format
+        const transformed: DisplayFaq[] = data.map(faq => ({
+          id: faq.id,
+          question: faq.attributes.question,
+          answer: extractText(faq.attributes.answer),
+          category: faq.attributes.category,
+        }))
+        setFaqs(transformed)
+      } catch (err) {
+        logger.error('Failed to load FAQs:', err)
+      }
       setIsLoading(false)
     }
     fetchFaqs()
   }, [])
 
   // Extract text from rich text blocks
-  const extractText = (richText: any) => {
+  const extractText = (richText: any): string => {
     if (!richText) return ''
+    if (typeof richText === 'string') return richText
     if (Array.isArray(richText)) {
       return richText
         .map((block: any) =>
@@ -63,9 +78,9 @@ export default function FaqPage() {
   }
 
   // Get unique categories (filter out null/undefined)
-  const categories = [
+  const categories: string[] = [
     'all',
-    ...Array.from(new Set(faqs.map((faq) => faq.category).filter(Boolean))),
+    ...Array.from(new Set(faqs.map(faq => faq.category).filter((cat): cat is string => Boolean(cat)))),
   ]
 
   // Filter FAQs based on search and category
@@ -82,59 +97,6 @@ export default function FaqPage() {
 
   return (
     <div suppressHydrationWarning className="min-h-screen bg-white">
-      {/* Navigation Bar */}
-      <nav className="sticky top-0 z-50 text-white shadow-lg" style={{ backgroundColor: '#0F1F3C' }}>
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold">
-            Liliw
-          </Link>
-          <div className="flex gap-8 flex-wrap">
-            <Link
-              href="/"
-              className="hover:opacity-80 transition-colors"
-            >
-              Home
-            </Link>
-            <Link
-              href="/about"
-              className="hover:opacity-80 transition-colors"
-            >
-              About
-            </Link>
-            <Link
-              href="/attractions"
-              className="hover:opacity-80 transition-colors"
-            >
-              Attractions
-            </Link>
-            <Link
-              href="/culture"
-              className="hover:opacity-80 transition-colors"
-            >
-              Culture
-            </Link>
-            <Link
-              href="/itineraries"
-              className="hover:opacity-80 transition-colors"
-            >
-              Tours
-            </Link>
-            <Link
-              href="/news"
-              className="hover:opacity-80 transition-colors"
-            >
-              News
-            </Link>
-            <Link
-              href="/community"
-              className="hover:opacity-80 transition-colors"
-            >
-              Community
-            </Link>
-          </div>
-        </div>
-      </nav>
-
       {/* Page Header */}
       <div className="text-white py-12" style={{ background: 'linear-gradient(to right, #00BFB3, #0F1F3C)' }}>
         <div className="max-w-6xl mx-auto px-4">

@@ -1,4 +1,5 @@
 import algoliasearch from 'algoliasearch';
+import { logger } from './logger';
 
 const client = algoliasearch(
   process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || '',
@@ -30,7 +31,7 @@ export async function searchAlgolia(query: string): Promise<SearchResult[]> {
     
     return hits;
   } catch (error) {
-    console.error('Algolia search error:', error);
+    logger.error('Algolia search error:', error);
     return [];
   }
 }
@@ -51,6 +52,6 @@ export async function indexAttractions(data: any[]) {
     await index.saveObjects(objects);
     console.log(`✓ Indexed ${objects.length} items to Algolia`);
   } catch (error) {
-    console.error('Algolia indexing error:', error);
+    logger.error('Algolia indexing error:', error);
   }
 }

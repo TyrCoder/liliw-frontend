@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Layers, Star } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
+import { logger } from '@/lib/logger';
+import { COLORS } from '@/lib/constants';
 
 interface Attraction {
-  id: number;
+  id: string | number;
   attributes: {
     name: string;
     description?: string;
@@ -52,7 +54,7 @@ export default function TouristSpotsPage() {
         setSpots(spotsData);
       } catch (err) {
         setError('Failed to load tourist spots');
-        console.error(err);
+        logger.error('Failed to load tourist spots:', err);
       } finally {
         setLoading(false);
       }
@@ -63,45 +65,6 @@ export default function TouristSpotsPage() {
 
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
-      {/* Navigation */}
-      <motion.nav
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="sticky top-0 z-50 shadow-lg"
-        style={{ backgroundColor: '#0F1F3C' }}
-      >
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center flex-wrap gap-4">
-          <h1 className="text-2xl font-bold text-white">Liliw</h1>
-          <div className="flex items-center gap-6 flex-wrap">
-            <Link href="/" className="text-white hover:opacity-80 font-semibold transition text-sm">
-              Home
-            </Link>
-            <Link href="/about" className="text-white hover:opacity-80 font-semibold transition text-sm">
-              About
-            </Link>
-            <Link href="/attractions" className="text-white hover:opacity-80 font-semibold transition text-sm">
-              Attractions
-            </Link>
-            <Link href="/culture" className="text-white hover:opacity-80 font-semibold transition text-sm">
-              Culture
-            </Link>
-            <Link href="/itineraries" className="text-white hover:opacity-80 font-semibold transition text-sm">
-              Tours
-            </Link>
-            <Link href="/news" className="text-white hover:opacity-80 font-semibold transition text-sm">
-              News
-            </Link>
-            <Link href="/faq" className="text-white hover:opacity-80 font-semibold transition text-sm">
-              FAQ
-            </Link>
-            <Link href="/community" className="text-white hover:opacity-80 font-semibold transition text-sm">
-              Community
-            </Link>
-          </div>
-        </div>
-      </motion.nav>
-
       {/* Page Header */}
       <div className="max-w-6xl mx-auto px-4 py-12">
         <motion.div
@@ -112,7 +75,7 @@ export default function TouristSpotsPage() {
         >
           <Link
             href="/"
-            className="inline-flex items-center font-semibold mb-6 group" style={{ color: '#00BFB3' }}
+            className="inline-flex items-center font-semibold mb-6 group" style={{ color: COLORS.primary }}
           >
             <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" />
             Back to Home

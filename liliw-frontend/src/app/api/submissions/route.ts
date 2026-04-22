@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 interface SubmissionData {
   name: string;
@@ -45,8 +46,12 @@ export async function POST(request: NextRequest) {
     };
 
     // Send to Strapi
-    const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
+    const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
     const strapiToken = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+
+    if (!strapiUrl) {
+      throw new Error('NEXT_PUBLIC_STRAPI_URL environment variable is not set');
+    }
 
     const strapiResponse = await fetch(`${strapiUrl}/api/submissions`, {
       method: 'POST',
@@ -71,7 +76,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Submission error:', error);
+    logger.error('Submission error:', error);
     return NextResponse.json(
       { error: 'Failed to process submission' },
       { status: 500 }
