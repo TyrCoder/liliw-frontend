@@ -7,6 +7,7 @@ import { ChevronLeft, MapPin, Layers, Star } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
 import { logger } from '@/lib/logger';
 import SearchBar from '@/components/SearchBar';
+import { COLORS } from '@/lib/constants';
 
 interface Attraction {
   id: string | number;
