@@ -36,7 +36,9 @@
    ```
    postgresql://postgres:YOUR_PASSWORD@db.xxxxx.supabase.co:5432/postgres
    ```
-6. **SAVE THIS STRING** in a text file or Notes app
+6. postgresql://postgres:Teemo1232343@db.ogwccrkgnjlwhcvgwxla.supabase.co:5432/postgres
+
+
 
 ⚠️ **IMPORTANT:** Replace `YOUR_PASSWORD` with the actual password you created in Step 1.2
 
@@ -48,8 +50,8 @@
 1. Still in Supabase dashboard, click **"Settings"** ⚙️
 2. Click **"API"** tab
 3. You'll see:
-   - **Project URL** - Copy this (looks like: https://xxxxx.supabase.co)
-   - **Anon Key** - Copy this (long string starting with eyJ...)
+   - **Project URL** - https://ogwccrkgnjlwhcvgwxla.supabase.co
+   - **Anon Key** - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nd2Njcmtnbmpsd2hjdmd3eGxhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5ODgwNTMsImV4cCI6MjA5MjU2NDA1M30.pGMval9EAAx9WF7_TKyu58AdEU6W1Di3KjVxeIhQ0-w
 4. **SAVE BOTH** in a text file
 
 ✅ You have your Supabase credentials ready
