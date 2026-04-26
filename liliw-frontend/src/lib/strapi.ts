@@ -170,14 +170,16 @@ export const getAllAttractions = async () => {
         return null;
       }
 
-      const attrs = (item as any).attributes;
+      // Support both Strapi nested payloads (item.attributes)
+      // and flattened payloads (fields directly on item).
+      const attrs = (item as any).attributes || item;
       if (!attrs || typeof attrs !== 'object') {
         return null;
       }
 
       let images: any[] = [];
       try {
-        const rawImages = attrs.images;
+        const rawImages = attrs.photos ?? attrs.images;
         if (Array.isArray(rawImages)) {
           images = rawImages;
         } else if (rawImages && typeof rawImages === 'object') {
