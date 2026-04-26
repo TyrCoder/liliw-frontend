@@ -42,8 +42,22 @@ const strapiApi = axios.create({
   headers: {
     Authorization: `Bearer ${strapiToken}`,
   },
-  timeout: 10000, // 10 second timeout
+  timeout: 60000, // Render cold starts can take >10s on free tier
 });
+
+const fetchWithRetry = async <T>(path: string): Promise<T> => {
+  try {
+    const response = await strapiApi.get<T>(path);
+    return response.data;
+  } catch (error: any) {
+    const isTimeout = error?.code === 'ECONNABORTED';
+    if (!isTimeout) throw error;
+
+    // Retry once after a timeout to tolerate backend cold-start wakeups.
+    const retryResponse = await strapiApi.get<T>(path);
+    return retryResponse.data;
+  }
+};
 
 // Fetch all heritage sites
 export const getHeritageSites = async (): Promise<HeritageSite[]> => {
@@ -52,8 +66,8 @@ export const getHeritageSites = async (): Promise<HeritageSite[]> => {
   if (cached) return cached;
 
   try {
-    const response = await strapiApi.get<StrapiResponse<HeritageSite[]>>('/heritage-sites?populate=*');
-    const data = response.data.data || [];
+    const response = await fetchWithRetry<StrapiResponse<HeritageSite[]>>('/heritage-sites?populate=*');
+    const data = response.data || [];
     setCachedResponse(cacheKey, data);
     return data;
   } catch (error) {
@@ -69,8 +83,8 @@ export const getTouristSpots = async (): Promise<TouristSpot[]> => {
   if (cached) return cached;
 
   try {
-    const response = await strapiApi.get<StrapiResponse<TouristSpot[]>>('/tourist-spots?populate=*');
-    const data = response.data.data || [];
+    const response = await fetchWithRetry<StrapiResponse<TouristSpot[]>>('/tourist-spots?populate=*');
+    const data = response.data || [];
     setCachedResponse(cacheKey, data);
     return data;
   } catch (error) {
