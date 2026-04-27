@@ -42,13 +42,15 @@ export default function Navbar() {
             <h1 className="text-2xl font-bold text-white hidden md:block">Liliw</h1>
           </motion.div>
 
-          {/* Nav Links */}
-          <div className="flex items-center gap-2 sm:gap-4 flex-1 justify-center">
+          {/* Nav Links - Organized Structure */}
+          <div className="flex items-center gap-1 sm:gap-3 flex-1 justify-center overflow-x-auto">
             <NavLink href="/about" label="About" />
             <NavLink href="/attractions" label="Attractions" />
             <NavLink href="/culture" label="Culture" />
             <NavLink href="/heritage" label="Heritage" />
             <NavLink href="/itineraries" label="Tours" />
+            <NavLink href="/community" label="Participate" />
+            <NavLink href="/news" label="News" />
           </div>
 
           {/* 3D Tours Button */}
