@@ -99,6 +99,7 @@ export interface HeritageSiteAttribute {
     latitude: number;
     longitude: number;
   };
+  has_virtual_tour?: boolean;
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
@@ -122,6 +123,7 @@ export interface TouristSpotAttribute {
     latitude: number;
     longitude: number;
   };
+  has_virtual_tour?: boolean;
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
@@ -146,6 +148,7 @@ export interface DiningPlaceAttribute {
     latitude: number;
     longitude: number;
   };
+  has_virtual_tour?: boolean;
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
