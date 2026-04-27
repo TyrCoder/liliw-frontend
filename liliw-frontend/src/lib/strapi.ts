@@ -234,6 +234,7 @@ export const getAllAttractions = async () => {
           rating: attrs.rating || 0,
           google_place_id: attrs.google_place_id || undefined,
           coordinates: attrs.coordinates || undefined,
+          has_virtual_tour: attrs.has_virtual_tour || false,
           photos: (photos || []).map((photo: any) => {
             if (!photo || typeof photo !== 'object') return null;
             return {
