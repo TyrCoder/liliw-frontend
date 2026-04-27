@@ -54,6 +54,7 @@ export default function Footer() {
                 { href: '/attractions', label: 'Attractions' },
                 { href: '/heritage', label: 'Heritage Sites' },
                 { href: '/culture', label: 'Culture & Traditions' },
+                { href: '/arts', label: 'Arts & Creatives' },
                 { href: '/itineraries', label: 'Tours & Itineraries' },
               ].map((link) => (
                 <Link
@@ -78,6 +79,7 @@ export default function Footer() {
                 { href: '/community', label: 'Community & Participate' },
                 { href: '/faq', label: 'FAQ' },
                 { href: '/about', label: 'About Liliw' },
+                { href: '/contact', label: 'Contact Us' },
               ].map((link) => (
                 <Link
                   key={link.href}
