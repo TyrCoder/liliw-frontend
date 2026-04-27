@@ -19,7 +19,7 @@ interface Attraction {
     is_featured?: boolean;
     rating?: number;
   };
-  type: 'heritage' | 'spot';
+  type: 'heritage' | 'spot' | 'dining';
 }
 
 const containerVariants = {
@@ -171,6 +171,7 @@ export default function AttractionsPage() {
               <option value="all">All Types</option>
               <option value="heritage">Heritage Sites</option>
               <option value="spot">Tourist Spots</option>
+              <option value="dining">Dining & Food</option>
             </select>
 
             {/* Category Filter */}

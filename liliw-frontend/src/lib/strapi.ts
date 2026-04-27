@@ -4,6 +4,7 @@ import type {
   StrapiResponse,
   HeritageSite,
   TouristSpot,
+  DiningPlace,
   Event,
   FAQ,
   Itinerary,
@@ -93,6 +94,23 @@ export const getTouristSpots = async (): Promise<TouristSpot[]> => {
   }
 };
 
+// Fetch all dining and food places
+export const getDiningPlaces = async (): Promise<DiningPlace[]> => {
+  const cacheKey = 'dining-places';
+  const cached = getCachedResponse(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const response = await fetchWithRetry<StrapiResponse<DiningPlace[]>>('/dining-and-foods?populate=*');
+    const data = response.data || [];
+    setCachedResponse(cacheKey, data);
+    return data;
+  } catch (error) {
+    logger.error('Error fetching dining places:', error);
+    return [];
+  }
+};
+
 // Fetch all events
 export const getEvents = async (): Promise<Event[]> => {
   const cacheKey = 'events';
@@ -146,9 +164,10 @@ export const getItineraries = async (): Promise<Itinerary[]> => {
 
 // Fetch all attractions (heritage + tourist spots combined)
 export const getAllAttractions = async () => {
-  const [heritage, spots] = await Promise.all([
+  const [heritage, spots, dining] = await Promise.all([
     getHeritageSites(),
     getTouristSpots(),
+    getDiningPlaces(),
   ]);
 
   // Extract text from rich text blocks
@@ -178,7 +197,7 @@ export const getAllAttractions = async () => {
   };
 
   // Transform Strapi data to match frontend expectations
-  const transformAttraction = (item: HeritageSite | TouristSpot | null, type: 'heritage' | 'spot') => {
+  const transformAttraction = (item: HeritageSite | TouristSpot | DiningPlace | null, type: 'heritage' | 'spot' | 'dining') => {
     try {
       if (!item || typeof item !== 'object') {
         return null;
@@ -206,7 +225,7 @@ export const getAllAttractions = async () => {
       const photos = Array.isArray(images) ? images : [];
 
       return {
-        id: type === 'heritage' ? `heritage-${item.id}` : `spot-${item.id}`,
+        id: type === 'heritage' ? `heritage-${item.id}` : type === 'spot' ? `spot-${item.id}` : `dining-${item.id}`,
         attributes: {
           name: attrs.name || 'Unnamed Attraction',
           description: extractText(attrs.description),
@@ -240,6 +259,9 @@ export const getAllAttractions = async () => {
       .filter((a) => a !== null) as any[],
     ...spots
       .map((s) => transformAttraction(s, 'spot'))
+      .filter((a) => a !== null) as any[],
+    ...dining
+      .map((d) => transformAttraction(d, 'dining'))
       .filter((a) => a !== null) as any[],
   ];
 
