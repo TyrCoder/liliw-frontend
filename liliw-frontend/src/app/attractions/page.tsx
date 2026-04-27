@@ -257,11 +257,11 @@ export default function AttractionsPage() {
                       {/* Category Badge */}
                       <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full text-sm font-semibold text-white" style={{ backgroundColor: '#00BFB3' }}>
                         <Layers className="w-4 h-4" />
-                        {attraction.type === 'heritage' ? 'Heritage' : 'Tourist Spot'} {attraction.attributes?.category && `• ${attraction.attributes.category}`}
+                        {attraction.type === 'heritage' ? 'Heritage' : attraction.type === 'dining' ? 'Dining & Food' : 'Tourist Spot'} {attraction.attributes?.category && `• ${attraction.attributes.category}`}
                       </div>
 
                       {/* Title */}
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2 transition-colors" style={{ color: 'inherit' }}>
+                      <h2 className="text-2xl font-bold mb-2 transition-colors" style={{ color: '#00BFB3' }}>
                         {attraction.attributes?.name || 'Unnamed Attraction'}
                       </h2>
 
