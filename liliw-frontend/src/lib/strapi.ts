@@ -118,8 +118,8 @@ export const getEvents = async (): Promise<Event[]> => {
   if (cached) return cached;
 
   try {
-    const response = await strapiApi.get<StrapiResponse<Event[]>>('/events?populate=*');
-    const data = response.data.data || [];
+    const response = await fetchWithRetry<StrapiResponse<Event[]>>('/events?populate=*');
+    const data = response.data || [];
     setCachedResponse(cacheKey, data);
     return data;
   } catch (error) {
@@ -135,8 +135,8 @@ export const getFaqs = async (): Promise<FAQ[]> => {
   if (cached) return cached;
 
   try {
-    const response = await strapiApi.get<StrapiResponse<FAQ[]>>('/faqs?populate=*');
-    const data = response.data.data || [];
+    const response = await fetchWithRetry<StrapiResponse<FAQ[]>>('/faqs?populate=*');
+    const data = response.data || [];
     setCachedResponse(cacheKey, data);
     return data;
   } catch (error) {
@@ -152,8 +152,8 @@ export const getItineraries = async (): Promise<Itinerary[]> => {
   if (cached) return cached;
 
   try {
-    const response = await strapiApi.get<StrapiResponse<Itinerary[]>>('/itineraries?populate=*');
-    const data = response.data.data || [];
+    const response = await fetchWithRetry<StrapiResponse<Itinerary[]>>('/itineraries?populate=*');
+    const data = response.data || [];
     setCachedResponse(cacheKey, data);
     return data;
   } catch (error) {
