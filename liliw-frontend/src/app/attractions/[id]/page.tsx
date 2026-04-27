@@ -8,7 +8,7 @@ import { getAllAttractions } from '@/lib/strapi';
 import SocialShare from '@/components/SocialShare';
 import ImageGallery from '@/components/ImageGallery';
 import Ratings from '@/components/Ratings';
-import BookingForm from '@/components/BookingForm';
+import ItineraryBuilder from '@/components/ItineraryBuilder';
 import EventCalendar from '@/components/EventCalendar';
 import InteractiveMap from '@/components/InteractiveMap';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
@@ -328,16 +328,16 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           />
         </motion.div>
 
-        {/* Booking Section */}
+        {/* Itinerary Builder Section */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mb-8 sm:mb-12"
         >
-          <BookingForm
-            tourName={attraction.attributes.name}
-            tourId={String(attraction.id)}
+          <ItineraryBuilder
+            attractionName={attraction.attributes.name}
+            attractionId={String(attraction.id)}
             price={2500}
             maxParticipants={50}
           />
