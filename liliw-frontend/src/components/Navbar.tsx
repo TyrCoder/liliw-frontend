@@ -30,9 +30,11 @@ export default function Navbar() {
     { href: '/attractions', label: 'Attractions' },
     { href: '/culture', label: 'Culture' },
     { href: '/heritage', label: 'Heritage' },
+    { href: '/arts', label: 'Arts' },
     { href: '/itineraries', label: 'Tours' },
     { href: '/community', label: 'Participate' },
     { href: '/news', label: 'News' },
+    { href: '/contact', label: 'Contact' },
   ];
 
   return (
