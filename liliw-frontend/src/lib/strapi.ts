@@ -232,6 +232,8 @@ export const getAllAttractions = async () => {
           location: 'location' in attrs ? (attrs.location || '') : '',
           category: 'category' in attrs ? (attrs.category || 'uncategorized') : 'heritage',
           rating: attrs.rating || 0,
+          google_place_id: attrs.google_place_id || undefined,
+          coordinates: attrs.coordinates || undefined,
           photos: (photos || []).map((photo: any) => {
             if (!photo || typeof photo !== 'object') return null;
             return {

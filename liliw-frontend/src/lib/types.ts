@@ -94,6 +94,11 @@ export interface HeritageSiteAttribute {
   location: string;
   rating?: number;
   images?: StrapiImageAttribute[];
+  google_place_id?: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
@@ -112,6 +117,11 @@ export interface TouristSpotAttribute {
   category?: string;
   rating?: number;
   images?: StrapiImageAttribute[];
+  google_place_id?: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
@@ -131,6 +141,11 @@ export interface DiningPlaceAttribute {
   priceRange?: string;
   rating?: number;
   images?: StrapiImageAttribute[];
+  google_place_id?: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
