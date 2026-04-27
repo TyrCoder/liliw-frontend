@@ -37,7 +37,7 @@ export default function Footer() {
           viewport={{ once: true }}
           className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12"
         >
-          {/* Branding */}
+          {/* About Liliw */}
           <motion.div variants={itemVariants}>
             <h3 className="text-2xl font-bold mb-4" style={{ color: '#00BFB3' }}>
               Liliw
@@ -50,18 +50,17 @@ export default function Footer() {
             </p>
           </motion.div>
 
-          {/* Quick Links */}
+          {/* Explore */}
           <motion.div variants={itemVariants}>
             <h4 className="font-bold mb-4" style={{ color: '#00BFB3' }}>
-              Quick Links
+              Explore
             </h4>
             <nav className="space-y-2">
               {[
-                { href: '/', label: 'Home' },
                 { href: '/attractions', label: 'Attractions' },
-                { href: '/culture', label: 'Culture' },
-                { href: '/news', label: 'News' },
-                { href: '/faq', label: 'FAQ' },
+                { href: '/heritage', label: 'Heritage Sites' },
+                { href: '/culture', label: 'Culture & Traditions' },
+                { href: '/itineraries', label: 'Tours & Itineraries' },
               ].map((link) => (
                 <Link
                   key={link.href}
@@ -74,17 +73,17 @@ export default function Footer() {
             </nav>
           </motion.div>
 
-          {/* Information */}
+          {/* Resources */}
           <motion.div variants={itemVariants}>
             <h4 className="font-bold mb-4" style={{ color: '#00BFB3' }}>
-              Information
+              Resources
             </h4>
             <nav className="space-y-2">
               {[
-                { href: '/itineraries', label: 'Itineraries' },
-                { href: '/community', label: 'Community' },
-                { href: '/heritage', label: 'Heritage Sites' },
-                { href: '/about', label: 'About' },
+                { href: '/news', label: 'News & Events' },
+                { href: '/community', label: 'Community & Participate' },
+                { href: '/faq', label: 'FAQ' },
+                { href: '/about', label: 'About Liliw' },
               ].map((link) => (
                 <Link
                   key={link.href}
@@ -100,7 +99,7 @@ export default function Footer() {
           {/* Contact */}
           <motion.div variants={itemVariants}>
             <h4 className="font-bold mb-4" style={{ color: '#00BFB3' }}>
-              Contact Us
+              Contact
             </h4>
             <div className="space-y-3 text-sm text-gray-300">
               <div className="flex items-start gap-3">
