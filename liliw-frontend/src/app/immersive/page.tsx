@@ -16,13 +16,14 @@ interface Attraction {
     description?: string;
     location?: string;
     category?: string;
+    has_virtual_tour?: boolean;
     photos?: Array<{
       id: number;
       url: string;
       name: string;
     }>;
   };
-  type: 'heritage' | 'spot';
+  type: 'heritage' | 'spot' | 'dining';
 }
 
 export default function ImmersivePage() {
@@ -34,9 +35,11 @@ export default function ImmersivePage() {
     const fetchData = async () => {
       try {
         const data = await getAllAttractions();
-        setAttractions(data);
-        if (data.length > 0) {
-          setSelectedAttractionId(data[0].id);
+        // Filter to only show attractions with virtual tours enabled
+        const virtualTourAttractions = data.filter((attraction) => attraction.attributes.has_virtual_tour === true);
+        setAttractions(virtualTourAttractions);
+        if (virtualTourAttractions.length > 0) {
+          setSelectedAttractionId(virtualTourAttractions[0].id);
         }
       } catch (error) {
         logger.error('Error fetching attractions:', error);
