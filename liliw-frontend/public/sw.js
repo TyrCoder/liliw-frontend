@@ -1,13 +1,7 @@
-const CACHE_NAME = 'liliw-cache-v1';
+const CACHE_NAME = 'liliw-cache-v2';
 const urlsToCache = [
   '/',
   '/offline.html',
-  '/attractions',
-  '/heritage',
-  '/itineraries',
-  '/news',
-  '/faq',
-  '/about',
 ];
 
 // Install Service Worker
@@ -55,8 +49,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For API requests, use network first
+  // Never cache API requests with auth headers to avoid stale/unauthorized responses.
   if (event.request.url.includes('/api/')) {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => new Response('Offline', { status: 503 }))
+    );
+  } else if (event.request.mode === 'navigate') {
+    // For pages, use network-first so deployments update immediately.
     event.respondWith(
       fetch(event.request)
         .then((response) => {
@@ -68,7 +68,7 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           return caches.match(event.request).then((cachedResponse) => {
-            return cachedResponse || new Response('Offline', { status: 503 });
+            return cachedResponse || caches.match('/offline.html');
           });
         })
     );
