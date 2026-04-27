@@ -26,6 +26,11 @@ interface Attraction {
     hours?: string;
     website?: string;
     best_for?: string;
+    google_place_id?: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
     photos?: Array<{
       id: number;
       name: string;
@@ -36,7 +41,7 @@ interface Attraction {
       mime?: string;
     }>;
   };
-  type: 'heritage' | 'spot';
+  type: 'heritage' | 'spot' | 'dining';
 }
 
 export default function AttractionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -299,8 +304,9 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
             attractions={[
               {
                 name: attraction.attributes.name,
-                lat: attraction.type === 'heritage' ? 14.3086 : 14.3089,
-                lng: 121.2286,
+                lat: attraction.attributes.coordinates?.latitude || 14.3086,
+                lng: attraction.attributes.coordinates?.longitude || 121.2286,
+                google_place_id: attraction.attributes.google_place_id,
                 category: attraction.attributes.category,
                 description: attraction.attributes.description,
               },

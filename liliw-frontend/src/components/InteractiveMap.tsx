@@ -7,8 +7,9 @@ import Link from 'next/link';
 
 interface Attraction {
   name: string;
-  lat: number;
-  lng: number;
+  lat?: number;
+  lng?: number;
+  google_place_id?: string;
   category?: string;
   description?: string;
   id?: string;
@@ -46,12 +47,26 @@ export default function InteractiveMap({
   const [showModal, setShowModal] = useState(false);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
-  // Google Maps embed URL
-  const mapUrl = `https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d3873.8046506834527!2d${defaultLng}!3d${defaultLat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sph!4v1618000000000`;
+  // Generate Google Maps embed URL - prefer Place ID for accuracy
+  const generateMapUrl = () => {
+    if (selectedAttraction?.google_place_id) {
+      return `https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15495.222880819226!2d${selectedAttraction.lng || defaultLng}!3d${selectedAttraction.lat || defaultLat}!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A${selectedAttraction.google_place_id}!2z${encodeURIComponent(selectedAttraction.name)}!5e0!3m2!1sen!2sph!4v1700000000000`;
+    }
+    return `https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d3873.8046506834527!2d${defaultLng}!3d${defaultLat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sph!4v1618000000000`;
+  };
 
-  const getDirections = (lat: number, lng: number, name: string) => {
-    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id&travelmode=driving`;
-    window.open(mapsUrl, '_blank');
+  const mapUrl = generateMapUrl();
+
+  const getDirections = (lat?: number, lng?: number, name?: string, placeId?: string) => {
+    if (placeId) {
+      // Use Place ID for directions if available
+      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(name || 'Liliw')}/@${lat || defaultLat},${lng || defaultLng},15z`;
+      window.open(mapsUrl, '_blank');
+    } else if (lat && lng) {
+      // Use coordinates if Place ID not available
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+      window.open(mapsUrl, '_blank');
+    }
   };
 
   const handleAttractionClick = (attraction: Attraction) => {
@@ -154,7 +169,7 @@ export default function InteractiveMap({
                     whileTap={{ scale: 0.98 }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      getDirections(attraction.lat, attraction.lng, attraction.name);
+                      getDirections(attraction.lat, attraction.lng, attraction.name, attraction.google_place_id);
                     }}
                     className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-semibold text-sm text-white transition-all"
                     style={{ backgroundColor: '#00BFB3' }}
@@ -231,7 +246,7 @@ export default function InteractiveMap({
                 <div className="bg-gray-50 rounded-xl p-4">
                   <p className="text-xs font-semibold text-gray-600 mb-2">COORDINATES</p>
                   <p className="text-sm text-gray-900 font-mono">
-                    {selectedAttraction.lat.toFixed(4)}° N, {selectedAttraction.lng.toFixed(4)}° E
+                    {selectedAttraction.lat ? `${selectedAttraction.lat.toFixed(4)}° N, ${selectedAttraction.lng?.toFixed(4) || ''}° E` : 'View on Google Maps'}
                   </p>
                 </div>
 
