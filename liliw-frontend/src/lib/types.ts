@@ -122,6 +122,25 @@ export interface TouristSpot {
   attributes: TouristSpotAttribute;
 }
 
+// Dining & Food Types
+export interface DiningPlaceAttribute {
+  name: string;
+  description: string;
+  location: string;
+  cuisine?: string;
+  priceRange?: string;
+  rating?: number;
+  images?: StrapiImageAttribute[];
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+}
+
+export interface DiningPlace {
+  id: number | string;
+  attributes: DiningPlaceAttribute;
+}
+
 // Event Types
 export interface EventAttribute {
   name: string;
