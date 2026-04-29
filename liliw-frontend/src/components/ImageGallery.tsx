@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -20,6 +19,9 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
   const next = () => setSelectedIndex((selectedIndex + 1) % images.length);
   const prev = () => setSelectedIndex((selectedIndex - 1 + images.length) % images.length);
 
+  // Determine if using external URL (Strapi) or internal
+  const isExternal = current.src?.startsWith('http');
+
   return (
     <>
       {/* Thumbnail Grid */}
@@ -33,14 +35,19 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
           className="relative aspect-video bg-gray-100 rounded-xl overflow-hidden cursor-pointer group"
           onClick={() => setIsFullscreen(true)}
         >
-          <Image
-            src={current.src}
-            alt={current.alt}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            priority
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
-          />
+          {isExternal ? (
+            <img
+              src={current.src}
+              alt={current.alt}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <img
+              src={current.src}
+              alt={current.alt}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          )}
           {current.caption && (
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 text-white">
               <p className="text-sm">{current.caption}</p>
@@ -60,12 +67,10 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
                 }`}
                 style={idx === selectedIndex ? { borderColor: '#00BFB3' } : {}}
               >
-                <Image
+                <img
                   src={img.src}
                   alt={img.alt}
-                  fill
-                  className="object-cover"
-                  sizes="80px"
+                  className="w-full h-full object-cover"
                 />
               </button>
             ))}
@@ -119,12 +124,10 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
               exit={{ opacity: 0, scale: 0.9 }}
               className="relative w-4/5 h-4/5 max-w-5xl"
             >
-              <Image
+              <img
                 src={current.src}
                 alt={current.alt}
-                fill
-                className="object-contain"
-                priority
+                className="w-full h-full object-contain"
               />
             </motion.div>
 
