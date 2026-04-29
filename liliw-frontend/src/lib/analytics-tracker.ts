@@ -1,7 +1,37 @@
 /**
  * Real-time Analytics Tracker
  * Tracks user interactions and page views for real analytics
+ * Desktop-only tracking (blocks mobile and tablets)
  */
+
+/**
+ * Detect device type
+ */
+function getDeviceType(): 'desktop' | 'mobile' | 'tablet' {
+  if (typeof navigator === 'undefined') return 'desktop';
+
+  const ua = navigator.userAgent.toLowerCase();
+
+  // Check for mobile first (most specific)
+  if (/mobile|android|iphone|windows phone/i.test(ua)) {
+    return 'mobile';
+  }
+
+  // Check for tablet
+  if (/ipad|android(?!.*mobile)|tablet/i.test(ua)) {
+    return 'tablet';
+  }
+
+  return 'desktop';
+}
+
+/**
+ * Check if tracking is enabled (desktop only)
+ */
+function isTrackingEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  return getDeviceType() === 'desktop';
+}
 
 interface PageViewEvent {
   path: string;
@@ -22,11 +52,19 @@ class AnalyticsTracker {
   private sessionStartTime: number;
   private events: UserEvent[] = [];
   private pageViews: PageViewEvent[] = [];
+  private isEnabled: boolean;
 
   constructor() {
+    this.isEnabled = isTrackingEnabled();
     this.sessionId = this.getOrCreateSessionId();
     this.sessionStartTime = Date.now();
-    this.initPageViewTracking();
+    
+    if (this.isEnabled) {
+      this.initPageViewTracking();
+      console.log('✅ Desktop analytics tracking initialized');
+    } else {
+      console.log('⚠️ Analytics tracking disabled - Mobile/Tablet detected');
+    }
   }
 
   /**
@@ -47,7 +85,7 @@ class AnalyticsTracker {
    * Initialize automatic page view tracking
    */
   private initPageViewTracking(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !this.isEnabled) return;
 
     const trackPageView = () => {
       this.trackPageView({
@@ -80,6 +118,8 @@ class AnalyticsTracker {
    * Track a page view
    */
   trackPageView(data: Partial<PageViewEvent>): void {
+    if (!this.isEnabled) return;
+
     const pageView: PageViewEvent = {
       path: data.path || '/',
       title: data.title || 'Unknown',
@@ -99,6 +139,7 @@ class AnalyticsTracker {
    * Track a custom event
    */
   trackEvent(eventName: string, eventData: Record<string, any> = {}): void {
+    if (!this.isEnabled) return;
     this.sendEvent(eventName, eventData);
   }
 
@@ -106,6 +147,7 @@ class AnalyticsTracker {
    * Track button click
    */
   trackClick(elementId: string, elementName: string): void {
+    if (!this.isEnabled) return;
     this.sendEvent('click', {
       elementId,
       elementName,
@@ -116,6 +158,7 @@ class AnalyticsTracker {
    * Track search query
    */
   trackSearch(query: string, resultsCount: number): void {
+    if (!this.isEnabled) return;
     this.sendEvent('search', {
       query,
       resultsCount,
@@ -126,6 +169,7 @@ class AnalyticsTracker {
    * Track attraction view
    */
   trackAttractionView(attractionId: string, attractionName: string, category: string): void {
+    if (!this.isEnabled) return;
     this.sendEvent('attraction_view', {
       attractionId,
       attractionName,
@@ -137,6 +181,7 @@ class AnalyticsTracker {
    * Track chat interaction
    */
   trackChatMessage(messageLength: number, hasUserInput: boolean): void {
+    if (!this.isEnabled) return;
     this.sendEvent('chat_message', {
       messageLength,
       hasUserInput,
@@ -147,6 +192,7 @@ class AnalyticsTracker {
    * Track form submission
    */
   trackFormSubmit(formName: string, fieldsCount: number): void {
+    if (!this.isEnabled) return;
     this.sendEvent('form_submit', {
       formName,
       fieldsCount,
@@ -181,7 +227,7 @@ class AnalyticsTracker {
    * Flush pending events to backend
    */
   async flushEvents(): Promise<void> {
-    if (this.events.length === 0) return;
+    if (!this.isEnabled || this.events.length === 0) return;
 
     try {
       const payload = {
