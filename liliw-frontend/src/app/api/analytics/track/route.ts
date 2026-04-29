@@ -135,6 +135,9 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
+    // Calculate total events
+    const totalEvents = recentEvents.length;
+
     // Device types (from user agent)
     const deviceMap: Record<string, number> = {};
     recentEvents.forEach((e) => {
@@ -153,8 +156,6 @@ export async function GET(request: NextRequest) {
         percentage: totalEvents > 0 ? Math.round((count / totalEvents) * 100) : 0,
       }))
       .sort((a, b) => b.percentage - a.percentage);
-
-    const totalEvents = recentEvents.length;
 
     // Return analytics summary
     return NextResponse.json({
