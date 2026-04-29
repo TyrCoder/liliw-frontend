@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import SearchProvider from "@/components/SearchProvider";
 import AIChat from "@/components/AIChat";
 import PWAHandler from "@/components/PWAHandler";
+import AnalyticsInit from "@/components/AnalyticsInit";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,6 +66,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <PWAHandler />
         <SearchProvider />
+        <AnalyticsInit />
         <Navbar />
         {children}
         <Footer />
