@@ -14,8 +14,14 @@ const nextConfig: NextConfig = {
   },
   images: {
     domains: ["liliw-strapi-backend.onrender.com"],
-    unoptimized: false,
-    formats: ["image/avif", "image/webp"],
+    unoptimized: true, // Disable optimization for external images
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "liliw-strapi-backend.onrender.com",
+        pathname: "/uploads/**",
+      },
+    ],
   },
 };
 
