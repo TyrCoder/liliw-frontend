@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
     maxInactiveAge: 60 * 60 * 1000, // 1 hour
     pagesBufferLength: 5,
   },
+  images: {
+    domains: ["liliw-strapi-backend.onrender.com"],
+    unoptimized: false,
+    formats: ["image/avif", "image/webp"],
+  },
 };
 
 export default nextConfig;
