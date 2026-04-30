@@ -226,7 +226,7 @@ export const getAllAttractions = async () => {
 
       return {
         id: type === 'heritage' ? `heritage-${item.id}` : type === 'spot' ? `spot-${item.id}` : `dining-${item.id}`,
-        strapiId: item.id,
+        strapiId: (item as any).documentId || item.id,
         attributes: {
           name: attrs.name || 'Unnamed Attraction',
           description: extractText(attrs.description),
