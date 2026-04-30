@@ -189,11 +189,18 @@ export default function ImmersivePage() {
     await savePhotosToStrapi(updated);
   };
 
+  // Optimize Cloudinary URLs for fast 360° texture loading.
+  // 4096px wide at auto quality is plenty for panoramic viewing and reduces download size by ~70-80%.
+  const optimizeUrl = (url: string) => {
+    if (!url.includes('res.cloudinary.com')) return url;
+    return url.replace('/upload/', '/upload/w_4096,q_auto,f_auto/');
+  };
+
   // Scenes for the viewer come from direct-upload photos (not the Strapi media library)
   const scenes = virtualTourPhotos.map((photo, idx) => ({
     id: photo.public_id || String(idx),
     title: photo.name || `Scene ${idx + 1}`,
-    imageUrl: photo.url,
+    imageUrl: optimizeUrl(photo.url),
   }));
 
   const saveHotspots = useCallback(async (hotspots: Hotspot[]) => {
