@@ -226,6 +226,7 @@ export const getAllAttractions = async () => {
 
       return {
         id: type === 'heritage' ? `heritage-${item.id}` : type === 'spot' ? `spot-${item.id}` : `dining-${item.id}`,
+        strapiId: item.id,
         attributes: {
           name: attrs.name || 'Unnamed Attraction',
           description: extractText(attrs.description),
@@ -235,6 +236,7 @@ export const getAllAttractions = async () => {
           google_place_id: attrs.google_place_id || undefined,
           coordinates: attrs.coordinates || undefined,
           has_virtual_tour: attrs.has_virtual_tour || false,
+          hotspots: attrs.hotspots || [],
           photos: (photos || []).map((photo: any) => {
             if (!photo || typeof photo !== 'object') return null;
             return {

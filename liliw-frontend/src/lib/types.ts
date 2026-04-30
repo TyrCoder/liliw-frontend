@@ -3,6 +3,16 @@
  * Centralized types for better type safety across the application
  */
 
+export interface Hotspot {
+  id: string;
+  pitch: number;
+  yaw: number;
+  type: 'navigate' | 'info';
+  label: string;
+  targetSceneIndex?: number;
+  info?: string;
+}
+
 // Strapi API Response Types
 export interface StrapiImageAttribute {
   id: number;
