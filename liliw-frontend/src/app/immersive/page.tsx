@@ -52,9 +52,14 @@ export default function ImmersivePage() {
   }, []);
 
   const selectedAttraction = attractions.find((a) => a.id === selectedAttractionId);
-  const displayImage =
-    selectedAttraction?.attributes.photos?.[0]?.url ||
-    'https://images.unsplash.com/photo-1469022563428-aa0e26e5c742?w=1200&h=800&fit=crop';
+
+  const scenes = (selectedAttraction?.attributes.photos ?? []).map((photo, idx) => ({
+    id: String(photo.id ?? idx),
+    title: photo.name?.replace(/\.[^.]+$/, '') || `Scene ${idx + 1}`,
+    imageUrl: photo.url.startsWith('http')
+      ? photo.url
+      : `${process.env.NEXT_PUBLIC_STRAPI_URL}${photo.url}`,
+  }));
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0F1F3C' }}>
@@ -105,10 +110,10 @@ export default function ImmersivePage() {
               transition={{ duration: 0.6 }}
               className="lg:col-span-3"
             >
-              {selectedAttraction && (
+              {selectedAttraction && scenes.length > 0 && (
                 <ImmersiveViewer
                   title={selectedAttraction.attributes.name}
-                  imageUrl={`${process.env.NEXT_PUBLIC_STRAPI_URL}${displayImage}`}
+                  scenes={scenes}
                   description={selectedAttraction.attributes.description}
                 />
               )}
