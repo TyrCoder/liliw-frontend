@@ -1,8 +1,8 @@
 'use client';
 
-import { useRef, useEffect, useState, useCallback, Suspense } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
-import { useTexture, Html } from '@react-three/drei';
+import { Html } from '@react-three/drei';
 import { XR, createXRStore } from '@react-three/xr';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,6 +20,7 @@ export interface Scene {
   id: string;
   title: string;
   imageUrl: string;
+  thumbUrl?: string;
   description?: string;
 }
 
@@ -53,17 +54,45 @@ function anglesToPosition(pitch: number, yaw: number, r = 490): [number, number,
 
 // ─── Three.js sub-components ──────────────────────────────────────────────
 
+// Loads a blurry thumb instantly, then swaps to full-res silently.
+// Calls onReady() as soon as the thumb is visible so the loading spinner disappears fast.
 function PanoramaSphere({
-  url, editMode, onPlace,
+  url, thumbUrl, editMode, onPlace, onReady,
 }: {
   url: string;
+  thumbUrl?: string;
   editMode: boolean;
   onPlace?: (pitch: number, yaw: number) => void;
+  onReady?: () => void;
 }) {
-  const texture = useTexture(url);
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const disposed = useRef(false);
+
   useEffect(() => {
-    if (texture) texture.colorSpace = THREE.SRGBColorSpace;
-  }, [texture]);
+    disposed.current = false;
+    const loader = new THREE.TextureLoader();
+
+    const apply = (tex: THREE.Texture) => {
+      if (disposed.current) { tex.dispose(); return; }
+      tex.colorSpace = THREE.SRGBColorSpace;
+      setTexture((prev) => { prev?.dispose(); return tex; });
+    };
+
+    const loadFull = () => loader.load(url, apply);
+
+    if (thumbUrl) {
+      loader.load(
+        thumbUrl,
+        (tex) => { apply(tex); onReady?.(); loadFull(); },
+        undefined,
+        () => { onReady?.(); loadFull(); }, // thumb failed — skip straight to full
+      );
+    } else {
+      loader.load(url, (tex) => { apply(tex); onReady?.(); });
+    }
+
+    return () => { disposed.current = true; };
+  }, [url, thumbUrl, onReady]);
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     if (!editMode || !onPlace) return;
@@ -71,6 +100,8 @@ function PanoramaSphere({
     const { pitch, yaw } = pointToAngles(e.point);
     onPlace(pitch, yaw);
   };
+
+  if (!texture) return null;
 
   return (
     <mesh onClick={handleClick}>
@@ -462,7 +493,21 @@ export default function ImmersiveViewer({
     link.click();
   };
 
-  const onLoaded = useCallback(() => setIsLoading(false), []);
+  const onReady = useCallback(() => setIsLoading(false), []);
+
+  // Preload adjacent scenes so navigation feels instant
+  useEffect(() => {
+    const targets = [
+      scenes[(sceneIndex + 1) % scenes.length],
+      scenes[(sceneIndex - 1 + scenes.length) % scenes.length],
+    ];
+    targets.forEach((s) => {
+      if (s && s.imageUrl !== current?.imageUrl) {
+        const img = new window.Image();
+        img.src = s.imageUrl;
+      }
+    });
+  }, [sceneIndex, scenes, current]);
 
   if (!scenes.length) return null;
 
@@ -531,24 +576,24 @@ export default function ImmersiveViewer({
             }}
           >
             <XR store={xrStore}>
-              <Suspense fallback={null}>
-                <PanoramaSphere
-                  key={current.imageUrl}
-                  url={current.imageUrl}
-                  editMode={editMode && !pending}
-                  onPlace={onPlace}
+              <PanoramaSphere
+                key={current.imageUrl}
+                url={current.imageUrl}
+                thumbUrl={current.thumbUrl}
+                editMode={editMode && !pending}
+                onPlace={onPlace}
+                onReady={onReady}
+              />
+              {sceneHotspots.map((h) => (
+                <HotspotMarker
+                  key={h.id}
+                  hotspot={h}
+                  scenes={scenes}
+                  editMode={editMode}
+                  onDelete={deleteHotspot}
+                  onClick={handleHotspotClick}
                 />
-                {sceneHotspots.map((h) => (
-                  <HotspotMarker
-                    key={h.id}
-                    hotspot={h}
-                    scenes={scenes}
-                    editMode={editMode}
-                    onDelete={deleteHotspot}
-                    onClick={handleHotspotClick}
-                  />
-                ))}
-              </Suspense>
+              ))}
               <DragControls editMode={editMode} autoRotate={autoRotate} />
               <ScreenshotHelper glRef={glRef} />
             </XR>
