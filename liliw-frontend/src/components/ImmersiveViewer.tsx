@@ -526,6 +526,9 @@ export default function ImmersiveViewer({
             camera={{ fov: 75, position: [0, 0, 0.01] }}
             gl={{ antialias: true, preserveDrawingBuffer: true }}
             style={{ cursor: editMode ? 'crosshair' : 'grab' }}
+            onCreated={({ gl }) => {
+              gl.domElement.addEventListener('webglcontextlost', (e) => e.preventDefault(), false);
+            }}
           >
             <XR store={xrStore}>
               <Suspense fallback={null}>
