@@ -21,7 +21,7 @@ interface VirtualTourPhoto {
 
 interface Attraction {
   id: string;
-  strapiId?: number;
+  strapiId?: number | string;
   attributes: {
     name: string;
     description?: string;
