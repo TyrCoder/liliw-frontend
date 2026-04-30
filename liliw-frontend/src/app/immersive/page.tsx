@@ -1,32 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ChevronLeft, Layers } from 'lucide-react';
+import { ChevronLeft, Layers, PenLine } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
 import { logger } from '@/lib/logger';
 import { COLORS } from '@/lib/constants';
 import ImmersiveViewer from '@/components/ImmersiveViewer';
+import type { Hotspot } from '@/lib/types';
 
 interface Attraction {
   id: string;
+  strapiId?: number;
   attributes: {
     name: string;
     description?: string;
     location?: string;
     category?: string;
     has_virtual_tour?: boolean;
-    photos?: Array<{
-      id: number;
-      url: string;
-      name: string;
-    }>;
+    hotspots?: Hotspot[];
+    photos?: Array<{ id: number; url: string; name: string }>;
   };
   type: 'heritage' | 'spot' | 'dining';
 }
 
 export default function ImmersivePage() {
+  const searchParams = useSearchParams();
+  const editMode = searchParams.get('edit') === 'true';
   const [attractions, setAttractions] = useState<Attraction[]>([]);
   const [selectedAttractionId, setSelectedAttractionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +63,20 @@ export default function ImmersivePage() {
       : `${process.env.NEXT_PUBLIC_STRAPI_URL}${photo.url}`,
   }));
 
+  const saveHotspots = useCallback(async (hotspots: Hotspot[]) => {
+    if (!selectedAttraction?.strapiId) return;
+    const res = await fetch('/api/save-hotspots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attractionType: selectedAttraction.type,
+        strapiId: selectedAttraction.strapiId,
+        hotspots,
+      }),
+    });
+    if (!res.ok) throw new Error('Failed to save');
+  }, [selectedAttraction]);
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0F1F3C' }}>
       {/* Navigation */}
@@ -82,13 +98,19 @@ export default function ImmersivePage() {
               <span className="hidden sm:inline">Back</span>
             </Link>
           </motion.div>
-          <motion.h1 
+          <motion.h1
             className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2"
             whileHover={{ scale: 1.02 }}
           >
             <Layers className="w-6 h-6" style={{ color: COLORS.primary }} />
             <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent hidden sm:inline">3D Tours</span>
             <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent sm:hidden">3D</span>
+            {editMode && (
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1"
+                style={{ backgroundColor: '#FFB400', color: '#0F1F3C' }}>
+                <PenLine className="w-3 h-3" /> Editor
+              </span>
+            )}
           </motion.h1>
           <div className="w-12 sm:w-16" />
         </div>
@@ -115,6 +137,9 @@ export default function ImmersivePage() {
                   title={selectedAttraction.attributes.name}
                   scenes={scenes}
                   description={selectedAttraction.attributes.description}
+                  editMode={editMode}
+                  initialHotspots={selectedAttraction.attributes.hotspots ?? []}
+                  onSaveHotspots={saveHotspots}
                 />
               )}
             </motion.div>
