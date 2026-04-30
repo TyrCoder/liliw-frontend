@@ -237,6 +237,7 @@ export const getAllAttractions = async () => {
           coordinates: attrs.coordinates || undefined,
           has_virtual_tour: attrs.has_virtual_tour || false,
           hotspots: attrs.hotspots || [],
+          virtual_tour_photos: attrs.virtual_tour_photos || [],
           photos: (photos || []).map((photo: any) => {
             if (!photo || typeof photo !== 'object') return null;
             return {
