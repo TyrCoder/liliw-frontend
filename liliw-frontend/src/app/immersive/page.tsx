@@ -169,7 +169,7 @@ export default function ImmersivePage() {
         const photo = await uploadOneFile(files[i]);
         newPhotos.push(photo);
       } catch (err) {
-        logger.error('Upload failed for', files[i].name, err);
+        logger.error(`Upload failed for ${files[i].name}`, err);
       }
     }
 
