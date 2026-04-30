@@ -276,7 +276,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           {attraction.attributes.photos && attraction.attributes.photos.length > 0 ? (
             <ImageGallery
               images={attraction.attributes.photos.map((photo) => ({
-                src: `${process.env.NEXT_PUBLIC_STRAPI_URL}${photo.url}`,
+                src: photo.url.startsWith('http') ? photo.url : `${process.env.NEXT_PUBLIC_STRAPI_URL}${photo.url}`,
                 alt: photo.name,
                 caption: photo.name,
               }))}

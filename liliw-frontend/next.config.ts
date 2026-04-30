@@ -13,13 +13,17 @@ const nextConfig: NextConfig = {
     pagesBufferLength: 5,
   },
   images: {
-    domains: ["liliw-strapi-backend.onrender.com"],
-    unoptimized: true, // Disable optimization for external images
+    domains: ["liliw-strapi-backend.onrender.com", "res.cloudinary.com"],
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
         hostname: "liliw-strapi-backend.onrender.com",
         pathname: "/uploads/**",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
       },
     ],
   },
