@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -12,22 +12,37 @@ interface ImageGalleryProps {
 export default function ImageGallery({ images, title }: ImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   if (!images || images.length === 0) return null;
 
   const current = images[selectedIndex];
-  const next = () => setSelectedIndex((selectedIndex + 1) % images.length);
-  const prev = () => setSelectedIndex((selectedIndex - 1 + images.length) % images.length);
+  const next = () => setSelectedIndex((prev) => (prev + 1) % images.length);
+  const prev = () => setSelectedIndex((prev) => (prev - 1 + images.length) % images.length);
 
-  // Determine if using external URL (Strapi) or internal
-  const isExternal = current.src?.startsWith('http');
+  const resetInterval = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(next, 4000);
+  };
+
+  useEffect(() => {
+    if (images.length > 1 && !isFullscreen) {
+      intervalRef.current = setInterval(next, 4000);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [images.length, isFullscreen]);
+
+  const handlePrev = () => { prev(); resetInterval(); };
+  const handleNext = () => { next(); resetInterval(); };
+  const handleThumb = (idx: number) => { setSelectedIndex(idx); resetInterval(); };
 
   return (
     <>
-      {/* Thumbnail Grid */}
       <div className="space-y-4">
         {title && <h3 className="text-2xl font-bold" style={{ color: '#0F1F3C' }}>{title}</h3>}
-        
+
         {/* Main Image */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -35,24 +50,11 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
           className="relative aspect-video bg-gray-100 rounded-xl overflow-hidden cursor-pointer group"
           onClick={() => setIsFullscreen(true)}
         >
-          {isExternal ? (
-            <img
-              src={current.src}
-              alt={current.alt}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : (
-            <img
-              src={current.src}
-              alt={current.alt}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          )}
-          {current.caption && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 text-white">
-              <p className="text-sm">{current.caption}</p>
-            </div>
-          )}
+          <img
+            src={current.src}
+            alt={current.alt}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
         </motion.div>
 
         {/* Thumbnail Carousel */}
@@ -61,31 +63,27 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
             {images.map((img, idx) => (
               <button
                 key={idx}
-                onClick={() => setSelectedIndex(idx)}
+                onClick={() => handleThumb(idx)}
                 className={`flex-shrink-0 relative w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
                   idx === selectedIndex ? 'border-teal-500' : 'border-gray-200 opacity-60 hover:opacity-100'
                 }`}
                 style={idx === selectedIndex ? { borderColor: '#00BFB3' } : {}}
               >
-                <img
-                  src={img.src}
-                  alt={img.alt}
-                  className="w-full h-full object-cover"
-                />
+                <img src={img.src} alt={img.alt} className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
         )}
 
-        {/* Counter */}
+        {/* Counter + Nav */}
         {images.length > 1 && (
           <div className="flex items-center justify-between text-sm text-gray-600">
             <span>{selectedIndex + 1} / {images.length}</span>
             <div className="flex gap-2">
-              <button onClick={prev} className="p-2 hover:bg-gray-100 rounded-lg transition">
+              <button onClick={handlePrev} className="p-2 hover:bg-gray-100 rounded-lg transition">
                 <ChevronLeft size={20} />
               </button>
-              <button onClick={next} className="p-2 hover:bg-gray-100 rounded-lg transition">
+              <button onClick={handleNext} className="p-2 hover:bg-gray-100 rounded-lg transition">
                 <ChevronRight size={20} />
               </button>
             </div>
@@ -111,7 +109,7 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
             </button>
 
             <button
-              onClick={(e) => { e.stopPropagation(); prev(); }}
+              onClick={(e) => { e.stopPropagation(); handlePrev(); }}
               className="absolute left-4 text-white hover:opacity-70 transition"
             >
               <ChevronLeft size={40} />
@@ -124,15 +122,11 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
               exit={{ opacity: 0, scale: 0.9 }}
               className="relative w-4/5 h-4/5 max-w-5xl"
             >
-              <img
-                src={current.src}
-                alt={current.alt}
-                className="w-full h-full object-contain"
-              />
+              <img src={current.src} alt={current.alt} className="w-full h-full object-contain" />
             </motion.div>
 
             <button
-              onClick={(e) => { e.stopPropagation(); next(); }}
+              onClick={(e) => { e.stopPropagation(); handleNext(); }}
               className="absolute right-4 text-white hover:opacity-70 transition"
             >
               <ChevronRight size={40} />
