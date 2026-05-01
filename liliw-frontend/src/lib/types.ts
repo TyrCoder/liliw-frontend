@@ -10,6 +10,7 @@ export interface Hotspot {
   type: 'navigate' | 'info';
   label: string;
   targetSceneIndex?: number;
+  sceneIndex?: number; // which scene this hotspot belongs to (defaults to 0)
   info?: string;
 }
 

@@ -28,6 +28,7 @@
     "qrcode.react": "^4.2.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-map-gl": "^8.1.1",
     "recharts": "^3.8.1",
     "three": "^0.184.0",
     "threejs-post-processing": "^1.0.2",
