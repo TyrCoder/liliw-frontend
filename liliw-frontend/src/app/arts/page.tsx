@@ -19,58 +19,40 @@ const itemVariants = {
   visible: { y: 0, opacity: 1, transition: { duration: 0.5 } },
 };
 
+const FALLBACK_ARTS = [
+  { name: 'Tsinelas (Sandal) Crafting', description: 'Traditional handmade sandals that showcase exceptional craftsmanship.', icon_emoji: '👞', features: ['Handmade artistry', 'Traditional techniques', 'Cultural heritage'] },
+  { name: 'Traditional Weaving', description: 'Intricate textiles created using traditional looms and sustainable materials.', icon_emoji: '🧵', features: ['Intricate patterns', 'Local materials', 'Generational skills'] },
+  { name: 'Culinary Arts', description: "Local delicacies and traditional dishes representing Liliw's gastronomic heritage.", icon_emoji: '🍲', features: ['Traditional recipes', 'Local ingredients', 'Family traditions'] },
+  { name: 'Visual Arts & Crafts', description: 'Paintings, sculptures, and decorative arts showcasing local talent.', icon_emoji: '🎨', features: ['Local artists', 'Contemporary styles', 'Cultural expressions'] },
+  { name: 'Music & Performing Arts', description: "Traditional music and performances celebrating Liliw's cultural identity.", icon_emoji: '🎵', features: ['Local musicians', 'Traditional forms', 'Community events'] },
+  { name: 'Artisan Communities', description: 'Thriving artist collectives preserving and innovating traditions.', icon_emoji: '👥', features: ['Active communities', 'Skill sharing', 'Economic empowerment'] },
+];
+
+const FALLBACK_ARTISANS = [
+  { name: 'Local Artisans', craft_type: 'Traditional Crafters', description: 'Tsinelas & Weaving' },
+  { name: 'Community Artists', craft_type: 'Visual & Creative', description: 'Paintings & Sculptures' },
+  { name: 'Master Chefs', craft_type: 'Culinary Artists', description: 'Traditional Cuisine' },
+  { name: 'Musicians', craft_type: 'Performing Artists', description: 'Traditional Music' },
+];
+
 export default function ArtsPage() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [artForms, setArtForms] = useState<any[]>(FALLBACK_ARTS);
+  const [artists, setArtists] = useState<any[]>(FALLBACK_ARTISANS);
 
   useEffect(() => {
-    setLoading(false);
+    Promise.all([
+      fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/art-forms?populate=*&sort=sort_order:asc`, {
+        headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}` }
+      }).then(r => r.json()).catch(() => null),
+      fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/artisans?populate=*`, {
+        headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}` }
+      }).then(r => r.json()).catch(() => null),
+    ]).then(([artData, artisanData]) => {
+      if (artData?.data?.length) setArtForms(artData.data.map((i: any) => i.attributes || i));
+      if (artisanData?.data?.length) setArtists(artisanData.data.map((i: any) => i.attributes || i));
+    }).finally(() => setLoading(false));
   }, []);
-
-  const artForms = [
-    {
-      title: 'Tsinelas (Sandal) Crafting',
-      description: 'Traditional handmade sandals that showcase exceptional craftsmanship and artistic design.',
-      icon: '👞',
-      features: ['Handmade artistry', 'Traditional techniques', 'Cultural heritage'],
-    },
-    {
-      title: 'Traditional Weaving',
-      description: 'Intricate textiles created using traditional looms and sustainable materials.',
-      icon: '🧵',
-      features: ['Intricate patterns', 'Local materials', 'Generational skills'],
-    },
-    {
-      title: 'Culinary Arts',
-      description: 'Local delicacies and traditional dishes representing Liliw\'s gastronomic heritage.',
-      icon: '🍲',
-      features: ['Traditional recipes', 'Local ingredients', 'Family traditions'],
-    },
-    {
-      title: 'Visual Arts & Crafts',
-      description: 'Paintings, sculptures, and decorative arts showcasing local talent and creativity.',
-      icon: '🎨',
-      features: ['Local artists', 'Contemporary styles', 'Cultural expressions'],
-    },
-    {
-      title: 'Music & Performing Arts',
-      description: 'Traditional music, dance, and performances celebrating Liliw\'s cultural identity.',
-      icon: '🎵',
-      features: ['Local musicians', 'Traditional forms', 'Community events'],
-    },
-    {
-      title: 'Artisan Communities',
-      description: 'Thriving artist collectives and maker communities preserving and innovating traditions.',
-      icon: '👥',
-      features: ['Active communities', 'Skill sharing', 'Economic empowerment'],
-    },
-  ];
-
-  const artists = [
-    { name: 'Local Artisans', role: 'Traditional Crafters', specialty: 'Tsinelas & Weaving' },
-    { name: 'Community Artists', role: 'Visual & Creative', specialty: 'Paintings & Sculptures' },
-    { name: 'Master Chefs', role: 'Culinary Artists', specialty: 'Traditional Cuisine' },
-    { name: 'Musicians', role: 'Performing Artists', specialty: 'Traditional Music' },
-  ];
 
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
@@ -137,13 +119,13 @@ export default function ArtsPage() {
               className="p-8 rounded-xl border-l-4 shadow-lg hover:shadow-xl transition-all bg-white"
               style={{ borderLeftColor: '#00BFB3' }}
             >
-              <div className="text-4xl mb-4">{art.icon}</div>
+              <div className="text-4xl mb-4">{art.icon_emoji || art.icon || '🎨'}</div>
               <h3 className="text-xl font-bold mb-3" style={{ color: '#0F1F3C' }}>
-                {art.title}
+                {art.name || art.title}
               </h3>
               <p className="text-gray-600 mb-4">{art.description}</p>
               <div className="space-y-2">
-                {art.features.map((feature, i) => (
+                {(Array.isArray(art.features) ? art.features : []).map((feature: string, i: number) => (
                   <div key={i} className="flex items-center gap-2 text-sm text-gray-500">
                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#00BFB3' }} />
                     {feature}
@@ -180,9 +162,9 @@ export default function ArtsPage() {
                   {artist.name}
                 </h3>
                 <p className="text-sm font-semibold mb-2" style={{ color: '#00BFB3' }}>
-                  {artist.role}
+                  {artist.craft_type || artist.role}
                 </p>
-                <p className="text-xs text-gray-600">{artist.specialty}</p>
+                <p className="text-xs text-gray-600">{artist.location || artist.specialty}</p>
               </motion.div>
             ))}
           </div>

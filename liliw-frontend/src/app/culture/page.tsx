@@ -1,8 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Zap, Music, Palette } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -24,42 +25,22 @@ const itemVariants = {
   },
 };
 
+const FALLBACK_CULTURE = [
+  { title: 'Tsinelas-Making Tradition', description: "The renowned handmade Filipino slipper craft that has made Liliw world-famous", icon_emoji: '👞', details: ['Handed down through generations of skilled artisans', 'Intricate designs and superior craftsmanship', 'Visit workshops to see artisans at work'] },
+  { title: 'Festivals & Celebrations', description: "Vibrant cultural events celebrating Liliw's heritage and traditions", icon_emoji: '🎉', details: ['Gat Tayaw Tsinelas Festival', 'Mutya ng Liliw', 'Parish celebrations and religious festivals'] },
+  { title: 'Intangible Heritage', description: "The living cultural expressions that define Liliw's identity", icon_emoji: '🏛️', details: ['Traditional crafting techniques', 'Cultural narratives and oral histories', 'Culinary traditions and heritage recipes'] },
+];
+
 export default function CulturePage() {
-  const culturalAspects = [
-    {
-      icon: <Palette className="w-8 h-8" />,
-      title: 'Tsinelas-Making Tradition',
-      description: 'The renowned handmade Filipino slipper craft that has made Liliw world-famous',
-      details: [
-        'Handed down through generations of skilled artisans',
-        'Intricate designs and superior craftsmanship',
-        'Visit workshops to see artisans at work',
-        'Support local makers through direct purchases',
-      ],
-    },
-    {
-      icon: <Music className="w-8 h-8" />,
-      title: 'Festivals & Celebrations',
-      description: 'Vibrant cultural events celebrating Liliw\'s heritage and traditions',
-      details: [
-        'Gat Tayaw Tsinelas Festival - featuring cultural performances and trade fairs',
-        'Mutya ng Liliw - highlighting local talents and beauty',
-        'Parish celebrations and religious festivals',
-        'Community events showcasing local talents and businesses',
-      ],
-    },
-    {
-      icon: <Zap className="w-8 h-8" />,
-      title: 'Intangible Heritage',
-      description: 'The living cultural expressions that define Liliw\'s identity',
-      details: [
-        'Traditional crafting techniques and knowledge systems',
-        'Cultural narratives and oral histories',
-        'Local customs and practices',
-        'Culinary traditions and heritage recipes',
-      ],
-    },
-  ];
+  const [culturalAspects, setCulturalAspects] = useState<any[]>(FALLBACK_CULTURE);
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/culture-aspects?populate=*&sort=sort_order:asc`, {
+      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}` }
+    }).then(r => r.json()).then(data => {
+      if (data?.data?.length) setCulturalAspects(data.data.map((i: any) => i.attributes || i));
+    }).catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
@@ -103,11 +84,11 @@ export default function CulturePage() {
                 variants={itemVariants}
                 className="p-8 rounded-2xl bg-white border-2 transition-all duration-300 hover:shadow-lg" style={{ borderColor: '#00BFB3' }}
               >
-                <div className="mb-4" style={{ color: '#00BFB3' }}>{aspect.icon}</div>
+                <div className="mb-4 text-3xl">{aspect.icon_emoji || '🎭'}</div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{aspect.title}</h3>
                 <p className="text-gray-600 mb-6">{aspect.description}</p>
                 <ul className="space-y-2">
-                  {aspect.details.map((detail, i) => (
+                  {(Array.isArray(aspect.details) ? aspect.details : []).map((detail: string, i: number) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
                       <span className="font-bold mt-1" style={{ color: '#00BFB3' }}>✓</span>
                       <span>{detail}</span>
