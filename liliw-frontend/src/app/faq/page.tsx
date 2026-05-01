@@ -284,10 +284,6 @@ export default function FaqPage() {
         </motion.div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-gray-100 mt-16 py-8 text-center text-gray-600">
-        <p>&copy; 2026 Liliw Tourism. All rights reserved.</p>
-      </footer>
     </div>
   )
 }

@@ -223,18 +223,6 @@ export default function HeritageHeritagePages() {
         )}
       </div>
 
-      {/* Footer */}
-      <motion.footer
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        viewport={{ once: true }}
-        className="bg-gray-900 text-white py-12"
-      >
-        <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-gray-400">&copy; 2026 Liliw Tourism. Discover the Beauty of Liliw.</p>
-        </div>
-      </motion.footer>
     </div>
   );
 }

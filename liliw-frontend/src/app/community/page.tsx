@@ -321,17 +321,6 @@ export default function CommunityPage() {
         </motion.div>
       </div>
 
-      {/* Footer */}
-      <motion.footer
-        initial={{ y: 50, opacity: 0 }}
-        whileInView={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="bg-gray-900 text-white py-12 mt-20"
-      >
-        <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-gray-400">&copy; 2026 Liliw Tourism. Together Building Community.</p>
-        </div>
-      </motion.footer>
     </div>
   );
 }
