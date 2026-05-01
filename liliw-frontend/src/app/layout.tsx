@@ -63,7 +63,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#00BFB3" />
       </head>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-white">
         <PWAHandler />
         <SearchProvider />
         <AnalyticsInit />
