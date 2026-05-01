@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import Map, { Marker, Popup, NavigationControl, GeolocateControl } from 'react-map-gl/mapbox';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import Map, { Marker, Popup, NavigationControl, GeolocateControl, Source, Layer } from 'react-map-gl/mapbox';
+import type { MapRef } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -27,14 +28,24 @@ interface MapAttraction {
   has_virtual_tour?: boolean;
 }
 
+interface RouteInfo {
+  distance: string;
+  duration: number;
+}
+
 type FilterType = 'all' | 'heritage' | 'spot' | 'dining';
 
 export default function MapPage() {
+  const mapRef = useRef<MapRef>(null);
   const [attractions, setAttractions] = useState<MapAttraction[]>([]);
   const [selected, setSelected] = useState<MapAttraction | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
   const [loading, setLoading] = useState(true);
   const [noToken, setNoToken] = useState(false);
+  const [routeGeoJSON, setRouteGeoJSON] = useState<GeoJSON.Geometry | null>(null);
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (!TOKEN || TOKEN === 'pk.your_mapbox_token_here') {
@@ -60,6 +71,64 @@ export default function MapPage() {
       setAttractions(mapped);
       setLoading(false);
     }).catch(() => setLoading(false));
+  }, []);
+
+  // Fly in to Liliw on load
+  const handleMapLoad = useCallback(() => {
+    mapRef.current?.flyTo({
+      center: [LILIW_CENTER.longitude, LILIW_CENTER.latitude],
+      zoom: 14,
+      duration: 2000,
+      essential: true,
+    });
+  }, []);
+
+  // Draw route on map using Mapbox Directions API
+  const fetchDirections = useCallback(async (destination: MapAttraction) => {
+    setRouteLoading(true);
+    setRouteGeoJSON(null);
+    setRouteInfo(null);
+
+    const origin = userLocation
+      ? [userLocation.lng, userLocation.lat]
+      : [LILIW_CENTER.longitude, LILIW_CENTER.latitude];
+
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${origin[0]},${origin[1]};${destination.lng},${destination.lat}?geometries=geojson&overview=full&access_token=${TOKEN}`
+      );
+      const data = await res.json();
+
+      if (data.routes?.[0]) {
+        const route = data.routes[0];
+        setRouteGeoJSON(route.geometry);
+        setRouteInfo({
+          distance: (route.distance / 1000).toFixed(1),
+          duration: Math.round(route.duration / 60),
+        });
+
+        // Fit map to the full route
+        const coords = route.geometry.coordinates as [number, number][];
+        const lngs = coords.map((c) => c[0]);
+        const lats = coords.map((c) => c[1]);
+        mapRef.current?.fitBounds(
+          [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+          { padding: 80, duration: 1500 }
+        );
+      }
+    } catch {
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&destination=${destination.lat},${destination.lng}&travelmode=driving`,
+        '_blank'
+      );
+    } finally {
+      setRouteLoading(false);
+    }
+  }, [userLocation]);
+
+  const clearRoute = useCallback(() => {
+    setRouteGeoJSON(null);
+    setRouteInfo(null);
   }, []);
 
   const filtered = filter === 'all' ? attractions : attractions.filter((a) => a.type === filter);
@@ -112,6 +181,20 @@ export default function MapPage() {
           )}
         </div>
 
+        {/* Active route info */}
+        {routeInfo && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs px-2 py-0.5 rounded-full font-semibold flex items-center gap-1"
+              style={{ backgroundColor: 'rgba(0,191,179,0.15)', color: '#00BFB3', border: '1px solid rgba(0,191,179,0.3)' }}>
+              <Navigation className="w-3 h-3" />
+              {routeInfo.distance} km · {routeInfo.duration} min
+            </span>
+            <button onClick={clearRoute} className="text-white/40 hover:text-white transition">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Filter tabs */}
         <div className="flex gap-1.5 ml-auto flex-wrap">
           {(['all', 'heritage', 'spot', 'dining'] as FilterType[]).map((f) => (
@@ -142,14 +225,37 @@ export default function MapPage() {
           </div>
         ) : (
           <Map
+            ref={mapRef}
             mapboxAccessToken={TOKEN}
-            initialViewState={{ ...LILIW_CENTER, zoom: 14 }}
+            initialViewState={{ ...LILIW_CENTER, zoom: 10 }}
             style={{ width: '100%', height: '100%' }}
             mapStyle="mapbox://styles/mapbox/streets-v12"
             onClick={() => setSelected(null)}
+            onLoad={handleMapLoad}
           >
             <NavigationControl position="bottom-right" />
-            <GeolocateControl position="bottom-right" />
+            <GeolocateControl
+              position="bottom-right"
+              onGeolocate={(e) => setUserLocation({ lat: e.coords.latitude, lng: e.coords.longitude })}
+            />
+
+            {/* Route line */}
+            {routeGeoJSON && (
+              <Source id="route" type="geojson" data={{ type: 'Feature', properties: {}, geometry: routeGeoJSON }}>
+                <Layer
+                  id="route-casing"
+                  type="line"
+                  layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+                  paint={{ 'line-color': '#ffffff', 'line-width': 8, 'line-opacity': 0.25 }}
+                />
+                <Layer
+                  id="route-line"
+                  type="line"
+                  layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+                  paint={{ 'line-color': '#00BFB3', 'line-width': 4, 'line-opacity': 0.9 }}
+                />
+              </Source>
+            )}
 
             {/* Markers */}
             {filtered.map((a) => (
@@ -232,14 +338,15 @@ export default function MapPage() {
                         <Eye className="w-3.5 h-3.5" /> View
                       </Link>
                       <button
-                        onClick={() => window.open(
-                          `https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}&travelmode=driving`,
-                          '_blank'
-                        )}
-                        className="flex-1 py-2 rounded-xl text-xs font-bold border transition hover:bg-white/5 flex items-center justify-center gap-1"
+                        onClick={() => fetchDirections(selected)}
+                        disabled={routeLoading}
+                        className="flex-1 py-2 rounded-xl text-xs font-bold border transition hover:bg-white/5 flex items-center justify-center gap-1 disabled:opacity-50"
                         style={{ borderColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)' }}
                       >
-                        <Navigation className="w-3.5 h-3.5" /> Directions
+                        {routeLoading
+                          ? <span className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" />
+                          : <><Navigation className="w-3.5 h-3.5" /> Directions</>
+                        }
                       </button>
                     </div>
                     {selected.has_virtual_tour && (
@@ -269,6 +376,11 @@ export default function MapPage() {
               <span className="text-white/70">{cfg.label}</span>
             </div>
           ))}
+          {!userLocation && (
+            <p className="text-white/30 pt-1 border-t border-white/10 mt-1">
+              Enable location for live directions
+            </p>
+          )}
         </div>
       </div>
     </div>
