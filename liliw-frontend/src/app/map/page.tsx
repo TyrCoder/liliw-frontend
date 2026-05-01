@@ -81,7 +81,9 @@ export default function MapPage() {
       const mapped: MapAttraction[] = data
         .filter((a) => {
           const c = a.attributes.coordinates;
-          return c && c.latitude && c.longitude;
+          if (!c || !c.latitude || !c.longitude) return false;
+          // Guard against swapped lat/lng (longitude stored as latitude crashes Mapbox)
+          return c.latitude >= -90 && c.latitude <= 90 && c.longitude >= -180 && c.longitude <= 180;
         })
         .map((a) => {
           const rawUrl = a.attributes.photos?.[0]?.url;
