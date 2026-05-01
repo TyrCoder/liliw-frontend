@@ -24,7 +24,6 @@ export interface Scene {
   description?: string;
 }
 
-// Returned when a new 360° scene is uploaded via the hotspot dialog
 interface NewSceneResult {
   scene: Scene;
   photo: { url: string; name: string; public_id: string };
@@ -37,9 +36,7 @@ interface ImmersiveViewerProps {
   editMode?: boolean;
   initialHotspots?: Hotspot[];
   onSaveHotspots?: (hotspots: Hotspot[]) => Promise<void>;
-  // Upload a new 360° directly from the hotspot dialog
   onUploadScene?: (file: File) => Promise<NewSceneResult>;
-  // Called when a hotspot creates a new scene — parent adds it to its photo list
   onNewScene?: (photo: { url: string; name: string; public_id: string }, sceneIndex: number) => void;
 }
 
@@ -64,8 +61,6 @@ function anglesToPosition(pitch: number, yaw: number, r = 490): [number, number,
 
 // ─── Three.js sub-components ──────────────────────────────────────────────
 
-// Loads a blurry thumb instantly, then swaps to full-res silently.
-// Calls onReady() as soon as the thumb is visible so the loading spinner disappears fast.
 function PanoramaSphere({
   url, thumbUrl, editMode, onPlace, onReady,
 }: {
@@ -95,7 +90,7 @@ function PanoramaSphere({
         thumbUrl,
         (tex) => { apply(tex); onReady?.(); loadFull(); },
         undefined,
-        () => { onReady?.(); loadFull(); }, // thumb failed — skip straight to full
+        () => { onReady?.(); loadFull(); },
       );
     } else {
       loader.load(url, (tex) => { apply(tex); onReady?.(); });
@@ -115,11 +110,13 @@ function PanoramaSphere({
 
   return (
     <mesh onClick={handleClick}>
-      <sphereGeometry args={[500, 60, 40]} />
+      <sphereGeometry args={[500, 64, 48]} />
       <meshBasicMaterial map={texture} side={THREE.BackSide} />
     </mesh>
   );
 }
+
+// ─── Mactan-style hotspot marker ──────────────────────────────────────────
 
 function HotspotMarker({
   hotspot, scenes, editMode, onDelete, onClick,
@@ -138,59 +135,119 @@ function HotspotMarker({
     : undefined;
   const displayLabel = targetTitle || hotspot.label;
 
+  const accentColor = isNav ? '#00BFB3' : '#FFB400';
+  const bgColor = isNav ? 'rgba(0,191,179,0.18)' : 'rgba(255,180,0,0.18)';
+  const borderColor = isNav ? 'rgba(0,191,179,0.85)' : 'rgba(255,180,0,0.85)';
+  const glowColor = isNav ? 'rgba(0,191,179,0.5)' : 'rgba(255,180,0,0.5)';
+
   return (
     <group position={pos}>
-      <Html center distanceFactor={250} zIndexRange={[1, 50]}>
+      <Html center distanceFactor={220} zIndexRange={[1, 50]}>
         <div
           className="flex flex-col items-center gap-2 select-none"
           style={{ pointerEvents: 'all' }}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
+          onTouchStart={() => setHovered(true)}
+          onTouchEnd={() => setTimeout(() => setHovered(false), 600)}
         >
           <button
             onClick={(e) => { e.stopPropagation(); onClick?.(hotspot); }}
-            className="relative flex items-center justify-center"
-            style={{ width: 48, height: 48, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            style={{
+              width: 64, height: 64,
+              background: 'none', border: 'none',
+              cursor: 'pointer', padding: 0,
+              position: 'relative',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
           >
-            {/* Pulsing ring */}
-            <span
-              className="absolute inset-0 rounded-full border-2 border-white animate-ping"
-              style={{ opacity: 0.4 }}
-            />
-            {/* Main circle */}
-            <span
-              className="absolute inset-0 rounded-full border-2 border-white transition-all duration-200"
-              style={{
-                backgroundColor: hovered ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)',
-                boxShadow: hovered ? '0 0 0 5px rgba(255,255,255,0.15)' : 'none',
-                transform: hovered ? 'scale(1.14)' : 'scale(1)',
-              }}
-            />
-            {/* Center dot */}
-            <span className="relative w-2 h-2 rounded-full bg-white" style={{ opacity: 0.75 }} />
+            {/* Outer pulse ring */}
+            <span style={{
+              position: 'absolute',
+              inset: -8,
+              borderRadius: '50%',
+              border: `1.5px solid ${accentColor}`,
+              opacity: 0.5,
+              animation: 'ping 2s cubic-bezier(0,0,0.2,1) infinite',
+            }} />
+            {/* Second slower pulse */}
+            <span style={{
+              position: 'absolute',
+              inset: -4,
+              borderRadius: '50%',
+              border: `1px solid ${accentColor}`,
+              opacity: 0.3,
+              animation: 'ping 2.8s cubic-bezier(0,0,0.2,1) infinite 0.4s',
+            }} />
+            {/* Main glass circle */}
+            <span style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              backgroundColor: hovered ? bgColor.replace('0.18', '0.30') : bgColor,
+              border: `2px solid ${borderColor}`,
+              boxShadow: hovered
+                ? `0 0 0 4px rgba(255,255,255,0.15), 0 0 24px ${glowColor}, inset 0 0 12px rgba(255,255,255,0.08)`
+                : `0 0 12px ${glowColor}40, inset 0 0 6px rgba(255,255,255,0.05)`,
+              backdropFilter: 'blur(4px)',
+              transition: 'all 0.2s ease',
+              transform: hovered ? 'scale(1.12)' : 'scale(1)',
+            }} />
+            {/* Icon */}
+            <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {isNav ? (
+                <Navigation style={{ width: 22, height: 22, color: 'white', filter: 'drop-shadow(0 0 4px rgba(0,191,179,0.8))' }} />
+              ) : (
+                <Info style={{ width: 22, height: 22, color: '#FFD54F', filter: 'drop-shadow(0 0 4px rgba(255,180,0,0.8))' }} />
+              )}
+            </span>
           </button>
 
-          {/* Label — appears on hover or always in edit mode */}
-          {(hovered || editMode) && (
-            <span
-              className="text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap"
-              style={{
-                backgroundColor: 'white',
-                color: '#0F1F3C',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.55)',
-              }}
-            >
-              {displayLabel}
-            </span>
-          )}
+          {/* Label */}
+          <AnimatePresence>
+            {(hovered || editMode) && (
+              <motion.span
+                initial={{ opacity: 0, y: -4, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -4, scale: 0.9 }}
+                transition={{ duration: 0.15 }}
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  padding: '4px 10px',
+                  borderRadius: 20,
+                  whiteSpace: 'nowrap',
+                  backgroundColor: 'rgba(0,0,0,0.75)',
+                  color: 'white',
+                  border: `1px solid ${accentColor}60`,
+                  backdropFilter: 'blur(8px)',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.6)',
+                  letterSpacing: '0.02em',
+                  maxWidth: 160,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {displayLabel}
+              </motion.span>
+            )}
+          </AnimatePresence>
 
           {/* Delete button (edit mode only) */}
           {editMode && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete?.(hotspot.id); }}
-              className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition"
+              style={{
+                width: 22, height: 22,
+                borderRadius: '50%',
+                backgroundColor: '#ef4444',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
             >
-              <X className="w-3 h-3" />
+              <X style={{ width: 12, height: 12 }} />
             </button>
           )}
         </div>
@@ -198,6 +255,8 @@ function HotspotMarker({
     </group>
   );
 }
+
+// ─── Drag Controls (touch-action: none fixes mobile scroll) ───────────────
 
 function DragControls({ editMode, autoRotate }: { editMode: boolean; autoRotate: boolean }) {
   const { camera, gl } = useThree();
@@ -225,10 +284,13 @@ function DragControls({ editMode, autoRotate }: { editMode: boolean; autoRotate:
       prev.current = { x: e.clientX, y: e.clientY };
     };
     const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
       dragging.current = true;
+      lastInteract.current = Date.now();
       if (e.touches[0]) prev.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
     const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
       if (!dragging.current || !e.touches[0]) return;
       lastInteract.current = Date.now();
       target.current.x -= (e.touches[0].clientX - prev.current.x) * 0.005;
@@ -239,9 +301,9 @@ function DragControls({ editMode, autoRotate }: { editMode: boolean; autoRotate:
     el.addEventListener('mousedown', onDown);
     window.addEventListener('mouseup', onUp);
     el.addEventListener('mousemove', onMove);
-    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchstart', onTouchStart, { passive: false });
     window.addEventListener('touchend', onUp);
-    el.addEventListener('touchmove', onTouchMove, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
     return () => {
       el.removeEventListener('mousedown', onDown);
       window.removeEventListener('mouseup', onUp);
@@ -300,7 +362,7 @@ function HotspotDialog({
       const result = await onUploadScene(file);
       setNewScene(result);
     } catch {
-      // upload failed silently
+      // silent
     } finally {
       setUploadingScene(false);
     }
@@ -308,7 +370,6 @@ function HotspotDialog({
 
   const confirm = () => {
     if (!label.trim()) return;
-    // If a new scene was uploaded, it will be appended at scenes.length
     const targetIndex = type === 'navigate'
       ? (newScene ? scenes.length : targetScene)
       : undefined;
@@ -328,51 +389,37 @@ function HotspotDialog({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       className="absolute inset-0 flex items-center justify-center z-50"
-      style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+      style={{ backgroundColor: 'rgba(0,0,0,0.75)' }}
     >
-      <div className="bg-gray-900 rounded-xl p-5 w-80 border border-teal-500 shadow-2xl max-h-screen overflow-y-auto">
+      <div className="bg-gray-900 rounded-xl p-5 w-80 border border-teal-500 shadow-2xl max-h-[90vh] overflow-y-auto mx-4">
         <h3 className="text-white font-bold mb-4 flex items-center gap-2">
           <PenLine className="w-4 h-4" style={{ color: '#00BFB3' }} />
           Place Hotspot
         </h3>
 
-        {/* Type selector */}
         <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setType('navigate')}
-            className="flex-1 py-2 rounded-lg text-sm font-semibold transition"
-            style={{
-              backgroundColor: type === 'navigate' ? '#00BFB3' : 'rgba(255,255,255,0.1)',
-              color: type === 'navigate' ? '#0F1F3C' : 'white',
-            }}
-          >
+          <button onClick={() => setType('navigate')}
+            className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition"
+            style={{ backgroundColor: type === 'navigate' ? '#00BFB3' : 'rgba(255,255,255,0.1)', color: type === 'navigate' ? '#0F1F3C' : 'white' }}>
             <Navigation className="w-4 h-4 inline mr-1" /> Navigate
           </button>
-          <button
-            onClick={() => setType('info')}
-            className="flex-1 py-2 rounded-lg text-sm font-semibold transition"
-            style={{
-              backgroundColor: type === 'info' ? '#FFB400' : 'rgba(255,255,255,0.1)',
-              color: type === 'info' ? '#0F1F3C' : 'white',
-            }}
-          >
+          <button onClick={() => setType('info')}
+            className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition"
+            style={{ backgroundColor: type === 'info' ? '#FFB400' : 'rgba(255,255,255,0.1)', color: type === 'info' ? '#0F1F3C' : 'white' }}>
             <Info className="w-4 h-4 inline mr-1" /> Info
           </button>
         </div>
 
-        {/* Label */}
         <label className="block text-gray-300 text-xs mb-1">Label *</label>
         <input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="e.g. Go to entrance"
-          className="w-full bg-gray-800 text-white text-sm rounded-lg px-3 py-2 mb-3 border border-gray-600 focus:border-teal-400 outline-none"
+          className="w-full bg-gray-800 text-white text-sm rounded-lg px-3 py-2.5 mb-3 border border-gray-600 focus:border-teal-400 outline-none"
         />
 
-        {/* Navigate: link to existing scene OR upload new one */}
         {type === 'navigate' && (
           <div className="space-y-3 mb-3">
-            {/* Existing scenes */}
             {scenes.length > 0 && !newScene && (
               <>
                 <label className="block text-gray-300 text-xs mb-1">Link to existing scene</label>
@@ -388,8 +435,6 @@ function HotspotDialog({
                 <div className="text-gray-500 text-xs text-center">— or —</div>
               </>
             )}
-
-            {/* Upload new 360° scene */}
             {onUploadScene && (
               <>
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleSceneFile} />
@@ -405,7 +450,7 @@ function HotspotDialog({
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingScene}
-                    className="w-full py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 border border-dashed border-gray-600 text-gray-400 hover:border-teal-400 hover:text-teal-400 transition disabled:opacity-60"
+                    className="w-full py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 border border-dashed border-gray-600 text-gray-400 hover:border-teal-400 hover:text-teal-400 transition disabled:opacity-60"
                   >
                     <Upload className="w-4 h-4" />
                     {uploadingScene ? 'Uploading…' : 'Upload new 360° scene'}
@@ -416,7 +461,6 @@ function HotspotDialog({
           </div>
         )}
 
-        {/* Info: text area */}
         {type === 'info' && (
           <>
             <label className="block text-gray-300 text-xs mb-1">Info text</label>
@@ -430,21 +474,19 @@ function HotspotDialog({
           </>
         )}
 
-        <div className="text-gray-500 text-xs mb-4">
+        <div className="text-gray-600 text-xs mb-4">
           Pitch: {pending.pitch.toFixed(1)}° · Yaw: {pending.yaw.toFixed(1)}°
         </div>
 
         <div className="flex gap-2">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-2 rounded-lg bg-gray-700 text-white text-sm hover:bg-gray-600 transition"
-          >
+          <button onClick={onCancel}
+            className="flex-1 py-2.5 rounded-lg bg-gray-700 text-white text-sm hover:bg-gray-600 transition">
             Cancel
           </button>
           <button
             onClick={confirm}
             disabled={!label.trim() || uploadingScene}
-            className="flex-1 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-40"
+            className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition disabled:opacity-40"
             style={{ backgroundColor: '#00BFB3', color: '#0F1F3C' }}
           >
             <Check className="w-4 h-4 inline mr-1" /> Place
@@ -455,7 +497,7 @@ function HotspotDialog({
   );
 }
 
-// ─── Info popup (viewer mode) ─────────────────────────────────────────────
+// ─── Info popup ───────────────────────────────────────────────────────────
 
 function InfoPopup({ hotspot, onClose }: { hotspot: Hotspot; onClose: () => void }) {
   return (
@@ -463,17 +505,18 @@ function InfoPopup({ hotspot, onClose }: { hotspot: Hotspot; onClose: () => void
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="absolute bottom-32 left-1/2 -translate-x-1/2 z-50 w-72 bg-gray-900/95 border border-yellow-400 rounded-xl p-4 shadow-xl"
+      className="absolute bottom-32 left-1/2 -translate-x-1/2 z-50 w-72 max-w-[calc(100vw-2rem)] rounded-xl p-4 shadow-xl"
+      style={{ backgroundColor: 'rgba(15,20,40,0.95)', border: '1px solid rgba(255,180,0,0.6)', backdropFilter: 'blur(12px)' }}
     >
       <div className="flex items-start justify-between mb-2">
         <span className="text-yellow-400 font-bold text-sm flex items-center gap-1">
           <Info className="w-4 h-4" /> {hotspot.label}
         </span>
-        <button onClick={onClose} className="text-gray-400 hover:text-white">
+        <button onClick={onClose} className="text-gray-400 hover:text-white ml-2">
           <X className="w-4 h-4" />
         </button>
       </div>
-      <p className="text-gray-300 text-sm leading-relaxed">{hotspot.info}</p>
+      <p className="text-gray-200 text-sm leading-relaxed">{hotspot.info}</p>
     </motion.div>
   );
 }
@@ -494,6 +537,7 @@ export default function ImmersiveViewer({
   const [vrSupported, setVrSupported] = useState(false);
   const [arSupported, setArSupported] = useState(false);
   const [autoRotate, setAutoRotate] = useState(!editMode);
+  // Hotspots initialized once from props — NOT synced on re-render to avoid losing edits
   const [hotspots, setHotspots] = useState<Hotspot[]>(initialHotspots);
   const [pending, setPending] = useState<PendingHotspot | null>(null);
   const [activeInfo, setActiveInfo] = useState<Hotspot | null>(null);
@@ -503,7 +547,6 @@ export default function ImmersiveViewer({
 
   const current = scenes[sceneIndex];
   const hasMultiple = scenes.length > 1;
-  // Only show hotspots that belong to the currently viewed scene
   const sceneHotspots = hotspots.filter((h) => (h.sceneIndex ?? 0) === sceneIndex);
 
   useEffect(() => {
@@ -517,10 +560,6 @@ export default function ImmersiveViewer({
     document.addEventListener('fullscreenchange', onChange);
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
-
-  useEffect(() => {
-    setHotspots(initialHotspots);
-  }, [initialHotspots]);
 
   const goToScene = useCallback((idx: number) => {
     if (idx === sceneIndex || fading) return;
@@ -593,7 +632,6 @@ export default function ImmersiveViewer({
 
   const onReady = useCallback(() => setIsLoading(false), []);
 
-  // Preload adjacent scenes so navigation feels instant
   useEffect(() => {
     const targets = [
       scenes[(sceneIndex + 1) % scenes.length],
@@ -624,11 +662,14 @@ export default function ImmersiveViewer({
         <AnimatePresence>
           {isLoading && (
             <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-gray-900 flex items-center justify-center z-10">
+              className="absolute inset-0 flex items-center justify-center z-10"
+              style={{ backgroundColor: '#0a0f1e' }}>
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto mb-3"
-                  style={{ borderColor: '#00BFB3' }} />
-                <p className="text-white text-sm">Loading scene...</p>
+                <div className="relative w-16 h-16 mx-auto mb-4">
+                  <div className="absolute inset-0 rounded-full border-2 border-teal-500/20" />
+                  <div className="absolute inset-0 rounded-full border-t-2 animate-spin" style={{ borderColor: '#00BFB3' }} />
+                </div>
+                <p className="text-white/70 text-sm">Loading panorama...</p>
               </div>
             </motion.div>
           )}
@@ -659,15 +700,13 @@ export default function ImmersiveViewer({
 
         {/* Info popup */}
         <AnimatePresence>
-          {activeInfo && (
-            <InfoPopup hotspot={activeInfo} onClose={() => setActiveInfo(null)} />
-          )}
+          {activeInfo && <InfoPopup hotspot={activeInfo} onClose={() => setActiveInfo(null)} />}
         </AnimatePresence>
 
-        {/* Canvas */}
-        <div className="absolute inset-0">
+        {/* Canvas — touch-action:none prevents page scroll on mobile */}
+        <div className="absolute inset-0" style={{ touchAction: 'none' }}>
           <Canvas
-            camera={{ fov: 75, position: [0, 0, 0.01] }}
+            camera={{ fov: 80, position: [0, 0, 0.01] }}
             gl={{ antialias: true, preserveDrawingBuffer: true }}
             style={{ cursor: editMode ? 'crosshair' : 'grab' }}
             onCreated={({ gl }) => {
@@ -703,37 +742,41 @@ export default function ImmersiveViewer({
         <div className="absolute inset-0 flex flex-col justify-between pointer-events-none z-20">
 
           {/* Top bar */}
-          <div className="flex items-start justify-between p-3 gap-2">
+          <div className="flex items-start justify-between p-2 sm:p-3 gap-2">
             <div className="pointer-events-auto px-3 py-2 rounded-lg"
-              style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)' }}>
+              style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}>
               {editMode && (
-                <div className="text-xs font-bold mb-1 flex items-center gap-1" style={{ color: '#FFB400' }}>
-                  <PenLine className="w-3 h-3" /> EDITOR MODE — Click to place hotspot
+                <div className="text-xs font-bold mb-0.5 flex items-center gap-1" style={{ color: '#FFB400' }}>
+                  <PenLine className="w-3 h-3" />
+                  <span className="hidden sm:inline">EDITOR — Click sphere to place</span>
+                  <span className="sm:hidden">EDITOR</span>
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: editMode ? '#FFB400' : '#00BFB3' }} />
-                <span className="text-white font-bold text-sm">{current.title}</span>
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0" style={{ color: editMode ? '#FFB400' : '#00BFB3' }} />
+                <span className="text-white font-bold text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{current.title}</span>
               </div>
             </div>
 
             {/* Top-right buttons */}
-            <div className="pointer-events-auto flex flex-wrap gap-2 justify-end">
+            <div className="pointer-events-auto flex flex-wrap gap-1.5 sm:gap-2 justify-end">
               {editMode && (
                 <div className="flex flex-col items-end gap-1">
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1 transition disabled:opacity-60"
+                    className="px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg text-xs sm:text-sm font-bold flex items-center gap-1 transition disabled:opacity-60"
                     style={{
                       backgroundColor: saveError ? '#ef4444' : saved ? '#22c55e' : '#FFB400',
                       color: saveError ? 'white' : '#0F1F3C',
                     }}
                   >
-                    {saving ? '...' : saveError ? '✕ Error' : saved ? <><Check className="w-4 h-4" /> Saved</> : <><Save className="w-4 h-4" /> Save</>}
+                    {saving ? '...' : saveError ? '✕ Error' : saved
+                      ? <><Check className="w-3.5 h-3.5" /> Saved</>
+                      : <><Save className="w-3.5 h-3.5" /> Save</>}
                   </button>
                   {saveError && (
-                    <span className="text-red-400 text-xs bg-black/70 px-2 py-0.5 rounded max-w-48 text-right leading-tight">
+                    <span className="text-red-400 text-xs bg-black/70 px-2 py-0.5 rounded max-w-44 text-right leading-tight">
                       {saveError}
                     </span>
                   )}
@@ -741,22 +784,24 @@ export default function ImmersiveViewer({
               )}
               {!editMode && (
                 <button onClick={() => setAutoRotate((v) => !v)}
-                  className="p-2 rounded-lg text-white text-xs font-bold transition"
-                  style={{ background: autoRotate ? 'rgba(0,191,179,0.7)' : 'rgba(0,0,0,0.6)' }}>
+                  className="p-2 sm:p-2.5 rounded-lg text-white text-xs font-bold transition"
+                  style={{ background: autoRotate ? 'rgba(0,191,179,0.7)' : 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
                   ↻
                 </button>
               )}
               <button onClick={takeScreenshot}
-                className="p-2 rounded-lg bg-black/60 text-white hover:bg-black/80 transition">
+                className="p-2 sm:p-2.5 rounded-lg text-white transition"
+                style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
                 <Camera className="w-4 h-4" />
               </button>
               <button onClick={toggleFullscreen}
-                className="p-2 rounded-lg bg-black/60 text-white hover:bg-black/80 transition">
+                className="p-2 sm:p-2.5 rounded-lg text-white transition"
+                style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
               {!editMode && vrSupported && (
                 <button onClick={() => xrStore.enterVR()}
-                  className="p-2 rounded-lg flex items-center gap-1 text-xs font-semibold transition"
+                  className="p-2 sm:p-2.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition"
                   style={{ backgroundColor: '#00BFB3', color: '#0F1F3C' }}>
                   <Headphones className="w-4 h-4" />
                   <span className="hidden sm:inline">VR</span>
@@ -764,7 +809,8 @@ export default function ImmersiveViewer({
               )}
               {!editMode && arSupported && (
                 <button onClick={() => xrStore.enterAR()}
-                  className="p-2 rounded-lg bg-black/60 text-white flex items-center gap-1 text-xs font-semibold hover:bg-black/80 transition">
+                  className="p-2 sm:p-2.5 rounded-lg text-white flex items-center gap-1 text-xs font-semibold transition"
+                  style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
                   <ScanLine className="w-4 h-4" />
                   <span className="hidden sm:inline">AR</span>
                 </button>
@@ -774,8 +820,8 @@ export default function ImmersiveViewer({
 
           {/* Editor: hotspot list */}
           {editMode && sceneHotspots.length > 0 && (
-            <div className="pointer-events-auto mx-3 mb-2 p-2 rounded-lg text-xs text-white"
-              style={{ background: 'rgba(0,0,0,0.6)' }}>
+            <div className="pointer-events-auto mx-2 sm:mx-3 mb-2 p-2 rounded-lg text-xs text-white"
+              style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }}>
               <div className="font-bold mb-1 text-yellow-400">
                 {sceneHotspots.length} hotspot{sceneHotspots.length !== 1 ? 's' : ''} on this scene
               </div>
@@ -797,32 +843,37 @@ export default function ImmersiveViewer({
 
           {/* Bottom: thumbnail strip */}
           {hasMultiple && (
-            <div className="flex flex-col gap-2 pb-3 px-3">
+            <div className="flex flex-col gap-1.5 pb-2 sm:pb-3 px-2 sm:px-3">
               <div className="self-center text-white text-xs font-semibold px-3 py-1 rounded-full"
-                style={{ background: 'rgba(0,0,0,0.5)' }}>
+                style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
                 {sceneIndex + 1} / {scenes.length}
               </div>
-              <div className="pointer-events-auto flex items-center gap-2">
-                <button onClick={() => goToScene((sceneIndex - 1 + scenes.length) % scenes.length)}
-                  className="flex-shrink-0 p-2 rounded-lg bg-black/70 text-white hover:bg-black/90 transition">
+              <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
+                <button
+                  onClick={() => goToScene((sceneIndex - 1 + scenes.length) % scenes.length)}
+                  className="flex-shrink-0 p-2.5 sm:p-3 rounded-lg text-white transition active:scale-95"
+                  style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <div className="flex gap-2 overflow-x-auto flex-1 py-1">
+                <div className="flex gap-1.5 sm:gap-2 overflow-x-auto flex-1 py-1">
                   {scenes.map((scene, idx) => (
                     <button key={scene.id} onClick={() => goToScene(idx)}
-                      className="flex-shrink-0 relative rounded-lg overflow-hidden border-2 transition-all"
+                      className="flex-shrink-0 relative rounded-lg overflow-hidden border-2 transition-all active:scale-95"
                       style={{
-                        width: 72, height: 48,
+                        width: 64, height: 42,
                         borderColor: idx === sceneIndex ? (editMode ? '#FFB400' : '#00BFB3') : 'rgba(255,255,255,0.2)',
-                        opacity: idx === sceneIndex ? 1 : 0.6,
+                        opacity: idx === sceneIndex ? 1 : 0.55,
                         transform: idx === sceneIndex ? 'scale(1.08)' : 'scale(1)',
+                        boxShadow: idx === sceneIndex ? `0 0 8px ${editMode ? '#FFB400' : '#00BFB3'}80` : 'none',
                       }}>
-                      <img src={scene.imageUrl} alt={scene.title} className="w-full h-full object-cover" />
+                      <img src={scene.thumbUrl || scene.imageUrl} alt={scene.title} className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
-                <button onClick={() => goToScene((sceneIndex + 1) % scenes.length)}
-                  className="flex-shrink-0 p-2 rounded-lg bg-black/70 text-white hover:bg-black/90 transition">
+                <button
+                  onClick={() => goToScene((sceneIndex + 1) % scenes.length)}
+                  className="flex-shrink-0 p-2.5 sm:p-3 rounded-lg text-white transition active:scale-95"
+                  style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
@@ -830,6 +881,13 @@ export default function ImmersiveViewer({
           )}
         </div>
       </div>
+
+      {/* Ping animation keyframes injected once */}
+      <style>{`
+        @keyframes ping {
+          75%, 100% { transform: scale(1.6); opacity: 0; }
+        }
+      `}</style>
     </motion.div>
   );
 }

@@ -396,6 +396,7 @@ export default function ImmersivePage() {
             >
               {selectedAttraction && scenes.length > 0 ? (
                 <ImmersiveViewer
+                  key={selectedAttractionId}
                   title={selectedAttraction.attributes.name}
                   scenes={scenes}
                   description={selectedAttraction.attributes.description}
