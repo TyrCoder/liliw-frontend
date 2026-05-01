@@ -26,7 +26,7 @@ interface MapAttraction {
   description?: string;
   lat: number;
   lng: number;
-  photo?: string;
+  photos: string[];
   rating?: number;
   has_virtual_tour?: boolean;
 }
@@ -37,6 +37,53 @@ interface RouteInfo {
 }
 
 type FilterType = 'all' | 'heritage' | 'spot' | 'dining';
+
+function PhotoSlideshow({ photos, name }: { photos: string[]; name: string }) {
+  const [index, setIndex] = useState(0);
+  const [fade, setFade] = useState(true);
+
+  useEffect(() => {
+    if (photos.length <= 1) return;
+    const id = setInterval(() => {
+      setFade(false);
+      setTimeout(() => {
+        setIndex((i) => (i + 1) % photos.length);
+        setFade(true);
+      }, 300);
+    }, 2800);
+    return () => clearInterval(id);
+  }, [photos.length]);
+
+  if (!photos.length) return null;
+
+  return (
+    <div className="relative w-full h-32 overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={photos[index]}
+        alt={name}
+        className="w-full h-full object-cover transition-opacity duration-300"
+        style={{ opacity: fade ? 1 : 0 }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0F1F3C] via-transparent to-transparent" />
+      {photos.length > 1 && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+          {photos.map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full transition-all duration-300"
+              style={{
+                width: i === index ? 14 : 5,
+                height: 5,
+                backgroundColor: i === index ? '#00BFB3' : 'rgba(255,255,255,0.45)',
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -86,10 +133,14 @@ export default function MapPage() {
           return c.latitude >= -90 && c.latitude <= 90 && c.longitude >= -180 && c.longitude <= 180;
         })
         .map((a) => {
-          const rawUrl = a.attributes.photos?.[0]?.url;
-          const photo = rawUrl
-            ? (rawUrl.startsWith('http') ? rawUrl : `${STRAPI_URL}${rawUrl}`)
-            : undefined;
+          const rawPhotos: any[] = Array.isArray(a.attributes.photos) ? a.attributes.photos : [];
+          const photos = rawPhotos
+            .map((p: any) => {
+              const url = p?.url ?? p?.formats?.medium?.url ?? p?.formats?.small?.url;
+              if (!url) return null;
+              return url.startsWith('http') ? url : `${STRAPI_URL}${url}`;
+            })
+            .filter(Boolean) as string[];
           return {
             id: String(a.id),
             name: a.attributes.name,
@@ -97,7 +148,7 @@ export default function MapPage() {
             description: a.attributes.description,
             lat: a.attributes.coordinates!.latitude,
             lng: a.attributes.coordinates!.longitude,
-            photo,
+            photos,
             rating: a.attributes.rating || 0,
             has_virtual_tour: a.attributes.has_virtual_tour,
           };
@@ -349,19 +400,13 @@ export default function MapPage() {
                   className="rounded-2xl overflow-hidden shadow-2xl"
                   style={{ backgroundColor: '#0F1F3C', border: '1px solid rgba(0,191,179,0.3)', minWidth: 240 }}
                 >
-                  {/* Photo */}
-                  {selected.photo && (
-                    <div className="relative w-full h-32 overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={selected.photo}
-                        alt={selected.name}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0F1F3C] via-transparent to-transparent" />
+                  {/* Photo slideshow */}
+                  {selected.photos.length > 0 && (
+                    <div className="relative">
+                      <PhotoSlideshow photos={selected.photos} name={selected.name} />
                       <button
                         onClick={() => setSelected(null)}
-                        className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center transition"
+                        className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center transition z-10"
                         style={{ backgroundColor: 'rgba(15,31,60,0.75)', backdropFilter: 'blur(4px)' }}
                       >
                         <X className="w-3.5 h-3.5 text-white" />
@@ -370,7 +415,7 @@ export default function MapPage() {
                   )}
 
                   {/* Header */}
-                  <div className={`px-4 ${selected.photo ? 'pt-2' : 'pt-4'} pb-3 flex items-start justify-between gap-2`}
+                  <div className={`px-4 ${selected.photos.length > 0 ? 'pt-2' : 'pt-4'} pb-3 flex items-start justify-between gap-2`}
                     style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                     <div className="flex-1 min-w-0">
                       <span
@@ -387,7 +432,7 @@ export default function MapPage() {
                         <StarRating rating={selected.rating} />
                       ) : null}
                     </div>
-                    {!selected.photo && (
+                    {selected.photos.length === 0 && (
                       <button
                         onClick={() => setSelected(null)}
                         className="text-white/40 hover:text-white transition flex-shrink-0 mt-0.5"
