@@ -28,7 +28,6 @@ export default function Navbar() {
   const navLinks = [
     { href: '/about', label: 'About' },
     { href: '/attractions', label: 'Attractions' },
-    { href: '/map', label: 'Map' },
     { href: '/culture', label: 'Culture' },
     { href: '/heritage', label: 'Heritage' },
     { href: '/arts', label: 'Arts' },
@@ -70,28 +69,47 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* 3D Tours Button - Always visible */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex-shrink-0">
-            <Link
-              href="/immersive"
-              className="relative px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm text-white overflow-hidden group/btn transition-all duration-300 inline-flex items-center gap-1 sm:gap-2"
-              style={{
-                background: 'linear-gradient(135deg, #00BFB3 0%, #00A39E 100%)',
-                boxShadow: '0 4px 15px rgba(0, 191, 179, 0.4)',
-              }}
-            >
-              <span className="relative z-10 flex items-center gap-1">
-                <span className="text-sm sm:text-base">🥽</span>
-                <span className="hidden sm:inline">3D</span>
-              </span>
-              <div
-                className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"
+          {/* Map + 3D Buttons - Always visible */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                href="/map"
+                className="relative px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm text-white overflow-hidden group/map transition-all duration-300 inline-flex items-center gap-1 sm:gap-2"
                 style={{
-                  background: 'linear-gradient(135deg, #00A39E 0%, #007B78 100%)',
+                  background: 'linear-gradient(135deg, #00BFB3 0%, #00A39E 100%)',
+                  boxShadow: '0 4px 15px rgba(0, 191, 179, 0.4)',
                 }}
-              />
-            </Link>
-          </motion.div>
+              >
+                <span className="relative z-10 flex items-center gap-1">
+                  <span className="text-sm sm:text-base">🗺️</span>
+                  <span className="hidden sm:inline">Map</span>
+                </span>
+                <div
+                  className="absolute inset-0 opacity-0 group-hover/map:opacity-100 transition-opacity duration-300"
+                  style={{ background: 'linear-gradient(135deg, #00A39E 0%, #007B78 100%)' }}
+                />
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                href="/immersive"
+                className="relative px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm text-white overflow-hidden group/btn transition-all duration-300 inline-flex items-center gap-1 sm:gap-2"
+                style={{
+                  background: 'linear-gradient(135deg, #00BFB3 0%, #00A39E 100%)',
+                  boxShadow: '0 4px 15px rgba(0, 191, 179, 0.4)',
+                }}
+              >
+                <span className="relative z-10 flex items-center gap-1">
+                  <span className="text-sm sm:text-base">🥽</span>
+                  <span className="hidden sm:inline">3D</span>
+                </span>
+                <div
+                  className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"
+                  style={{ background: 'linear-gradient(135deg, #00A39E 0%, #007B78 100%)' }}
+                />
+              </Link>
+            </motion.div>
+          </div>
 
           {/* Mobile Menu Button - Visible on lg and below */}
           <motion.button
@@ -116,13 +134,20 @@ export default function Navbar() {
             >
               <div className="flex flex-col gap-2">
                 {navLinks.map((link) => (
-                  <NavLink
-                    key={link.href}
-                    href={link.href}
-                    label={link.label}
-                    onClick={closeMenu}
-                  />
+                  <NavLink key={link.href} href={link.href} label={link.label} onClick={closeMenu} />
                 ))}
+                <div className="flex gap-2 mt-1">
+                  <Link href="/map" onClick={closeMenu}
+                    className="flex-1 py-2.5 rounded-lg font-bold text-sm text-white text-center"
+                    style={{ background: 'linear-gradient(135deg, #00BFB3 0%, #00A39E 100%)' }}>
+                    🗺️ Map
+                  </Link>
+                  <Link href="/immersive" onClick={closeMenu}
+                    className="flex-1 py-2.5 rounded-lg font-bold text-sm text-white text-center"
+                    style={{ background: 'linear-gradient(135deg, #00BFB3 0%, #00A39E 100%)' }}>
+                    🥽 3D
+                  </Link>
+                </div>
               </div>
             </motion.div>
           )}
