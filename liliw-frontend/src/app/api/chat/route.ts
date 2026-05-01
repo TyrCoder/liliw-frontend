@@ -1,193 +1,134 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/logger';
 import Groq from 'groq-sdk';
+import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/strapi';
 
-const groqApiKey = process.env.GROQ_API_KEY;
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-if (!groqApiKey) {
-  throw new Error('GROQ_API_KEY environment variable is not set');
+// Cache the knowledge base for 5 minutes
+let knowledgeCache: { text: string; at: number } | null = null;
+
+async function buildKnowledge(): Promise<string> {
+  if (knowledgeCache && Date.now() - knowledgeCache.at < 5 * 60 * 1000) {
+    return knowledgeCache.text;
+  }
+
+  const [attractions, faqs, itineraries, events] = await Promise.allSettled([
+    getAllAttractions(),
+    getFaqs(),
+    getItineraries(),
+    getEvents(),
+  ]);
+
+  const lines: string[] = ['=== LILIW REAL DATA (from live database) ===\n'];
+
+  if (attractions.status === 'fulfilled' && attractions.value.length) {
+    lines.push('ATTRACTIONS & PLACES:');
+    for (const a of attractions.value.slice(0, 30)) {
+      const attr = a.attributes;
+      const typeLabel = a.type === 'heritage' ? 'Heritage' : a.type === 'spot' ? 'Tourist Spot' : 'Dining';
+      lines.push(`- [${typeLabel}] ${attr.name}${attr.location ? ` (${attr.location})` : ''}${attr.description ? `: ${attr.description.slice(0, 120)}` : ''}${attr.rating ? ` ⭐${attr.rating}/5` : ''}`);
+    }
+    lines.push('');
+  }
+
+  if (itineraries.status === 'fulfilled' && itineraries.value.length) {
+    lines.push('TOURS & ITINERARIES:');
+    for (const it of itineraries.value.slice(0, 10)) {
+      const a = (it as any).attributes || it;
+      lines.push(`- ${a.name || a.title || 'Tour'}${a.duration ? ` (${a.duration})` : ''}${a.description ? `: ${String(a.description).slice(0, 100)}` : ''}`);
+    }
+    lines.push('');
+  }
+
+  if (events.status === 'fulfilled' && events.value.length) {
+    lines.push('UPCOMING EVENTS:');
+    for (const ev of events.value.slice(0, 8)) {
+      const a = (ev as any).attributes || ev;
+      lines.push(`- ${a.name || a.title || 'Event'}${a.date ? ` on ${a.date}` : ''}${a.description ? `: ${String(a.description).slice(0, 100)}` : ''}`);
+    }
+    lines.push('');
+  }
+
+  if (faqs.status === 'fulfilled' && faqs.value.length) {
+    lines.push('FREQUENTLY ASKED QUESTIONS:');
+    for (const faq of faqs.value.slice(0, 15)) {
+      const a = (faq as any).attributes || faq;
+      if (a.question && a.answer) {
+        lines.push(`Q: ${a.question}\nA: ${String(a.answer).slice(0, 150)}`);
+      }
+    }
+  }
+
+  const text = lines.join('\n');
+  knowledgeCache = { text, at: Date.now() };
+  return text;
 }
 
-const groq = new Groq({
-  apiKey: groqApiKey,
-});
+function buildSystemPrompt(knowledge: string): string {
+  return `Ikaw si Lilio 🌺 — ang opisyal na tour guide ng Liliw, Laguna. Ikaw ay palakaibigan, masaya, at laging handang tumulong.
 
-// System prompt that constrains Lilio to Liliw-only knowledge
-const LILIO_SYSTEM_PROMPT = `You are Lilio, the official Liliw tour guide - a friendly, knowledgeable local who genuinely cares about helping visitors have an amazing experience. You ONLY answer questions about Liliw, Laguna Province, Philippines.
+RULES:
+1. Sumagot LAMANG tungkol sa Liliw, Laguna — tourism, attractions, kultura, pagkain, events. Wala kang alam sa ibang topics.
+2. Kung tinanong ka ng hindi related sa Liliw, sabihin: "Ay, 'di ko po iyan area! Pero tanungin mo ako tungkol sa Liliw 😊"
+3. LANGUAGE RULE — ito ang pinaka-importante:
+   - Kung mag-Tagalog ang user → mag-Tagalog ka rin
+   - Kung mag-English ang user → mag-English ka rin
+   - Kung mag-Taglish (halong Tagalog + English) → mag-Taglish ka rin
+   - Huwag mag-switch ng language maliban kung mag-switch muna ang user
+4. Maging MAIKLI at SIMPLE — 2-3 sentences lang, tulad ng text message sa kaibigan
+5. Gamitin ang actual data mula sa database para sumagot
+6. Maging natural at relatable — hindi formal, parang kakilala
 
-**Your Name & Purpose:**
-- Name: Lilio 🏝️
-- Role: Official Liliw Tourism Guide
-- Goal: Help tourists learn about and visit Liliw
+STYLE:
+- Taglish-friendly: "Ay grabe, worth it talaga yung pupuntahan mo!"
+- Maikli: hindi mahaba ang sagot, straight to the point
+- Warm: parang kaibigan mo na local na taga-Liliw
+- Gamitin ang emojis minsan para maging masaya 🌿
 
-**Liliw Knowledge Base:**
-
-**Heritage & Attractions:**
-- Tsinelas Craft Heritage District - Traditional Filipino slipper makers using 100+ year old techniques
-- St. John the Baptist Church - Historic architecture and pilgrimage site
-- Local Markets - Fresh produce, handicrafts, authentic Filipino experience
-- Liliw Town Center - Cultural hub for events and local dining
-
-**Key Information:**
-- Location: Laguna Province, Philippines (60km from Manila, 1.5 hours by car)
-- Coordinates: 14.3086°N, 121.2286°E
-- Operating Hours: Most attractions 9 AM - 5 PM daily, weekends 8 AM - 6 PM
-- Best Time to Visit: November - March (dry season, 25-32°C)
-
-**Things to Do:**
-1. Visit artisan workshops and watch handmade tsinelas being created
-2. Explore St. John the Baptist Church
-3. Shop at local markets for authentic souvenirs
-4. Take guided cultural tours
-5. Experience authentic Filipino cuisine at local restaurants
-6. Book heritage site tours (2-3 hours)
-7. Meet local artisans
-8. Attend fiesta celebrations
-
-**Accommodation & Dining:**
-- Budget-friendly hotels and guesthouses available
-- Local homestays and family-run accommodations
-- Traditional Filipino restaurants with local specialties
-- Street food vendors and local cafes
-
-**Transportation:**
-- By car: South Luzon Expressway from Manila
-- By bus: Comfortable air-conditioned buses available
-- Local tricycles for getting around town
-- Walking-friendly town center
-
-**Shopping:**
-- Handmade tsinelas (slippers) - our specialty
-- Local handicrafts and pottery
-- Ceramics and souvenirs
-- Local food products
-
-**Culture & Events:**
-- Fiesta celebrations throughout the year
-- Heritage festivals
-- Craft fairs
-- Cultural performances
-- Local artisan workshops open to visitors
-
-**Contact & Hours:**
-- Email: info@liliwtourism.com
-- General hours: 9 AM - 5 PM (most attractions)
-- Some attractions closed Mondays
-- Tours bookable through website
-
-**CRITICAL RULES:**
-1. ONLY answer questions about Liliw tourism and attractions
-2. If someone asks about unrelated topics, politely redirect to Liliw-related information
-3. Always be helpful, friendly, and enthusiastic
-4. Suggest relevant attractions/activities based on visitor interests
-5. Provide practical travel tips
-6. Never pretend to have information outside Liliw tourism
-7. Use emojis and friendly language to match the cheerful Liliw brand
-8. If asked about something not Liliw-related, say: "I appreciate your question, but I'm Lilio - Liliw's official tour guide! I only have expertise about Liliw tourism. Is there anything about visiting Liliw I can help with?"
-
-**Response Style:**
-- Natural and conversational - like chatting with a local friend
-- Vary your openings (don't repeat the same greeting)
-- Use colloquial Filipino English when appropriate
-- Include relevant emojis naturally
-- Share personal insights (e.g., "My personal favorite is...")
-- Ask follow-up questions to understand visitor needs better
-- Be enthusiastic about Liliw
-- Suggest activities and attractions based on their interests
-- Provide helpful tips and insider knowledge
-- Keep responses concise but conversational (2-3 sentences typically)
-- Sometimes share local tips like "Pro tip: Visit early morning for fewer crowds"
-- Be helpful but not overly formal
-- Show personality and warmth
-
-**Conversation Variety:**
-- Start responses differently each time (not always "You should...")
-- Use phrases like "Have you tried...", "Fun fact:", "Many visitors love...", "Just so you know..."
-- Ask questions to engage: "What's your travel style?" "First time in Liliw?"
-- Share local wisdom: "Locals recommend...", "A hidden gem is..."
-- Be encouraging and enthusiastic about their visit`;
+${knowledge}`;
+}
 
 interface ChatRequest {
   message: string;
+  history?: { role: 'user' | 'assistant'; content: string }[];
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json();
-    const { message } = body;
+    const { message, history = [] } = body;
 
-    if (!message || typeof message !== 'string') {
-      return NextResponse.json(
-        { error: 'Invalid message format' },
-        { status: 400 }
-      );
+    if (!message?.trim()) {
+      return NextResponse.json({ error: 'Empty message' }, { status: 400 });
     }
 
-    // Call Groq API with LLaMA 3.3 70B model
+    const knowledge = await buildKnowledge();
+    const systemPrompt = buildSystemPrompt(knowledge);
+
+    // Keep last 8 messages for context
+    const recentHistory = history.slice(-8);
+
     const completion = await groq.chat.completions.create({
       messages: [
-        {
-          role: 'system',
-          content: LILIO_SYSTEM_PROMPT,
-        },
-        {
-          role: 'user',
-          content: message,
-        },
+        { role: 'system', content: systemPrompt },
+        ...recentHistory,
+        { role: 'user', content: message },
       ],
       model: 'llama-3.3-70b-versatile',
-      temperature: 0.7,
-      max_tokens: 500,
+      temperature: 0.75,
+      max_tokens: 250,
       top_p: 0.9,
     });
 
-    const reply = completion.choices[0]?.message?.content || 'I apologize, I had trouble understanding that. Could you ask me something about visiting Liliw?';
+    const reply = completion.choices[0]?.message?.content
+      || 'Ay, may problema sa connection ko. Ulit mo nga? 😅';
 
-    return NextResponse.json({
-      success: true,
-      reply,
-      timestamp: new Date().toISOString(),
-      source: 'Lilio - Liliw Tour Guide (Powered by Groq LLaMA 3.3)',
-      model: 'llama-3.3-70b-versatile',
-    });
-  } catch (error) {
-    logger.error('Chat API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to process chat message' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true, reply });
+  } catch {
+    return NextResponse.json({ error: 'Failed to respond' }, { status: 500 });
   }
 }
 
-// GET handler for testing
 export async function GET() {
-  return NextResponse.json({
-    status: 'ok',
-    message: 'Lilio Chat API is running',
-    guide: 'Lilio - Official Liliw Tour Guide',
-    scope: 'Liliw tourism and attractions only',
-    model: 'Groq LLaMA 3.3 70B (Fast AI)',
-    features: [
-      'Natural language understanding (NLP)',
-      'Liliw-only knowledge boundary',
-      'Helpful tourist recommendations',
-      'Context-aware responses',
-      'Efficient & fast processing'
-    ],
-    knowledge_areas: [
-      'Heritage sites & attractions',
-      'Tourist spots & things to do',
-      'Tours & bookings',
-      'Local artisans & crafts',
-      'Dining & shopping',
-      'Events & celebrations',
-      'Accommodation & lodging',
-      'Transportation & directions',
-      'Travel tips & best times to visit'
-    ],
-    endpoints: {
-      POST: 'Submit a chat message with { message: string }',
-      GET: 'Get API status (this endpoint)',
-    },
-  });
+  return NextResponse.json({ status: 'ok', guide: 'Lilio — Liliw Tour Guide' });
 }
