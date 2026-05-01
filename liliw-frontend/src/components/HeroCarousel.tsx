@@ -5,42 +5,39 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-const slides = [
-  {
-    id: 1,
-    title: 'Welcome to Liliw',
-    subtitle: 'Discover Hidden Treasures in Laguna',
-    gradient: 'from-teal-600 to-cyan-600',
-    cta: 'Explore Attractions',
-    link: '/attractions',
-  },
-  {
-    id: 2,
-    title: 'Heritage & Culture',
-    subtitle: 'Experience Authentic Local Traditions',
-    gradient: 'from-blue-600 to-teal-600',
-    cta: 'Learn More',
-    link: '/culture',
-  },
-  {
-    id: 3,
-    title: 'Natural Beauty',
-    subtitle: 'Explore Scenic Wonders and Landscapes',
-    gradient: 'from-emerald-600 to-teal-600',
-    cta: 'Discover Nature',
-    link: '/tourist-spots',
-  },
+const FALLBACK_SLIDES = [
+  { title: 'Welcome to Liliw', subtitle: 'Discover Hidden Treasures in Laguna', gradient: 'from-teal-600 to-cyan-600', cta_text: 'Explore Attractions', cta_link: '/attractions', image: null },
+  { title: 'Heritage & Culture', subtitle: 'Experience Authentic Local Traditions', gradient: 'from-blue-600 to-teal-600', cta_text: 'Learn More', cta_link: '/culture', image: null },
+  { title: 'Natural Beauty', subtitle: 'Explore Scenic Wonders and Landscapes', gradient: 'from-emerald-600 to-teal-600', cta_text: 'Discover Nature', cta_link: '/tourist-spots', image: null },
 ];
 
+const GRADIENTS = ['from-teal-600 to-cyan-600', 'from-blue-600 to-teal-600', 'from-emerald-600 to-teal-600', 'from-purple-600 to-teal-600'];
+
 export default function HeroCarousel() {
+  const [slides, setSlides] = useState(FALLBACK_SLIDES);
   const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/hero-slides?populate=*&sort=sort_order:asc&filters[is_active][$eq]=true`, {
+      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}` }
+    }).then(r => r.json()).then(data => {
+      if (data?.data?.length) {
+        setSlides(data.data.map((item: any, i: number) => {
+          const a = item.attributes || item;
+          const imgUrl = a.image?.data?.attributes?.url || a.image?.url;
+          const fullImg = imgUrl ? (imgUrl.startsWith('http') ? imgUrl : `${process.env.NEXT_PUBLIC_STRAPI_URL}${imgUrl}`) : null;
+          return { ...a, gradient: GRADIENTS[i % GRADIENTS.length], image: fullImg };
+        }));
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
 
   const next = () => setCurrent((prev) => (prev + 1) % slides.length);
   const prev = () => setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
@@ -55,8 +52,12 @@ export default function HeroCarousel() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8 }}
-          className={`absolute inset-0 bg-gradient-to-br ${slide.gradient}`}
+          className={`absolute inset-0 ${slide.image ? '' : `bg-gradient-to-br ${slide.gradient}`}`}
         >
+          {slide.image && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" />
+          )}
           {/* Animated background elements */}
           <div className="absolute inset-0 overflow-hidden">
             <motion.div
@@ -108,10 +109,10 @@ export default function HeroCarousel() {
               whileTap={{ scale: 0.95 }}
             >
               <Link
-                href={slide.link}
+                href={(slide as any).cta_link || (slide as any).link || '/'}
                 className="inline-flex items-center bg-white text-teal-700 hover:bg-teal-50 font-bold py-4 px-8 rounded-full transition-all duration-300 shadow-xl hover:shadow-2xl group"
               >
-                {slide.cta}
+                {slide.cta_text || (slide as any).cta}
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition" />
               </Link>
             </motion.div>

@@ -274,4 +274,52 @@ export const getAllAttractions = async () => {
   return attractions;
 };
 
+export const getArtForms = async () => {
+  const cacheKey = 'art-forms';
+  const cached = getCachedResponse(cacheKey);
+  if (cached) return cached;
+  try {
+    const response = await fetchWithRetry<StrapiResponse<any[]>>('/art-forms?populate=*&sort=sort_order:asc');
+    const data = response.data || [];
+    setCachedResponse(cacheKey, data);
+    return data;
+  } catch { return []; }
+};
+
+export const getCultureAspects = async () => {
+  const cacheKey = 'culture-aspects';
+  const cached = getCachedResponse(cacheKey);
+  if (cached) return cached;
+  try {
+    const response = await fetchWithRetry<StrapiResponse<any[]>>('/culture-aspects?populate=*&sort=sort_order:asc');
+    const data = response.data || [];
+    setCachedResponse(cacheKey, data);
+    return data;
+  } catch { return []; }
+};
+
+export const getHeroSlides = async () => {
+  const cacheKey = 'hero-slides';
+  const cached = getCachedResponse(cacheKey);
+  if (cached) return cached;
+  try {
+    const response = await fetchWithRetry<StrapiResponse<any[]>>('/hero-slides?populate=*&sort=sort_order:asc&filters[is_active][$eq]=true');
+    const data = response.data || [];
+    setCachedResponse(cacheKey, data);
+    return data;
+  } catch { return []; }
+};
+
+export const getNews = async () => {
+  const cacheKey = 'news';
+  const cached = getCachedResponse(cacheKey);
+  if (cached) return cached;
+  try {
+    const response = await fetchWithRetry<StrapiResponse<any[]>>('/news-items?populate=*&sort=createdAt:desc');
+    const data = response.data || [];
+    setCachedResponse(cacheKey, data);
+    return data;
+  } catch { return []; }
+};
+
 export default strapiApi;
