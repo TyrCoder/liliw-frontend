@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { MapPin, Navigation, X, Layers, ChevronLeft, Eye } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
 
-const LILIW_CENTER = { longitude: 121.2286, latitude: 14.3086 };
+const LILIW_CENTER = { longitude: 121.43605859033404, latitude: 14.130301377593792 };
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 const TYPE_CONFIG = {
