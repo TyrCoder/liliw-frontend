@@ -347,40 +347,65 @@ export default function MapPage() {
             )}
 
             {/* Markers with staggered entrance */}
-            {filtered.map((a, i) => (
-              <Marker
-                key={a.id}
-                longitude={a.lng}
-                latitude={a.lat}
-                anchor="bottom"
-                onClick={(e) => { e.originalEvent.stopPropagation(); handleMarkerClick(a); }}
-              >
-                <motion.div
-                  className="flex flex-col items-center cursor-pointer"
-                  initial={markersReady ? { scale: 0, opacity: 0, y: -10 } : false}
-                  animate={{ scale: selected?.id === a.id ? 1.3 : 1, opacity: 1, y: 0 }}
-                  transition={
-                    selected?.id === a.id
-                      ? { type: 'spring', stiffness: 300, damping: 20 }
-                      : { type: 'spring', stiffness: 260, damping: 18, delay: i * 0.04 }
-                  }
-                  whileHover={{ scale: selected?.id === a.id ? 1.3 : 1.15 }}
+            {filtered.map((a, i) => {
+              const isSelected = selected?.id === a.id;
+              return (
+                <Marker
+                  key={a.id}
+                  longitude={a.lng}
+                  latitude={a.lat}
+                  anchor="bottom"
+                  onClick={(e) => { e.originalEvent.stopPropagation(); handleMarkerClick(a); }}
                 >
-                  <div
-                    className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center shadow-lg"
-                    style={{
-                      backgroundColor: TYPE_CONFIG[a.type].color,
-                      boxShadow: selected?.id === a.id
-                        ? `0 0 0 4px ${TYPE_CONFIG[a.type].color}44, 0 4px 16px rgba(0,0,0,0.4)`
-                        : '0 2px 8px rgba(0,0,0,0.35)',
-                    }}
+                  <motion.div
+                    className="flex flex-col items-center cursor-pointer"
+                    initial={markersReady ? { scale: 0, opacity: 0, y: -10 } : false}
+                    animate={{ scale: isSelected ? 1.3 : 1, opacity: 1, y: 0 }}
+                    transition={
+                      isSelected
+                        ? { type: 'spring', stiffness: 400, damping: 18 }
+                        : { type: 'spring', stiffness: 260, damping: 18, delay: i * 0.04 }
+                    }
+                    whileHover={{ scale: isSelected ? 1.3 : 1.18 }}
+                    whileTap={{ scale: 0.88 }}
                   >
-                    <MapPin className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="w-0.5 h-2" style={{ backgroundColor: TYPE_CONFIG[a.type].color }} />
-                </motion.div>
-              </Marker>
-            ))}
+                    <div className="relative flex items-center justify-center">
+                      {/* Ripple rings on select */}
+                      {isSelected && (
+                        <>
+                          <motion.div
+                            className="absolute rounded-full"
+                            initial={{ scale: 0.6, opacity: 0.7 }}
+                            animate={{ scale: 2.6, opacity: 0 }}
+                            transition={{ duration: 0.55, ease: 'easeOut' }}
+                            style={{ width: 36, height: 36, backgroundColor: TYPE_CONFIG[a.type].color }}
+                          />
+                          <motion.div
+                            className="absolute rounded-full"
+                            initial={{ scale: 0.6, opacity: 0.4 }}
+                            animate={{ scale: 3.2, opacity: 0 }}
+                            transition={{ duration: 0.75, ease: 'easeOut', delay: 0.08 }}
+                            style={{ width: 36, height: 36, backgroundColor: TYPE_CONFIG[a.type].color }}
+                          />
+                        </>
+                      )}
+                      <div
+                        className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center shadow-lg relative z-10"
+                        style={{
+                          backgroundColor: TYPE_CONFIG[a.type].color,
+                          boxShadow: isSelected
+                            ? `0 0 0 4px ${TYPE_CONFIG[a.type].color}44, 0 4px 16px rgba(0,0,0,0.4)`
+                            : '0 2px 8px rgba(0,0,0,0.35)',
+                        }}
+                      >
+                        <MapPin className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                    <div className="w-0.5 h-2" style={{ backgroundColor: TYPE_CONFIG[a.type].color }} />
+                  </motion.div>
+                </Marker>
+              );
+            })}
 
             {/* Popup */}
             {selected && (
@@ -394,9 +419,10 @@ export default function MapPage() {
                 maxWidth="300px"
               >
                 <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                  initial={{ opacity: 0, y: 22, scale: 0.82 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 22 }}
                   className="rounded-2xl overflow-hidden shadow-2xl"
                   style={{ backgroundColor: '#0F1F3C', border: '1px solid rgba(0,191,179,0.3)', minWidth: 240 }}
                 >
