@@ -5,7 +5,6 @@ import Map, { Marker, Popup, NavigationControl, GeolocateControl, Source, Layer 
 import type { MapRef } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Navigation, X, Layers, ChevronLeft, Eye, Star } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
@@ -351,12 +350,11 @@ export default function MapPage() {
                   {/* Photo */}
                   {selected.photo && (
                     <div className="relative w-full h-32 overflow-hidden">
-                      <Image
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
                         src={selected.photo}
                         alt={selected.name}
-                        fill
-                        className="object-cover"
-                        sizes="300px"
+                        className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#0F1F3C] via-transparent to-transparent" />
                       <button
