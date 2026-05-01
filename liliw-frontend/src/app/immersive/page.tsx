@@ -50,6 +50,8 @@ export default function ImmersivePage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const virtualTourPhotosRef = useRef<VirtualTourPhoto[]>([]);
+  useEffect(() => { virtualTourPhotosRef.current = virtualTourPhotos; }, [virtualTourPhotos]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -194,26 +196,67 @@ export default function ImmersivePage() {
     return url.replace('/upload/', `/upload/${transforms}/`);
   };
 
+  // Called from HotspotDialog when admin uploads a new 360° scene inline
+  const handleUploadScene = async (file: File) => {
+    const photo = await uploadOneFile(file);
+    const idx = virtualTourPhotosRef.current.length;
+    const scene = {
+      id: photo.public_id,
+      title: photo.name || `Scene ${idx + 1}`,
+      imageUrl: cloudinaryTransform(photo.url, 'w_4096,q_auto,f_auto'),
+      thumbUrl: cloudinaryTransform(photo.url, 'w_256,q_20,e_blur:400,f_auto'),
+    };
+    return { scene, photo };
+  };
+
+  // Called when a hotspot confirms with a new scene — stage the photo; saved on next Save click
+  const handleNewScene = (photo: VirtualTourPhoto, _idx: number) => {
+    setVirtualTourPhotos((prev) => [...prev, photo]);
+  };
+
   // Scenes for the viewer — thumb loads instantly (<100ms), full-res swaps in silently
   const scenes = virtualTourPhotos.map((photo, idx) => ({
     id: photo.public_id || String(idx),
     title: photo.name || `Scene ${idx + 1}`,
-    imageUrl: cloudinaryTransform(photo.url, 'w_2048,q_auto,f_auto'),
+    imageUrl: cloudinaryTransform(photo.url, 'w_4096,q_auto,f_auto'),
     thumbUrl: cloudinaryTransform(photo.url, 'w_256,q_20,e_blur:400,f_auto'),
   }));
 
   const saveHotspots = useCallback(async (hotspots: Hotspot[]) => {
-    if (!selectedAttraction?.strapiId) return;
-    const res = await fetch('/api/save-hotspots', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        attractionType: selectedAttraction.type,
-        strapiId: selectedAttraction.strapiId,
-        hotspots,
+    if (!selectedAttraction?.strapiId) {
+      throw new Error(`No strapiId for attraction "${selectedAttraction?.attributes?.name}"`);
+    }
+    logger.info(`Saving ${hotspots.length} hotspots + ${virtualTourPhotosRef.current.length} photos for ${selectedAttraction.type}/${selectedAttraction.strapiId}`);
+
+    const [hRes, pRes] = await Promise.all([
+      fetch('/api/save-hotspots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attractionType: selectedAttraction.type,
+          strapiId: selectedAttraction.strapiId,
+          hotspots,
+        }),
       }),
-    });
-    if (!res.ok) throw new Error('Failed to save');
+      fetch('/api/save-virtual-tour-photos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attractionType: selectedAttraction.type,
+          strapiId: selectedAttraction.strapiId,
+          photos: virtualTourPhotosRef.current,
+        }),
+      }),
+    ]);
+
+    if (!hRes.ok) {
+      const text = await hRes.text();
+      throw new Error(`Hotspots save failed (${hRes.status}): ${text}`);
+    }
+    if (!pRes.ok) {
+      const text = await pRes.text();
+      throw new Error(`Photos save failed (${pRes.status}): ${text}`);
+    }
   }, [selectedAttraction]);
 
   return (
@@ -359,6 +402,8 @@ export default function ImmersivePage() {
                   editMode={editMode}
                   initialHotspots={selectedAttraction.attributes.hotspots ?? []}
                   onSaveHotspots={saveHotspots}
+                  onUploadScene={handleUploadScene}
+                  onNewScene={handleNewScene}
                 />
               ) : selectedAttraction && scenes.length === 0 && editMode ? (
                 <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-24 text-center"

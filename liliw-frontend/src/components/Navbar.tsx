@@ -28,6 +28,7 @@ export default function Navbar() {
   const navLinks = [
     { href: '/about', label: 'About' },
     { href: '/attractions', label: 'Attractions' },
+    { href: '/map', label: 'Map' },
     { href: '/culture', label: 'Culture' },
     { href: '/heritage', label: 'Heritage' },
     { href: '/arts', label: 'Arts' },

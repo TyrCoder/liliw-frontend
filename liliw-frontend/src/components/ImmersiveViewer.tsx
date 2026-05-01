@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Headphones, Camera,
   Maximize2, Minimize2, ScanLine, MapPin, X,
-  Info, Navigation, Save, PenLine, Check, Trash2,
+  Info, Navigation, Save, PenLine, Check, Trash2, Upload,
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import type { Hotspot } from '@/lib/types';
@@ -24,6 +24,12 @@ export interface Scene {
   description?: string;
 }
 
+// Returned when a new 360° scene is uploaded via the hotspot dialog
+interface NewSceneResult {
+  scene: Scene;
+  photo: { url: string; name: string; public_id: string };
+}
+
 interface ImmersiveViewerProps {
   title: string;
   scenes: Scene[];
@@ -31,6 +37,10 @@ interface ImmersiveViewerProps {
   editMode?: boolean;
   initialHotspots?: Hotspot[];
   onSaveHotspots?: (hotspots: Hotspot[]) => Promise<void>;
+  // Upload a new 360° directly from the hotspot dialog
+  onUploadScene?: (file: File) => Promise<NewSceneResult>;
+  // Called when a hotspot creates a new scene — parent adds it to its photo list
+  onNewScene?: (photo: { url: string; name: string; public_id: string }, sceneIndex: number) => void;
 }
 
 // ─── Pitch/Yaw helpers ────────────────────────────────────────────────────
@@ -120,36 +130,65 @@ function HotspotMarker({
   onDelete?: (id: string) => void;
   onClick?: (h: Hotspot) => void;
 }) {
+  const [hovered, setHovered] = useState(false);
   const pos = anglesToPosition(hotspot.pitch, hotspot.yaw);
   const isNav = hotspot.type === 'navigate';
   const targetTitle = isNav && hotspot.targetSceneIndex !== undefined
     ? scenes[hotspot.targetSceneIndex]?.title
     : undefined;
+  const displayLabel = targetTitle || hotspot.label;
 
   return (
     <group position={pos}>
       <Html center distanceFactor={250} zIndexRange={[1, 50]}>
-        <div className="flex flex-col items-center gap-1 select-none" style={{ pointerEvents: 'all' }}>
+        <div
+          className="flex flex-col items-center gap-2 select-none"
+          style={{ pointerEvents: 'all' }}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
           <button
             onClick={(e) => { e.stopPropagation(); onClick?.(hotspot); }}
-            className="w-14 h-14 rounded-full flex items-center justify-center border-2 border-white/50 shadow-lg transition-transform hover:scale-110 active:scale-95"
-            style={{ backgroundColor: isNav ? 'rgba(0,191,179,0.85)' : 'rgba(255,180,0,0.85)' }}
+            className="relative flex items-center justify-center"
+            style={{ width: 48, height: 48, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
-            {isNav
-              ? <Navigation className="w-6 h-6 text-white" />
-              : <Info className="w-6 h-6 text-white" />
-            }
+            {/* Pulsing ring */}
+            <span
+              className="absolute inset-0 rounded-full border-2 border-white animate-ping"
+              style={{ opacity: 0.4 }}
+            />
+            {/* Main circle */}
+            <span
+              className="absolute inset-0 rounded-full border-2 border-white transition-all duration-200"
+              style={{
+                backgroundColor: hovered ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)',
+                boxShadow: hovered ? '0 0 0 5px rgba(255,255,255,0.15)' : 'none',
+                transform: hovered ? 'scale(1.14)' : 'scale(1)',
+              }}
+            />
+            {/* Center dot */}
+            <span className="relative w-2 h-2 rounded-full bg-white" style={{ opacity: 0.75 }} />
           </button>
-          <span
-            className="text-white text-xs font-semibold px-2 py-0.5 rounded-full max-w-24 text-center leading-tight"
-            style={{ backgroundColor: 'rgba(0,0,0,0.65)' }}
-          >
-            {targetTitle || hotspot.label}
-          </span>
+
+          {/* Label — appears on hover or always in edit mode */}
+          {(hovered || editMode) && (
+            <span
+              className="text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap"
+              style={{
+                backgroundColor: 'white',
+                color: '#0F1F3C',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.55)',
+              }}
+            >
+              {displayLabel}
+            </span>
+          )}
+
+          {/* Delete button (edit mode only) */}
           {editMode && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete?.(hotspot.id); }}
-              className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition"
+              className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition"
             >
               <X className="w-3 h-3" />
             </button>
@@ -237,28 +276,50 @@ function ScreenshotHelper({ glRef }: { glRef: React.MutableRefObject<THREE.WebGL
 interface PendingHotspot { pitch: number; yaw: number }
 
 function HotspotDialog({
-  pending, scenes, onConfirm, onCancel,
+  pending, scenes, onConfirm, onCancel, onUploadScene,
 }: {
   pending: PendingHotspot;
   scenes: Scene[];
-  onConfirm: (h: Omit<Hotspot, 'id'>) => void;
+  onConfirm: (h: Omit<Hotspot, 'id'>, newScene?: NewSceneResult) => void;
   onCancel: () => void;
+  onUploadScene?: (file: File) => Promise<NewSceneResult>;
 }) {
   const [type, setType] = useState<'navigate' | 'info'>('navigate');
   const [label, setLabel] = useState('');
   const [targetScene, setTargetScene] = useState(0);
   const [info, setInfo] = useState('');
+  const [newScene, setNewScene] = useState<NewSceneResult | null>(null);
+  const [uploadingScene, setUploadingScene] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSceneFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onUploadScene) return;
+    setUploadingScene(true);
+    try {
+      const result = await onUploadScene(file);
+      setNewScene(result);
+    } catch {
+      // upload failed silently
+    } finally {
+      setUploadingScene(false);
+    }
+  };
 
   const confirm = () => {
     if (!label.trim()) return;
+    // If a new scene was uploaded, it will be appended at scenes.length
+    const targetIndex = type === 'navigate'
+      ? (newScene ? scenes.length : targetScene)
+      : undefined;
     onConfirm({
       pitch: pending.pitch,
       yaw: pending.yaw,
       type,
       label: label.trim(),
-      targetSceneIndex: type === 'navigate' ? targetScene : undefined,
+      targetSceneIndex: targetIndex,
       info: type === 'info' ? info.trim() : undefined,
-    });
+    }, newScene ?? undefined);
   };
 
   return (
@@ -269,7 +330,7 @@ function HotspotDialog({
       className="absolute inset-0 flex items-center justify-center z-50"
       style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
     >
-      <div className="bg-gray-900 rounded-xl p-5 w-80 border border-teal-500 shadow-2xl">
+      <div className="bg-gray-900 rounded-xl p-5 w-80 border border-teal-500 shadow-2xl max-h-screen overflow-y-auto">
         <h3 className="text-white font-bold mb-4 flex items-center gap-2">
           <PenLine className="w-4 h-4" style={{ color: '#00BFB3' }} />
           Place Hotspot
@@ -308,20 +369,51 @@ function HotspotDialog({
           className="w-full bg-gray-800 text-white text-sm rounded-lg px-3 py-2 mb-3 border border-gray-600 focus:border-teal-400 outline-none"
         />
 
-        {/* Navigate: scene picker */}
-        {type === 'navigate' && scenes.length > 1 && (
-          <>
-            <label className="block text-gray-300 text-xs mb-1">Target scene</label>
-            <select
-              value={targetScene}
-              onChange={(e) => setTargetScene(Number(e.target.value))}
-              className="w-full bg-gray-800 text-white text-sm rounded-lg px-3 py-2 mb-3 border border-gray-600 outline-none"
-            >
-              {scenes.map((s, i) => (
-                <option key={s.id} value={i}>{i + 1}. {s.title}</option>
-              ))}
-            </select>
-          </>
+        {/* Navigate: link to existing scene OR upload new one */}
+        {type === 'navigate' && (
+          <div className="space-y-3 mb-3">
+            {/* Existing scenes */}
+            {scenes.length > 0 && !newScene && (
+              <>
+                <label className="block text-gray-300 text-xs mb-1">Link to existing scene</label>
+                <select
+                  value={targetScene}
+                  onChange={(e) => setTargetScene(Number(e.target.value))}
+                  className="w-full bg-gray-800 text-white text-sm rounded-lg px-3 py-2 border border-gray-600 outline-none"
+                >
+                  {scenes.map((s, i) => (
+                    <option key={s.id} value={i}>{i + 1}. {s.title}</option>
+                  ))}
+                </select>
+                <div className="text-gray-500 text-xs text-center">— or —</div>
+              </>
+            )}
+
+            {/* Upload new 360° scene */}
+            {onUploadScene && (
+              <>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleSceneFile} />
+                {newScene ? (
+                  <div className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2">
+                    <img src={newScene.scene.thumbUrl || newScene.scene.imageUrl} className="w-10 h-6 object-cover rounded" alt="" />
+                    <span className="text-green-400 text-xs flex-1 truncate">✓ {newScene.scene.title}</span>
+                    <button onClick={() => setNewScene(null)} className="text-gray-500 hover:text-white">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingScene}
+                    className="w-full py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 border border-dashed border-gray-600 text-gray-400 hover:border-teal-400 hover:text-teal-400 transition disabled:opacity-60"
+                  >
+                    <Upload className="w-4 h-4" />
+                    {uploadingScene ? 'Uploading…' : 'Upload new 360° scene'}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         )}
 
         {/* Info: text area */}
@@ -351,7 +443,7 @@ function HotspotDialog({
           </button>
           <button
             onClick={confirm}
-            disabled={!label.trim()}
+            disabled={!label.trim() || uploadingScene}
             className="flex-1 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-40"
             style={{ backgroundColor: '#00BFB3', color: '#0F1F3C' }}
           >
@@ -391,6 +483,7 @@ function InfoPopup({ hotspot, onClose }: { hotspot: Hotspot; onClose: () => void
 export default function ImmersiveViewer({
   title, scenes, description,
   editMode = false, initialHotspots = [], onSaveHotspots,
+  onUploadScene, onNewScene,
 }: ImmersiveViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const glRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -406,12 +499,12 @@ export default function ImmersiveViewer({
   const [activeInfo, setActiveInfo] = useState<Hotspot | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const current = scenes[sceneIndex];
   const hasMultiple = scenes.length > 1;
-  const sceneHotspots = hotspots.filter((h) =>
-    h.type === 'navigate' || h.type === 'info'
-  );
+  // Only show hotspots that belong to the currently viewed scene
+  const sceneHotspots = hotspots.filter((h) => (h.sceneIndex ?? 0) === sceneIndex);
 
   useEffect(() => {
     if (!navigator.xr) return;
@@ -445,8 +538,9 @@ export default function ImmersiveViewer({
     setPending({ pitch, yaw });
   }, [editMode, pending]);
 
-  const confirmHotspot = (h: Omit<Hotspot, 'id'>) => {
-    setHotspots((prev) => [...prev, { ...h, id: crypto.randomUUID() }]);
+  const confirmHotspot = (h: Omit<Hotspot, 'id'>, newScene?: NewSceneResult) => {
+    if (newScene) onNewScene?.(newScene.photo, scenes.length);
+    setHotspots((prev) => [...prev, { ...h, id: crypto.randomUUID(), sceneIndex }]);
     setPending(null);
     setSaved(false);
   };
@@ -468,11 +562,15 @@ export default function ImmersiveViewer({
   const handleSave = async () => {
     if (!onSaveHotspots) return;
     setSaving(true);
+    setSaveError('');
     try {
       await onSaveHotspots(hotspots);
       setSaved(true);
-    } catch (e) {
-      logger.error('Save hotspots failed:', e);
+    } catch (e: any) {
+      const msg = e?.message || 'Save failed';
+      logger.error('Save failed:', e);
+      setSaveError(msg);
+      setTimeout(() => setSaveError(''), 4000);
     } finally {
       setSaving(false);
     }
@@ -554,6 +652,7 @@ export default function ImmersiveViewer({
               scenes={scenes}
               onConfirm={confirmHotspot}
               onCancel={() => setPending(null)}
+              onUploadScene={onUploadScene}
             />
           )}
         </AnimatePresence>
@@ -621,14 +720,24 @@ export default function ImmersiveViewer({
             {/* Top-right buttons */}
             <div className="pointer-events-auto flex flex-wrap gap-2 justify-end">
               {editMode && (
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1 transition disabled:opacity-60"
-                  style={{ backgroundColor: saved ? '#22c55e' : '#FFB400', color: '#0F1F3C' }}
-                >
-                  {saving ? '...' : saved ? <><Check className="w-4 h-4" /> Saved</> : <><Save className="w-4 h-4" /> Save</>}
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1 transition disabled:opacity-60"
+                    style={{
+                      backgroundColor: saveError ? '#ef4444' : saved ? '#22c55e' : '#FFB400',
+                      color: saveError ? 'white' : '#0F1F3C',
+                    }}
+                  >
+                    {saving ? '...' : saveError ? '✕ Error' : saved ? <><Check className="w-4 h-4" /> Saved</> : <><Save className="w-4 h-4" /> Save</>}
+                  </button>
+                  {saveError && (
+                    <span className="text-red-400 text-xs bg-black/70 px-2 py-0.5 rounded max-w-48 text-right leading-tight">
+                      {saveError}
+                    </span>
+                  )}
+                </div>
               )}
               {!editMode && (
                 <button onClick={() => setAutoRotate((v) => !v)}
@@ -664,12 +773,14 @@ export default function ImmersiveViewer({
           </div>
 
           {/* Editor: hotspot list */}
-          {editMode && hotspots.length > 0 && (
+          {editMode && sceneHotspots.length > 0 && (
             <div className="pointer-events-auto mx-3 mb-2 p-2 rounded-lg text-xs text-white"
               style={{ background: 'rgba(0,0,0,0.6)' }}>
-              <div className="font-bold mb-1 text-yellow-400">{hotspots.length} hotspot{hotspots.length !== 1 ? 's' : ''}</div>
+              <div className="font-bold mb-1 text-yellow-400">
+                {sceneHotspots.length} hotspot{sceneHotspots.length !== 1 ? 's' : ''} on this scene
+              </div>
               <div className="flex flex-wrap gap-1">
-                {hotspots.map((h) => (
+                {sceneHotspots.map((h) => (
                   <span key={h.id}
                     className="flex items-center gap-1 px-2 py-0.5 rounded-full text-white"
                     style={{ backgroundColor: h.type === 'navigate' ? 'rgba(0,191,179,0.5)' : 'rgba(255,180,0,0.5)' }}>
