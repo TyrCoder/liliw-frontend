@@ -1,8 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['mapbox-gl', 'react-map-gl'],
+  transpilePackages: ['mapbox-gl', 'react-map-gl', '@mapbox/mapbox-gl-draw'],
   reactStrictMode: true,
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'mapbox-gl': 'mapbox-gl/dist/mapbox-gl.js',
+    };
+    return config;
+  },
   typescript: {
     ignoreBuildErrors: false,
   },
