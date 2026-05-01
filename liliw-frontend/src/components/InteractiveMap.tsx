@@ -22,8 +22,8 @@ interface InteractiveMapProps {
   zoom?: number;
 }
 
-const LILIW_LAT = 14.3086;
-const LILIW_LNG = 121.2286;
+const LILIW_LAT = 14.130301377593792;
+const LILIW_LNG = 121.43605859033404;
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 export default function InteractiveMap({
