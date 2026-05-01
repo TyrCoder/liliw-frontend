@@ -3,228 +3,149 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Calendar, Bell, Share2 } from 'lucide-react';
-import { getEvents } from '@/lib/strapi';
-import { logger } from '@/lib/logger';
-import type { Event } from '@/lib/types';
+import { ChevronLeft, Calendar, Bell } from 'lucide-react';
 
-interface NewsItem {
-  date: string;
-  category: string;
-  title: string;
-  excerpt: string;
-  source: string;
-}
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.4 },
-  },
-};
-
-// Extract text from rich text blocks
 const extractText = (richText: any): string => {
   if (!richText) return '';
+  if (typeof richText === 'string') return richText;
   if (Array.isArray(richText)) {
     return richText
-      .map((block: any) =>
-        block.children?.map((child: any) => child.text).join(' ') || ''
-      )
+      .map((block: any) => block.children?.map((c: any) => c.text || '').join('') || '')
       .join(' ')
       .trim();
   }
-  return richText;
+  return '';
 };
 
-// Transform Strapi event to display format
-const transformEvent = (event: Event): NewsItem => {
-  const attrs = event.attributes;
-  const date = new Date(attrs.startDate).toISOString().split('T')[0];
-  const categoryLabel = (attrs.category || 'Event').charAt(0).toUpperCase() + (attrs.category || 'Event').slice(1);
-  
-  return {
-    date,
-    category: categoryLabel,
-    title: attrs.name,
-    excerpt: extractText(attrs.description).substring(0, 150) + '...' || attrs.location || 'Event in Liliw',
-    source: attrs.location || 'Liliw Tourism',
-  };
+const FALLBACK_NEWS = [
+  { title: 'Gat Tayaw Tsinelas Festival 2026', date: '2026-03-15', category: 'festival', excerpt: "Annual festival celebrating Liliw's famous tsinelas craftsmanship and cultural heritage. Join the community for a week of events and activities.", source: 'Liliw Tourism Office', isEvent: true },
+  { title: 'Heritage Conservation Project Launch', date: '2026-02-20', category: 'announcement', excerpt: 'Liliw municipality launches a new initiative to preserve and promote historical landmarks and cultural sites throughout the town.', source: 'Municipal Hall', isEvent: false },
+  { title: 'New Artisan Workshops Open for Visitors', date: '2026-01-10', category: 'advisory', excerpt: 'Several tsinelas workshops in the town center are now open for guided tours and hands-on making experiences. Book your slot today!', source: 'Liliw Tourism', isEvent: false },
+];
+
+const CATEGORY_STYLE: Record<string, string> = {
+  advisory: 'bg-blue-100 text-blue-700',
+  announcement: 'bg-teal-100 text-teal-700',
+  press_release: 'bg-purple-100 text-purple-700',
+  festival: 'bg-red-100 text-red-700',
+  cultural: 'bg-yellow-100 text-yellow-700',
+  competition: 'bg-orange-100 text-orange-700',
+  other: 'bg-gray-100 text-gray-700',
 };
+
+const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } } };
+const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 0.4 } } };
 
 export default function NewsPage() {
-  const [news, setNews] = useState<NewsItem[]>([]);
+  const [news, setNews] = useState<any[]>(FALLBACK_NEWS);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        setLoading(true);
-        const events = await getEvents();
-        const transformedNews = events.map((event) => transformEvent(event));
-        setNews(transformedNews);
-      } catch (err) {
-        setError('Failed to load news');
-        logger.error('Failed to load news:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
+    const headers = { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}` };
 
-    fetchNews();
+    Promise.all([
+      fetch(`${strapiUrl}/api/newses?populate=*&sort=createdAt:desc`, { headers }).then(r => r.json()).catch(() => null),
+      fetch(`${strapiUrl}/api/events?populate=*&sort=date_start:desc`, { headers }).then(r => r.json()).catch(() => null),
+    ]).then(([newsData, eventsData]) => {
+      const items: any[] = [];
+
+      if (newsData?.data?.length) {
+        newsData.data.forEach((item: any) => {
+          const a = item.attributes || item;
+          const excerpt = extractText(a.content);
+          items.push({
+            title: a.title || 'News Item',
+            date: a.publishedAt || a.createdAt || '',
+            category: a.category || 'announcement',
+            excerpt: (excerpt ? excerpt.substring(0, 200) : 'Read this news item for more information.'),
+            source: 'Liliw Tourism Office',
+            isEvent: false,
+          });
+        });
+      }
+
+      if (eventsData?.data?.length) {
+        eventsData.data.forEach((item: any) => {
+          const a = item.attributes || item;
+          const desc = extractText(a.description);
+          items.push({
+            title: a.title || 'Upcoming Event',
+            date: a.date_start || a.createdAt || '',
+            category: a.category || 'other',
+            excerpt: (desc ? desc.substring(0, 200) : `Event at ${a.venue || 'Liliw'}`),
+            source: a.venue || 'Liliw',
+            isEvent: true,
+          });
+        });
+      }
+
+      if (items.length > 0) {
+        items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setNews(items);
+      }
+    }).finally(() => setLoading(false));
   }, []);
 
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
-      {/* Page Header */}
       <div className="py-12" style={{ background: 'linear-gradient(to bottom right, rgba(0, 191, 179, 0.05), rgba(0, 191, 179, 0.1))' }}>
         <div className="max-w-4xl mx-auto px-4">
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6 }}
-          >
-            <Link
-              href="/"
-              className="inline-flex items-center font-semibold mb-6 group" style={{ color: '#00BFB3' }}
-            >
-              <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" />
-              Back to Home
+          <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }}>
+            <Link href="/" className="inline-flex items-center font-semibold mb-6 group" style={{ color: '#00BFB3' }}>
+              <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" /> Back to Home
             </Link>
             <h1 className="text-5xl font-bold mb-3" style={{ color: '#00BFB3' }}>News & Announcements</h1>
-            <p className="text-xl text-gray-600">
-              Stay updated on Liliw events, festivals, and community initiatives
-            </p>
+            <p className="text-xl text-gray-600">Stay updated on Liliw events, festivals, and community initiatives</p>
           </motion.div>
         </div>
       </div>
 
-      {/* Content Section */}
       <div className="max-w-4xl mx-auto px-4 py-20">
         {loading ? (
-          <motion.div
-            variants={itemVariants}
-            initial="hidden"
-            animate="visible"
-            className="text-center py-12"
-          >
-            <div className="inline-block">
-              <div className="animate-spin rounded-full h-12 w-12 border-4" style={{ borderColor: 'rgba(0, 191, 179, 0.3)', borderTopColor: '#00BFB3' }}></div>
-            </div>
-            <p className="mt-4 text-gray-600">Loading news...</p>
-          </motion.div>
-        ) : error ? (
-          <motion.div
-            variants={itemVariants}
-            initial="hidden"
-            animate="visible"
-            className="text-center py-12"
-          >
-            <p className="text-red-600 font-semibold">{error}</p>
-          </motion.div>
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2" style={{ borderColor: '#00BFB3' }} />
+          </div>
         ) : (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="space-y-12"
-          >
-            {/* News List */}
+          <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} className="space-y-12">
             <div className="space-y-4">
               {news.map((item, idx) => (
-                <motion.div
-                  key={idx}
-                  variants={itemVariants}
-                  className="p-6 rounded-lg border-l-4 bg-white hover:shadow-lg transition-all duration-300" style={{ borderLeftColor: '#00BFB3' }}
-                >
+                <motion.div key={idx} variants={itemVariants}
+                  className="p-6 rounded-lg border-l-4 bg-white shadow-sm hover:shadow-lg transition-all duration-300" style={{ borderLeftColor: '#00BFB3' }}>
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <Bell className="w-5 h-5 flex-shrink-0" style={{ color: '#00BFB3' }} />
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          item.category === 'Cultural' ? 'text-white' :
-                          item.category === 'Festival' ? 'bg-red-100 text-red-700' :
-                          item.category === 'Workshop' ? 'bg-blue-100 text-blue-700' :
-                          item.category === 'Competition' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}
-                        style={item.category === 'Cultural' ? { backgroundColor: '#00BFB3' } : {}}
-                      >
-                        {item.category}
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold capitalize ${CATEGORY_STYLE[item.category] || 'bg-gray-100 text-gray-700'}`}>
+                        {item.category.replace('_', ' ')}
                       </span>
+                      {item.isEvent && (
+                        <span className="px-2 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">Event</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 text-gray-500 text-sm">
                       <Calendar className="w-4 h-4" />
-                      <span>{new Date(item.date).toLocaleDateString()}</span>
+                      <span>{item.date ? new Date(item.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}</span>
                     </div>
                   </div>
-
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 transition cursor-pointer">
-                    {item.title}
-                  </h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
                   <p className="text-gray-600 mb-3">{item.excerpt}</p>
-
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Source: {item.source}</span>
-                    <div className="flex gap-2">
-                      <button className="font-semibold text-sm" style={{ color: '#00BFB3' }}>
-                        Read More →
-                      </button>
-                      <button className="p-2 text-gray-600 transition" style={{ '--tw-text-opacity': '1' } as any}>
-                        <Share2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <span className="text-sm text-gray-500">{item.source}</span>
+                    <button className="font-semibold text-sm" style={{ color: '#00BFB3' }}>Read More →</button>
                   </div>
                 </motion.div>
               ))}
             </div>
 
-            {news.length === 0 && (
-              <motion.div
-                variants={itemVariants}
-                className="text-center py-12"
-              >
-                <p className="text-gray-600">No news items available.</p>
-              </motion.div>
-            )}
-
-            {/* Subscribe CTA */}
-            <motion.div
-              variants={itemVariants}
-              className="mt-16 rounded-2xl p-8 text-white text-center" style={{ background: 'linear-gradient(135deg, #00BFB3 0%, #0F1F3C 100%)' }}
-            >
+            <motion.div variants={itemVariants} className="mt-16 rounded-2xl p-8 text-white text-center" style={{ background: 'linear-gradient(135deg, #00BFB3 0%, #0F1F3C 100%)' }}>
               <h3 className="text-2xl font-bold mb-4">📮 Stay in the Loop</h3>
-              <p className="mb-6 opacity-90">
-                Subscribe to receive updates on festivals, events, and community initiatives
-              </p>
+              <p className="mb-6 opacity-90">Subscribe to receive updates on festivals, events, and community initiatives</p>
               <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="px-4 py-3 rounded-lg text-gray-900 flex-1"
-                />
-                <button className="px-6 py-3 bg-white font-semibold rounded-lg transition" style={{ color: '#00BFB3' }}>
-                  Subscribe
-                </button>
+                <input type="email" placeholder="Enter your email" className="px-4 py-3 rounded-lg text-gray-900 flex-1" />
+                <button className="px-6 py-3 bg-white font-semibold rounded-lg transition" style={{ color: '#00BFB3' }}>Subscribe</button>
               </div>
             </motion.div>
 
-            {/* Quick Links */}
             <motion.div variants={itemVariants} className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4">
               <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"
                 className="p-4 rounded-lg bg-blue-50 border border-blue-200 hover:shadow-md transition text-center">
@@ -245,7 +166,6 @@ export default function NewsPage() {
           </motion.div>
         )}
       </div>
-
     </div>
   );
 }

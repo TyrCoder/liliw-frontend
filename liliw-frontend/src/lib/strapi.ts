@@ -315,7 +315,7 @@ export const getNews = async () => {
   const cached = getCachedResponse(cacheKey);
   if (cached) return cached;
   try {
-    const response = await fetchWithRetry<StrapiResponse<any[]>>('/news-items?populate=*&sort=createdAt:desc');
+    const response = await fetchWithRetry<StrapiResponse<any[]>>('/newses?populate=*&sort=createdAt:desc');
     const data = response.data || [];
     setCachedResponse(cacheKey, data);
     return data;
