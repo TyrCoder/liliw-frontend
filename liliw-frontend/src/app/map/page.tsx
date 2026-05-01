@@ -4,13 +4,15 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import Map, { Marker, Popup, NavigationControl, GeolocateControl, Source, Layer } from 'react-map-gl/mapbox';
 import type { MapRef } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import Link from 'next/link';
-import { MapPin, Navigation, X, Layers, ChevronLeft, Eye } from 'lucide-react';
+import { MapPin, Navigation, X, Layers, ChevronLeft, Eye, Star } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
 
 const LILIW_CENTER = { longitude: 121.43605859033404, latitude: 14.130301377593792 };
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || '';
 
 const TYPE_CONFIG = {
   heritage: { color: '#FFB400', label: '🏛️ Heritage' },
@@ -25,6 +27,8 @@ interface MapAttraction {
   description?: string;
   lat: number;
   lng: number;
+  photo?: string;
+  rating?: number;
   has_virtual_tour?: boolean;
 }
 
@@ -34,6 +38,26 @@ interface RouteInfo {
 }
 
 type FilterType = 'all' | 'heritage' | 'spot' | 'dining';
+
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          className="w-3 h-3"
+          fill={i <= rating ? '#FFB400' : 'none'}
+          stroke={i <= rating ? '#FFB400' : 'rgba(255,255,255,0.3)'}
+        />
+      ))}
+      {rating > 0 && (
+        <span className="text-xs ml-1 font-semibold" style={{ color: '#FFB400' }}>
+          {rating.toFixed(1)}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function MapPage() {
   const mapRef = useRef<MapRef>(null);
@@ -46,6 +70,7 @@ export default function MapPage() {
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [markersReady, setMarkersReady] = useState(false);
 
   useEffect(() => {
     if (!TOKEN || TOKEN === 'pk.your_mapbox_token_here') {
@@ -59,31 +84,38 @@ export default function MapPage() {
           const c = a.attributes.coordinates;
           return c && c.latitude && c.longitude;
         })
-        .map((a) => ({
-          id: String(a.id),
-          name: a.attributes.name,
-          type: a.type as 'heritage' | 'spot' | 'dining',
-          description: a.attributes.description,
-          lat: a.attributes.coordinates!.latitude,
-          lng: a.attributes.coordinates!.longitude,
-          has_virtual_tour: a.attributes.has_virtual_tour,
-        }));
+        .map((a) => {
+          const rawUrl = a.attributes.photos?.[0]?.url;
+          const photo = rawUrl
+            ? (rawUrl.startsWith('http') ? rawUrl : `${STRAPI_URL}${rawUrl}`)
+            : undefined;
+          return {
+            id: String(a.id),
+            name: a.attributes.name,
+            type: a.type as 'heritage' | 'spot' | 'dining',
+            description: a.attributes.description,
+            lat: a.attributes.coordinates!.latitude,
+            lng: a.attributes.coordinates!.longitude,
+            photo,
+            rating: a.attributes.rating || 0,
+            has_virtual_tour: a.attributes.has_virtual_tour,
+          };
+        });
       setAttractions(mapped);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
-  // Fly in to Liliw on load
   const handleMapLoad = useCallback(() => {
     mapRef.current?.flyTo({
       center: [LILIW_CENTER.longitude, LILIW_CENTER.latitude],
       zoom: 14,
-      duration: 2000,
+      duration: 2200,
       essential: true,
     });
+    setTimeout(() => setMarkersReady(true), 800);
   }, []);
 
-  // Draw route on map using Mapbox Directions API
   const fetchDirections = useCallback(async (destination: MapAttraction) => {
     setRouteLoading(true);
     setRouteGeoJSON(null);
@@ -107,7 +139,6 @@ export default function MapPage() {
           duration: Math.round(route.duration / 60),
         });
 
-        // Fit map to the full route
         const coords = route.geometry.coordinates as [number, number][];
         const lngs = coords.map((c) => c[0]);
         const lats = coords.map((c) => c[1]);
@@ -181,19 +212,25 @@ export default function MapPage() {
           )}
         </div>
 
-        {/* Active route info */}
-        {routeInfo && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs px-2 py-0.5 rounded-full font-semibold flex items-center gap-1"
-              style={{ backgroundColor: 'rgba(0,191,179,0.15)', color: '#00BFB3', border: '1px solid rgba(0,191,179,0.3)' }}>
-              <Navigation className="w-3 h-3" />
-              {routeInfo.distance} km · {routeInfo.duration} min
-            </span>
-            <button onClick={clearRoute} className="text-white/40 hover:text-white transition">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
+        <AnimatePresence>
+          {routeInfo && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              className="flex items-center gap-1.5"
+            >
+              <span className="text-xs px-2 py-0.5 rounded-full font-semibold flex items-center gap-1"
+                style={{ backgroundColor: 'rgba(0,191,179,0.15)', color: '#00BFB3', border: '1px solid rgba(0,191,179,0.3)' }}>
+                <Navigation className="w-3 h-3" />
+                {routeInfo.distance} km · {routeInfo.duration} min
+              </span>
+              <button onClick={clearRoute} className="text-white/40 hover:text-white transition">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Filter tabs */}
         <div className="flex gap-1.5 ml-auto flex-wrap">
@@ -257,8 +294,8 @@ export default function MapPage() {
               </Source>
             )}
 
-            {/* Markers */}
-            {filtered.map((a) => (
+            {/* Markers with staggered entrance */}
+            {filtered.map((a, i) => (
               <Marker
                 key={a.id}
                 longitude={a.lng}
@@ -268,12 +305,23 @@ export default function MapPage() {
               >
                 <motion.div
                   className="flex flex-col items-center cursor-pointer"
-                  animate={{ scale: selected?.id === a.id ? 1.25 : 1 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  initial={markersReady ? { scale: 0, opacity: 0, y: -10 } : false}
+                  animate={{ scale: selected?.id === a.id ? 1.3 : 1, opacity: 1, y: 0 }}
+                  transition={
+                    selected?.id === a.id
+                      ? { type: 'spring', stiffness: 300, damping: 20 }
+                      : { type: 'spring', stiffness: 260, damping: 18, delay: i * 0.04 }
+                  }
+                  whileHover={{ scale: selected?.id === a.id ? 1.3 : 1.15 }}
                 >
                   <div
                     className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center shadow-lg"
-                    style={{ backgroundColor: TYPE_CONFIG[a.type].color }}
+                    style={{
+                      backgroundColor: TYPE_CONFIG[a.type].color,
+                      boxShadow: selected?.id === a.id
+                        ? `0 0 0 4px ${TYPE_CONFIG[a.type].color}44, 0 4px 16px rgba(0,0,0,0.4)`
+                        : '0 2px 8px rgba(0,0,0,0.35)',
+                    }}
                   >
                     <MapPin className="w-4 h-4 text-white" />
                   </div>
@@ -291,33 +339,62 @@ export default function MapPage() {
                 offset={46}
                 onClose={() => setSelected(null)}
                 closeButton={false}
-                maxWidth="280px"
+                maxWidth="300px"
               >
-                <div
-                  className="rounded-2xl overflow-hidden shadow-2xl border"
-                  style={{ backgroundColor: '#0F1F3C', borderColor: 'rgba(0,191,179,0.3)', minWidth: 220 }}
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                  className="rounded-2xl overflow-hidden shadow-2xl"
+                  style={{ backgroundColor: '#0F1F3C', border: '1px solid rgba(0,191,179,0.3)', minWidth: 240 }}
                 >
+                  {/* Photo */}
+                  {selected.photo && (
+                    <div className="relative w-full h-32 overflow-hidden">
+                      <Image
+                        src={selected.photo}
+                        alt={selected.name}
+                        fill
+                        className="object-cover"
+                        sizes="300px"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0F1F3C] via-transparent to-transparent" />
+                      <button
+                        onClick={() => setSelected(null)}
+                        className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center transition"
+                        style={{ backgroundColor: 'rgba(15,31,60,0.75)', backdropFilter: 'blur(4px)' }}
+                      >
+                        <X className="w-3.5 h-3.5 text-white" />
+                      </button>
+                    </div>
+                  )}
+
                   {/* Header */}
-                  <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-2"
+                  <div className={`px-4 ${selected.photo ? 'pt-2' : 'pt-4'} pb-3 flex items-start justify-between gap-2`}
                     style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                     <div className="flex-1 min-w-0">
                       <span
                         className="text-xs font-bold px-2 py-0.5 rounded-full inline-block mb-1.5"
                         style={{
-                          backgroundColor: TYPE_CONFIG[selected.type].color + '22',
+                          backgroundColor: TYPE_CONFIG[selected.type].color + '28',
                           color: TYPE_CONFIG[selected.type].color,
                         }}
                       >
                         {TYPE_CONFIG[selected.type].label}
                       </span>
-                      <h3 className="text-white font-bold text-sm leading-tight">{selected.name}</h3>
+                      <h3 className="text-white font-bold text-sm leading-tight mb-1.5">{selected.name}</h3>
+                      {selected.rating && selected.rating > 0 ? (
+                        <StarRating rating={selected.rating} />
+                      ) : null}
                     </div>
-                    <button
-                      onClick={() => setSelected(null)}
-                      className="text-white/40 hover:text-white transition flex-shrink-0 mt-0.5"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    {!selected.photo && (
+                      <button
+                        onClick={() => setSelected(null)}
+                        className="text-white/40 hover:text-white transition flex-shrink-0 mt-0.5"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Description */}
@@ -359,14 +436,17 @@ export default function MapPage() {
                       </Link>
                     )}
                   </div>
-                </div>
+                </motion.div>
               </Popup>
             )}
           </Map>
         )}
 
         {/* Legend */}
-        <div
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.6, duration: 0.4 }}
           className="absolute bottom-4 left-4 rounded-xl p-3 text-xs space-y-1.5 border"
           style={{ backgroundColor: 'rgba(15,31,60,0.92)', borderColor: 'rgba(0,191,179,0.2)', backdropFilter: 'blur(8px)' }}
         >
@@ -381,7 +461,7 @@ export default function MapPage() {
               Enable location for live directions
             </p>
           )}
-        </div>
+        </motion.div>
       </div>
     </div>
   );
