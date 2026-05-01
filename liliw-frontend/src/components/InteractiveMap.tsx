@@ -83,22 +83,14 @@ export default function InteractiveMap({
       </div>
 
       {attraction && (
-        <div className="flex gap-3">
-          <button
-            onClick={getDirections}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm transition hover:opacity-90"
-            style={{ backgroundColor: '#00BFB3' }}
-          >
-            <Navigation className="w-4 h-4" />
-            Get Directions
-          </button>
-          <div className="flex-1 bg-gray-50 rounded-xl px-4 py-3 text-center">
-            <p className="text-xs text-gray-500 font-semibold uppercase mb-0.5">Coordinates</p>
-            <p className="text-sm font-mono text-gray-800">
-              {lat.toFixed(4)}°N, {lng.toFixed(4)}°E
-            </p>
-          </div>
-        </div>
+        <button
+          onClick={getDirections}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm transition hover:opacity-90"
+          style={{ backgroundColor: '#00BFB3' }}
+        >
+          <Navigation className="w-4 h-4" />
+          Get Directions
+        </button>
       )}
     </div>
   );
