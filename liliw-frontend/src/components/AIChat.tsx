@@ -62,10 +62,16 @@ export default function AIChat() {
     setLoading(true);
 
     try {
+      // Build history for context (last 10 messages, excluding greeting)
+      const history = messages
+        .slice(1)
+        .slice(-10)
+        .map((m) => ({ role: m.sender === 'user' ? 'user' : 'assistant' as const, content: m.text }));
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: input, history }),
       });
 
       if (!response.ok) {
