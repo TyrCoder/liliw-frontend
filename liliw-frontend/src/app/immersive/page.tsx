@@ -260,7 +260,7 @@ export default function ImmersivePage() {
   }, [selectedAttraction]);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#0F1F3C' }}>
+    <div style={{ backgroundColor: '#0F1F3C', minHeight: 'calc(100vh - 65px)' }}>
       {/* Password Modal */}
       <AnimatePresence>
         {showPasswordModal && (
@@ -379,20 +379,20 @@ export default function ImmersivePage() {
       </motion.nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="px-3 sm:px-5 py-4">
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto" style={{ borderColor: '#00BFB3' }} />
             <p className="text-white mt-4">Loading immersive experiences...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
             {/* Viewer */}
             <motion.div
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.6 }}
-              className="lg:col-span-3"
+              className="lg:col-span-4"
             >
               {selectedAttraction && scenes.length > 0 ? (
                 <ImmersiveViewer

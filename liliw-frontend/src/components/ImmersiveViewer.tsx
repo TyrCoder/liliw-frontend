@@ -577,15 +577,39 @@ export default function ImmersiveViewer({
     setPending({ pitch, yaw });
   }, [editMode, pending]);
 
+  const autoSave = useCallback(async (updated: Hotspot[]) => {
+    if (!onSaveHotspots) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      await onSaveHotspots(updated);
+      setSaved(true);
+    } catch (e: any) {
+      setSaveError(e?.message || 'Auto-save failed');
+      setTimeout(() => setSaveError(''), 4000);
+    } finally {
+      setSaving(false);
+    }
+  }, [onSaveHotspots]);
+
   const confirmHotspot = (h: Omit<Hotspot, 'id'>, newScene?: NewSceneResult) => {
     if (newScene) onNewScene?.(newScene.photo, scenes.length);
-    setHotspots((prev) => [...prev, { ...h, id: crypto.randomUUID(), sceneIndex }]);
+    const newHotspot = { ...h, id: crypto.randomUUID(), sceneIndex };
+    setHotspots((prev) => {
+      const updated = [...prev, newHotspot];
+      autoSave(updated);
+      return updated;
+    });
     setPending(null);
     setSaved(false);
   };
 
   const deleteHotspot = (id: string) => {
-    setHotspots((prev) => prev.filter((h) => h.id !== id));
+    setHotspots((prev) => {
+      const updated = prev.filter((h) => h.id !== id);
+      autoSave(updated);
+      return updated;
+    });
     setSaved(false);
   };
 
@@ -656,7 +680,7 @@ export default function ImmersiveViewer({
       className="rounded-xl overflow-hidden bg-black border-2 select-none"
       style={{ borderColor: editMode ? '#FFB400' : '#00BFB3' }}
     >
-      <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+      <div className="relative w-full" style={{ height: 'clamp(420px, calc(100vh - 180px), 900px)' }}>
 
         {/* Loading */}
         <AnimatePresence>
@@ -708,8 +732,10 @@ export default function ImmersiveViewer({
           <Canvas
             camera={{ fov: 80, position: [0, 0, 0.01] }}
             gl={{ antialias: true, preserveDrawingBuffer: true }}
+            dpr={[1, 2]}
             style={{ cursor: editMode ? 'crosshair' : 'grab' }}
             onCreated={({ gl }) => {
+              gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
               gl.domElement.addEventListener('webglcontextlost', (e) => e.preventDefault(), false);
             }}
           >
