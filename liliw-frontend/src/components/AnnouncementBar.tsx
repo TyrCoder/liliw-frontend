@@ -16,7 +16,7 @@ export default function AnnouncementBar({ defaultOpen = true }: AnnouncementBarP
   const [subtext, setSubtext] = useState('');
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/news?populate=*&sort=createdAt:desc&pagination[limit]=1`, {
+    fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/newses?populate=*&sort=createdAt:desc&pagination[limit]=1`, {
       headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}` }
     }).then(r => r.json()).then(data => {
       const item = data?.data?.[0];
