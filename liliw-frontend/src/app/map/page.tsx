@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Map, { Marker, Popup, NavigationControl, GeolocateControl } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { MapPin, Navigation, X, Layers, ChevronLeft, Eye } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
