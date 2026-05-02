@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -164,7 +163,7 @@ function PhotoGallery({ photos, title }: { photos: string[]; title: string }) {
             transition={{ duration: 0.35 }}
             className="absolute inset-0"
           >
-            <Image src={photos[active]} alt={`${title} photo ${active + 1}`} fill className="object-cover" />
+            <img src={photos[active]} alt={`${title} photo ${active + 1}`} className="absolute inset-0 w-full h-full object-cover" />
           </motion.div>
         </AnimatePresence>
         {photos.length > 1 && (
@@ -191,7 +190,7 @@ function PhotoGallery({ photos, title }: { photos: string[]; title: string }) {
           {photos.map((src, i) => (
             <button key={i} onClick={() => setActive(i)}
               className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition ${i === active ? 'border-teal-400' : 'border-transparent opacity-60 hover:opacity-90'}`}>
-              <Image src={src} alt="" width={56} height={56} className="object-cover w-full h-full" />
+              <img src={src} alt="" className="w-full h-full object-cover" />
             </button>
           ))}
         </div>
@@ -250,7 +249,7 @@ function DetailModal({ itin, onClose, onBook }: {
         {/* Hero */}
         {itin.cover_photo && (
           <div className="relative flex-shrink-0 h-52">
-            <Image src={itin.cover_photo} alt={itin.title} fill className="object-cover" />
+            <img src={itin.cover_photo} alt={itin.title} className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
             <div className="absolute bottom-4 left-5 right-14">
               <h2 className="text-2xl font-bold text-white leading-tight">{itin.title}</h2>
@@ -505,7 +504,7 @@ export default function ItinerariesPage() {
                 >
                   <div className="relative h-44 bg-gradient-to-br from-teal-100 to-cyan-50 flex-shrink-0">
                     {itin.cover_photo ? (
-                      <Image src={itin.cover_photo} alt={itin.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img src={itin.cover_photo} alt={itin.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center opacity-20">
                         <MapPin className="w-16 h-16" style={{ color: '#00BFB3' }} />
