@@ -149,18 +149,23 @@ function HotspotMarker({
   return (
     <group position={pos}>
       <Html center distanceFactor={220} zIndexRange={[1, 50]}>
-        <div
+        <motion.div
           className="flex flex-col items-center gap-2 select-none"
           style={{ pointerEvents: 'all' }}
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           onTouchStart={() => setHovered(true)}
           onTouchEnd={() => setTimeout(() => setHovered(false), 600)}
         >
-          <button
+          <motion.button
             onClick={(e) => { e.stopPropagation(); onClick?.(hotspot); }}
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.9 }}
             style={{
-              width: 64, height: 64,
+              width: 88, height: 88,
               background: 'none', border: 'none',
               cursor: 'pointer', padding: 0,
               position: 'relative',
@@ -170,18 +175,18 @@ function HotspotMarker({
             {/* Outer pulse ring */}
             <span style={{
               position: 'absolute',
-              inset: -8,
+              inset: -10,
               borderRadius: '50%',
-              border: `1.5px solid ${accentColor}`,
+              border: `2px solid ${accentColor}`,
               opacity: 0.5,
               animation: 'ping 2s cubic-bezier(0,0,0.2,1) infinite',
             }} />
             {/* Second slower pulse */}
             <span style={{
               position: 'absolute',
-              inset: -4,
+              inset: -5,
               borderRadius: '50%',
-              border: `1px solid ${accentColor}`,
+              border: `1.5px solid ${accentColor}`,
               opacity: 0.3,
               animation: 'ping 2.8s cubic-bezier(0,0,0.2,1) infinite 0.4s',
             }} />
@@ -190,46 +195,45 @@ function HotspotMarker({
               position: 'absolute',
               inset: 0,
               borderRadius: '50%',
-              backgroundColor: hovered ? bgColor.replace('0.18', '0.30') : bgColor,
-              border: `2px solid ${borderColor}`,
+              backgroundColor: hovered ? bgColor.replace('0.18', '0.35') : bgColor,
+              border: `2.5px solid ${borderColor}`,
               boxShadow: hovered
-                ? `0 0 0 4px rgba(255,255,255,0.15), 0 0 24px ${glowColor}, inset 0 0 12px rgba(255,255,255,0.08)`
-                : `0 0 12px ${glowColor}40, inset 0 0 6px rgba(255,255,255,0.05)`,
-              backdropFilter: 'blur(4px)',
-              transition: 'all 0.2s ease',
-              transform: hovered ? 'scale(1.12)' : 'scale(1)',
+                ? `0 0 0 6px rgba(255,255,255,0.12), 0 0 32px ${glowColor}, inset 0 0 16px rgba(255,255,255,0.10)`
+                : `0 0 18px ${glowColor}60, inset 0 0 8px rgba(255,255,255,0.06)`,
+              backdropFilter: 'blur(6px)',
+              transition: 'all 0.25s ease',
             }} />
             {/* Icon */}
             <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {isNav ? (
-                <Navigation style={{ width: 22, height: 22, color: 'white', filter: 'drop-shadow(0 0 4px rgba(0,191,179,0.8))' }} />
+                <Navigation style={{ width: 30, height: 30, color: 'white', filter: 'drop-shadow(0 0 6px rgba(0,191,179,0.9))' }} />
               ) : (
-                <Info style={{ width: 22, height: 22, color: '#FFD54F', filter: 'drop-shadow(0 0 4px rgba(255,180,0,0.8))' }} />
+                <Info style={{ width: 30, height: 30, color: '#FFD54F', filter: 'drop-shadow(0 0 6px rgba(255,180,0,0.9))' }} />
               )}
             </span>
-          </button>
+          </motion.button>
 
           {/* Label */}
           <AnimatePresence>
             {(hovered || editMode) && (
               <motion.span
-                initial={{ opacity: 0, y: -4, scale: 0.9 }}
+                initial={{ opacity: 0, y: -6, scale: 0.85 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -4, scale: 0.9 }}
-                transition={{ duration: 0.15 }}
+                exit={{ opacity: 0, y: -6, scale: 0.85 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 22 }}
                 style={{
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: 700,
-                  padding: '4px 10px',
+                  padding: '5px 13px',
                   borderRadius: 20,
                   whiteSpace: 'nowrap',
-                  backgroundColor: 'rgba(0,0,0,0.75)',
+                  backgroundColor: 'rgba(0,0,0,0.82)',
                   color: 'white',
-                  border: `1px solid ${accentColor}60`,
-                  backdropFilter: 'blur(8px)',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.6)',
-                  letterSpacing: '0.02em',
-                  maxWidth: 160,
+                  border: `1px solid ${accentColor}70`,
+                  backdropFilter: 'blur(10px)',
+                  boxShadow: `0 4px 16px rgba(0,0,0,0.7), 0 0 8px ${accentColor}30`,
+                  letterSpacing: '0.03em',
+                  maxWidth: 180,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                 }}
@@ -241,22 +245,25 @@ function HotspotMarker({
 
           {/* Delete button (edit mode only) */}
           {editMode && (
-            <button
+            <motion.button
               onClick={(e) => { e.stopPropagation(); onDelete?.(hotspot.id); }}
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.85 }}
               style={{
-                width: 22, height: 22,
+                width: 26, height: 26,
                 borderRadius: '50%',
                 backgroundColor: '#ef4444',
                 color: 'white',
-                border: 'none',
+                border: '2px solid rgba(255,255,255,0.3)',
                 cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(239,68,68,0.5)',
               }}
             >
-              <X style={{ width: 12, height: 12 }} />
-            </button>
+              <X style={{ width: 13, height: 13 }} />
+            </motion.button>
           )}
-        </div>
+        </motion.div>
       </Html>
     </group>
   );
@@ -775,8 +782,11 @@ export default function ImmersiveViewer({
 
           {/* Top bar */}
           <div className="flex items-start justify-between p-2 sm:p-3 gap-2">
-            <div className="pointer-events-auto px-3 py-2 rounded-lg"
-              style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}>
+            <motion.div
+              initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="pointer-events-auto px-3 py-2 rounded-xl"
+              style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)' }}>
               {editMode && (
                 <div className="text-xs font-bold mb-0.5 flex items-center gap-1" style={{ color: '#FFB400' }}>
                   <PenLine className="w-3 h-3" />
@@ -788,129 +798,165 @@ export default function ImmersiveViewer({
                 <MapPin className="w-3.5 h-3.5 flex-shrink-0" style={{ color: editMode ? '#FFB400' : '#00BFB3' }} />
                 <span className="text-white font-bold text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{current.title}</span>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Top-right buttons */}
-            <div className="pointer-events-auto flex flex-wrap gap-1.5 sm:gap-2 justify-end">
+            {/* Top-right: save button in edit mode only */}
+            <motion.div
+              initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="pointer-events-auto flex flex-col items-end gap-1"
+            >
               {editMode && (
-                <div className="flex flex-col items-end gap-1">
-                  <button
+                <>
+                  <motion.button
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg text-xs sm:text-sm font-bold flex items-center gap-1 transition disabled:opacity-60"
+                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-1.5 transition disabled:opacity-60"
                     style={{
                       backgroundColor: saveError ? '#ef4444' : saved ? '#22c55e' : '#FFB400',
                       color: saveError ? 'white' : '#0F1F3C',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                     }}
                   >
                     {saving ? '...' : saveError ? '✕ Error' : saved
-                      ? <><Check className="w-3.5 h-3.5" /> Saved</>
-                      : <><Save className="w-3.5 h-3.5" /> Save</>}
-                  </button>
+                      ? <><Check className="w-4 h-4" /> Saved</>
+                      : <><Save className="w-4 h-4" /> Save</>}
+                  </motion.button>
                   {saveError && (
                     <span className="text-red-400 text-xs bg-black/70 px-2 py-0.5 rounded max-w-44 text-right leading-tight">
                       {saveError}
                     </span>
                   )}
-                </div>
+                </>
               )}
-              {!editMode && (
-                <button onClick={() => setAutoRotate((v) => !v)}
-                  className="p-2 sm:p-2.5 rounded-lg text-white text-xs font-bold transition"
-                  style={{ background: autoRotate ? 'rgba(0,191,179,0.7)' : 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-                  ↻
-                </button>
-              )}
-              <button onClick={takeScreenshot}
-                className="p-2 sm:p-2.5 rounded-lg text-white transition"
-                style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-                <Camera className="w-4 h-4" />
-              </button>
-              <button onClick={toggleFullscreen}
-                className="p-2 sm:p-2.5 rounded-lg text-white transition"
-                style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </button>
-              {!editMode && vrSupported && (
-                <button onClick={() => xrStore.enterVR()}
-                  className="p-2 sm:p-2.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition"
-                  style={{ backgroundColor: '#00BFB3', color: '#0F1F3C' }}>
-                  <Headphones className="w-4 h-4" />
-                  <span className="hidden sm:inline">VR</span>
-                </button>
-              )}
-              {!editMode && arSupported && (
-                <button onClick={() => xrStore.enterAR()}
-                  className="p-2 sm:p-2.5 rounded-lg text-white flex items-center gap-1 text-xs font-semibold transition"
-                  style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-                  <ScanLine className="w-4 h-4" />
-                  <span className="hidden sm:inline">AR</span>
-                </button>
-              )}
-            </div>
+            </motion.div>
           </div>
 
-          {/* Editor: hotspot list */}
-          {editMode && sceneHotspots.length > 0 && (
-            <div className="pointer-events-auto mx-2 sm:mx-3 mb-2 p-2 rounded-lg text-xs text-white"
-              style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }}>
-              <div className="font-bold mb-1 text-yellow-400">
-                {sceneHotspots.length} hotspot{sceneHotspots.length !== 1 ? 's' : ''} on this scene
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {sceneHotspots.map((h) => (
-                  <span key={h.id}
-                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-white"
-                    style={{ backgroundColor: h.type === 'navigate' ? 'rgba(0,191,179,0.5)' : 'rgba(255,180,0,0.5)' }}>
-                    {h.type === 'navigate' ? <Navigation className="w-3 h-3" /> : <Info className="w-3 h-3" />}
-                    {h.label}
-                    <button onClick={() => deleteHotspot(h.id)} className="ml-1 hover:text-red-400">
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Bottom section: hotspot list + thumbnails + control buttons */}
+          <div className="flex flex-col gap-2 pb-2 sm:pb-3 px-2 sm:px-3">
 
-          {/* Bottom: thumbnail strip */}
-          {hasMultiple && (
-            <div className="flex flex-col gap-1.5 pb-2 sm:pb-3 px-2 sm:px-3">
-              <div className="self-center text-white text-xs font-semibold px-3 py-1 rounded-full"
-                style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
-                {sceneIndex + 1} / {scenes.length}
-              </div>
-              <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
-                <button
-                  onClick={() => goToScene((sceneIndex - 1 + scenes.length) % scenes.length)}
-                  className="flex-shrink-0 p-2.5 sm:p-3 rounded-lg text-white transition active:scale-95"
-                  style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <div className="flex gap-1.5 sm:gap-2 overflow-x-auto flex-1 py-1">
-                  {scenes.map((scene, idx) => (
-                    <button key={scene.id} onClick={() => goToScene(idx)}
-                      className="flex-shrink-0 relative rounded-lg overflow-hidden border-2 transition-all active:scale-95"
-                      style={{
-                        width: 64, height: 42,
-                        borderColor: idx === sceneIndex ? (editMode ? '#FFB400' : '#00BFB3') : 'rgba(255,255,255,0.2)',
-                        opacity: idx === sceneIndex ? 1 : 0.55,
-                        transform: idx === sceneIndex ? 'scale(1.08)' : 'scale(1)',
-                        boxShadow: idx === sceneIndex ? `0 0 8px ${editMode ? '#FFB400' : '#00BFB3'}80` : 'none',
-                      }}>
-                      <img src={scene.thumbUrl || scene.imageUrl} alt={scene.title} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
+            {/* Editor: hotspot list — sits just above thumbnails */}
+            <AnimatePresence>
+              {editMode && sceneHotspots.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.25 }}
+                  className="pointer-events-auto p-2.5 rounded-xl text-xs text-white"
+                  style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,180,0,0.25)' }}>
+                  <div className="font-bold mb-1.5 text-yellow-400 flex items-center gap-1">
+                    <PenLine className="w-3 h-3" />
+                    {sceneHotspots.length} hotspot{sceneHotspots.length !== 1 ? 's' : ''} on this scene
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sceneHotspots.map((h) => (
+                      <motion.span key={h.id}
+                        initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-white text-xs font-medium"
+                        style={{ backgroundColor: h.type === 'navigate' ? 'rgba(0,191,179,0.55)' : 'rgba(255,180,0,0.55)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                        {h.type === 'navigate' ? <Navigation className="w-3 h-3" /> : <Info className="w-3 h-3" />}
+                        {h.label}
+                        <button onClick={() => deleteHotspot(h.id)} className="ml-1 hover:text-red-400 transition-colors">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </motion.span>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Thumbnail strip + control buttons row */}
+            <div className="flex items-end gap-2">
+
+              {/* Thumbnail strip */}
+              {hasMultiple && (
+                <div className="flex-1 flex flex-col gap-1.5">
+                  <div className="self-center text-white text-xs font-semibold px-3 py-1 rounded-full"
+                    style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+                    {sceneIndex + 1} / {scenes.length}
+                  </div>
+                  <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
+                    <motion.button
+                      onClick={() => goToScene((sceneIndex - 1 + scenes.length) % scenes.length)}
+                      whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                      className="flex-shrink-0 p-3 rounded-xl text-white transition"
+                      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <ChevronLeft className="w-5 h-5" />
+                    </motion.button>
+                    <div className="flex gap-1.5 sm:gap-2 overflow-x-auto flex-1 py-1">
+                      {scenes.map((scene, idx) => (
+                        <motion.button key={scene.id} onClick={() => goToScene(idx)}
+                          whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+                          className="flex-shrink-0 relative rounded-xl overflow-hidden border-2 transition-all"
+                          style={{
+                            width: 70, height: 46,
+                            borderColor: idx === sceneIndex ? (editMode ? '#FFB400' : '#00BFB3') : 'rgba(255,255,255,0.2)',
+                            opacity: idx === sceneIndex ? 1 : 0.5,
+                            boxShadow: idx === sceneIndex ? `0 0 12px ${editMode ? '#FFB400' : '#00BFB3'}90` : 'none',
+                          }}>
+                          <img src={scene.thumbUrl || scene.imageUrl} alt={scene.title} className="w-full h-full object-cover" />
+                        </motion.button>
+                      ))}
+                    </div>
+                    <motion.button
+                      onClick={() => goToScene((sceneIndex + 1) % scenes.length)}
+                      whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                      className="flex-shrink-0 p-3 rounded-xl text-white transition"
+                      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <ChevronRight className="w-5 h-5" />
+                    </motion.button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => goToScene((sceneIndex + 1) % scenes.length)}
-                  className="flex-shrink-0 p-2.5 sm:p-3 rounded-lg text-white transition active:scale-95"
-                  style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
+              )}
+
+              {/* Control buttons — bottom right */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+                className="pointer-events-auto flex gap-2 flex-shrink-0"
+              >
+                {!editMode && (
+                  <motion.button
+                    onClick={() => setAutoRotate((v) => !v)}
+                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                    className="p-3 rounded-xl text-white text-lg font-bold leading-none transition"
+                    style={{
+                      background: autoRotate ? 'rgba(0,191,179,0.75)' : 'rgba(0,0,0,0.7)',
+                      backdropFilter: 'blur(6px)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      minWidth: 46, minHeight: 46,
+                    }}>
+                    ↻
+                  </motion.button>
+                )}
+                <motion.button
+                  onClick={takeScreenshot}
+                  whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                  className="p-3 rounded-xl text-white transition"
+                  style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.12)', minWidth: 46, minHeight: 46 }}>
+                  <Camera className="w-5 h-5" />
+                </motion.button>
+                <motion.button
+                  onClick={toggleFullscreen}
+                  whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                  className="p-3 rounded-xl text-white transition"
+                  style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.12)', minWidth: 46, minHeight: 46 }}>
+                  {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                </motion.button>
+                {!editMode && vrSupported && (
+                  <motion.button
+                    onClick={() => xrStore.enterVR()}
+                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                    className="p-3 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition"
+                    style={{ backgroundColor: '#00BFB3', color: '#0F1F3C', minWidth: 46, minHeight: 46 }}>
+                    <Headphones className="w-5 h-5" />
+                    <span className="hidden sm:inline">VR</span>
+                  </motion.button>
+                )}
+              </motion.div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
