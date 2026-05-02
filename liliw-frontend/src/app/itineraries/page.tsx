@@ -3,18 +3,16 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Clock, Users } from 'lucide-react';
+import { ChevronLeft, Clock, Users, MapPin } from 'lucide-react';
 import { getItineraries } from '@/lib/strapi';
 
-const FALLBACK = [
-  { title: 'Half-Day Tsinelas & Heritage Experience', duration: 'half-day', difficulty: 'easy', highlights: ['Visit tsinelas workshops and meet local craftspeople', 'Tour heritage church and historical district', 'Sample local snacks and refreshments', 'Browse and purchase authentic tsinelas'] },
-  { title: '1-Day Cultural Immersion Tour', duration: 'one-day', difficulty: 'moderate', highlights: ['Full-day workshop experience in tsinelas-making', 'Heritage site tours (churches, old buildings)', 'Local lunch at traditional restaurant', 'Visit artisan galleries and creative spaces'] },
-  { title: '2-Day Nature & Heritage Adventure', duration: 'two-day', difficulty: 'moderate', highlights: ['Day 1: Heritage tours, cultural exploration', 'Overnight stay in local accommodations', 'Day 2: Nature activities (cold springs, scenic hikes)', 'Farm tourism and agricultural activities'] },
-];
-
 const DURATION_LABEL: Record<string, string> = {
-  'half-day': '4 hours', 'one-day': '8 hours', 'two-day': '2 days',
-  'heritage': 'Heritage Tour', 'foodie': 'Food Tour', 'family': 'Family Tour',
+  'half-day': '4 hours',
+  'one-day': '8 hours',
+  'two-day': '2 days',
+  'heritage': 'Heritage Tour',
+  'foodie': 'Food Tour',
+  'family': 'Family Tour',
 };
 
 const DIFFICULTY_CLASS: Record<string, string> = {
@@ -27,23 +25,22 @@ const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, trans
 const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 0.4 } } };
 
 export default function ItinerariesPage() {
-  const [itineraries, setItineraries] = useState<any[]>(FALLBACK);
+  const [itineraries, setItineraries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getItineraries().then((data) => {
-      if (data.length > 0) {
-        setItineraries(data.map((item: any) => {
-          const a = item.attributes || item;
-          return {
-            title: a.title,
-            duration: a.duration || 'half-day',
-            difficulty: a.difficulty || 'easy',
-            highlights: Array.isArray(a.highlights) ? a.highlights : (Array.isArray(a.stops) ? a.stops : []),
-            description: a.description,
-          };
-        }));
-      }
+      setItineraries(data.map((item: any) => {
+        const a = item.attributes || item;
+        return {
+          title: a.title,
+          duration: a.duration || 'half-day',
+          difficulty: a.difficulty || 'easy',
+          highlights: Array.isArray(a.highlights) ? a.highlights : (Array.isArray(a.stops) ? a.stops : []),
+          price: a.price,
+          max_participants: a.max_participants,
+        };
+      }));
     }).finally(() => setLoading(false));
   }, []);
 
@@ -66,6 +63,12 @@ export default function ItinerariesPage() {
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2" style={{ borderColor: '#00BFB3' }} />
           </div>
+        ) : itineraries.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <MapPin className="w-14 h-14 mb-4" style={{ color: '#00BFB3', opacity: 0.4 }} />
+            <h3 className="text-2xl font-bold text-gray-400 mb-2">No itineraries yet</h3>
+            <p className="text-gray-400 max-w-sm">Check back soon — curated tour packages will appear here once published in Strapi.</p>
+          </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} className="space-y-12">
             <div className="space-y-6">
@@ -86,12 +89,17 @@ export default function ItinerariesPage() {
                             {itinerary.difficulty}
                           </span>
                         </div>
+                        {itinerary.price && (
+                          <div className="flex items-center gap-1 font-bold" style={{ color: '#00BFB3' }}>
+                            ₱{Number(itinerary.price).toLocaleString()}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                   {itinerary.highlights?.length > 0 && (
                     <div>
-                      <h4 className="font-bold text-gray-900 mb-3">✓ Highlights:</h4>
+                      <h4 className="font-bold text-gray-900 mb-3">Highlights:</h4>
                       <ul className="space-y-2">
                         {itinerary.highlights.map((h: string, i: number) => (
                           <li key={i} className="flex items-start gap-3 text-gray-700">
@@ -110,7 +118,7 @@ export default function ItinerariesPage() {
             </div>
 
             <motion.div variants={itemVariants} className="mt-16 space-y-6">
-              <h2 className="text-3xl font-bold text-gray-900">💡 Travel Tips</h2>
+              <h2 className="text-3xl font-bold text-gray-900">Travel Tips</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="p-6 rounded-lg bg-blue-50 border border-blue-200">
                   <h4 className="text-lg font-bold text-blue-900 mb-3">Best Time to Visit</h4>
@@ -135,7 +143,6 @@ export default function ItinerariesPage() {
           </motion.div>
         )}
       </div>
-
     </div>
   );
 }
