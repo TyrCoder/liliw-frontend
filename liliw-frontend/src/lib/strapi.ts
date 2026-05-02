@@ -152,7 +152,7 @@ export const getItineraries = async (): Promise<Itinerary[]> => {
   if (cached) return cached;
 
   try {
-    const response = await fetchWithRetry<StrapiResponse<Itinerary[]>>('/itineraries?populate=*');
+    const response = await fetchWithRetry<StrapiResponse<Itinerary[]>>('/iteneraries?populate=*');
     const data = response.data || [];
     setCachedResponse(cacheKey, data);
     return data;
