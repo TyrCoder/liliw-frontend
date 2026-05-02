@@ -203,7 +203,7 @@ export default function ImmersivePage() {
     const scene = {
       id: photo.public_id,
       title: photo.name || `Scene ${idx + 1}`,
-      imageUrl: cloudinaryTransform(photo.url, 'w_4096,q_auto,f_auto'),
+      imageUrl: cloudinaryTransform(photo.url, 'q_100,f_jpg'),
       thumbUrl: cloudinaryTransform(photo.url, 'w_256,q_20,e_blur:400,f_auto'),
     };
     return { scene, photo };
@@ -218,7 +218,7 @@ export default function ImmersivePage() {
   const scenes = virtualTourPhotos.map((photo, idx) => ({
     id: photo.public_id || String(idx),
     title: photo.name || `Scene ${idx + 1}`,
-    imageUrl: cloudinaryTransform(photo.url, 'w_4096,q_auto,f_auto'),
+    imageUrl: cloudinaryTransform(photo.url, 'q_100,f_jpg'),
     thumbUrl: cloudinaryTransform(photo.url, 'w_256,q_20,e_blur:400,f_auto'),
   }));
 

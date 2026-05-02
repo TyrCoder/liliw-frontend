@@ -70,8 +70,10 @@ function PanoramaSphere({
   onPlace?: (pitch: number, yaw: number) => void;
   onReady?: () => void;
 }) {
+  const { gl } = useThree();
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   const disposed = useRef(false);
+  const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
 
   useEffect(() => {
     disposed.current = false;
@@ -80,6 +82,10 @@ function PanoramaSphere({
     const apply = (tex: THREE.Texture) => {
       if (disposed.current) { tex.dispose(); return; }
       tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.anisotropy = maxAnisotropy;
+      tex.needsUpdate = true;
       setTexture((prev) => { prev?.dispose(); return tex; });
     };
 
@@ -97,7 +103,7 @@ function PanoramaSphere({
     }
 
     return () => { disposed.current = true; };
-  }, [url, thumbUrl, onReady]);
+  }, [url, thumbUrl, onReady, maxAnisotropy]);
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     if (!editMode || !onPlace) return;
