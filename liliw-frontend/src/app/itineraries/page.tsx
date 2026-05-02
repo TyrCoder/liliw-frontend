@@ -272,47 +272,45 @@ export default function ItinerariesPage() {
         )}
       </div>
 
-      {/* Booking modal */}
+      {/* Booking modal — single motion.div child so AnimatePresence can track it */}
       <AnimatePresence>
         {bookingTarget && (
-          <>
+          <motion.div
+            key="booking-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+          >
             {/* Backdrop */}
-            <motion.div
-              key="backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setBookingTarget(null)}
             />
 
-            {/* Drawer / modal */}
+            {/* Sheet / modal */}
             <motion.div
-              key="modal"
-              initial={{ opacity: 0, y: 60, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 60, scale: 0.97 }}
+              initial={{ y: 64, scale: 0.97 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 64, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-              className="fixed inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center z-50 p-0 sm:p-4"
+              className="relative bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl overflow-hidden max-h-[92vh] overflow-y-auto z-10"
             >
-              <div className="relative bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
-                {/* Close button */}
-                <button
-                  onClick={() => setBookingTarget(null)}
-                  className="absolute top-4 right-4 z-10 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
-                >
-                  <X className="w-4 h-4 text-gray-600" />
-                </button>
+              <button
+                onClick={() => setBookingTarget(null)}
+                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+              >
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
 
-                <BookingForm
-                  tourName={bookingTarget.title}
-                  tourId={bookingTarget.id}
-                  price={bookingTarget.price || 0}
-                  maxParticipants={bookingTarget.max_participants || 20}
-                />
-              </div>
+              <BookingForm
+                tourName={bookingTarget.title}
+                tourId={bookingTarget.id}
+                price={bookingTarget.price || 0}
+                maxParticipants={bookingTarget.max_participants || 20}
+              />
             </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
