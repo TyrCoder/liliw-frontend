@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
     pagesBufferLength: 5,
   },
   images: {
-    domains: ["liliw-strapi-backend.onrender.com", "res.cloudinary.com"],
+    domains: ["liliw-strapi-backend.onrender.com", "res.cloudinary.com", "localhost"],
     unoptimized: true,
     remotePatterns: [
       {
@@ -32,6 +32,12 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "1337",
+        pathname: "/uploads/**",
       },
     ],
   },
