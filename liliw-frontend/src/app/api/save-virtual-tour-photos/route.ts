@@ -36,9 +36,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `PUT failed (${putRes.status}): ${text}` }, { status: putRes.status });
     }
 
-    // Publish so the changes are visible via the public Content API
+    // Publish so the changes are visible via the public Content API.
+    // 405 means Draft & Publish is disabled on this content type — PUT already made it live.
     const pubRes = await fetch(`${baseUrl}/actions/publish`, { method: 'POST', headers });
-    if (!pubRes.ok) {
+    if (!pubRes.ok && pubRes.status !== 405) {
       const text = await pubRes.text();
       return NextResponse.json({ error: `Publish failed (${pubRes.status}): ${text}` }, { status: pubRes.status });
     }
