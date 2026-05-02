@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, Users, Phone, Mail, CheckCircle, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Calendar, Users, Phone, Mail, User, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface BookingProps {
   tourName: string;
@@ -10,6 +10,15 @@ interface BookingProps {
   price?: number;
   maxParticipants?: number;
 }
+
+const inputClass = `
+  w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-gray-900
+  placeholder:text-gray-400 font-medium text-sm
+  focus:outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-100
+  transition-all duration-200
+`.trim();
+
+const labelClass = 'flex items-center gap-2 text-sm font-semibold text-gray-700 mb-1.5';
 
 export default function BookingForm({ tourName, tourId, price = 0, maxParticipants = 50 }: BookingProps) {
   const [formData, setFormData] = useState({
@@ -23,6 +32,7 @@ export default function BookingForm({ tourName, tourId, price = 0, maxParticipan
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+  const [bookingRef, setBookingRef] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -34,10 +44,10 @@ export default function BookingForm({ tourName, tourId, price = 0, maxParticipan
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.email || !formData.phone || !formData.date) {
       setStatus('error');
-      setMessage('Please fill all required fields');
+      setMessage('Please fill in all required fields.');
       return;
     }
 
@@ -55,178 +65,232 @@ export default function BookingForm({ tourName, tourId, price = 0, maxParticipan
         }),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
         setStatus('success');
-        setMessage('✓ Booking confirmed! Check your email for details.');
+        setMessage(data.message || 'Booking confirmed!');
+        setBookingRef(data.bookingRef || '');
         setFormData({ name: '', email: '', phone: '', date: '', participants: 1, notes: '' });
-        setTimeout(() => setStatus('idle'), 5000);
       } else {
         setStatus('error');
-        setMessage('Booking failed. Try again.');
+        setMessage(data.error || 'Booking failed. Please try again.');
       }
-    } catch (error) {
+    } catch {
       setStatus('error');
-      setMessage('Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setMessage('Connection error. Please try again.');
     }
   };
 
   const total = price * formData.participants;
   const minDate = new Date().toISOString().split('T')[0];
 
+  if (status === 'success') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="rounded-2xl p-8 text-center"
+        style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', border: '2px solid #86efac' }}
+      >
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
+          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+          style={{ backgroundColor: '#22c55e' }}
+        >
+          <CheckCircle className="w-8 h-8 text-white" />
+        </motion.div>
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h3>
+        <p className="text-gray-600 mb-4">{message}</p>
+        {bookingRef && (
+          <div className="inline-block px-4 py-2 rounded-xl bg-white border border-green-200 text-sm font-mono font-bold text-green-700 mb-6">
+            Ref: {bookingRef}
+          </div>
+        )}
+        <div className="text-sm text-gray-500 mb-6">
+          <p>Tour: <span className="font-semibold text-gray-700">{tourName}</span></p>
+        </div>
+        <button
+          onClick={() => setStatus('idle')}
+          className="px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+          style={{ backgroundColor: '#00BFB3' }}
+        >
+          Book Another
+        </button>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-6 md:p-8 border-l-4"
-      style={{ borderColor: '#00BFB3' }}
+      className="rounded-2xl overflow-hidden"
+      style={{ border: '2px solid #e2e8f0', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' }}
     >
-      <h3 className="text-2xl font-bold mb-6" style={{ color: '#0F1F3C' }}>Book This Tour</h3>
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-gray-100" style={{ background: 'linear-gradient(135deg, #0F1F3C 0%, #1a2f4e 100%)' }}>
+        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+          <Calendar className="w-5 h-5" style={{ color: '#00BFB3' }} />
+          Book This Tour
+        </h3>
+        <p className="text-gray-400 text-sm mt-1">{tourName}</p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Name */}
-        <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0F1F3C' }}>Full Name *</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Your name"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
-            style={{ '--tw-ring-color': '#00BFB3' } as any}
-          />
-        </div>
-
-        {/* Email & Phone */}
-        <div className="grid md:grid-cols-2 gap-4">
+      <div className="p-6 bg-white">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Name */}
           <div>
-            <label className="block text-sm font-medium mb-1 flex items-center gap-2" style={{ color: '#0F1F3C' }}>
-              <Mail size={16} style={{ color: '#00BFB3' }} /> Email *
+            <label className={labelClass}>
+              <User className="w-4 h-4" style={{ color: '#00BFB3' }} />
+              Full Name <span className="text-red-400">*</span>
             </label>
             <input
-              type="email"
-              name="email"
-              value={formData.email}
+              type="text"
+              name="name"
+              value={formData.name}
               onChange={handleChange}
-              placeholder="your@email.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
-              style={{ '--tw-ring-color': '#00BFB3' } as any}
+              placeholder="Enter your full name"
+              className={inputClass}
             />
           </div>
+
+          {/* Email & Phone */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>
+                <Mail className="w-4 h-4" style={{ color: '#00BFB3' }} />
+                Email <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="your@email.com"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>
+                <Phone className="w-4 h-4" style={{ color: '#00BFB3' }} />
+                Phone <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="+63 9XX XXX XXXX"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          {/* Date & Participants */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>
+                <Calendar className="w-4 h-4" style={{ color: '#00BFB3' }} />
+                Preferred Date <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="date"
+                name="date"
+                value={formData.date}
+                onChange={handleChange}
+                min={minDate}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>
+                <Users className="w-4 h-4" style={{ color: '#00BFB3' }} />
+                Participants
+              </label>
+              <select
+                name="participants"
+                value={formData.participants}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                {Array.from({ length: Math.min(maxParticipants, 20) }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>{i + 1} {i === 0 ? 'person' : 'people'}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Special Requests */}
           <div>
-            <label className="block text-sm font-medium mb-1 flex items-center gap-2" style={{ color: '#0F1F3C' }}>
-              <Phone size={16} style={{ color: '#00BFB3' }} /> Phone *
+            <label className={labelClass}>
+              <FileText className="w-4 h-4" style={{ color: '#00BFB3' }} />
+              Special Requests
             </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
+            <textarea
+              name="notes"
+              value={formData.notes}
               onChange={handleChange}
-              placeholder="+1 (555) 000-0000"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
-              style={{ '--tw-ring-color': '#00BFB3' } as any}
+              placeholder="Any dietary restrictions, accessibility needs, or special requests?"
+              rows={3}
+              className={inputClass}
+              style={{ resize: 'none' }}
             />
           </div>
-        </div>
 
-        {/* Date & Participants */}
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1 flex items-center gap-2" style={{ color: '#0F1F3C' }}>
-              <Calendar size={16} style={{ color: '#00BFB3' }} /> Preferred Date *
-            </label>
-            <input
-              type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleChange}
-              min={minDate}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
-              style={{ '--tw-ring-color': '#00BFB3' } as any}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1 flex items-center gap-2" style={{ color: '#0F1F3C' }}>
-              <Users size={16} style={{ color: '#00BFB3' }} /> Participants
-            </label>
-            <select
-              name="participants"
-              value={formData.participants}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
-              style={{ '--tw-ring-color': '#00BFB3' } as any}
-            >
-              {[...Array(maxParticipants)].map((_, i) => (
-                <option key={i + 1} value={i + 1}>{i + 1} {i + 1 === 1 ? 'person' : 'people'}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+          {/* Price Summary */}
+          {price > 0 && (
+            <div className="rounded-xl p-4 space-y-2" style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Price per person</span>
+                <span className="font-semibold text-gray-800">₱{price.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Participants</span>
+                <span className="font-semibold text-gray-800">× {formData.participants}</span>
+              </div>
+              <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-base">
+                <span className="text-gray-800">Total</span>
+                <span style={{ color: '#00BFB3' }}>₱{total.toLocaleString()}</span>
+              </div>
+            </div>
+          )}
 
-        {/* Special Requests */}
-        <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0F1F3C' }}>Special Requests</label>
-          <textarea
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange}
-            placeholder="Any special needs or requests?"
-            rows={3}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
-            style={{ '--tw-ring-color': '#00BFB3' } as any}
-          />
-        </div>
+          {/* Error message */}
+          <AnimatePresence>
+            {status === 'error' && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="flex items-center gap-2 p-3 rounded-xl bg-red-50 text-red-600 text-sm border border-red-200"
+              >
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {message}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        {/* Price Summary */}
-        <div className="bg-white p-4 rounded-lg space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Price per person:</span>
-            <span className="font-medium">₱{price}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span>Participants:</span>
-            <span className="font-medium">× {formData.participants}</span>
-          </div>
-          <div className="border-t pt-2 flex justify-between font-bold" style={{ color: '#0F1F3C' }}>
-            <span>Total:</span>
-            <span style={{ color: '#00BFB3' }}>₱{total}</span>
-          </div>
-        </div>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={status === 'loading'}
-          className="w-full py-3 rounded-lg font-semibold text-white transition disabled:opacity-50"
-          style={{ backgroundColor: '#00BFB3' }}
-        >
-          {status === 'loading' ? 'Processing...' : `Book Now • ₱${total}`}
-        </button>
-      </form>
-
-      {/* Status Messages */}
-      {status === 'success' && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mt-4 flex items-center gap-2 p-4 bg-green-100 text-green-700 rounded-lg"
-        >
-          <CheckCircle size={20} />
-          <span>{message}</span>
-        </motion.div>
-      )}
-
-      {status === 'error' && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mt-4 flex items-center gap-2 p-4 bg-red-100 text-red-700 rounded-lg"
-        >
-          <AlertCircle size={20} />
-          <span>{message}</span>
-        </motion.div>
-      )}
+          {/* Submit */}
+          <motion.button
+            type="submit"
+            disabled={status === 'loading'}
+            whileHover={{ scale: status === 'loading' ? 1 : 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-3.5 rounded-xl font-bold text-white text-base transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            style={{ background: 'linear-gradient(135deg, #00BFB3 0%, #00A39E 100%)', boxShadow: '0 4px 16px rgba(0,191,179,0.35)' }}
+          >
+            {status === 'loading' ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
+            ) : (
+              price > 0 ? `Book Now — ₱${total.toLocaleString()}` : 'Book Now'
+            )}
+          </motion.button>
+        </form>
+      </div>
     </motion.div>
   );
 }
