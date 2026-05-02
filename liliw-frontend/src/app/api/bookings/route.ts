@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (process.env.RESEND_API_KEY) {
       try {
         await resend.emails.send({
-          from: 'Liliw Tourism <bookings@resend.dev>',
+          from: 'Liliw Tourism <bookings@liliw.com>',
           to: NOTIFY_EMAIL,
           subject: `New Booking: ${tourName} — ${bookingRef}`,
           html: `
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       // 3. Send confirmation email to guest
       try {
         await resend.emails.send({
-          from: 'Liliw Tourism <bookings@resend.dev>',
+          from: 'Liliw Tourism <bookings@liliw.com>',
           to: email,
           subject: `Booking Confirmed — ${bookingRef}`,
           html: `
