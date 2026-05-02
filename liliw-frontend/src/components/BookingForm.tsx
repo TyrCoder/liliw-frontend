@@ -211,16 +211,19 @@ export default function BookingForm({ tourName, tourId, price = 0, maxParticipan
                 <Users className="w-4 h-4" style={{ color: '#00BFB3' }} />
                 Participants
               </label>
-              <select
+              <input
+                type="number"
                 name="participants"
                 value={formData.participants}
                 onChange={handleChange}
+                min={1}
+                max={maxParticipants || undefined}
+                placeholder="Enter number of participants"
                 className={inputClass}
-              >
-                {Array.from({ length: Math.min(maxParticipants, 20) }, (_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1} {i === 0 ? 'person' : 'people'}</option>
-                ))}
-              </select>
+              />
+              {maxParticipants > 0 && (
+                <p className="mt-1 text-xs text-gray-400">Max {maxParticipants} participants</p>
+              )}
             </div>
           </div>
 
