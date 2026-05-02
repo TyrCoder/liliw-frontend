@@ -24,9 +24,15 @@ function blocksToText(blocks: any): string {
     .trim();
 }
 
+const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+
 function getPhotoUrl(p: any): string | null {
   if (!p) return null;
-  return p.url || p.data?.attributes?.url || null;
+  const raw = p.url || p.data?.attributes?.url || p.attributes?.url || null;
+  if (!raw) return null;
+  // Relative path → prepend Strapi host
+  if (raw.startsWith('/')) return `${STRAPI_BASE}${raw}`;
+  return raw;
 }
 
 /** Render Strapi rich-text blocks as styled React elements */
@@ -419,7 +425,7 @@ export default function ItinerariesPage() {
           meeting_point:    a.meeting_point || undefined,
           price:            a.price            || undefined,
           max_participants: a.max_participants  || undefined,
-          cover_photo:      getPhotoUrl(a.cover_photo?.data?.attributes || a.cover_photo),
+          cover_photo:      getPhotoUrl(a.cover_photo?.data?.attributes || a.cover_photo?.attributes || a.cover_photo),
           photos:           photoList,
         };
       }));
