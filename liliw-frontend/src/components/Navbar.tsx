@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
@@ -22,16 +22,21 @@ export default function Navbar() {
   const [isOpen, setIsOpen]             = useState(false);
   const [authModal, setAuthModal]       = useState<'login' | 'register' | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [exploreOpen, setExploreOpen]   = useState(false);
   const { user, logout, isAdmin }       = useAuth();
 
   const toggleMenu = () => setIsOpen(!isOpen);
-  const closeMenu  = () => setIsOpen(false);
+  const closeMenu  = () => { setIsOpen(false); setExploreOpen(false); };
+
+  const exploreLinks = [
+    { href: '/heritage', label: '🏛️ History & Heritage' },
+    { href: '/culture',  label: '🎭 Culture & Traditions' },
+    { href: '/arts',     label: '🎨 Arts & Creatives' },
+    { href: '/dining',   label: '🍽️ Dining' },
+  ];
 
   const navLinks = [
     { href: '/about',       label: 'About Liliw' },
-    { href: '/heritage',    label: 'History & Heritage' },
-    { href: '/culture',     label: 'Culture & Traditions' },
-    { href: '/arts',        label: 'Arts & Creatives' },
     { href: '/attractions', label: 'Tourism' },
     { href: '/itineraries', label: 'Itinerary' },
     { href: '/news',        label: 'News & Events' },
@@ -66,7 +71,43 @@ export default function Navbar() {
 
             {/* Desktop nav */}
             <div className="hidden lg:flex items-center gap-1 xl:gap-2 flex-1 justify-center">
-              {navLinks.map((link) => (
+              <NavLink href="/about" label="About Liliw" />
+
+              {/* Explore dropdown */}
+              <div className="relative">
+                <motion.button
+                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  onClick={() => setExploreOpen(p => !p)}
+                  className={`flex items-center gap-1 px-3 py-2 font-semibold transition-all duration-300 rounded-lg text-sm whitespace-nowrap ${
+                    exploreOpen ? 'text-white bg-white/15' : 'text-gray-100 hover:text-white hover:bg-white/10'
+                  }`}>
+                  Explore
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${exploreOpen ? 'rotate-180' : ''}`} />
+                </motion.button>
+                <AnimatePresence>
+                  {exploreOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setExploreOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute left-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-20 py-1">
+                        {exploreLinks.map(link => (
+                          <Link key={link.href} href={link.href}
+                            onClick={() => setExploreOpen(false)}
+                            className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
+                            {link.label}
+                          </Link>
+                        ))}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {navLinks.slice(1).map((link) => (
                 <NavLink key={link.href} href={link.href} label={link.label} />
               ))}
             </div>
@@ -181,7 +222,15 @@ export default function Navbar() {
                 className="lg:hidden mt-4 pt-4 border-t border-white/10"
               >
                 <div className="flex flex-col gap-2">
-                  {navLinks.map((link) => (
+                  <NavLink href="/about" label="About Liliw" onClick={closeMenu} />
+                  {/* Explore section in mobile */}
+                  <div className="pl-3 border-l-2 space-y-1" style={{ borderColor: '#00BFB3' }}>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-3 py-1">Explore</p>
+                    {exploreLinks.map(link => (
+                      <NavLink key={link.href} href={link.href} label={link.label} onClick={closeMenu} />
+                    ))}
+                  </div>
+                  {navLinks.slice(1).map((link) => (
                     <NavLink key={link.href} href={link.href} label={link.label} onClick={closeMenu} />
                   ))}
                   {user && (
