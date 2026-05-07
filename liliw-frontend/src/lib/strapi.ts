@@ -13,7 +13,7 @@ import type {
 } from './types';
 
 const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
-const strapiToken = process.env.STRAPI_API_TOKEN;
+const strapiToken = process.env.STRAPI_API_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
 
 // Validate required environment variables
 if (!strapiUrl) {
