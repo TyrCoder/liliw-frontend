@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from 'react';
 
-const DISMISSED_KEY = 'liliw-install-dismissed';
-const DISMISSED_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-
 export default function PWAHandler() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showBanner, setShowBanner]         = useState(false);
@@ -20,9 +17,8 @@ export default function PWAHandler() {
     // Already running as installed PWA — don't show banner
     if (window.matchMedia('(display-mode: standalone)').matches) return;
 
-    // Check if user already dismissed recently
-    const dismissed = localStorage.getItem(DISMISSED_KEY);
-    if (dismissed && Date.now() - Number(dismissed) < DISMISSED_DURATION_MS) return;
+    // Check if user already dismissed this session
+    if (sessionStorage.getItem('liliw-install-dismissed-session')) return;
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -60,7 +56,7 @@ export default function PWAHandler() {
 
   const handleDismiss = () => {
     setShowBanner(false);
-    localStorage.setItem(DISMISSED_KEY, String(Date.now()));
+    sessionStorage.setItem('liliw-install-dismissed-session', '1');
   };
 
   if (!showBanner) return null;

@@ -1,177 +1,83 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/logger';
 
-/**
- * In-memory analytics storage (for demo purposes)
- * In production, this would be stored in a database like PostgreSQL
- */
-const analyticsStore = {
-  events: [] as any[],
-  sessions: new Map<string, { startTime: number; endTime?: number; pageViews: number }>(),
-};
+const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
-// Cleanup old data every hour
-setInterval(() => {
-  const oneHourAgo = Date.now() - 3600000;
-  analyticsStore.events = analyticsStore.events.filter((e) => e.timestamp > oneHourAgo);
-}, 3600000);
+// In-memory fallback for session stats (resets on deploy)
+const sessionStore = new Map<string, { pageViews: number; startTime: number }>();
 
-/**
- * POST /api/analytics/track
- * Receive and store analytics events
- */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { events, sessionId, sessionDuration, userAgent, timestamp } = body;
+    const { path, sessionId } = body;
 
-    // Validate input
-    if (!events || !Array.isArray(events) || !sessionId) {
-      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
-    }
+    if (!path) return NextResponse.json({ error: 'Missing path' }, { status: 400 });
 
-    // Track session
-    if (!analyticsStore.sessions.has(sessionId)) {
-      analyticsStore.sessions.set(sessionId, {
-        startTime: timestamp,
-        pageViews: 0,
-      });
-    }
-
-    // Store all events
-    events.forEach((event: any) => {
-      analyticsStore.events.push({
-        ...event,
-        sessionId,
-        userAgent,
-      });
-
-      // Count page views
-      if (event.eventName === 'page_view') {
-        const session = analyticsStore.sessions.get(sessionId);
-        if (session) {
-          session.pageViews++;
-        }
+    // Track session in memory
+    if (sessionId) {
+      const s = sessionStore.get(sessionId) || { pageViews: 0, startTime: Date.now() };
+      s.pageViews++;
+      sessionStore.set(sessionId, s);
+      // Clean old sessions (>2 hours)
+      if (sessionStore.size > 5000) {
+        const cutoff = Date.now() - 7200000;
+        sessionStore.forEach((v, k) => { if (v.startTime < cutoff) sessionStore.delete(k); });
       }
-    });
-
-    // Update session end time
-    const session = analyticsStore.sessions.get(sessionId);
-    if (session) {
-      session.endTime = timestamp + sessionDuration;
     }
 
-    logger.info(`Analytics: Tracked ${events.length} events from session ${sessionId}`);
+    // Persist to Strapi
+    await fetch(`${STRAPI}/api/page-views`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
+      body: JSON.stringify({ data: { path } }),
+    }).catch(() => {}); // fire-and-forget; don't fail the request if Strapi is down
 
-    return NextResponse.json({ success: true, stored: events.length });
-  } catch (error) {
-    logger.error('Analytics POST error:', error);
-    return NextResponse.json({ error: 'Failed to track analytics' }, { status: 500 });
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ success: false });
   }
 }
 
-/**
- * GET /api/analytics/track
- * Retrieve analytics summary
- */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const oneHourAgo = Date.now() - 3600000;
+    // Fetch page views from Strapi (last 500)
+    const res = await fetch(
+      `${STRAPI}/api/page-views?pagination[limit]=500&sort=createdAt:desc`,
+      { headers: { Authorization: `Bearer ${TOKEN}` }, next: { revalidate: 0 } },
+    );
 
-    // Filter recent events (last hour)
-    const recentEvents = analyticsStore.events.filter((e) => e.timestamp > oneHourAgo);
+    let topPages: { path: string; views: number }[] = [];
+    let totalViews = 0;
 
-    // Calculate metrics
-    const uniqueSessions = new Set(recentEvents.map((e) => e.sessionId)).size;
-    const pageViewEvents = recentEvents.filter((e) => e.eventName === 'page_view');
-    const pageViews = pageViewEvents.length;
+    if (res.ok) {
+      const data = await res.json();
+      const entries: any[] = data.data || [];
+      totalViews = data.meta?.pagination?.total || entries.length;
 
-    // Top pages
-    const pageViewMap: Record<string, number> = {};
-    pageViewEvents.forEach((e) => {
-      const path = e.eventData.path || '/';
-      pageViewMap[path] = (pageViewMap[path] || 0) + 1;
-    });
+      const map: Record<string, number> = {};
+      entries.forEach((e: any) => {
+        const p = e.attributes?.path || e.path || '/';
+        map[p] = (map[p] || 0) + 1;
+      });
+      topPages = Object.entries(map)
+        .map(([path, views]) => ({ path, views }))
+        .sort((a, b) => b.views - a.views);
+    }
 
-    const topPages = Object.entries(pageViewMap)
-      .map(([path, views]) => ({ path, views }))
-      .sort((a, b) => b.views - a.views)
-      .slice(0, 10);
+    const uniqueSessions = sessionStore.size;
+    const bounceCount = Array.from(sessionStore.values()).filter(s => s.pageViews <= 1).length;
+    const bounceRate = uniqueSessions > 0 ? `${Math.round((bounceCount / uniqueSessions) * 100)}%` : '—';
 
-    // Calculate bounce rate (sessions with only 1 page view)
-    const bounceCount = Array.from(analyticsStore.sessions.values()).filter(
-      (session) => session.pageViews <= 1
-    ).length;
-    const bounceRate = uniqueSessions > 0 ? Math.round((bounceCount / uniqueSessions) * 100) : 0;
-
-    // Calculate average session time
-    let totalSessionTime = 0;
-    let sessionCount = 0;
-    analyticsStore.sessions.forEach((session) => {
-      if (session.endTime) {
-        totalSessionTime += session.endTime - session.startTime;
-        sessionCount++;
-      }
-    });
-    const avgSessionSeconds = sessionCount > 0 ? Math.round(totalSessionTime / sessionCount / 1000) : 0;
-    const avgSessionTime = `${Math.floor(avgSessionSeconds / 60)}m ${avgSessionSeconds % 60}s`;
-
-    // Traffic sources (from referrer)
-    const referrerMap: Record<string, number> = {};
-    pageViewEvents.forEach((e) => {
-      const referrer = e.eventData.referrer || 'Direct';
-      let source = 'Direct';
-
-      if (referrer.includes('google')) source = 'Google';
-      else if (referrer.includes('facebook')) source = 'Facebook';
-      else if (referrer.includes('instagram')) source = 'Instagram';
-      else if (referrer.includes('twitter')) source = 'Twitter';
-
-      referrerMap[source] = (referrerMap[source] || 0) + 1;
-    });
-
-    const referrers = Object.entries(referrerMap)
-      .map(([source, count]) => ({ source, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
-
-    // Calculate total events
-    const totalEvents = recentEvents.length;
-
-    // Device types (from user agent)
-    const deviceMap: Record<string, number> = {};
-    recentEvents.forEach((e) => {
-      const ua = e.userAgent || '';
-      let device = 'Desktop';
-
-      if (/mobile|android|iphone|ipad|windows phone/i.test(ua)) device = 'Mobile';
-      if (/ipad|android(?!.*mobile)/i.test(ua)) device = 'Tablet';
-
-      deviceMap[device] = (deviceMap[device] || 0) + 1;
-    });
-
-    const deviceTypes = Object.entries(deviceMap)
-      .map(([type, count]) => ({
-        type,
-        percentage: totalEvents > 0 ? Math.round((count / totalEvents) * 100) : 0,
-      }))
-      .sort((a, b) => b.percentage - a.percentage);
-
-    // Return analytics summary
     return NextResponse.json({
-      pageViews,
+      pageViews: totalViews,
       uniqueVisitors: uniqueSessions,
-      avgSessionTime,
-      bounceRate: `${bounceRate}%`,
+      bounceRate,
+      avgSessionTime: '—',
       topPages,
-      referrers,
-      deviceTypes,
-      totalEvents,
-      timeRange: 'Last 1 hour',
-      lastUpdated: new Date().toISOString(),
     });
-  } catch (error) {
-    logger.error('Analytics GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 });
+  } catch {
+    return NextResponse.json({
+      pageViews: 0, uniqueVisitors: 0, bounceRate: '—', avgSessionTime: '—', topPages: [],
+    });
   }
 }

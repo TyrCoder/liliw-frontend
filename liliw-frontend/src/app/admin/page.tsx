@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import {
   BarChart3, Users, Eye, TrendingUp, ExternalLink,
   FileText, Clock, CheckCircle, AlertCircle, Loader2,
-  ChevronLeft, Mail, Phone, Calendar, MessageSquare,
+  ChevronLeft, Mail, Phone, Calendar, MessageSquare, Star,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -97,7 +97,9 @@ export default function AdminDashboard() {
   const [loadingSubs, setLoadingSubs]   = useState(true);
   const [loadingSignups, setLoadingSignups] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
-  const [activeTab, setActiveTab]       = useState<'overview' | 'submissions' | 'signups'>('overview');
+  const [reviews, setReviews]           = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [activeTab, setActiveTab]       = useState<'overview' | 'submissions' | 'signups' | 'ratings'>('overview');
 
   // Auth guard
   useEffect(() => {
@@ -125,6 +127,12 @@ export default function AdminDashboard() {
       .then(d => setAnalytics(d))
       .catch(() => setAnalytics(null))
       .finally(() => setLoadingStats(false));
+
+    fetch('/api/strapi/reviews')
+      .then(r => r.json())
+      .then(d => setReviews(d.data || []))
+      .catch(() => setReviews([]))
+      .finally(() => setLoadingReviews(false));
   }, [isAdmin]);
 
   if (loading) {
@@ -170,12 +178,12 @@ export default function AdminDashboard() {
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 flex gap-1">
-          {(['overview', 'submissions', 'signups'] as const).map(t => (
+          {(['overview', 'ratings', 'submissions', 'signups'] as const).map(t => (
             <button key={t} onClick={() => setActiveTab(t)}
               className={`px-5 py-3.5 text-sm font-semibold capitalize transition-colors border-b-2 ${
                 activeTab === t ? 'border-teal-400 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}>
-              {t === 'signups' ? 'Event Sign-ups' : t}
+              {t === 'signups' ? 'Event Sign-ups' : t === 'ratings' ? 'Ratings' : t}
               {t === 'submissions' && newCount > 0 && (
                 <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold text-white"
                   style={{ backgroundColor: '#00BFB3' }}>{newCount}</span>
@@ -183,6 +191,10 @@ export default function AdminDashboard() {
               {t === 'signups' && signups.length > 0 && (
                 <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold text-white"
                   style={{ backgroundColor: '#00BFB3' }}>{signups.length}</span>
+              )}
+              {t === 'ratings' && reviews.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold text-white"
+                  style={{ backgroundColor: '#F59E0B' }}>{reviews.length}</span>
               )}
             </button>
           ))}
@@ -242,6 +254,27 @@ export default function AdminDashboard() {
                         <span className="text-sm text-gray-600 w-40 shrink-0 truncate">{path || '/'}</span>
                         <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${(views / max) * 100}%`, backgroundColor: '#00BFB3' }} />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-700 w-12 text-right">{views}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Top attractions */}
+            {analytics?.topPages && analytics.topPages.filter(p => p.path.startsWith('/attractions/')).length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                <h2 className="text-base font-bold text-gray-900 mb-5">Most Visited Attractions</h2>
+                <div className="space-y-3">
+                  {analytics.topPages.filter(p => p.path.startsWith('/attractions/')).slice(0, 6).map(({ path, views }) => {
+                    const max = analytics.topPages.filter(p => p.path.startsWith('/attractions/'))[0]?.views || 1;
+                    return (
+                      <div key={path} className="flex items-center gap-3">
+                        <span className="text-sm text-gray-600 w-48 shrink-0 truncate">{path.replace('/attractions/', 'Attraction #')}</span>
+                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${(views / max) * 100}%`, backgroundColor: '#F59E0B' }} />
                         </div>
                         <span className="text-sm font-semibold text-gray-700 w-12 text-right">{views}</span>
                       </div>
@@ -331,6 +364,74 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
+
+        {activeTab === 'ratings' && (() => {
+          // Group reviews by item_id
+          const byItem: Record<string, { count: number; total: number; latest: string }> = {};
+          reviews.forEach((r: any) => {
+            const a = r.attributes || r;
+            const id = a.item_id || '?';
+            if (!byItem[id]) byItem[id] = { count: 0, total: 0, latest: '' };
+            byItem[id].count++;
+            byItem[id].total += Number(a.rating) || 0;
+            if (!byItem[id].latest || a.createdAt > byItem[id].latest) byItem[id].latest = a.createdAt;
+          });
+          const rows = Object.entries(byItem).map(([id, v]) => ({ id, avg: v.total / v.count, count: v.count, latest: v.latest })).sort((a, b) => b.count - a.count);
+
+          return (
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="font-bold text-gray-900">Attraction Ratings</h2>
+                <span className="text-sm text-gray-400">{reviews.length} total reviews</span>
+              </div>
+              {loadingReviews ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} />
+                </div>
+              ) : rows.length === 0 ? (
+                <div className="flex flex-col items-center py-16 text-center text-gray-400">
+                  <Star className="w-12 h-12 mb-3 opacity-20" />
+                  <p className="font-semibold">No reviews yet</p>
+                  <p className="text-sm mt-1">Reviews will appear here once visitors rate attractions</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        <th className="px-5 py-3 text-left">Attraction ID</th>
+                        <th className="px-5 py-3 text-left">Avg Rating</th>
+                        <th className="px-5 py-3 text-left">Reviews</th>
+                        <th className="px-5 py-3 text-left">Latest</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {rows.map(row => (
+                        <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-5 py-4 font-semibold text-gray-900">{row.id}</td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="flex gap-0.5">
+                                {[1,2,3,4,5].map(i => (
+                                  <Star key={i} className="w-4 h-4" fill={i <= Math.round(row.avg) ? '#FFB400' : 'none'} stroke={i <= Math.round(row.avg) ? '#FFB400' : '#d1d5db'} />
+                                ))}
+                              </div>
+                              <span className="text-sm font-bold text-gray-700">{row.avg.toFixed(1)}</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 text-gray-600">{row.count} review{row.count !== 1 ? 's' : ''}</td>
+                          <td className="px-5 py-4 text-gray-400 text-xs">
+                            {row.latest ? new Date(row.latest).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {activeTab === 'submissions' && (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">

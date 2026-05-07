@@ -9,6 +9,7 @@ import { logger } from '@/lib/logger';
 import { COLORS } from '@/lib/constants';
 import ImmersiveViewer from '@/components/ImmersiveViewer';
 import type { Hotspot } from '@/lib/types';
+import { useAuth } from '@/context/AuthContext';
 
 const EDITOR_PASSWORD = 'LiliwOffice2026';
 const CLOUDINARY_FOLDER = 'liliw-virtual-tours';
@@ -52,6 +53,15 @@ export default function ImmersivePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const virtualTourPhotosRef = useRef<VirtualTourPhoto[]>([]);
   useEffect(() => { virtualTourPhotosRef.current = virtualTourPhotos; }, [virtualTourPhotos]);
+
+  const { isAdmin } = useAuth();
+
+  // Auto-enable editor mode for admin users
+  useEffect(() => {
+    if (isAdmin) {
+      setEditMode(true);
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -263,7 +273,7 @@ export default function ImmersivePage() {
     <div style={{ backgroundColor: '#0F1F3C', minHeight: 'calc(100vh - 65px)' }}>
       {/* Password Modal */}
       <AnimatePresence>
-        {showPasswordModal && (
+        {showPasswordModal && !isAdmin && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -364,7 +374,7 @@ export default function ImmersivePage() {
               </button>
             ) : (
               <button
-                onClick={() => setShowPasswordModal(true)}
+                onClick={() => { if (!isAdmin) setShowPasswordModal(true); }}
                 title=""
                 className="transition p-2 rounded-lg hover:bg-white/5"
                 style={{ color: 'rgba(255,255,255,0.12)' }}
