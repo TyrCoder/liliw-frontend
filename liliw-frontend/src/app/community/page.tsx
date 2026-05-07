@@ -2,10 +2,27 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Users, Briefcase, MessageSquare, CheckCircle, AlertCircle, LogIn } from 'lucide-react';
-import { useState } from 'react';
+import { ChevronLeft, Users, Briefcase, MessageSquare, CheckCircle, AlertCircle, LogIn, Calendar, MapPin, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
+
+const STRAPI       = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+
+function getPhotoUrl(p: any): string | null {
+  if (!p) return null;
+  const raw = p.url || p.data?.attributes?.url || p.attributes?.url || null;
+  if (!raw) return null;
+  return raw.startsWith('/') ? `${STRAPI}${raw}` : raw;
+}
+
+const CATEGORY_BADGE: Record<string, string> = {
+  festival: 'bg-purple-100 text-purple-700',
+  cultural: 'bg-blue-100 text-blue-700',
+  competition: 'bg-orange-100 text-orange-700',
+  other: 'bg-gray-100 text-gray-600',
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -30,6 +47,19 @@ const itemVariants = {
 export default function CommunityPage() {
   const { user } = useAuth();
   const [authModal, setAuthModal] = useState(false);
+  const [joinableEvents, setJoinableEvents] = useState<any[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(
+      `${STRAPI}/api/events?filters[is_joinable][$eq]=true&populate=cover_image&publicationState=live&sort=date_start:asc`,
+      { headers: { Authorization: `Bearer ${STRAPI_TOKEN}` } }
+    )
+      .then(r => r.json())
+      .then(data => setJoinableEvents(data.data || []))
+      .catch(() => setJoinableEvents([]))
+      .finally(() => setEventsLoading(false));
+  }, []);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -155,6 +185,70 @@ export default function CommunityPage() {
           viewport={{ once: true }}
           className="space-y-12"
         >
+          {/* Joinable Events */}
+          {(eventsLoading || joinableEvents.length > 0) && (
+            <motion.div variants={itemVariants}>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">🎉 Open Events — Join Now</h2>
+              {eventsLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[1, 2].map(i => (
+                    <div key={i} className="h-48 rounded-2xl bg-gray-100 animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {joinableEvents.map(item => {
+                    const a = item.attributes || item;
+                    const cover = getPhotoUrl(a.cover_image?.data?.attributes || a.cover_image?.attributes || a.cover_image);
+                    const dateStart = a.date_start ? new Date(a.date_start) : null;
+                    return (
+                      <Link key={item.id} href={`/community/events/${a.slug}`}>
+                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                          className="group relative rounded-2xl overflow-hidden border-2 bg-white shadow-sm hover:shadow-lg transition-all cursor-pointer"
+                          style={{ borderColor: '#00BFB3' }}>
+                          <div className="relative h-40 bg-linear-to-br from-teal-100 to-cyan-50">
+                            {cover
+                              ? <img src={cover} alt={a.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                              : <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-30">🎉</div>
+                            }
+                            <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
+                            {a.category && (
+                              <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold capitalize ${CATEGORY_BADGE[a.category] || 'bg-gray-100 text-gray-600'}`}>
+                                {a.category}
+                              </span>
+                            )}
+                            <div className="absolute bottom-3 left-4 right-4">
+                              <p className="text-white font-bold text-base leading-snug">{a.title}</p>
+                            </div>
+                          </div>
+                          <div className="px-4 py-3 flex items-center justify-between">
+                            <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                              {dateStart && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3.5 h-3.5" style={{ color: '#00BFB3' }} />
+                                  {dateStart.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              )}
+                              {a.venue && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-3.5 h-3.5" style={{ color: '#00BFB3' }} />
+                                  {a.venue}
+                                </span>
+                              )}
+                            </div>
+                            <span className="flex items-center gap-1 text-xs font-bold shrink-0 ml-2" style={{ color: '#00BFB3' }}>
+                              Join <ChevronRight className="w-3.5 h-3.5" />
+                            </span>
+                          </div>
+                        </motion.div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+
           {/* Participation Options */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {participationOptions.map((option, idx) => (
