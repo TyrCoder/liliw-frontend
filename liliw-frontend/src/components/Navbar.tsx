@@ -26,14 +26,14 @@ export default function Navbar() {
   const closeMenu = () => setIsOpen(false);
 
   const navLinks = [
-    { href: '/about', label: 'About' },
-    { href: '/attractions', label: 'Attractions' },
-    { href: '/culture', label: 'Culture' },
-    { href: '/heritage', label: 'Heritage' },
-    { href: '/arts', label: 'Arts' },
-    { href: '/itineraries', label: 'Tours' },
+    { href: '/about', label: 'About Liliw' },
+    { href: '/heritage', label: 'History & Heritage' },
+    { href: '/culture', label: 'Culture & Traditions' },
+    { href: '/arts', label: 'Arts & Creatives' },
+    { href: '/attractions', label: 'Tourism' },
+    { href: '/itineraries', label: 'Itinerary' },
+    { href: '/news', label: 'News & Events' },
     { href: '/community', label: 'Participate' },
-    { href: '/news', label: 'News' },
     { href: '/contact', label: 'Contact' },
   ];
 
@@ -52,14 +52,16 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
         <div className="flex justify-between items-center gap-4">
           {/* Logo */}
-          <motion.div whileHover={{ scale: 1.08 }} className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <div
-              className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg flex items-center justify-center font-bold text-sm sm:text-lg text-white"
-              style={{ backgroundColor: '#00BFB3' }}
-            >
-              L
-            </div>
-            <h1 className="text-lg sm:text-2xl font-bold text-white hidden sm:block">Liliw</h1>
+          <motion.div whileHover={{ scale: 1.08 }} className="shrink-0">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3">
+              <div
+                className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg flex items-center justify-center font-bold text-sm sm:text-lg text-white"
+                style={{ backgroundColor: '#00BFB3' }}
+              >
+                L
+              </div>
+              <h1 className="text-lg sm:text-2xl font-bold text-white hidden sm:block">Liliw</h1>
+            </Link>
           </motion.div>
 
           {/* Desktop Navigation - Hidden on mobile/tablet */}
