@@ -6,9 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Clock, Users, X, MapPin, Star,
   CheckCircle, XCircle, Navigation, ArrowRight, Calendar,
-  Lightbulb, Sparkles, RotateCcw, Wallet, Heart, Sun,
+  Lightbulb, Sparkles, RotateCcw, Wallet, Heart, Sun, BookmarkCheck,
+  Trash2, ChevronDown,
 } from 'lucide-react';
 import { getItineraries } from '@/lib/strapi';
+import { useFavorites } from '@/context/FavoritesContext';
+import { useAuth } from '@/context/AuthContext';
 
 /* ─────────────────────── shared helpers ──────────────────── */
 
@@ -62,6 +65,16 @@ const INTERESTS = [
 interface Stop { time: string; place: string; activity: string; duration: string; tip: string; }
 interface Day  { day: number; theme: string; stops: Stop[]; }
 interface GeneratedPlan { title: string; summary: string; days: Day[]; tips: string[]; estimatedCostPerDay: string; }
+interface SavedTrip { id: string; savedAt: string; title: string; plan: GeneratedPlan; duration: string; budget: string; }
+
+const SAVED_TRIPS_KEY = 'liliw-saved-trips';
+function loadSavedTrips(): SavedTrip[] {
+  if (typeof window === 'undefined') return [];
+  try { return JSON.parse(localStorage.getItem(SAVED_TRIPS_KEY) || '[]'); } catch { return []; }
+}
+function persistSavedTrips(trips: SavedTrip[]) {
+  try { localStorage.setItem(SAVED_TRIPS_KEY, JSON.stringify(trips)); } catch {}
+}
 
 function WizardCard({ value, label, sub, icon, selected, onClick }: {
   value: string; label: string; sub: string; icon: string; selected: boolean; onClick: () => void;
@@ -98,7 +111,7 @@ function InterestChip({ value, icon, selected, onClick }: { value: string; icon:
   );
 }
 
-function PlanResult({ plan, onReset }: { plan: GeneratedPlan; onReset: () => void }) {
+function PlanResult({ plan, onReset, onSave, saved }: { plan: GeneratedPlan; onReset: () => void; onSave: () => void; saved: boolean }) {
   return (
     <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
       <div className="rounded-3xl p-6 text-white" style={{ background: 'linear-gradient(135deg,#00BFB3,#0077A8)' }}>
@@ -176,40 +189,68 @@ function PlanResult({ plan, onReset }: { plan: GeneratedPlan; onReset: () => voi
         </div>
       )}
 
-      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onReset}
-        className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold hover:border-gray-300 hover:bg-gray-50 transition">
-        <RotateCcw className="w-4 h-4" /> Plan Another Trip
-      </motion.button>
+      <div className="flex gap-3">
+        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onSave}
+          className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold transition ${
+            saved
+              ? 'bg-teal-50 border-2 border-teal-400 text-teal-700'
+              : 'bg-teal-500 text-white hover:bg-teal-600 shadow-lg shadow-teal-100'
+          }`}>
+          <BookmarkCheck className="w-4 h-4" />
+          {saved ? 'Saved to My Trips ✓' : 'Save This Itinerary'}
+        </motion.button>
+        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onReset}
+          className="shrink-0 flex items-center justify-center gap-2 px-5 py-4 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold hover:border-gray-300 hover:bg-gray-50 transition">
+          <RotateCcw className="w-4 h-4" />
+        </motion.button>
+      </div>
     </motion.div>
   );
 }
 
-type WizardStep = 'duration' | 'budget' | 'interests' | 'generating' | 'result';
+type WizardStep = 'duration' | 'budget' | 'interests' | 'favorites' | 'generating' | 'result';
 
 function ItineraryWizard() {
+  const { user } = useAuth();
+  const { favorites } = useFavorites();
   const [step, setStep]             = useState<WizardStep>('duration');
   const [duration, setDuration]     = useState('');
   const [customDuration, setCustomDuration] = useState('');
   const [budget, setBudget]         = useState('');
   const [customBudget, setCustomBudget]   = useState('');
   const [interests, setInterests]   = useState<string[]>([]);
+  const [selectedFavs, setSelectedFavs] = useState<string[]>([]);
   const [plan, setPlan]             = useState<GeneratedPlan | null>(null);
   const [error, setError]           = useState('');
+  const [tripSaved, setTripSaved]   = useState(false);
+
+  const hasFavorites = !!user && favorites.length > 0;
 
   const toggleInterest = (val: string) =>
     setInterests(prev => prev.includes(val) ? prev.filter(i => i !== val) : [...prev, val]);
+  const toggleFav = (name: string) =>
+    setSelectedFavs(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
 
   const effectiveDuration = duration === 'custom' ? customDuration.trim() : duration;
   const effectiveBudget   = budget   === 'custom' ? customBudget.trim()   : budget;
 
+  // After interests step: go to favorites if user has any, else generate
+  const afterInterests = () => hasFavorites ? setStep('favorites') : generate();
+
   const generate = async () => {
     setStep('generating');
     setError('');
+    setTripSaved(false);
     try {
       const res = await fetch('/api/plan-trip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ duration: effectiveDuration, budget: effectiveBudget, interests }),
+        body: JSON.stringify({
+          duration: effectiveDuration,
+          budget: effectiveBudget,
+          interests,
+          favoriteAttractions: selectedFavs,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.itinerary) throw new Error(data.error || 'Failed');
@@ -221,12 +262,31 @@ function ItineraryWizard() {
     }
   };
 
-  const reset = () => {
-    setStep('duration'); setDuration(''); setCustomDuration('');
-    setBudget(''); setCustomBudget(''); setInterests([]); setPlan(null); setError('');
+  const saveTrip = () => {
+    if (!plan) return;
+    const trips = loadSavedTrips();
+    const newTrip: SavedTrip = {
+      id: crypto.randomUUID(),
+      savedAt: new Date().toISOString(),
+      title: plan.title,
+      plan,
+      duration: effectiveDuration,
+      budget: effectiveBudget,
+    };
+    persistSavedTrips([newTrip, ...trips]);
+    setTripSaved(true);
+    window.dispatchEvent(new Event('liliw-trips-updated'));
   };
 
-  const stepNumber = step === 'duration' ? 1 : step === 'budget' ? 2 : step === 'interests' ? 3 : null;
+  const reset = () => {
+    setStep('duration'); setDuration(''); setCustomDuration('');
+    setBudget(''); setCustomBudget(''); setInterests([]);
+    setSelectedFavs([]); setPlan(null); setError(''); setTripSaved(false);
+  };
+
+  const totalSteps = hasFavorites ? 4 : 3;
+  const stepNumber = step === 'duration' ? 1 : step === 'budget' ? 2 : step === 'interests' ? 3 : step === 'favorites' ? 4 : null;
+  const stepLabel  = (n: number) => n === 1 ? 'Duration' : n === 2 ? 'Budget' : n === 3 ? 'Interests' : 'Favorites';
 
   return (
     <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
@@ -243,7 +303,7 @@ function ItineraryWizard() {
       {stepNumber && (
         <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            {[1, 2, 3].map(n => (
+            {Array.from({ length: totalSteps }, (_, i) => i + 1).map(n => (
               <div key={n} className="flex items-center gap-2 flex-1">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all ${
                   n <= stepNumber ? 'text-white' : 'bg-gray-200 text-gray-400'
@@ -251,9 +311,9 @@ function ItineraryWizard() {
                   {n < stepNumber ? '✓' : n}
                 </div>
                 <p className={`text-xs font-medium truncate ${n === stepNumber ? 'text-gray-900' : 'text-gray-400'}`}>
-                  {n === 1 ? 'Duration' : n === 2 ? 'Budget' : 'Interests'}
+                  {stepLabel(n)}
                 </p>
-                {n < 3 && <div className="flex-1 h-px bg-gray-200 ml-1" />}
+                {n < totalSteps && <div className="flex-1 h-px bg-gray-200 ml-1" />}
               </div>
             ))}
           </div>
@@ -356,10 +416,59 @@ function ItineraryWizard() {
                 </button>
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   disabled={interests.length === 0}
-                  onClick={generate}
+                  onClick={afterInterests}
                   className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
                   style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)', boxShadow: interests.length > 0 ? '0 6px 20px rgba(0,191,179,.35)' : 'none' }}>
-                  <Sparkles className="w-4 h-4" /> Generate My Itinerary
+                  {hasFavorites
+                    ? <><ChevronRight className="w-4 h-4" /> Next</>
+                    : <><Sparkles className="w-4 h-4" /> Generate My Itinerary</>}
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 4 — Favorites */}
+          {step === 'favorites' && (
+            <motion.div key="favorites" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
+              <div className="flex items-center gap-2 mb-1">
+                <Heart className="w-4 h-4 text-rose-500" />
+                <p className="font-semibold text-gray-700 text-sm">Include your saved favorites?</p>
+              </div>
+              <p className="text-xs text-gray-400 mb-4 ml-6">Select which favorites the AI should prioritize in your itinerary</p>
+              <div className="flex flex-col gap-2 mb-4">
+                {favorites.map(fav => {
+                  const picked = selectedFavs.includes(fav.name);
+                  return (
+                    <motion.button key={fav.id} whileTap={{ scale: 0.97 }}
+                      onClick={() => toggleFav(fav.name)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-2xl border-2 text-left transition-all ${
+                        picked ? 'border-rose-400 bg-rose-50' : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}>
+                      <Heart className={`w-4 h-4 shrink-0 ${picked ? 'fill-rose-500 text-rose-500' : 'text-gray-300'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-semibold text-sm truncate ${picked ? 'text-rose-700' : 'text-gray-800'}`}>{fav.name}</p>
+                        <p className="text-xs text-gray-400 capitalize">{fav.type === 'heritage' ? '🏛️ Heritage' : fav.type === 'dining' ? '🍽️ Dining' : '🏞️ Tourist Spot'}</p>
+                      </div>
+                      {picked && (
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#f43f5e' }}>
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                        </div>
+                      )}
+                    </motion.button>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setStep('interests')}
+                  className="shrink-0 px-4 py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  onClick={generate}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white font-bold text-sm transition"
+                  style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)', boxShadow: '0 6px 20px rgba(0,191,179,.35)' }}>
+                  <Sparkles className="w-4 h-4" />
+                  {selectedFavs.length > 0 ? `Generate with ${selectedFavs.length} favorite${selectedFavs.length > 1 ? 's' : ''}` : 'Generate My Itinerary'}
                 </motion.button>
               </div>
             </motion.div>
@@ -380,7 +489,7 @@ function ItineraryWizard() {
           {/* Result */}
           {step === 'result' && plan && (
             <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <PlanResult plan={plan} onReset={reset} />
+              <PlanResult plan={plan} onReset={reset} onSave={saveTrip} saved={tripSaved} />
             </motion.div>
           )}
 
@@ -516,7 +625,7 @@ function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }
 
   return (
     <motion.div key="detail-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
+      className="fixed inset-0 z-60 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <motion.div initial={{ y: 80, opacity: 0, scale: 0.97 }} animate={{ y: 0, opacity: 1, scale: 1 }}
         exit={{ y: 80, opacity: 0, scale: 0.95 }} transition={{ type: 'spring', stiffness: 340, damping: 30 }}
@@ -525,7 +634,7 @@ function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }
         {itin.cover_photo && (
           <div className="relative shrink-0 h-52">
             <img src={itin.cover_photo} alt={itin.title} className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
             <div className="absolute bottom-4 left-5 right-14">
               <h2 className="text-2xl font-bold text-white leading-tight">{itin.title}</h2>
             </div>
@@ -723,12 +832,12 @@ function DatabaseItineraries() {
                 variants={{ hidden: { y: 24, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 0.38 } } }}
                 className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-shadow overflow-hidden flex flex-col cursor-pointer"
                 onClick={() => setDetail(itin)}>
-                <div className="relative h-44 bg-gradient-to-br from-teal-100 to-cyan-50 shrink-0">
+                <div className="relative h-44 bg-linear-to-br from-teal-100 to-cyan-50 shrink-0">
                   {itin.cover_photo
                     ? <img src={itin.cover_photo} alt={itin.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     : <div className="absolute inset-0 flex items-center justify-center opacity-20"><MapPin className="w-16 h-16" style={{ color: '#00BFB3' }} /></div>
                   }
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent" />
                   {itin.price && (
                     <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-1.5 shadow">
                       <p className="text-xs text-gray-400 leading-none">from</p>
@@ -771,6 +880,106 @@ function DatabaseItineraries() {
    MAIN PAGE
    ══════════════════════════════════════════════════════════ */
 
+function SavedTripsSection() {
+  const { user } = useAuth();
+  const [trips, setTrips] = useState<SavedTrip[]>([]);
+  const [open, setOpen] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const reload = () => setTrips(loadSavedTrips());
+
+  useEffect(() => {
+    reload();
+    window.addEventListener('liliw-trips-updated', reload);
+    return () => window.removeEventListener('liliw-trips-updated', reload);
+  }, []);
+
+  if (!user || trips.length === 0) return null;
+
+  const deleteTrip = (id: string) => {
+    const updated = trips.filter(t => t.id !== id);
+    persistSavedTrips(updated);
+    setTrips(updated);
+    if (expandedId === id) setExpandedId(null);
+  };
+
+  return (
+    <section>
+      <motion.button
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-5 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition"
+      >
+        <span className="flex items-center gap-3">
+          <BookmarkCheck className="w-5 h-5" style={{ color: '#00BFB3' }} />
+          <span className="font-bold text-gray-900">My Saved Trips</span>
+          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full text-white" style={{ backgroundColor: '#00BFB3' }}>{trips.length}</span>
+        </span>
+        <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </motion.button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-3 space-y-3">
+              {trips.map(trip => (
+                <div key={trip.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="flex items-center gap-3 px-5 py-4 cursor-pointer"
+                    onClick={() => setExpandedId(prev => prev === trip.id ? null : trip.id)}>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-gray-900 text-sm truncate">{trip.title}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {trip.duration} · {new Date(trip.savedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteTrip(trip.id); }}
+                      className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${expandedId === trip.id ? 'rotate-180' : ''}`} />
+                  </div>
+
+                  <AnimatePresence>
+                    {expandedId === trip.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden border-t border-gray-100"
+                      >
+                        <div className="px-5 py-4 space-y-4">
+                          {trip.plan.days?.map(day => (
+                            <div key={day.day}>
+                              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Day {day.day} — {day.theme}</p>
+                              <div className="space-y-2">
+                                {day.stops?.map((stop, i) => (
+                                  <div key={i} className="flex gap-3 text-sm">
+                                    <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full shrink-0 h-fit">{stop.time}</span>
+                                    <div>
+                                      <p className="font-semibold text-gray-800">{stop.place}</p>
+                                      <p className="text-gray-500 text-xs">{stop.activity}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
 export default function ItinerariesPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc]" suppressHydrationWarning>
@@ -794,6 +1003,9 @@ export default function ItinerariesPage() {
         <section>
           <ItineraryWizard />
         </section>
+
+        {/* My Saved Trips */}
+        <SavedTripsSection />
 
         {/* Divider */}
         <div className="flex items-center gap-4">

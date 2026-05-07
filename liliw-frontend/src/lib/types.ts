@@ -12,6 +12,7 @@ export interface Hotspot {
   targetSceneIndex?: number;
   sceneIndex?: number; // which scene this hotspot belongs to (defaults to 0)
   info?: string;
+  size?: number; // scale multiplier, 0.5–2.0, default 1.0
 }
 
 // Strapi API Response Types

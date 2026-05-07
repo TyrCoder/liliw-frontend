@@ -8,6 +8,7 @@ import { getAllAttractions } from '@/lib/strapi';
 import { logger } from '@/lib/logger';
 import SearchBar from '@/components/SearchBar';
 import { COLORS } from '@/lib/constants';
+import FavoriteButton from '@/components/FavoriteButton';
 
 interface Attraction {
   id: string | number;
@@ -57,7 +58,7 @@ function SkeletonCard() {
     <motion.div
       variants={skeletonVariants}
       animate="pulse"
-      className="p-6 rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 h-80"
+      className="p-6 rounded-2xl bg-linear-to-br from-gray-200 to-gray-300 h-80"
     />
   );
 }
@@ -252,6 +253,15 @@ export default function AttractionsPage() {
               >
                 <Link href={`/attractions/${attraction.id}`}>
                   <div className="p-8 rounded-2xl bg-white border border-gray-200 hover:border-gray-300 shadow-lg hover:shadow-2xl transition-all duration-300 h-full flex flex-col relative overflow-hidden cursor-pointer">
+
+                    {/* Favorite button — top right */}
+                    <FavoriteButton
+                      attractionId={String(attraction.id)}
+                      attractionName={attraction.attributes?.name || ''}
+                      attractionType={attraction.type}
+                      attractionCategory={attraction.attributes?.category}
+                      className="absolute top-4 right-4 z-20"
+                    />
 
                     <div className="relative z-10 flex-1">
                       {/* Category Badge */}

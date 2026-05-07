@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Headphones, Camera,
   Maximize2, Minimize2, ScanLine, MapPin, X,
-  Info, Navigation, Save, PenLine, Check, Trash2, Upload,
+  Info, Navigation, Save, PenLine, Check, Trash2, Upload, Move,
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import type { Hotspot } from '@/lib/types';
@@ -125,13 +125,17 @@ function PanoramaSphere({
 // ─── Mactan-style hotspot marker ──────────────────────────────────────────
 
 function HotspotMarker({
-  hotspot, scenes, editMode, onDelete, onClick,
+  hotspot, scenes, editMode, onDelete, onClick, onMove, onResize, isRepositioning, draggingRef,
 }: {
   hotspot: Hotspot;
   scenes: Scene[];
   editMode: boolean;
   onDelete?: (id: string) => void;
   onClick?: (h: Hotspot) => void;
+  onMove?: (id: string) => void;
+  onResize?: (id: string, delta: number) => void;
+  isRepositioning?: boolean;
+  draggingRef?: React.MutableRefObject<boolean>;
 }) {
   const [hovered, setHovered] = useState(false);
   const pos = anglesToPosition(hotspot.pitch, hotspot.yaw);
@@ -141,22 +145,26 @@ function HotspotMarker({
     : undefined;
   const displayLabel = targetTitle || hotspot.label;
 
-  const accentColor = isNav ? '#00BFB3' : '#FFB400';
-  const bgColor = isNav ? 'rgba(0,191,179,0.18)' : 'rgba(255,180,0,0.18)';
-  const borderColor = isNav ? 'rgba(0,191,179,0.85)' : 'rgba(255,180,0,0.85)';
-  const glowColor = isNav ? 'rgba(0,191,179,0.5)' : 'rgba(255,180,0,0.5)';
+  const size = hotspot.size ?? 1.0;
+  const btnSize = Math.round(88 * size);
+  const iconSize = Math.round(30 * size);
+
+  const accentColor = isRepositioning ? '#a78bfa' : (isNav ? '#00BFB3' : '#FFB400');
+  const bgColor = isRepositioning ? 'rgba(167,139,250,0.25)' : (isNav ? 'rgba(0,191,179,0.18)' : 'rgba(255,180,0,0.18)');
+  const borderColor = isRepositioning ? 'rgba(167,139,250,0.9)' : (isNav ? 'rgba(0,191,179,0.85)' : 'rgba(255,180,0,0.85)');
+  const glowColor = isRepositioning ? 'rgba(167,139,250,0.5)' : (isNav ? 'rgba(0,191,179,0.5)' : 'rgba(255,180,0,0.5)');
 
   return (
     <group position={pos}>
       <Html center distanceFactor={220} zIndexRange={[1, 50]}>
         <motion.div
-          className="flex flex-col items-center gap-2 select-none"
+          className="flex flex-col items-center gap-1.5 select-none"
           style={{ pointerEvents: 'all' }}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
+          onMouseLeave={() => { if (!draggingRef?.current) setHovered(false); }}
           onTouchStart={() => setHovered(true)}
           onTouchEnd={() => setTimeout(() => setHovered(false), 600)}
         >
@@ -166,7 +174,7 @@ function HotspotMarker({
             transition={{ type: 'spring', stiffness: 400, damping: 22 }}
             whileTap={{ scale: 0.9 }}
             style={{
-              width: 88, height: 88,
+              width: btnSize, height: btnSize,
               background: 'none', border: 'none',
               cursor: 'pointer', padding: 0,
               position: 'relative',
@@ -179,8 +187,8 @@ function HotspotMarker({
               inset: -10,
               borderRadius: '50%',
               border: `2px solid ${accentColor}`,
-              opacity: 0.5,
-              animation: 'ping 2s cubic-bezier(0,0,0.2,1) infinite',
+              opacity: isRepositioning ? 0.9 : 0.5,
+              animation: isRepositioning ? 'ping 1s cubic-bezier(0,0,0.2,1) infinite' : 'ping 2s cubic-bezier(0,0,0.2,1) infinite',
             }} />
             {/* Second slower pulse */}
             <span style={{
@@ -196,8 +204,8 @@ function HotspotMarker({
               position: 'absolute',
               inset: 0,
               borderRadius: '50%',
-              backgroundColor: hovered ? bgColor.replace('0.18', '0.35') : bgColor,
-              border: `2.5px solid ${borderColor}`,
+              backgroundColor: hovered ? bgColor.replace(/[\d.]+\)$/, '0.35)') : bgColor,
+              border: isRepositioning ? `3px dashed ${borderColor}` : `2.5px solid ${borderColor}`,
               boxShadow: hovered
                 ? `0 0 0 6px rgba(255,255,255,0.12), 0 0 32px ${glowColor}, inset 0 0 16px rgba(255,255,255,0.10)`
                 : `0 0 18px ${glowColor}60, inset 0 0 8px rgba(255,255,255,0.06)`,
@@ -206,10 +214,12 @@ function HotspotMarker({
             }} />
             {/* Icon */}
             <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {isNav ? (
-                <Navigation style={{ width: 30, height: 30, color: 'white', filter: 'drop-shadow(0 0 6px rgba(0,191,179,0.9))' }} />
+              {isRepositioning ? (
+                <Move style={{ width: iconSize, height: iconSize, color: '#a78bfa', filter: 'drop-shadow(0 0 6px rgba(167,139,250,0.9))' }} />
+              ) : isNav ? (
+                <Navigation style={{ width: iconSize, height: iconSize, color: 'white', filter: 'drop-shadow(0 0 6px rgba(0,191,179,0.9))' }} />
               ) : (
-                <Info style={{ width: 30, height: 30, color: '#FFD54F', filter: 'drop-shadow(0 0 6px rgba(255,180,0,0.9))' }} />
+                <Info style={{ width: iconSize, height: iconSize, color: '#FFD54F', filter: 'drop-shadow(0 0 6px rgba(255,180,0,0.9))' }} />
               )}
             </span>
           </motion.button>
@@ -229,7 +239,7 @@ function HotspotMarker({
                   borderRadius: 20,
                   whiteSpace: 'nowrap',
                   backgroundColor: 'rgba(0,0,0,0.82)',
-                  color: 'white',
+                  color: isRepositioning ? '#a78bfa' : 'white',
                   border: `1px solid ${accentColor}70`,
                   backdropFilter: 'blur(10px)',
                   boxShadow: `0 4px 16px rgba(0,0,0,0.7), 0 0 8px ${accentColor}30`,
@@ -239,30 +249,94 @@ function HotspotMarker({
                   textOverflow: 'ellipsis',
                 }}
               >
-                {displayLabel}
+                {isRepositioning ? '📍 Click to place' : displayLabel}
               </motion.span>
             )}
           </AnimatePresence>
 
-          {/* Delete button (edit mode only) */}
+          {/* Edit controls — move, resize, delete */}
           {editMode && (
-            <motion.button
-              onClick={(e) => { e.stopPropagation(); onDelete?.(hotspot.id); }}
-              whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.85 }}
-              style={{
-                width: 26, height: 26,
-                borderRadius: '50%',
-                backgroundColor: '#ef4444',
-                color: 'white',
-                border: '2px solid rgba(255,255,255,0.3)',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 2px 8px rgba(239,68,68,0.5)',
-              }}
-            >
-              <X style={{ width: 13, height: 13 }} />
-            </motion.button>
+            <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+              {/* Move button */}
+              <motion.button
+                onClick={(e) => { e.stopPropagation(); onMove?.(hotspot.id); }}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.85 }}
+                title="Move hotspot"
+                style={{
+                  width: 26, height: 26,
+                  borderRadius: '50%',
+                  backgroundColor: isRepositioning ? '#a78bfa' : '#6366f1',
+                  color: 'white',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(99,102,241,0.5)',
+                }}
+              >
+                <Move style={{ width: 12, height: 12 }} />
+              </motion.button>
+
+              {/* Size − */}
+              <motion.button
+                onClick={(e) => { e.stopPropagation(); onResize?.(hotspot.id, -0.15); }}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.85 }}
+                title="Shrink"
+                style={{
+                  width: 26, height: 26,
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(0,0,0,0.75)',
+                  color: 'white',
+                  border: '2px solid rgba(255,255,255,0.25)',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 15, fontWeight: 900, lineHeight: 1,
+                }}
+              >
+                −
+              </motion.button>
+
+              {/* Size + */}
+              <motion.button
+                onClick={(e) => { e.stopPropagation(); onResize?.(hotspot.id, 0.15); }}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.85 }}
+                title="Grow"
+                style={{
+                  width: 26, height: 26,
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(0,0,0,0.75)',
+                  color: 'white',
+                  border: '2px solid rgba(255,255,255,0.25)',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 15, fontWeight: 900, lineHeight: 1,
+                }}
+              >
+                +
+              </motion.button>
+
+              {/* Delete button */}
+              <motion.button
+                onClick={(e) => { e.stopPropagation(); onDelete?.(hotspot.id); }}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.85 }}
+                title="Delete"
+                style={{
+                  width: 26, height: 26,
+                  borderRadius: '50%',
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(239,68,68,0.5)',
+                }}
+              >
+                <X style={{ width: 13, height: 13 }} />
+              </motion.button>
+            </div>
           )}
         </motion.div>
       </Html>
@@ -272,9 +346,8 @@ function HotspotMarker({
 
 // ─── Drag Controls (touch-action: none fixes mobile scroll) ───────────────
 
-function DragControls({ editMode, autoRotate }: { editMode: boolean; autoRotate: boolean }) {
+function DragControls({ editMode, autoRotate, draggingRef }: { editMode: boolean; autoRotate: boolean; draggingRef: React.MutableRefObject<boolean> }) {
   const { camera, gl } = useThree();
-  const dragging = useRef(false);
   const prev = useRef({ x: 0, y: 0 });
   const target = useRef({ x: 0, y: 0 });
   const smooth = useRef({ x: 0, y: 0 });
@@ -285,11 +358,11 @@ function DragControls({ editMode, autoRotate }: { editMode: boolean; autoRotate:
     const el = gl.domElement;
 
     const onDown = (e: MouseEvent) => {
-      dragging.current = true;
+      draggingRef.current = true;
       lastInteract.current = Date.now();
       prev.current = { x: e.clientX, y: e.clientY };
     };
-    const onUp = () => { dragging.current = false; };
+    const onUp = () => { draggingRef.current = false; };
     const onMove = (e: MouseEvent) => {
       if (!dragging.current) return;
       lastInteract.current = Date.now();
@@ -299,7 +372,7 @@ function DragControls({ editMode, autoRotate }: { editMode: boolean; autoRotate:
     };
     const onTouchStart = (e: TouchEvent) => {
       e.preventDefault();
-      dragging.current = true;
+      draggingRef.current = true;
       lastInteract.current = Date.now();
       if (e.touches[0]) prev.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
@@ -333,7 +406,7 @@ function DragControls({ editMode, autoRotate }: { editMode: boolean; autoRotate:
     smooth.current.y += (target.current.y - smooth.current.y) * 0.05;
     camera.rotation.y = smooth.current.x;
     camera.rotation.x = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, smooth.current.y));
-    if (autoRotate && !editMode && !dragging.current && Date.now() - lastInteract.current > 3000) {
+    if (autoRotate && !editMode && !draggingRef.current && Date.now() - lastInteract.current > 3000) {
       target.current.x -= delta * 0.08;
     }
   });
@@ -544,6 +617,7 @@ export default function ImmersiveViewer({
 }: ImmersiveViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const glRef = useRef<THREE.WebGLRenderer | null>(null);
+  const draggingRef = useRef(false);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [fading, setFading] = useState(false);
@@ -554,6 +628,7 @@ export default function ImmersiveViewer({
   // Hotspots initialized once from props — NOT synced on re-render to avoid losing edits
   const [hotspots, setHotspots] = useState<Hotspot[]>(initialHotspots);
   const [pending, setPending] = useState<PendingHotspot | null>(null);
+  const [repositioning, setRepositioning] = useState<string | null>(null);
   const [activeInfo, setActiveInfo] = useState<Hotspot | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -575,6 +650,14 @@ export default function ImmersiveViewer({
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setRepositioning(null); setPending(null); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const goToScene = useCallback((idx: number) => {
     if (idx === sceneIndex || fading) return;
     setFading(true);
@@ -585,11 +668,6 @@ export default function ImmersiveViewer({
       setFading(false);
     }, 400);
   }, [sceneIndex, fading]);
-
-  const onPlace = useCallback((pitch: number, yaw: number) => {
-    if (!editMode || pending) return;
-    setPending({ pitch, yaw });
-  }, [editMode, pending]);
 
   const autoSave = useCallback(async (updated: Hotspot[]) => {
     if (!onSaveHotspots) return;
@@ -605,6 +683,35 @@ export default function ImmersiveViewer({
       setSaving(false);
     }
   }, [onSaveHotspots]);
+
+  const onPlace = useCallback((pitch: number, yaw: number) => {
+    if (!editMode) return;
+    if (repositioning) {
+      setHotspots((prev) => {
+        const updated = prev.map((h) => h.id === repositioning ? { ...h, pitch, yaw } : h);
+        autoSave(updated);
+        return updated;
+      });
+      setRepositioning(null);
+      setSaved(false);
+      return;
+    }
+    if (pending) return;
+    setPending({ pitch, yaw });
+  }, [editMode, repositioning, pending, autoSave]);
+
+  const resizeHotspot = useCallback((id: string, delta: number) => {
+    setHotspots((prev) => {
+      const updated = prev.map((h) => {
+        if (h.id !== id) return h;
+        const clamped = Math.max(0.5, Math.min(2.0, (h.size ?? 1.0) + delta));
+        return { ...h, size: Math.round(clamped * 10) / 10 };
+      });
+      autoSave(updated);
+      return updated;
+    });
+    setSaved(false);
+  }, [autoSave]);
 
   const confirmHotspot = (h: Omit<Hotspot, 'id'>, newScene?: NewSceneResult) => {
     if (newScene) onNewScene?.(newScene.photo, scenes.length);
@@ -694,7 +801,7 @@ export default function ImmersiveViewer({
       className="rounded-xl overflow-hidden bg-black border-2 select-none"
       style={{ borderColor: editMode ? '#FFB400' : '#00BFB3' }}
     >
-      <div className="relative w-full" style={{ height: 'clamp(420px, calc(100vh - 180px), 900px)' }}>
+      <div className="relative w-full" style={{ height: 'clamp(280px, calc(100svh - 120px), 900px)' }}>
 
         {/* Loading */}
         <AnimatePresence>
@@ -747,7 +854,7 @@ export default function ImmersiveViewer({
             camera={{ fov: 80, position: [0, 0, 0.01] }}
             gl={{ antialias: true, preserveDrawingBuffer: true }}
             dpr={[1, 2]}
-            style={{ cursor: editMode ? 'crosshair' : 'grab' }}
+            style={{ cursor: repositioning ? 'crosshair' : (editMode ? 'crosshair' : 'grab') }}
             onCreated={({ gl }) => {
               gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
               gl.domElement.addEventListener('webglcontextlost', (e) => e.preventDefault(), false);
@@ -758,7 +865,7 @@ export default function ImmersiveViewer({
                 key={current.imageUrl}
                 url={current.imageUrl}
                 thumbUrl={current.thumbUrl}
-                editMode={editMode && !pending}
+                editMode={(editMode && !pending) || !!repositioning}
                 onPlace={onPlace}
                 onReady={onReady}
               />
@@ -770,9 +877,13 @@ export default function ImmersiveViewer({
                   editMode={editMode}
                   onDelete={deleteHotspot}
                   onClick={handleHotspotClick}
+                  onMove={(id) => { setRepositioning((prev) => prev === id ? null : id); }}
+                  onResize={resizeHotspot}
+                  isRepositioning={repositioning === h.id}
+                  draggingRef={draggingRef}
                 />
               ))}
-              <DragControls editMode={editMode} autoRotate={autoRotate} />
+              <DragControls editMode={editMode} autoRotate={autoRotate} draggingRef={draggingRef} />
               <ScreenshotHelper glRef={glRef} />
             </XR>
           </Canvas>
@@ -789,14 +900,25 @@ export default function ImmersiveViewer({
               className="pointer-events-auto px-3 py-2 rounded-xl"
               style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)' }}>
               {editMode && (
-                <div className="text-xs font-bold mb-0.5 flex items-center gap-1" style={{ color: '#FFB400' }}>
-                  <PenLine className="w-3 h-3" />
-                  <span className="hidden sm:inline">EDITOR — Click sphere to place</span>
-                  <span className="sm:hidden">EDITOR</span>
+                <div className="text-xs font-bold mb-0.5 flex items-center gap-1" style={{ color: repositioning ? '#a78bfa' : '#FFB400' }}>
+                  {repositioning ? <Move className="w-3 h-3" /> : <PenLine className="w-3 h-3" />}
+                  {repositioning
+                    ? <><span className="hidden sm:inline">Click anywhere to move hotspot</span><span className="sm:hidden">Moving…</span></>
+                    : <><span className="hidden sm:inline">EDITOR — Click sphere to place</span><span className="sm:hidden">EDITOR</span></>
+                  }
+                  {repositioning && (
+                    <button
+                      onClick={() => setRepositioning(null)}
+                      className="ml-1 underline text-purple-300"
+                      style={{ fontSize: 11, background: 'none', border: 'none', cursor: 'pointer', color: '#c4b5fd' }}
+                    >
+                      cancel
+                    </button>
+                  )}
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 flex-shrink-0" style={{ color: editMode ? '#FFB400' : '#00BFB3' }} />
+                <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: editMode ? '#FFB400' : '#00BFB3' }} />
                 <span className="text-white font-bold text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{current.title}</span>
               </div>
             </motion.div>
@@ -881,17 +1003,20 @@ export default function ImmersiveViewer({
                     <motion.button
                       onClick={() => goToScene((sceneIndex - 1 + scenes.length) % scenes.length)}
                       whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                      className="flex-shrink-0 p-3 rounded-xl text-white transition"
+                      className="shrink-0 p-2 sm:p-3 rounded-xl text-white transition"
                       style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <ChevronLeft className="w-5 h-5" />
+                      <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                     </motion.button>
-                    <div className="flex gap-1.5 sm:gap-2 overflow-x-auto flex-1 py-1">
+                    <div
+                      className="flex gap-1.5 sm:gap-2 overflow-x-auto flex-1 py-1"
+                      style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
+                    >
                       {scenes.map((scene, idx) => (
                         <motion.button key={scene.id} onClick={() => goToScene(idx)}
                           whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
-                          className="flex-shrink-0 relative rounded-xl overflow-hidden border-2 transition-all"
+                          className="shrink-0 relative rounded-xl overflow-hidden border-2 transition-all"
                           style={{
-                            width: 70, height: 46,
+                            width: 'clamp(52px, 14vw, 70px)', height: 'clamp(34px, 9vw, 46px)',
                             borderColor: idx === sceneIndex ? (editMode ? '#FFB400' : '#00BFB3') : 'rgba(255,255,255,0.2)',
                             opacity: idx === sceneIndex ? 1 : 0.5,
                             boxShadow: idx === sceneIndex ? `0 0 12px ${editMode ? '#FFB400' : '#00BFB3'}90` : 'none',
@@ -903,9 +1028,9 @@ export default function ImmersiveViewer({
                     <motion.button
                       onClick={() => goToScene((sceneIndex + 1) % scenes.length)}
                       whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                      className="flex-shrink-0 p-3 rounded-xl text-white transition"
+                      className="shrink-0 p-2 sm:p-3 rounded-xl text-white transition"
                       style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <ChevronRight className="w-5 h-5" />
+                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                     </motion.button>
                   </div>
                 </div>
@@ -915,18 +1040,18 @@ export default function ImmersiveViewer({
               <motion.div
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.4 }}
-                className="pointer-events-auto flex gap-2 flex-shrink-0"
+                className="pointer-events-auto flex gap-1.5 sm:gap-2 shrink-0"
               >
                 {!editMode && (
                   <motion.button
                     onClick={() => setAutoRotate((v) => !v)}
                     whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                    className="p-3 rounded-xl text-white text-lg font-bold leading-none transition"
+                    className="p-2 sm:p-3 rounded-xl text-white text-lg font-bold leading-none transition"
                     style={{
                       background: autoRotate ? 'rgba(0,191,179,0.75)' : 'rgba(0,0,0,0.7)',
                       backdropFilter: 'blur(6px)',
                       border: '1px solid rgba(255,255,255,0.12)',
-                      minWidth: 46, minHeight: 46,
+                      minWidth: 40, minHeight: 40,
                     }}>
                     ↻
                   </motion.button>
@@ -934,16 +1059,16 @@ export default function ImmersiveViewer({
                 <motion.button
                   onClick={takeScreenshot}
                   whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                  className="p-3 rounded-xl text-white transition"
-                  style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.12)', minWidth: 46, minHeight: 46 }}>
-                  <Camera className="w-5 h-5" />
+                  className="p-2 sm:p-3 rounded-xl text-white transition"
+                  style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.12)', minWidth: 40, minHeight: 40 }}>
+                  <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
                 </motion.button>
                 <motion.button
                   onClick={toggleFullscreen}
                   whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                  className="p-3 rounded-xl text-white transition"
-                  style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.12)', minWidth: 46, minHeight: 46 }}>
-                  {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                  className="p-2 sm:p-3 rounded-xl text-white transition"
+                  style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.12)', minWidth: 40, minHeight: 40 }}>
+                  {isFullscreen ? <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize2 className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </motion.button>
                 {!editMode && vrSupported && (
                   <motion.button

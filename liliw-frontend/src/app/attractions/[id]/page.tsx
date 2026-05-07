@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Phone, Clock, Globe, Users } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
 import SocialShare from '@/components/SocialShare';
+import FavoriteButton from '@/components/FavoriteButton';
 import ImageGallery from '@/components/ImageGallery';
 import Ratings from '@/components/Ratings';
 import ItineraryBuilder from '@/components/ItineraryBuilder';
@@ -160,8 +161,18 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
             {attraction.type === 'heritage' ? '🏛️ Heritage Site' : '🏞️ Tourist Spot'} {attraction.attributes.category && `• ${attraction.attributes.category}`}
           </div>
 
-          {/* Title */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4" style={{ color: '#0F1F3C' }}>{attraction.attributes.name}</h1>
+          {/* Title + Favorite */}
+          <div className="flex items-start gap-3 mb-3 sm:mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold flex-1" style={{ color: '#0F1F3C' }}>{attraction.attributes.name}</h1>
+            <FavoriteButton
+              attractionId={String(attraction.id)}
+              attractionName={attraction.attributes.name}
+              attractionType={attraction.type}
+              attractionCategory={attraction.attributes.category}
+              size="md"
+              className="mt-2 shrink-0"
+            />
+          </div>
 
           {/* Location & Rating */}
           <div className="flex flex-wrap items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
