@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Layers, Star } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
 import { logger } from '@/lib/logger';
+import FavoriteButton from '@/components/FavoriteButton';
 import { COLORS } from '@/lib/constants';
 
 interface Attraction {
@@ -136,7 +137,13 @@ export default function TouristSpotsPage() {
               >
                 <Link href={`/attractions/${spot.id}`}>
                   <div className="p-8 rounded-2xl bg-white border border-gray-200 hover:border-gray-300 shadow-lg hover:shadow-2xl transition-all duration-300 h-full flex flex-col relative overflow-hidden cursor-pointer">
-
+                    <FavoriteButton
+                      attractionId={String(spot.id)}
+                      attractionName={spot.attributes?.name || ''}
+                      attractionType="spot"
+                      attractionCategory={spot.attributes?.category}
+                      className="absolute top-4 right-4 z-20"
+                    />
                     <div className="relative z-10 flex-1">
                       {/* Category Badge */}
                       <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">

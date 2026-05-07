@@ -42,12 +42,14 @@ interface EventSignup {
   };
 }
 
+interface DeviceStat { count: number; pct: number; }
 interface Analytics {
   pageViews: number;
   uniqueVisitors: number;
   avgSessionTime: string;
   bounceRate: string;
   topPages: { path: string; views: number }[];
+  devices?: { desktop: DeviceStat; mobile: DeviceStat; tablet: DeviceStat };
 }
 
 /* ─── stat card ──────────────────────────────────────────── */
@@ -243,6 +245,33 @@ export default function AdminDashboard() {
                 ))}
               </div>
             </div>
+
+            {/* Device breakdown */}
+            {analytics?.devices && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                <h2 className="text-base font-bold text-gray-900 mb-5">Visitors by Device</h2>
+                <div className="grid grid-cols-3 gap-4">
+                  {([
+                    { key: 'desktop', label: 'Desktop', emoji: '🖥️', color: '#00BFB3' },
+                    { key: 'mobile',  label: 'Mobile',  emoji: '📱', color: '#3B82F6' },
+                    { key: 'tablet',  label: 'Tablet',  emoji: '📟', color: '#8B5CF6' },
+                  ] as const).map(({ key, label, emoji, color }) => {
+                    const d = (analytics.devices as any)[key] || { count: 0, pct: 0 };
+                    return (
+                      <div key={key} className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100">
+                        <span className="text-2xl">{emoji}</span>
+                        <p className="text-2xl font-bold text-gray-900">{d.pct}%</p>
+                        <p className="text-xs text-gray-500">{label}</p>
+                        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${d.pct}%`, backgroundColor: color }} />
+                        </div>
+                        <p className="text-xs text-gray-400">{d.count} sessions</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Top pages */}
             {analytics?.topPages && analytics.topPages.length > 0 && (

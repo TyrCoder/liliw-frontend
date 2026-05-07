@@ -3,34 +3,46 @@ import { NextRequest, NextResponse } from 'next/server';
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
-// In-memory fallback for session stats (resets on deploy)
-const sessionStore = new Map<string, { pageViews: number; startTime: number }>();
+type Device = 'desktop' | 'mobile' | 'tablet';
+
+interface Session {
+  pageViews: number;
+  startTime: number;
+  device: Device;
+}
+
+const sessionStore = new Map<string, Session>();
+const deviceCounts: Record<Device, number> = { desktop: 0, mobile: 0, tablet: 0 };
+
+function cleanOldSessions() {
+  if (sessionStore.size < 5000) return;
+  const cutoff = Date.now() - 7_200_000; // 2 hours
+  sessionStore.forEach((v, k) => { if (v.startTime < cutoff) sessionStore.delete(k); });
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { path, sessionId } = body;
-
+    const { path, sessionId, device = 'desktop' } = await request.json();
     if (!path) return NextResponse.json({ error: 'Missing path' }, { status: 400 });
 
-    // Track session in memory
     if (sessionId) {
-      const s = sessionStore.get(sessionId) || { pageViews: 0, startTime: Date.now() };
-      s.pageViews++;
-      sessionStore.set(sessionId, s);
-      // Clean old sessions (>2 hours)
-      if (sessionStore.size > 5000) {
-        const cutoff = Date.now() - 7200000;
-        sessionStore.forEach((v, k) => { if (v.startTime < cutoff) sessionStore.delete(k); });
+      const existing = sessionStore.get(sessionId);
+      if (existing) {
+        existing.pageViews++;
+      } else {
+        const d: Device = ['desktop', 'mobile', 'tablet'].includes(device) ? device : 'desktop';
+        sessionStore.set(sessionId, { pageViews: 1, startTime: Date.now(), device: d });
+        deviceCounts[d] = (deviceCounts[d] || 0) + 1;
+        cleanOldSessions();
       }
     }
 
-    // Persist to Strapi
-    await fetch(`${STRAPI}/api/page-views`, {
+    // Persist page view to Strapi (fire-and-forget)
+    fetch(`${STRAPI}/api/page-views`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
       body: JSON.stringify({ data: { path } }),
-    }).catch(() => {}); // fire-and-forget; don't fail the request if Strapi is down
+    }).catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch {
@@ -40,7 +52,6 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    // Fetch page views from Strapi (last 500)
     const res = await fetch(
       `${STRAPI}/api/page-views?pagination[limit]=500&sort=createdAt:desc`,
       { headers: { Authorization: `Bearer ${TOKEN}` }, next: { revalidate: 0 } },
@@ -64,20 +75,20 @@ export async function GET() {
         .sort((a, b) => b.views - a.views);
     }
 
-    const uniqueSessions = sessionStore.size;
-    const bounceCount = Array.from(sessionStore.values()).filter(s => s.pageViews <= 1).length;
-    const bounceRate = uniqueSessions > 0 ? `${Math.round((bounceCount / uniqueSessions) * 100)}%` : '—';
+    const sessions = Array.from(sessionStore.values());
+    const uniqueVisitors = sessions.length;
+    const bounceCount = sessions.filter(s => s.pageViews <= 1).length;
+    const bounceRate = uniqueVisitors > 0 ? `${Math.round((bounceCount / uniqueVisitors) * 100)}%` : '—';
 
-    return NextResponse.json({
-      pageViews: totalViews,
-      uniqueVisitors: uniqueSessions,
-      bounceRate,
-      avgSessionTime: '—',
-      topPages,
-    });
+    const total = deviceCounts.desktop + deviceCounts.mobile + deviceCounts.tablet || 1;
+    const devices = {
+      desktop: { count: deviceCounts.desktop, pct: Math.round((deviceCounts.desktop / total) * 100) },
+      mobile:  { count: deviceCounts.mobile,  pct: Math.round((deviceCounts.mobile  / total) * 100) },
+      tablet:  { count: deviceCounts.tablet,  pct: Math.round((deviceCounts.tablet  / total) * 100) },
+    };
+
+    return NextResponse.json({ pageViews: totalViews, uniqueVisitors, bounceRate, avgSessionTime: '—', topPages, devices });
   } catch {
-    return NextResponse.json({
-      pageViews: 0, uniqueVisitors: 0, bounceRate: '—', avgSessionTime: '—', topPages: [],
-    });
+    return NextResponse.json({ pageViews: 0, uniqueVisitors: 0, bounceRate: '—', avgSessionTime: '—', topPages: [], devices: { desktop: { count: 0, pct: 0 }, mobile: { count: 0, pct: 0 }, tablet: { count: 0, pct: 0 } } });
   }
 }

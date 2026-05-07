@@ -9,7 +9,6 @@ import SocialShare from '@/components/SocialShare';
 import FavoriteButton from '@/components/FavoriteButton';
 import ImageGallery from '@/components/ImageGallery';
 import Ratings from '@/components/Ratings';
-import ItineraryBuilder from '@/components/ItineraryBuilder';
 import EventCalendar from '@/components/EventCalendar';
 import InteractiveMap from '@/components/InteractiveMap';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
@@ -339,19 +338,26 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           />
         </motion.div>
 
-        {/* Itinerary Builder Section */}
+        {/* Itinerary CTA */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mb-8 sm:mb-12"
         >
-          <ItineraryBuilder
-            attractionName={attraction.attributes.name}
-            attractionId={String(attraction.id)}
-            price={2500}
-            maxParticipants={50}
-          />
+          <div className="rounded-2xl overflow-hidden border border-teal-100 flex flex-col sm:flex-row items-center gap-5 px-6 py-5"
+            style={{ background: 'linear-gradient(135deg,#e0fdf4,#f0fdfa)' }}>
+            <div className="text-3xl shrink-0">🗺️</div>
+            <div className="flex-1 text-center sm:text-left">
+              <p className="font-bold text-gray-800 text-base">Want to include this in an itinerary?</p>
+              <p className="text-sm text-gray-500 mt-0.5">Use our AI trip planner to build a full Liliw tour around {attraction.attributes.name}.</p>
+            </div>
+            <Link href="/itineraries"
+              className="shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm text-white transition hover:opacity-90 whitespace-nowrap"
+              style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)', boxShadow: '0 4px 16px rgba(0,191,179,.3)' }}>
+              Plan My Trip →
+            </Link>
+          </div>
         </motion.div>
 
         {/* Ratings & Reviews */}
