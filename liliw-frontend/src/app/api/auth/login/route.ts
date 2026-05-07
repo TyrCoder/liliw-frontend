@@ -3,20 +3,37 @@ import { NextRequest, NextResponse } from 'next/server';
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  try {
+    const body = await request.json();
 
-  const res = await fetch(`${STRAPI}/api/auth/local`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!res.ok) return NextResponse.json(data, { status: res.status });
+    const res = await fetch(`${STRAPI}/api/auth/local`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
 
-  const meRes = await fetch(`${STRAPI}/api/users/me?populate=role`, {
-    headers: { Authorization: `Bearer ${data.jwt}` },
-  });
-  const user = await meRes.json();
+    let data: any;
+    try {
+      data = await res.json();
+    } catch {
+      return NextResponse.json(
+        { error: { message: 'Server is starting up, please try again in a moment.' } },
+        { status: 503 },
+      );
+    }
 
-  return NextResponse.json({ jwt: data.jwt, user });
+    if (!res.ok) return NextResponse.json(data, { status: res.status });
+
+    const meRes = await fetch(`${STRAPI}/api/users/me?populate=role`, {
+      headers: { Authorization: `Bearer ${data.jwt}` },
+    });
+    const user = await meRes.json();
+
+    return NextResponse.json({ jwt: data.jwt, user });
+  } catch {
+    return NextResponse.json(
+      { error: { message: 'Login failed. Please try again.' } },
+      { status: 500 },
+    );
+  }
 }
