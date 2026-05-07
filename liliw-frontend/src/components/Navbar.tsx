@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogOut, LayoutDashboard, User } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
@@ -131,14 +131,22 @@ export default function Navbar() {
                             <p className="text-sm font-bold text-gray-900">{user.username}</p>
                             <p className="text-xs text-gray-400 truncate">{user.email}</p>
                           </div>
+                          <Link href="/profile" onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
+                            <User className="w-4 h-4" style={{ color: '#00BFB3' }} /> View Profile
+                          </Link>
+                          <Link href="/profile#saved" onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
+                            <BookmarkCheck className="w-4 h-4" style={{ color: '#00BFB3' }} /> Saved Itineraries
+                          </Link>
                           {isAdmin && (
                             <Link href="/admin" onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
+                              className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition border-t border-gray-100">
                               <LayoutDashboard className="w-4 h-4" style={{ color: '#00BFB3' }} /> Admin Dashboard
                             </Link>
                           )}
                           <button onClick={() => { logout(); setUserMenuOpen(false); }}
-                            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 transition">
+                            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 transition border-t border-gray-100">
                             <LogOut className="w-4 h-4" /> Log Out
                           </button>
                         </motion.div>
@@ -176,6 +184,12 @@ export default function Navbar() {
                   {navLinks.map((link) => (
                     <NavLink key={link.href} href={link.href} label={link.label} onClick={closeMenu} />
                   ))}
+                  {user && (
+                    <>
+                      <NavLink href="/profile" label="My Profile" onClick={closeMenu} />
+                      <NavLink href="/profile#saved" label="Saved Itineraries" onClick={closeMenu} />
+                    </>
+                  )}
                   {isAdmin && (
                     <NavLink href="/admin" label="Admin Dashboard" onClick={closeMenu} />
                   )}

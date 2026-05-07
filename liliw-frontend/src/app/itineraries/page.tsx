@@ -7,8 +7,9 @@ import {
   ChevronLeft, ChevronRight, Clock, Users, X, MapPin, Star,
   CheckCircle, XCircle, Navigation, ArrowRight, Calendar,
   Lightbulb, Sparkles, RotateCcw, Wallet, Heart, Sun, BookmarkCheck,
-  Trash2, ChevronDown,
+  Trash2, ChevronDown, LogIn,
 } from 'lucide-react';
+import AuthModal from '@/components/AuthModal';
 import { getItineraries } from '@/lib/strapi';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useAuth } from '@/context/AuthContext';
@@ -111,7 +112,7 @@ function InterestChip({ value, icon, selected, onClick }: { value: string; icon:
   );
 }
 
-function PlanResult({ plan, onReset, onSave, saved }: { plan: GeneratedPlan; onReset: () => void; onSave: () => void; saved: boolean }) {
+function PlanResult({ plan, onReset, onSave, saved, isLoggedIn }: { plan: GeneratedPlan; onReset: () => void; onSave: () => void; saved: boolean; isLoggedIn: boolean }) {
   return (
     <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
       <div className="rounded-3xl p-6 text-white" style={{ background: 'linear-gradient(135deg,#00BFB3,#0077A8)' }}>
@@ -196,8 +197,8 @@ function PlanResult({ plan, onReset, onSave, saved }: { plan: GeneratedPlan; onR
               ? 'bg-teal-50 border-2 border-teal-400 text-teal-700'
               : 'bg-teal-500 text-white hover:bg-teal-600 shadow-lg shadow-teal-100'
           }`}>
-          <BookmarkCheck className="w-4 h-4" />
-          {saved ? 'Saved to My Trips ✓' : 'Save This Itinerary'}
+          {isLoggedIn ? <BookmarkCheck className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
+          {saved ? 'Saved to My Trips ✓' : isLoggedIn ? 'Save This Itinerary' : 'Log In to Save'}
         </motion.button>
         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onReset}
           className="shrink-0 flex items-center justify-center gap-2 px-5 py-4 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold hover:border-gray-300 hover:bg-gray-50 transition">
@@ -213,6 +214,7 @@ type WizardStep = 'duration' | 'budget' | 'interests' | 'favorites' | 'generatin
 function ItineraryWizard() {
   const { user } = useAuth();
   const { favorites } = useFavorites();
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [step, setStep]             = useState<WizardStep>('duration');
   const [duration, setDuration]     = useState('');
   const [customDuration, setCustomDuration] = useState('');
@@ -264,6 +266,7 @@ function ItineraryWizard() {
 
   const saveTrip = () => {
     if (!plan) return;
+    if (!user) { setShowLoginModal(true); return; }
     const trips = loadSavedTrips();
     const newTrip: SavedTrip = {
       id: crypto.randomUUID(),
@@ -489,12 +492,20 @@ function ItineraryWizard() {
           {/* Result */}
           {step === 'result' && plan && (
             <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <PlanResult plan={plan} onReset={reset} onSave={saveTrip} saved={tripSaved} />
+              <PlanResult plan={plan} onReset={reset} onSave={saveTrip} saved={tripSaved} isLoggedIn={!!user} />
             </motion.div>
           )}
 
         </AnimatePresence>
       </div>
+
+      {showLoginModal && (
+        <AuthModal
+          defaultTab="login"
+          message="Log in to save this itinerary to your profile."
+          onClose={() => setShowLoginModal(false)}
+        />
+      )}
     </div>
   );
 }

@@ -8,11 +8,12 @@ import { useAuth } from '@/context/AuthContext';
 interface Props {
   defaultTab?: 'login' | 'register';
   onClose: () => void;
+  message?: string;
 }
 
 type View = 'login' | 'register' | 'forgot' | 'otp' | 'newpass' | 'done';
 
-export default function AuthModal({ defaultTab = 'login', onClose }: Props) {
+export default function AuthModal({ defaultTab = 'login', onClose, message }: Props) {
   const { login, register } = useAuth();
   const [view, setView]      = useState<View>(defaultTab);
   const [showPw, setShowPw]  = useState(false);
@@ -134,7 +135,7 @@ export default function AuthModal({ defaultTab = 'login', onClose }: Props) {
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[9998] flex items-center justify-center px-4"
+        className="fixed inset-0 z-9998 flex items-center justify-center px-4"
       >
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
@@ -162,6 +163,15 @@ export default function AuthModal({ defaultTab = 'login', onClose }: Props) {
             <h2 className="text-xl font-bold text-white">{headerTitle[view]}</h2>
             <p className="text-gray-400 text-sm mt-0.5">{headerSub[view]}</p>
           </div>
+
+          {/* Optional context message */}
+          {message && (view === 'login' || view === 'register') && (
+            <div className="px-4 pt-3 pb-0">
+              <div className="px-4 py-2.5 rounded-xl text-sm font-medium text-teal-800 bg-teal-50 border border-teal-200">
+                {message}
+              </div>
+            </div>
+          )}
 
           {/* Tabs — only on login/register */}
           {(view === 'login' || view === 'register') && (
