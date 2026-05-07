@@ -54,7 +54,7 @@ export default function ImmersivePage() {
   const virtualTourPhotosRef = useRef<VirtualTourPhoto[]>([]);
   useEffect(() => { virtualTourPhotosRef.current = virtualTourPhotos; }, [virtualTourPhotos]);
 
-  const { isAdmin } = useAuth();
+  const { isAdmin, token } = useAuth();
 
   // Auto-enable editor mode for admin users
   useEffect(() => {
@@ -151,7 +151,7 @@ export default function ImmersivePage() {
     try {
       const res = await fetch('/api/save-virtual-tour-photos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           attractionType: selectedAttraction.type,
           strapiId: selectedAttraction.strapiId,
@@ -241,7 +241,7 @@ export default function ImmersivePage() {
     const [hRes, pRes] = await Promise.all([
       fetch('/api/save-hotspots', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           attractionType: selectedAttraction.type,
           strapiId: selectedAttraction.strapiId,
@@ -250,7 +250,7 @@ export default function ImmersivePage() {
       }),
       fetch('/api/save-virtual-tour-photos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           attractionType: selectedAttraction.type,
           strapiId: selectedAttraction.strapiId,

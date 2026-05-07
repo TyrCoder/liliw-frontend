@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/ratelimit';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
+  if (!checkRateLimit(ip, 5, 60_000)) {
+    return NextResponse.json(
+      { error: { message: 'Too many attempts. Try again in 1 minute.' } },
+      { status: 429 },
+    );
+  }
+
   try {
     const body = await request.json();
 

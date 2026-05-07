@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import algoliasearch from 'algoliasearch';
+import { requireAdminAuth } from '@/lib/auth';
 
 const client = algoliasearch(
   process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || '',
@@ -10,7 +11,7 @@ const client = algoliasearch(
 const index = client.initIndex(process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME || 'liliw-items');
 
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
-const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || '';
 
 async function fetchFromStrapi(endpoint: string) {
   try {
@@ -27,7 +28,10 @@ async function fetchFromStrapi(endpoint: string) {
   }
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const isAdmin = await requireAdminAuth(req);
+  if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const objects: any[] = [];
 
