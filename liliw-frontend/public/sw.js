@@ -1,166 +1,125 @@
-const CACHE_NAME = 'liliw-cache-v2';
-const urlsToCache = [
+const CACHE_NAME = 'liliw-cache-v3';
+
+const PRECACHE_URLS = [
   '/',
+  '/about',
+  '/attractions',
+  '/heritage',
+  '/culture',
+  '/arts',
+  '/itineraries',
+  '/news',
+  '/community',
+  '/contact',
+  '/map',
   '/offline.html',
 ];
 
-// Install Service Worker
+// ── Install: pre-cache all main pages ────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(urlsToCache).catch((err) => {
-        console.log('Cache add error:', err);
-        // Continue even if some URLs fail
-        return Promise.resolve();
-      });
+      return Promise.allSettled(
+        PRECACHE_URLS.map((url) =>
+          cache.add(url).catch(() => {
+            // If a page fails (e.g. not built yet) just skip it
+          })
+        )
+      );
     })
   );
   self.skipWaiting();
 });
 
-// Activate Service Worker
+// ── Activate: clean up old caches ────────────────────────────
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+      )
+    )
   );
-
   self.clients.claim();
 });
 
-// Fetch Event - Network First, Cache Second strategy
+// ── Fetch strategy ───────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') {
-    return;
-  }
+  if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith('http')) return;
 
-  // Skip non-http requests
-  if (!event.request.url.startsWith('http')) {
-    return;
-  }
+  const url = new URL(event.request.url);
 
-  // Never cache API requests with auth headers to avoid stale/unauthorized responses.
-  if (event.request.url.includes('/api/')) {
+  // API calls — always network, never cache
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(
-      fetch(event.request)
-        .catch(() => new Response('Offline', { status: 503 }))
+      fetch(event.request).catch(() =>
+        new Response(JSON.stringify({ error: 'offline' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
     );
-  } else if (event.request.mode === 'navigate') {
-    // For pages, use network-first so deployments update immediately.
+    return;
+  }
+
+  // Page navigations — network first, fall back to cache, then offline page
+  if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           return response;
         })
-        .catch(() => {
-          return caches.match(event.request).then((cachedResponse) => {
-            return cachedResponse || caches.match('/offline.html');
-          });
-        })
+        .catch(() =>
+          caches.match(event.request).then((cached) => cached || caches.match('/offline.html'))
+        )
     );
-  } else {
-    // For static assets, use cache first
-    event.respondWith(
-      caches
-        .match(event.request)
-        .then((response) => {
-          if (response) {
-            return response;
-          }
-
-          return fetch(event.request).then((response) => {
-            if (!response || response.status !== 200 || response.type === 'error') {
-              return response;
-            }
-
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-
-            return response;
-          });
-        })
-        .catch(() => {
-          return caches.match('/offline.html');
-        })
-    );
-  }
-});
-
-// Push notification handler
-self.addEventListener('push', (event) => {
-  if (!event.data) {
     return;
   }
 
-  const options = {
-    body: event.data.text(),
-    icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png',
-    tag: 'liliw-notification',
-    requireInteraction: false,
-  };
-
-  event.waitUntil(self.registration.showNotification('Liliw Tourism', options));
+  // Static assets (JS, CSS, images, fonts) — cache first, network fallback
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((response) => {
+        if (!response || response.status !== 200 || response.type === 'opaqueredirect') {
+          return response;
+        }
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      });
+    }).catch(() => caches.match('/offline.html'))
+  );
 });
 
-// Notification click handler
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-
+// ── Push notifications ────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  let data = { title: 'Liliw Tourism', body: event.data.text(), url: '/' };
+  try { data = { ...data, ...event.data.json() }; } catch {}
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (let client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
-          return client.focus();
-        }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow('/');
-      }
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192x192.png',
+      badge: '/icon-192x192.png',
+      tag: 'liliw-notification',
+      data: { url: data.url },
     })
   );
 });
 
-// Background sync for offline submissions
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-reviews') {
-    event.waitUntil(syncReviews());
-  }
-  if (event.tag === 'sync-bookings') {
-    event.waitUntil(syncBookings());
-  }
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = event.notification.data?.url || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if (client.url === target && 'focus' in client) return client.focus();
+      }
+      return clients.openWindow(target);
+    })
+  );
 });
-
-async function syncReviews() {
-  try {
-    const cache = await caches.open(CACHE_NAME);
-    // Implement review sync logic
-  } catch (error) {
-    console.log('Review sync error:', error);
-  }
-}
-
-async function syncBookings() {
-  try {
-    const cache = await caches.open(CACHE_NAME);
-    // Implement booking sync logic
-  } catch (error) {
-    console.log('Booking sync error:', error);
-  }
-}
