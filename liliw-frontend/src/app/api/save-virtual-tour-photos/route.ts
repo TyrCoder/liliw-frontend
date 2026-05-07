@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdminAuth } from '@/lib/auth';
 
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL;
-const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
 const ENDPOINTS: Record<string, string> = {
   heritage: 'heritage-sites',
@@ -10,6 +11,9 @@ const ENDPOINTS: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
+  const isAdmin = await requireAdminAuth(req);
+  if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { attractionType, strapiId, photos } = await req.json();
 
@@ -24,7 +28,6 @@ export async function POST(req: NextRequest) {
       Authorization: `Bearer ${STRAPI_TOKEN}`,
     };
 
-    // Update the draft
     const putRes = await fetch(baseUrl, {
       method: 'PUT',
       headers,
@@ -36,8 +39,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `PUT failed (${putRes.status}): ${text}` }, { status: putRes.status });
     }
 
-    // Publish so the changes are visible via the public Content API.
-    // 405 means Draft & Publish is disabled on this content type — PUT already made it live.
     const pubRes = await fetch(`${baseUrl}/actions/publish`, { method: 'POST', headers });
     if (!pubRes.ok && pubRes.status !== 405) {
       const text = await pubRes.text();

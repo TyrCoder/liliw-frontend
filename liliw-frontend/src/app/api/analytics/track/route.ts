@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+const TOKEN  = process.env.STRAPI_API_TOKEN || '';
 
 // In-memory fallback for session stats (resets on deploy)
 const sessionStore = new Map<string, { pageViews: number; startTime: number }>();

@@ -88,7 +88,7 @@ const TYPE_BADGE: Record<string, string> = {
 /* ─── page ───────────────────────────────────────────────── */
 
 export default function AdminDashboard() {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, token } = useAuth();
   const router = useRouter();
 
   const [submissions, setSubmissions]   = useState<Submission[]>([]);
@@ -112,12 +112,14 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!isAdmin) return;
 
-    fetch('/api/admin/submissions')
+    const authHeader = { Authorization: `Bearer ${token}` };
+
+    fetch('/api/admin/submissions', { headers: authHeader })
       .then(r => r.json())
       .then(d => setSubmissions(d.data || []))
       .finally(() => setLoadingSubs(false));
 
-    fetch('/api/event-signup')
+    fetch('/api/event-signup', { headers: authHeader })
       .then(r => r.json())
       .then(d => setSignups(d.data || []))
       .finally(() => setLoadingSignups(false));
