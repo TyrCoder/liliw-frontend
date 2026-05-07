@@ -11,8 +11,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
 
-const STRAPI      = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
 /* ─── helpers ─────────────────────────────────────────────── */
 
@@ -71,9 +70,7 @@ export default function EventDetailPage() {
   const [alreadySignedUp, setAlreadySignedUp] = useState(false);
 
   useEffect(() => {
-    fetch(`${STRAPI}/api/events?filters[slug][$eq]=${slug}&populate=cover_image,photos&publicationState=live`, {
-      headers: { Authorization: `Bearer ${STRAPI_TOKEN}` },
-    })
+    fetch(`/api/strapi/events/${slug}`)
       .then(r => r.json())
       .then(data => {
         const item = data.data?.[0];
@@ -151,7 +148,7 @@ export default function EventDetailPage() {
           ? <img src={coverUrl} alt={a.title} className="absolute inset-0 w-full h-full object-cover opacity-60" />
           : <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg,#0F1F3C,#1a3a5c)' }} />
         }
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6 max-w-3xl mx-auto">
           <Link href="/community" className="inline-flex items-center text-sm font-semibold mb-3 group" style={{ color: '#00BFB3' }}>
             <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to Participate
