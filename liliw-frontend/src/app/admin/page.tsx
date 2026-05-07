@@ -112,18 +112,20 @@ export default function AdminDashboard() {
 
   // Fetch data
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin || !token) return;
 
     const authHeader = { Authorization: `Bearer ${token}` };
 
     fetch('/api/admin/submissions', { headers: authHeader })
       .then(r => r.json())
       .then(d => setSubmissions(d.data || []))
+      .catch(() => setSubmissions([]))
       .finally(() => setLoadingSubs(false));
 
     fetch('/api/event-signup', { headers: authHeader })
       .then(r => r.json())
       .then(d => setSignups(d.data || []))
+      .catch(() => setSignups([]))
       .finally(() => setLoadingSignups(false));
 
     fetch('/api/analytics/track')
@@ -137,7 +139,7 @@ export default function AdminDashboard() {
       .then(d => setReviews(d.data || []))
       .catch(() => setReviews([]))
       .finally(() => setLoadingReviews(false));
-  }, [isAdmin]);
+  }, [isAdmin, token]);
 
   if (loading) {
     return (
