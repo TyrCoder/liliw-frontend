@@ -36,13 +36,12 @@ export default function Home() {
   const [announcements, setAnnouncements] = useState<any[]>(FALLBACK_ANNOUNCEMENTS);
 
   useEffect(() => {
-    const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
-    const headers = { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}` };
-
-    Promise.all([
-      fetch(`${strapiUrl}/api/newses?populate=*&sort=createdAt:desc&pagination[limit]=2`, { headers }).then(r => r.json()).catch(() => null),
-      fetch(`${strapiUrl}/api/events?populate=*&sort=date_start:desc&pagination[limit]=2`, { headers }).then(r => r.json()).catch(() => null),
-    ]).then(([newsData, eventsData]) => {
+    fetch('/api/strapi/news-events?limit=2')
+      .then(r => r.json())
+      .catch(() => null)
+      .then((combined: any) => {
+      const newsData = combined?.news;
+      const eventsData = combined?.events;
       const items: any[] = [];
 
       if (newsData?.data?.length) {

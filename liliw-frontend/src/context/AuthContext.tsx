@@ -24,7 +24,6 @@ interface AuthCtx extends AuthState {
 
 const AuthContext = createContext<AuthCtx | null>(null);
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const TOKEN_KEY = 'liliw-jwt';
 const USER_KEY  = 'liliw-user';
 
@@ -52,36 +51,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = useCallback(async (identifier: string, password: string) => {
-    const res = await fetch(`${STRAPI}/api/auth/local`, {
+    const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier, password }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error?.message || 'Login failed');
-
-    // Fetch full user with role populated
-    const meRes = await fetch(`${STRAPI}/api/users/me?populate=role`, {
-      headers: { Authorization: `Bearer ${data.jwt}` },
-    });
-    const me: StrapiUser = await meRes.json();
-    persist(data.jwt, me);
+    persist(data.jwt, data.user as StrapiUser);
   }, []);
 
   const register = useCallback(async (username: string, email: string, password: string) => {
-    const res = await fetch(`${STRAPI}/api/auth/local/register`, {
+    const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error?.message || 'Registration failed');
-
-    const meRes = await fetch(`${STRAPI}/api/users/me?populate=role`, {
-      headers: { Authorization: `Bearer ${data.jwt}` },
-    });
-    const me: StrapiUser = await meRes.json();
-    persist(data.jwt, me);
+    persist(data.jwt, data.user as StrapiUser);
   }, []);
 
   const logout = useCallback(() => {

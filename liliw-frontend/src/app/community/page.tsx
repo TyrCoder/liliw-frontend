@@ -7,8 +7,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
 
-const STRAPI       = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
 function getPhotoUrl(p: any): string | null {
   if (!p) return null;
@@ -51,10 +50,7 @@ export default function CommunityPage() {
   const [eventsLoading, setEventsLoading] = useState(true);
 
   useEffect(() => {
-    fetch(
-      `${STRAPI}/api/events?filters[is_joinable][$eq]=true&populate=cover_image&publicationState=live&sort=date_start:asc`,
-      { headers: { Authorization: `Bearer ${STRAPI_TOKEN}` } }
-    )
+    fetch('/api/strapi/events')
       .then(r => r.json())
       .then(data => setJoinableEvents(data.data || []))
       .catch(() => setJoinableEvents([]))

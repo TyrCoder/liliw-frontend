@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Star, MapPin, Phone, ExternalLink, Search, Filter } from 'lucide-react';
 
 const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || '';
-const TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
 const FALLBACK_ARTS = [
   { name: 'Tsinelas Crafting', description: 'Liliw is world-renowned for its handmade tsinelas (slippers). Skilled artisans have perfected this craft over generations, creating footwear that blends comfort, artistry, and cultural identity.', icon_emoji: '👞', features: ['Hand-stitched leather', 'Traditional techniques', 'Hundreds of designs', 'Export-quality products'] },
@@ -47,17 +46,13 @@ export default function ArtsPage() {
   const [selectedArtisan, setSelectedArtisan] = useState<any | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch(`${STRAPI}/api/art-forms?populate=*&sort=sort_order:asc`, {
-        headers: { Authorization: `Bearer ${TOKEN}` },
-      }).then(r => r.json()).catch(() => null),
-      fetch(`${STRAPI}/api/artisans?populate=*`, {
-        headers: { Authorization: `Bearer ${TOKEN}` },
-      }).then(r => r.json()).catch(() => null),
-    ]).then(([artData, artisanData]) => {
-      if (artData?.data?.length) setArtForms(artData.data.map((i: any) => i.attributes || i));
-      if (artisanData?.data?.length) setArtisans(artisanData.data.map((i: any) => ({ ...(i.attributes || i), id: i.id })));
-    }).finally(() => setLoading(false));
+    fetch('/api/strapi/arts')
+      .then(r => r.json())
+      .then(({ artForms: artData, artisans: artisanData }) => {
+        if (artData?.data?.length) setArtForms(artData.data.map((i: any) => i.attributes || i));
+        if (artisanData?.data?.length) setArtisans(artisanData.data.map((i: any) => ({ ...(i.attributes || i), id: i.id })));
+      }).catch(() => null)
+      .finally(() => setLoading(false));
   }, []);
 
   const filteredArtisans = artisans.filter(a => {
@@ -124,7 +119,7 @@ export default function ArtsPage() {
               <div className="space-y-1.5">
                 {(Array.isArray(art.features) ? art.features : []).map((f: string, i: number) => (
                   <div key={i} className="flex items-center gap-2 text-xs text-gray-500">
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#00BFB3' }} />
+                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: '#00BFB3' }} />
                     {f}
                   </div>
                 ))}
@@ -163,7 +158,7 @@ export default function ArtsPage() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className="flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all"
+                className="shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all"
                 style={{
                   backgroundColor: activeCategory === cat ? '#0F1F3C' : '#f1f5f9',
                   color: activeCategory === cat ? '#00BFB3' : '#64748b',
@@ -208,7 +203,7 @@ export default function ArtsPage() {
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-30">🎨</div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent" />
                       <div className="absolute bottom-3 left-3">
                         <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(0,191,179,0.85)', color: 'white' }}>
                           {artisan.craft_type || 'Artisan'}
@@ -220,7 +215,7 @@ export default function ArtsPage() {
                       {artisan.rating && <StarRow rating={artisan.rating} />}
                       {artisan.location && (
                         <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
-                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                          <MapPin className="w-3 h-3 shrink-0" />
                           {artisan.location}
                         </div>
                       )}
@@ -272,7 +267,7 @@ export default function ArtsPage() {
                     <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-20">🎨</div>
                   );
                 })()}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                 <button onClick={() => setSelectedArtisan(null)} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition">✕</button>
                 <div className="absolute bottom-4 left-4">
                   <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: '#00BFB3', color: 'white' }}>{selectedArtisan.craft_type}</span>
@@ -287,7 +282,7 @@ export default function ArtsPage() {
                 </div>
                 {selectedArtisan.location && (
                   <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                    <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: '#00BFB3' }} />
+                    <MapPin className="w-4 h-4 shrink-0" style={{ color: '#00BFB3' }} />
                     {selectedArtisan.location}
                   </div>
                 )}
