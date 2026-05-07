@@ -7,6 +7,7 @@ import SearchProvider from "@/components/SearchProvider";
 import AIChat from "@/components/AIChat";
 import PWAHandler from "@/components/PWAHandler";
 import AnalyticsInit from "@/components/AnalyticsInit";
+import { AuthProvider } from "@/context/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -64,13 +65,15 @@ export default function RootLayout({
         <meta name="theme-color" content="#00BFB3" />
       </head>
       <body className="min-h-full flex flex-col bg-white">
-        <PWAHandler />
-        <SearchProvider />
-        <AnalyticsInit />
-        <Navbar />
-        {children}
-        <Footer />
-        <AIChat />
+        <AuthProvider>
+          <PWAHandler />
+          <SearchProvider />
+          <AnalyticsInit />
+          <Navbar />
+          {children}
+          <Footer />
+          <AIChat />
+        </AuthProvider>
       </body>
     </html>
   );
