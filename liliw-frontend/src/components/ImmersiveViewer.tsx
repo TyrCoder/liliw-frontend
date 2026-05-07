@@ -364,7 +364,7 @@ function DragControls({ editMode, autoRotate, draggingRef }: { editMode: boolean
     };
     const onUp = () => { draggingRef.current = false; };
     const onMove = (e: MouseEvent) => {
-      if (!dragging.current) return;
+      if (!draggingRef.current) return;
       lastInteract.current = Date.now();
       target.current.x -= (e.clientX - prev.current.x) * 0.005;
       target.current.y -= (e.clientY - prev.current.y) * 0.005;
@@ -378,7 +378,7 @@ function DragControls({ editMode, autoRotate, draggingRef }: { editMode: boolean
     };
     const onTouchMove = (e: TouchEvent) => {
       e.preventDefault();
-      if (!dragging.current || !e.touches[0]) return;
+      if (!draggingRef.current || !e.touches[0]) return;
       lastInteract.current = Date.now();
       target.current.x -= (e.touches[0].clientX - prev.current.x) * 0.005;
       target.current.y -= (e.touches[0].clientY - prev.current.y) * 0.005;
