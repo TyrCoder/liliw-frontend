@@ -35,11 +35,11 @@ export default function CulturePage() {
   const [culturalAspects, setCulturalAspects] = useState<any[]>(FALLBACK_CULTURE);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/culture-aspects?populate=*&sort=sort_order:asc`, {
-      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}` }
-    }).then(r => r.json()).then(data => {
-      if (data?.data?.length) setCulturalAspects(data.data.map((i: any) => i.attributes || i));
-    }).catch(() => {});
+    fetch('/api/strapi/culture-aspects')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.data?.length) setCulturalAspects(data.data.map((i: any) => i.attributes || i));
+      }).catch(() => {});
   }, []);
 
   return (

@@ -31,14 +31,7 @@ export default function Ratings({ itemId, itemName, ratings = [] }: RatingsProps
     const fetchReviews = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/reviews?filters[item_id][$eq]=${itemId}&populate=*`,
-          {
-            headers: {
-              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`,
-            },
-          }
-        );
+        const response = await fetch(`/api/strapi/reviews?itemId=${itemId}`);
         
         if (response.ok) {
           const data = await response.json();

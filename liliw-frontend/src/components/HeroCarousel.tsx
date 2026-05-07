@@ -18,18 +18,19 @@ export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/hero-slides?populate=*&sort=sort_order:asc&filters[is_active][$eq]=true`, {
-      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}` }
-    }).then(r => r.json()).then(data => {
-      if (data?.data?.length) {
-        setSlides(data.data.map((item: any, i: number) => {
-          const a = item.attributes || item;
-          const imgUrl = a.image?.data?.attributes?.url || a.image?.url;
-          const fullImg = imgUrl ? (imgUrl.startsWith('http') ? imgUrl : `${process.env.NEXT_PUBLIC_STRAPI_URL}${imgUrl}`) : null;
-          return { ...a, gradient: GRADIENTS[i % GRADIENTS.length], image: fullImg };
-        }));
-      }
-    }).catch(() => {});
+    const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL || '';
+    fetch('/api/strapi/hero-slides')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.data?.length) {
+          setSlides(data.data.map((item: any, i: number) => {
+            const a = item.attributes || item;
+            const imgUrl = a.image?.data?.attributes?.url || a.image?.url;
+            const fullImg = imgUrl ? (imgUrl.startsWith('http') ? imgUrl : `${strapiUrl}${imgUrl}`) : null;
+            return { ...a, gradient: GRADIENTS[i % GRADIENTS.length], image: fullImg };
+          }));
+        }
+      }).catch(() => {});
   }, []);
 
   useEffect(() => {
