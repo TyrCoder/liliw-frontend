@@ -68,6 +68,17 @@ interface Day  { day: number; theme: string; stops: Stop[]; }
 interface GeneratedPlan { title: string; summary: string; days: Day[]; tips: string[]; estimatedCostPerDay: string; }
 interface SavedTrip { id: string; savedAt: string; title: string; plan: GeneratedPlan; duration: string; budget: string; }
 
+const INTEREST_TO_TYPES: Record<string, ('heritage' | 'spot' | 'dining')[]> = {
+  'Heritage & History':   ['heritage'],
+  'Local Food & Cuisine': ['dining'],
+  'Arts & Crafts':        ['heritage', 'spot'],
+  'Nature & Outdoors':    ['spot'],
+  'Family Activities':    ['heritage', 'spot', 'dining'],
+  'Photography':          ['heritage', 'spot', 'dining'],
+  'Shopping':             ['spot', 'heritage'],
+  'Culture & Festivals':  ['heritage'],
+};
+
 const SAVED_TRIPS_KEY = 'liliw-saved-trips';
 function loadSavedTrips(): SavedTrip[] {
   if (typeof window === 'undefined') return [];
@@ -204,10 +215,25 @@ function AttractionQuickModal({ placeName, onClose }: { placeName: string; onClo
   );
 }
 
-function PlanResult({ plan, onReset, onSave, saved, isLoggedIn }: { plan: GeneratedPlan; onReset: () => void; onSave: (editedPlan: GeneratedPlan) => void; saved: boolean; isLoggedIn: boolean }) {
+function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: { plan: GeneratedPlan; onReset: () => void; onSave: (editedPlan: GeneratedPlan) => void; saved: boolean; isLoggedIn: boolean; interests: string[] }) {
   const [localPlan, setLocalPlan] = useState<GeneratedPlan>(() => JSON.parse(JSON.stringify(plan)));
   const [isEditing, setIsEditing] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
+  const [allAttractions, setAllAttractions] = useState<any[]>([]);
+
+  useEffect(() => {
+    getAllAttractions().then(setAllAttractions).catch(() => {});
+  }, []);
+
+  const allowedTypes = Array.from(
+    new Set(
+      interests.length > 0
+        ? interests.flatMap(i => INTEREST_TO_TYPES[i] || (['heritage', 'spot', 'dining'] as const))
+        : (['heritage', 'spot', 'dining'] as const)
+    )
+  ) as ('heritage' | 'spot' | 'dining')[];
+
+  const filteredAttractions = allAttractions.filter(a => allowedTypes.includes(a.type));
 
   const updateStop = (dayIdx: number, stopIdx: number, field: keyof Stop, value: string) => {
     setLocalPlan(prev => {
@@ -312,9 +338,33 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn }: { plan: Genera
                           className="flex-1 text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200 focus:outline-none"
                           placeholder="Duration (e.g. 1 hr)" />
                       </div>
-                      <input value={stop.place} onChange={e => updateStop(dayIdx, stopIdx, 'place', e.target.value)}
-                        className="w-full font-bold text-gray-900 text-sm border-b border-teal-200 focus:outline-none focus:border-teal-400 bg-transparent pb-0.5"
-                        placeholder="Place name" />
+                      <div className="relative">
+                        <select
+                          value={stop.place}
+                          onChange={e => updateStop(dayIdx, stopIdx, 'place', e.target.value)}
+                          className="w-full font-bold text-gray-900 text-sm border-b border-teal-200 focus:outline-none focus:border-teal-400 bg-white pb-0.5 appearance-none pr-5 cursor-pointer"
+                        >
+                          <option value="">Pick a place…</option>
+                          {(['heritage', 'spot', 'dining'] as const)
+                            .filter(type => filteredAttractions.some(a => a.type === type))
+                            .map(type => {
+                              const label = type === 'heritage' ? '🏛️ Heritage' : type === 'spot' ? '🏞️ Tourist Spots' : '🍽️ Dining';
+                              return (
+                                <optgroup key={type} label={label}>
+                                  {filteredAttractions
+                                    .filter(a => a.type === type)
+                                    .map((a: any) => (
+                                      <option key={a.id} value={a.attributes.name}>{a.attributes.name}</option>
+                                    ))}
+                                </optgroup>
+                              );
+                            })}
+                          {stop.place && !filteredAttractions.find((a: any) => a.attributes.name === stop.place) && (
+                            <option value={stop.place}>{stop.place}</option>
+                          )}
+                        </select>
+                        <ChevronDown className="absolute right-0.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                      </div>
                       <input value={stop.activity} onChange={e => updateStop(dayIdx, stopIdx, 'activity', e.target.value)}
                         className="w-full text-sm text-gray-600 border-b border-gray-200 focus:outline-none bg-transparent pb-0.5"
                         placeholder="Activity description" />
@@ -692,7 +742,7 @@ function ItineraryWizard() {
           {/* Result */}
           {step === 'result' && plan && (
             <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <PlanResult plan={plan} onReset={reset} onSave={saveTrip} saved={tripSaved} isLoggedIn={!!user} />
+              <PlanResult plan={plan} onReset={reset} onSave={saveTrip} saved={tripSaved} isLoggedIn={!!user} interests={interests} />
             </motion.div>
           )}
 
