@@ -8,6 +8,7 @@ import AIChat from "@/components/AIChat";
 import PWAHandler from "@/components/PWAHandler";
 import AnalyticsInit from "@/components/AnalyticsInit";
 import { AuthProvider } from "@/context/AuthContext";
+import { FavoritesProvider } from "@/context/FavoritesContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -66,13 +67,15 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-white">
         <AuthProvider>
-          <PWAHandler />
-          <SearchProvider />
-          <AnalyticsInit />
-          <Navbar />
-          {children}
-          <Footer />
-          <AIChat />
+          <FavoritesProvider>
+            <PWAHandler />
+            <SearchProvider />
+            <AnalyticsInit />
+            <Navbar />
+            {children}
+            <Footer />
+            <AIChat />
+          </FavoritesProvider>
         </AuthProvider>
       </body>
     </html>

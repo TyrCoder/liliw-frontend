@@ -81,7 +81,7 @@ async function buildKnowledge(): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { duration, budget, interests } = await request.json();
+    const { duration, budget, interests, favoriteAttractions } = await request.json();
 
     if (!duration || !budget || !Array.isArray(interests) || interests.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -125,9 +125,13 @@ IMPORTANT: Return ONLY a valid JSON object. No markdown, no extra text. Use this
   "estimatedCostPerDay": "₱XXX – ₱XXX"
 }`;
 
+    const favoritesLine = Array.isArray(favoriteAttractions) && favoriteAttractions.length > 0
+      ? `\nMust-visit favorites (user specifically requested these): ${favoriteAttractions.join(', ')}`
+      : '';
+
     const userMessage = `Create a ${duration} itinerary for Liliw, Laguna.
 Budget level: ${budget}
-Interests: ${interests.join(', ')}
+Interests: ${interests.join(', ')}${favoritesLine}
 Return only the JSON object.`;
 
     const completion = await groq.chat.completions.create({

@@ -270,7 +270,7 @@ export default function ImmersivePage() {
   }, [selectedAttraction]);
 
   return (
-    <div style={{ backgroundColor: '#0F1F3C', minHeight: 'calc(100vh - 65px)' }}>
+    <div className="min-h-screen" style={{ backgroundColor: '#0F1F3C' }}>
       {/* Password Modal */}
       <AnimatePresence>
         {showPasswordModal && !isAdmin && (
