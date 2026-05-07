@@ -22,11 +22,11 @@ async function buildKnowledge(): Promise<string> {
   const lines: string[] = ['=== LILIW REAL DATA (from live database) ===\n'];
 
   if (attractions.status === 'fulfilled' && attractions.value.length) {
-    lines.push('ATTRACTIONS & PLACES:');
+    lines.push('ATTRACTIONS & PLACES (include the URL when recommending):');
     for (const a of attractions.value.slice(0, 30)) {
       const attr = a.attributes;
       const typeLabel = a.type === 'heritage' ? 'Heritage' : a.type === 'spot' ? 'Tourist Spot' : 'Dining';
-      lines.push(`- [${typeLabel}] ${attr.name}${attr.location ? ` (${attr.location})` : ''}${attr.description ? `: ${attr.description.slice(0, 120)}` : ''}${attr.rating ? ` ⭐${attr.rating}/5` : ''}`);
+      lines.push(`- [${typeLabel}] ${attr.name} | URL: /attractions/${a.id}${attr.location ? ` | ${attr.location}` : ''}${attr.description ? ` | ${attr.description.slice(0, 100)}` : ''}${attr.rating ? ` | ⭐${attr.rating}/5` : ''}`);
     }
     lines.push('');
   }
@@ -78,6 +78,7 @@ RULES:
 4. Maging MAIKLI at SIMPLE — 2-3 sentences lang, tulad ng text message sa kaibigan
 5. Gamitin ang actual data mula sa database para sumagot
 6. Maging natural at relatable — hindi formal, parang kakilala
+7. LINKS: Kung mag-recommend ka ng specific na place, i-format bilang markdown link para maka-click ang user: [Place Name](/attractions/id). Halimbawa: [Hombre Brew](/attractions/dining-5). Gamitin ang exact URL mula sa database.
 
 STYLE:
 - Taglish-friendly: "Ay grabe, worth it talaga yung pupuntahan mo!"

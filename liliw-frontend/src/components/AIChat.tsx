@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Send, MessageCircle, X, Loader } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logger } from '@/lib/logger';
@@ -25,8 +25,35 @@ const getRandomGreeting = () => {
   return greetings[Math.floor(Math.random() * greetings.length)];
 };
 
+function renderBotText(text: string, onLinkClick: () => void): React.ReactNode {
+  const linkRe = /\[([^\]]+)\]\((\/[^)]+)\)/g;
+  const nodes: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = linkRe.exec(text)) !== null) {
+    if (m.index > last) nodes.push(text.slice(last, m.index));
+    const href = m[2];
+    const label = m[1];
+    nodes.push(
+      <a
+        key={m.index}
+        href={href}
+        onClick={(e) => { e.preventDefault(); onLinkClick(); window.location.href = href; }}
+        className="underline font-semibold"
+        style={{ color: COLORS.primary }}
+      >
+        {label} →
+      </a>
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return <>{nodes}</>;
+}
+
 export default function AIChat() {
   const pathname = usePathname();
+  const router = useRouter();
   const isMapPage = pathname === '/map';
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -167,7 +194,11 @@ export default function AIChat() {
                         : { borderColor: COLORS.primary }
                     }
                   >
-                    <p className="text-sm leading-relaxed text-black">{msg.text}</p>
+                    <p className="text-sm leading-relaxed text-black">
+                      {msg.sender === 'bot'
+                        ? renderBotText(msg.text, () => setIsOpen(false))
+                        : msg.text}
+                    </p>
                     <span
                       className={`text-xs opacity-70 block mt-1.5 ${
                         msg.sender === 'user' ? 'text-white text-right' : 'text-gray-600'
