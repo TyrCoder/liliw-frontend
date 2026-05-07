@@ -16,16 +16,16 @@ export default function AnnouncementBar({ defaultOpen = true }: AnnouncementBarP
   const [subtext, setSubtext] = useState('');
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/newses?populate=*&sort=createdAt:desc&pagination[limit]=1`, {
-      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}` }
-    }).then(r => r.json()).then(data => {
-      const item = data?.data?.[0];
-      if (item) {
-        const a = item.attributes || item;
-        if (a.title) setText(`🔔 ${a.title}`);
-        if (a.summary || a.excerpt) setSubtext(a.summary || a.excerpt);
-      }
-    }).catch(() => {});
+    fetch('/api/strapi/news-events?limit=1')
+      .then(r => r.json())
+      .then(combined => {
+        const item = combined?.news?.data?.[0];
+        if (item) {
+          const a = item.attributes || item;
+          if (a.title) setText(`🔔 ${a.title}`);
+          if (a.summary || a.excerpt) setSubtext(a.summary || a.excerpt);
+        }
+      }).catch(() => {});
   }, []);
 
   return (
@@ -36,14 +36,14 @@ export default function AnnouncementBar({ defaultOpen = true }: AnnouncementBarP
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="overflow-hidden bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg"
+          className="overflow-hidden bg-linear-to-r from-teal-500 to-cyan-500 text-white shadow-lg"
         >
           <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4 flex-wrap">
             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
               <motion.div
                 animate={{ rotate: [0, -10, 10, -5, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="flex-shrink-0"
+                className="shrink-0"
               >
                 <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
               </motion.div>
@@ -58,7 +58,7 @@ export default function AnnouncementBar({ defaultOpen = true }: AnnouncementBarP
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsOpen(false)}
-              className="flex-shrink-0 p-1.5 sm:p-2 hover:bg-white/20 rounded-full transition-all"
+              className="shrink-0 p-1.5 sm:p-2 hover:bg-white/20 rounded-full transition-all"
               aria-label="Close announcement"
             >
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
