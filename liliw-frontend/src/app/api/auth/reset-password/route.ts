@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { otpStore } from '../forgot-password/route';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || '';
+const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
 export async function POST(req: NextRequest) {
   try {
