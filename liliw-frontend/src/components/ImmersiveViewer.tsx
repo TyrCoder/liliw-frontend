@@ -162,7 +162,8 @@ function HotspotMarker({
         >
           <motion.button
             onClick={(e) => { e.stopPropagation(); onClick?.(hotspot); }}
-            whileHover={{ scale: 1.15 }}
+            animate={{ scale: hovered ? 1.15 : 1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 22 }}
             whileTap={{ scale: 0.9 }}
             style={{
               width: 88, height: 88,
