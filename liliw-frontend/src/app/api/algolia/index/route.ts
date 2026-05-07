@@ -11,7 +11,7 @@ const client = algoliasearch(
 const index = client.initIndex(process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME || 'liliw-items');
 
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
-const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || '';
+const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
 async function fetchFromStrapi(endpoint: string) {
   try {
