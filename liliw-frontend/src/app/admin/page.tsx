@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import {
   BarChart3, Users, Eye, TrendingUp, ExternalLink,
   FileText, Clock, CheckCircle, AlertCircle, Loader2,
-  ChevronLeft, Mail, Phone, MessageSquare,
+  ChevronLeft, Mail, Phone, Calendar,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -25,6 +25,20 @@ interface Submission {
     type: string;
     status: string;
     createdAt: string;
+  };
+}
+
+interface EventSignup {
+  id: number;
+  attributes: {
+    full_name: string;
+    email: string;
+    phone: string;
+    notes: string;
+    username: string;
+    status: string;
+    createdAt: string;
+    event: { data: { id: number; attributes: { title: string; date_start: string } } };
   };
 }
 
@@ -78,10 +92,12 @@ export default function AdminDashboard() {
   const router = useRouter();
 
   const [submissions, setSubmissions]   = useState<Submission[]>([]);
+  const [signups, setSignups]           = useState<EventSignup[]>([]);
   const [analytics, setAnalytics]       = useState<Analytics | null>(null);
   const [loadingSubs, setLoadingSubs]   = useState(true);
+  const [loadingSignups, setLoadingSignups] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
-  const [activeTab, setActiveTab]       = useState<'overview' | 'submissions'>('overview');
+  const [activeTab, setActiveTab]       = useState<'overview' | 'submissions' | 'signups'>('overview');
 
   // Auth guard
   useEffect(() => {
@@ -98,6 +114,11 @@ export default function AdminDashboard() {
       .then(r => r.json())
       .then(d => setSubmissions(d.data || []))
       .finally(() => setLoadingSubs(false));
+
+    fetch('/api/event-signup')
+      .then(r => r.json())
+      .then(d => setSignups(d.data || []))
+      .finally(() => setLoadingSignups(false));
 
     fetch('/api/analytics/track')
       .then(r => r.json())
@@ -149,15 +170,19 @@ export default function AdminDashboard() {
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 flex gap-1">
-          {(['overview', 'submissions'] as const).map(t => (
+          {(['overview', 'submissions', 'signups'] as const).map(t => (
             <button key={t} onClick={() => setActiveTab(t)}
               className={`px-5 py-3.5 text-sm font-semibold capitalize transition-colors border-b-2 ${
                 activeTab === t ? 'border-teal-400 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}>
-              {t}
+              {t === 'signups' ? 'Event Sign-ups' : t}
               {t === 'submissions' && newCount > 0 && (
                 <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold text-white"
                   style={{ backgroundColor: '#00BFB3' }}>{newCount}</span>
+              )}
+              {t === 'signups' && signups.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold text-white"
+                  style={{ backgroundColor: '#00BFB3' }}>{signups.length}</span>
               )}
             </button>
           ))}
@@ -169,7 +194,7 @@ export default function AdminDashboard() {
         {activeTab === 'overview' && (
           <div className="space-y-8">
             {/* Stat cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               <StatCard icon={<Eye className="w-5 h-5" />} label="Page Views"
                 value={loadingStats ? '—' : (analytics?.pageViews ?? 0).toLocaleString()} color="#00BFB3" />
               <StatCard icon={<Users className="w-5 h-5" />} label="Unique Visitors"
@@ -177,6 +202,9 @@ export default function AdminDashboard() {
               <StatCard icon={<FileText className="w-5 h-5" />} label="Submissions"
                 value={loadingSubs ? '—' : submissions.length}
                 sub={`${newCount} new`} color="#8B5CF6" />
+              <StatCard icon={<Calendar className="w-5 h-5" />} label="Event Sign-ups"
+                value={loadingSignups ? '—' : signups.length}
+                sub="total registrations" color="#F59E0B" />
               <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Bounce Rate"
                 value={loadingStats ? '—' : (analytics?.bounceRate ?? '—')} color="#F59E0B" />
             </div>
@@ -220,6 +248,85 @@ export default function AdminDashboard() {
                     );
                   })}
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'signups' && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="font-bold text-gray-900">Event Sign-ups</h2>
+              <span className="text-sm text-gray-400">{signups.length} total</span>
+            </div>
+            {loadingSignups ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} />
+              </div>
+            ) : signups.length === 0 ? (
+              <div className="flex flex-col items-center py-16 text-center text-gray-400">
+                <Calendar className="w-12 h-12 mb-3 opacity-20" />
+                <p className="font-semibold">No sign-ups yet</p>
+                <p className="text-sm mt-1">Sign-ups will appear here once tourists register for events</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      <th className="px-5 py-3 text-left">Name</th>
+                      <th className="px-5 py-3 text-left">Contact</th>
+                      <th className="px-5 py-3 text-left">Event</th>
+                      <th className="px-5 py-3 text-left">Notes</th>
+                      <th className="px-5 py-3 text-left">Status</th>
+                      <th className="px-5 py-3 text-left">Signed Up</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {signups.map(s => {
+                      const a = s.attributes;
+                      const eventTitle = a.event?.data?.attributes?.title || '—';
+                      const eventDate  = a.event?.data?.attributes?.date_start
+                        ? new Date(a.event.data.attributes.date_start).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : null;
+                      return (
+                        <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-5 py-4">
+                            <p className="font-semibold text-gray-900">{a.full_name}</p>
+                            {a.username && <p className="text-xs text-gray-400">@{a.username}</p>}
+                          </td>
+                          <td className="px-5 py-4">
+                            <p className="flex items-center gap-1 text-gray-600"><Mail className="w-3 h-3 shrink-0" />{a.email}</p>
+                            {a.phone && <p className="flex items-center gap-1 text-gray-400 mt-0.5"><Phone className="w-3 h-3 shrink-0" />{a.phone}</p>}
+                          </td>
+                          <td className="px-5 py-4">
+                            <p className="font-semibold text-gray-900 text-sm">{eventTitle}</p>
+                            {eventDate && <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5"><Calendar className="w-3 h-3" />{eventDate}</p>}
+                          </td>
+                          <td className="px-5 py-4 max-w-xs">
+                            <p className="text-gray-500 text-xs line-clamp-2">{a.notes || '—'}</p>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${
+                              a.status === 'confirmed' ? 'bg-green-50 text-green-700'
+                              : a.status === 'cancelled' ? 'bg-red-50 text-red-500'
+                              : 'bg-yellow-50 text-yellow-700'
+                            }`}>
+                              {a.status === 'confirmed' ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                              {a.status}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-gray-400 whitespace-nowrap text-xs">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(a.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
