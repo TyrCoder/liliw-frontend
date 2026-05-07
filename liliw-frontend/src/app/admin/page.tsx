@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import {
   BarChart3, Users, Eye, TrendingUp, ExternalLink,
   FileText, Clock, CheckCircle, AlertCircle, Loader2,
-  ChevronLeft, Mail, Phone, Calendar,
+  ChevronLeft, Mail, Phone, Calendar, MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
