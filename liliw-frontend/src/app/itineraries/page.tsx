@@ -7,10 +7,10 @@ import {
   ChevronLeft, ChevronRight, Clock, Users, X, MapPin, Star,
   CheckCircle, XCircle, Navigation, ArrowRight, Calendar,
   Lightbulb, Sparkles, RotateCcw, Wallet, Heart, Sun, BookmarkCheck,
-  Trash2, ChevronDown, LogIn,
+  Trash2, ChevronDown, LogIn, Pencil, Plus, ExternalLink, Check,
 } from 'lucide-react';
 import AuthModal from '@/components/AuthModal';
-import { getItineraries } from '@/lib/strapi';
+import { getItineraries, getAllAttractions } from '@/lib/strapi';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useAuth } from '@/context/AuthContext';
 
@@ -112,76 +112,270 @@ function InterestChip({ value, icon, selected, onClick }: { value: string; icon:
   );
 }
 
-function PlanResult({ plan, onReset, onSave, saved, isLoggedIn }: { plan: GeneratedPlan; onReset: () => void; onSave: () => void; saved: boolean; isLoggedIn: boolean }) {
+function AttractionQuickModal({ placeName, onClose }: { placeName: string; onClose: () => void }) {
+  const [attraction, setAttraction] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getAllAttractions().then((all: any[]) => {
+      const needle = placeName.toLowerCase();
+      const found = all.find((a: any) => {
+        const name = (a.attributes?.name || '').toLowerCase();
+        return name === needle || name.includes(needle) || needle.includes(name);
+      });
+      setAttraction(found || null);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, [placeName]);
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  const attr = attraction?.attributes;
+  const rawUrl = attr?.photos?.[0]?.url || null;
+  const photoUrl = rawUrl ? (rawUrl.startsWith('/') ? `${STRAPI_BASE}${rawUrl}` : rawUrl) : null;
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-70 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ y: 80, opacity: 0, scale: 0.97 }} animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: 80, opacity: 0 }} transition={{ type: 'spring', stiffness: 340, damping: 30 }}
+        className="relative z-10 bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col"
+        style={{ maxHeight: '80vh' }}>
+        <button onClick={onClose} className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white/90 hover:bg-white shadow transition">
+          <X className="w-4 h-4 text-gray-700" />
+        </button>
+        {loading ? (
+          <div className="flex justify-center items-center py-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style={{ borderColor: '#00BFB3' }} />
+          </div>
+        ) : !attraction ? (
+          <div className="p-8 text-center">
+            <MapPin className="w-12 h-12 mx-auto mb-3 opacity-20" style={{ color: '#00BFB3' }} />
+            <h3 className="font-bold text-gray-700 mb-1">{placeName}</h3>
+            <p className="text-sm text-gray-400">No details found for this place.</p>
+          </div>
+        ) : (
+          <>
+            {photoUrl && (
+              <div className="relative shrink-0 h-44">
+                <img src={photoUrl} alt={attr.name} className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
+                <div className="absolute bottom-4 left-5 right-12">
+                  <h2 className="text-xl font-bold text-white">{attr.name}</h2>
+                </div>
+              </div>
+            )}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {!photoUrl && <h2 className="text-xl font-bold text-gray-900">{attr.name}</h2>}
+              <div className="flex flex-wrap gap-2">
+                {!!attr.rating && (
+                  <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-xs font-semibold px-3 py-1 rounded-full border border-amber-100">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />{attr.rating}/5
+                  </span>
+                )}
+                {attr.location && (
+                  <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
+                    <MapPin className="w-3 h-3" />{attr.location}
+                  </span>
+                )}
+              </div>
+              {attr.description && (
+                <p className="text-sm text-gray-600 leading-relaxed line-clamp-5">{attr.description}</p>
+              )}
+              <Link href={`/attractions/${attraction.id}`}
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl text-white font-semibold text-sm hover:opacity-90 transition"
+                style={{ backgroundColor: '#00BFB3' }}>
+                View Full Page <ExternalLink className="w-4 h-4" />
+              </Link>
+            </div>
+          </>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function PlanResult({ plan, onReset, onSave, saved, isLoggedIn }: { plan: GeneratedPlan; onReset: () => void; onSave: (editedPlan: GeneratedPlan) => void; saved: boolean; isLoggedIn: boolean }) {
+  const [localPlan, setLocalPlan] = useState<GeneratedPlan>(() => JSON.parse(JSON.stringify(plan)));
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
+
+  const updateStop = (dayIdx: number, stopIdx: number, field: keyof Stop, value: string) => {
+    setLocalPlan(prev => {
+      const next: GeneratedPlan = JSON.parse(JSON.stringify(prev));
+      next.days[dayIdx].stops[stopIdx][field] = value;
+      return next;
+    });
+  };
+
+  const deleteStop = (dayIdx: number, stopIdx: number) => {
+    setLocalPlan(prev => {
+      const next: GeneratedPlan = JSON.parse(JSON.stringify(prev));
+      next.days[dayIdx].stops = next.days[dayIdx].stops.filter((_: Stop, i: number) => i !== stopIdx);
+      return next;
+    });
+  };
+
+  const addStop = (dayIdx: number) => {
+    setLocalPlan(prev => {
+      const next: GeneratedPlan = JSON.parse(JSON.stringify(prev));
+      next.days[dayIdx].stops.push({ time: '', place: '', activity: '', duration: '', tip: '' });
+      return next;
+    });
+  };
+
+  const updateDayTheme = (dayIdx: number, value: string) => {
+    setLocalPlan(prev => {
+      const next: GeneratedPlan = JSON.parse(JSON.stringify(prev));
+      next.days[dayIdx].theme = value;
+      return next;
+    });
+  };
+
   return (
     <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
+      {/* Header */}
       <div className="rounded-3xl p-6 text-white" style={{ background: 'linear-gradient(135deg,#00BFB3,#0077A8)' }}>
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="text-teal-100 text-xs font-semibold uppercase tracking-widest mb-1">Your AI Itinerary</p>
-            <h2 className="text-2xl font-bold leading-tight mb-2">{plan.title}</h2>
-            <p className="text-teal-50 text-sm leading-relaxed">{plan.summary}</p>
+            <h2 className="text-2xl font-bold leading-tight mb-2">{localPlan.title}</h2>
+            <p className="text-teal-50 text-sm leading-relaxed">{localPlan.summary}</p>
           </div>
-          <Sparkles className="w-8 h-8 shrink-0 text-teal-200" />
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <Sparkles className="w-8 h-8 text-teal-200" />
+            <motion.button
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+              onClick={() => setIsEditing(v => !v)}
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition ${
+                isEditing ? 'bg-white text-teal-600' : 'bg-white/20 text-white hover:bg-white/30'
+              }`}>
+              {isEditing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+              {isEditing ? 'Done' : 'Edit'}
+            </motion.button>
+          </div>
         </div>
-        {plan.estimatedCostPerDay && (
+        {localPlan.estimatedCostPerDay && (
           <div className="mt-4 inline-flex items-center gap-2 bg-white/20 rounded-xl px-4 py-2">
             <Wallet className="w-4 h-4" />
-            <span className="text-sm font-semibold">{plan.estimatedCostPerDay} per day</span>
+            <span className="text-sm font-semibold">{localPlan.estimatedCostPerDay} per day</span>
           </div>
         )}
       </div>
 
-      {plan.days?.map((day) => (
-        <motion.div key={day.day} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: day.day * 0.1 }}
+      {/* Days */}
+      {localPlan.days?.map((day, dayIdx) => (
+        <motion.div key={dayIdx} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: dayIdx * 0.1 }}
           className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
               style={{ backgroundColor: '#00BFB3' }}>{day.day}</div>
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-xs text-gray-400 font-medium">Day {day.day}</p>
-              <p className="text-sm font-bold text-gray-900">{day.theme}</p>
+              {isEditing ? (
+                <input
+                  value={day.theme}
+                  onChange={e => updateDayTheme(dayIdx, e.target.value)}
+                  className="text-sm font-bold text-gray-900 w-full border-b border-teal-300 focus:outline-none bg-transparent"
+                  placeholder="Day theme..."
+                />
+              ) : (
+                <p className="text-sm font-bold text-gray-900">{day.theme}</p>
+              )}
             </div>
           </div>
           <div className="divide-y divide-gray-50">
-            {day.stops?.map((stop, i) => (
-              <div key={i} className="px-5 py-4 flex gap-4">
+            {day.stops?.map((stop, stopIdx) => (
+              <div key={stopIdx} className="px-5 py-4 flex gap-4">
                 <div className="shrink-0 flex flex-col items-center gap-1 pt-0.5">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#00BFB3' }} />
-                  {i < (day.stops.length - 1) && <div className="w-px flex-1 min-h-6" style={{ backgroundColor: '#e0f7f6' }} />}
+                  {stopIdx < (day.stops.length - 1) && <div className="w-px flex-1 min-h-6" style={{ backgroundColor: '#e0f7f6' }} />}
                 </div>
                 <div className="flex-1 min-w-0 pb-2">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">{stop.time}</span>
-                    {stop.duration && (
-                      <span className="text-xs text-gray-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />{stop.duration}
-                      </span>
-                    )}
-                  </div>
-                  <p className="font-bold text-gray-900 text-sm mb-0.5 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />{stop.place}
-                  </p>
-                  <p className="text-sm text-gray-600 mb-2">{stop.activity}</p>
-                  {stop.tip && (
-                    <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
-                      <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                      <p className="text-xs text-amber-800">{stop.tip}</p>
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input value={stop.time} onChange={e => updateStop(dayIdx, stopIdx, 'time', e.target.value)}
+                          className="w-24 text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200 focus:outline-none focus:border-teal-400"
+                          placeholder="Time" />
+                        <input value={stop.duration} onChange={e => updateStop(dayIdx, stopIdx, 'duration', e.target.value)}
+                          className="flex-1 text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200 focus:outline-none"
+                          placeholder="Duration (e.g. 1 hr)" />
+                      </div>
+                      <input value={stop.place} onChange={e => updateStop(dayIdx, stopIdx, 'place', e.target.value)}
+                        className="w-full font-bold text-gray-900 text-sm border-b border-teal-200 focus:outline-none focus:border-teal-400 bg-transparent pb-0.5"
+                        placeholder="Place name" />
+                      <input value={stop.activity} onChange={e => updateStop(dayIdx, stopIdx, 'activity', e.target.value)}
+                        className="w-full text-sm text-gray-600 border-b border-gray-200 focus:outline-none bg-transparent pb-0.5"
+                        placeholder="Activity description" />
+                      <input value={stop.tip} onChange={e => updateStop(dayIdx, stopIdx, 'tip', e.target.value)}
+                        className="w-full text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-1.5 focus:outline-none"
+                        placeholder="Travel tip (optional)" />
                     </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">{stop.time}</span>
+                        {stop.duration && (
+                          <span className="text-xs text-gray-400 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />{stop.duration}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-bold text-gray-900 text-sm mb-0.5 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
+                        <button
+                          onClick={() => setSelectedPlace(stop.place)}
+                          className="text-left hover:underline decoration-teal-400 underline-offset-2">
+                          {stop.place}
+                        </button>
+                      </p>
+                      <p className="text-sm text-gray-600 mb-2">{stop.activity}</p>
+                      {stop.tip && (
+                        <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                          <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                          <p className="text-xs text-amber-800">{stop.tip}</p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
+                {isEditing && (
+                  <button onClick={() => deleteStop(dayIdx, stopIdx)}
+                    className="shrink-0 p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition self-start mt-1">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             ))}
           </div>
+          {isEditing && (
+            <div className="px-5 py-3 border-t border-dashed border-gray-200">
+              <button onClick={() => addStop(dayIdx)}
+                className="flex items-center gap-2 text-sm font-semibold transition hover:opacity-70"
+                style={{ color: '#00BFB3' }}>
+                <Plus className="w-4 h-4" /> Add Stop
+              </button>
+            </div>
+          )}
         </motion.div>
       ))}
 
-      {plan.tips?.length > 0 && (
+      {localPlan.tips?.length > 0 && (
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
           <p className="text-xs font-bold text-blue-700 uppercase tracking-widest mb-3">Travel Tips</p>
           <ul className="space-y-2">
-            {plan.tips.map((tip, i) => (
+            {localPlan.tips.map((tip, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-blue-900">
                 <Sun className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />{tip}
               </li>
@@ -191,7 +385,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn }: { plan: Genera
       )}
 
       <div className="flex gap-3">
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onSave}
+        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => onSave(localPlan)}
           className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold transition ${
             saved
               ? 'bg-teal-50 border-2 border-teal-400 text-teal-700'
@@ -205,6 +399,12 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn }: { plan: Genera
           <RotateCcw className="w-4 h-4" />
         </motion.button>
       </div>
+
+      <AnimatePresence>
+        {selectedPlace && (
+          <AttractionQuickModal placeName={selectedPlace} onClose={() => setSelectedPlace(null)} />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -264,15 +464,15 @@ function ItineraryWizard() {
     }
   };
 
-  const saveTrip = () => {
+  const saveTrip = (editedPlan: GeneratedPlan) => {
     if (!plan) return;
     if (!user) { setShowLoginModal(true); return; }
     const trips = loadSavedTrips();
     const newTrip: SavedTrip = {
       id: crypto.randomUUID(),
       savedAt: new Date().toISOString(),
-      title: plan.title,
-      plan,
+      title: editedPlan.title,
+      plan: editedPlan,
       duration: effectiveDuration,
       budget: effectiveBudget,
     };
