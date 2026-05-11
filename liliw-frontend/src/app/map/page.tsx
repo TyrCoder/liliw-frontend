@@ -13,6 +13,10 @@ const LILIW_CENTER = { longitude: 121.43605859033404, latitude: 14.1303013775937
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || '';
 
+// Nominatim query for Liliw municipality boundary (OSM relation)
+const LILIW_BOUNDARY_URL =
+  'https://nominatim.openstreetmap.org/search?q=Liliw%2CLaguna%2CPhilippines&format=geojson&limit=1&polygon_geojson=1';
+
 const TYPE_CONFIG = {
   heritage: { color: '#FFB400', label: '🏛️ Heritage' },
   spot:     { color: '#00BFB3', label: '🏞️ Spots'   },
@@ -117,6 +121,17 @@ export default function MapPage() {
   const [routeLoading, setRouteLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [markersReady, setMarkersReady] = useState(false);
+  const [lilliwBoundary, setLilliwBoundary] = useState<GeoJSON.FeatureCollection | null>(null);
+
+  // Fetch Liliw municipality boundary from OpenStreetMap
+  useEffect(() => {
+    fetch(LILIW_BOUNDARY_URL, { headers: { 'Accept-Language': 'en' } })
+      .then((r) => r.json())
+      .then((geojson) => {
+        if (geojson?.features?.length) setLilliwBoundary(geojson);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!TOKEN || TOKEN === 'pk.your_mapbox_token_here') {
@@ -327,6 +342,27 @@ export default function MapPage() {
               position="bottom-right"
               onGeolocate={(e) => setUserLocation({ lat: e.coords.latitude, lng: e.coords.longitude })}
             />
+
+            {/* Liliw municipality boundary */}
+            {lilliwBoundary && (
+              <Source id="liliw-boundary" type="geojson" data={lilliwBoundary}>
+                <Layer
+                  id="liliw-fill"
+                  type="fill"
+                  paint={{ 'fill-color': '#00BFB3', 'fill-opacity': 0.06 }}
+                />
+                <Layer
+                  id="liliw-border"
+                  type="line"
+                  paint={{
+                    'line-color': '#00BFB3',
+                    'line-width': 2.5,
+                    'line-opacity': 0.75,
+                    'line-dasharray': [4, 2],
+                  }}
+                />
+              </Source>
+            )}
 
             {/* Route line */}
             {routeGeoJSON && (
