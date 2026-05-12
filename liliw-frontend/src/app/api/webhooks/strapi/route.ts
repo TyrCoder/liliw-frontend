@@ -1,27 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 import { syncAlgolia } from '@/lib/syncAlgolia';
-
-// Strapi signs webhook payloads with HMAC-SHA256 using the webhook secret.
-// Header: X-Strapi-Signature: <hex digest>
-function verifySignature(rawBody: string, secret: string, signature: string): boolean {
-  const expected = crypto.createHmac('sha256', secret).update(rawBody, 'utf8').digest('hex');
-  try {
-    return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(signature, 'hex'));
-  } catch {
-    return false;
-  }
-}
 
 export async function POST(req: NextRequest) {
   const secret = process.env.STRAPI_WEBHOOK_SECRET;
 
   if (secret) {
-    const signature = req.headers.get('x-strapi-signature') ?? '';
-    const rawBody = await req.text();
-
-    if (!verifySignature(rawBody, secret, signature)) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    const provided = req.headers.get('x-webhook-secret') ?? '';
+    if (provided !== secret) {
+      return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
     }
   }
 
