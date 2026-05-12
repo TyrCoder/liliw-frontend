@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 
 const STRAPI       = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, full_name, email, phone, notes, strapi_user_id, username } = await request.json();
+    const { eventId, event_title, full_name, email, phone, notes, strapi_user_id, username } = await request.json();
 
     if (!eventId || !full_name || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const res = await fetch(`${STRAPI}/api/event-signups`, {
+    // Save to Strapi
+    const strapiRes = await fetch(`${STRAPI}/api/event-signups`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,15 +35,31 @@ export async function POST(request: NextRequest) {
       }),
     });
 
-    if (!res.ok) {
-      const err = await res.text();
-      console.error('Strapi event-signup error:', err);
-      return NextResponse.json({ error: 'Failed to save sign-up' }, { status: 500 });
+    if (!strapiRes.ok) {
+      const err = await strapiRes.text();
+      logger.error('Strapi event-signup error:', err);
     }
+
+    // Save to Supabase
+    const { error: sbError } = await supabase
+      .from('event_signups')
+      .insert({
+        event_id: eventId,
+        event_title: event_title || '',
+        full_name,
+        email,
+        phone: phone || '',
+        notes: notes || '',
+        strapi_user_id: strapi_user_id || null,
+        username: username || '',
+        status: 'pending',
+      });
+
+    if (sbError) logger.error('Supabase event-signup error:', sbError);
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('event-signup route error:', err);
+    logger.error('event-signup route error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

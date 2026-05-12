@@ -6,6 +6,7 @@ import { ChevronLeft, Users, Briefcase, MessageSquare, CheckCircle, AlertCircle,
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
+import EventModal from '@/components/EventModal';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
@@ -78,6 +79,7 @@ export default function CommunityPage() {
   const [authModal, setAuthModal] = useState(false);
   const [joinableEvents, setJoinableEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [participationOptions, setParticipationOptions] = useState(DEFAULT_OPTIONS);
 
   useEffect(() => {
@@ -219,59 +221,64 @@ export default function CommunityPage() {
                       'bg-purple-50 text-purple-700 border border-purple-200';
 
                     return (
-                      <Link key={item.id} href={`/community/events/${a.slug || item.id}`}>
-                        <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }}
-                          className="group rounded-2xl bg-white border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer p-5 flex flex-col gap-3">
+                      <motion.div key={item.id} whileHover={{ y: -2 }}
+                        className="group rounded-2xl bg-white border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all p-5 flex flex-col gap-3">
 
-                          {/* Badges */}
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-teal-500 inline-block" />
-                              Open
+                        {/* Badges */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-teal-500 inline-block" />
+                            Open
+                          </span>
+                          {pricingLabel && (
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${pricingColor}`}>
+                              {pricingLabel}
                             </span>
-                            {pricingLabel && (
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${pricingColor}`}>
-                                {pricingLabel}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Title */}
-                          <h3 className="font-bold text-gray-900 text-base leading-snug group-hover:text-teal-600 transition-colors">
-                            {a.title}
-                          </h3>
-
-                          {/* Meta rows */}
-                          <div className="space-y-1.5 text-xs text-gray-500">
-                            {schedule && (
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
-                                <span>{schedule}</span>
-                              </div>
-                            )}
-                            {a.venue && (
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
-                                <span>{a.venue}</span>
-                              </div>
-                            )}
-                            {a.capacity_note && (
-                              <div className="flex items-center gap-2">
-                                <UserCheck className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
-                                <span>{a.capacity_note}</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Divider */}
-                          {description && <hr className="border-gray-100" />}
-
-                          {/* Description */}
-                          {description && (
-                            <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">{description}</p>
                           )}
-                        </motion.div>
-                      </Link>
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="font-bold text-gray-900 text-base leading-snug">{a.title}</h3>
+
+                        {/* Meta rows */}
+                        <div className="space-y-1.5 text-xs text-gray-500">
+                          {schedule && (
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
+                              <span>{schedule}</span>
+                            </div>
+                          )}
+                          {a.venue && (
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
+                              <span>{a.venue}</span>
+                            </div>
+                          )}
+                          {(a.capacity_note || a.max_participants) && (
+                            <div className="flex items-center gap-2">
+                              <UserCheck className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
+                              <span>{a.capacity_note || `Max ${a.max_participants} participants`}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Divider + description */}
+                        {description && (
+                          <>
+                            <hr className="border-gray-100" />
+                            <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">{description}</p>
+                          </>
+                        )}
+
+                        {/* View Event button */}
+                        <button
+                          onClick={() => setSelectedEvent(item)}
+                          className="mt-1 w-full py-2 rounded-xl text-sm font-semibold border-2 transition hover:text-white hover:bg-teal-500"
+                          style={{ borderColor: '#00BFB3', color: '#00BFB3' }}
+                        >
+                          View Event
+                        </button>
+                      </motion.div>
                     );
                   })}
                 </div>
@@ -445,6 +452,7 @@ export default function CommunityPage() {
       </div>
 
       {authModal && <AuthModal defaultTab="login" onClose={() => setAuthModal(false)} />}
+      {selectedEvent && <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
     </div>
   );
 }
