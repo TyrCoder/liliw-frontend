@@ -44,7 +44,6 @@ const nextConfig: NextConfig = {
   },
   images: {
     domains: ["liliw-strapi-backend.onrender.com", "res.cloudinary.com", "localhost"],
-    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",

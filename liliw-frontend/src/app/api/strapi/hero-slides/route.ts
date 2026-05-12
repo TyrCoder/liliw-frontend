@@ -9,5 +9,7 @@ export async function GET() {
     { headers: { Authorization: `Bearer ${TOKEN}` }, next: { revalidate: 300 } },
   );
   if (!res.ok) return NextResponse.json({ data: [] });
-  return NextResponse.json(await res.json());
+  return NextResponse.json(await res.json(), {
+    headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' },
+  });
 }
