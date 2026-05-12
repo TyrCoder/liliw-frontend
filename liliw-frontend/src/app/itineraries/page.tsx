@@ -79,14 +79,6 @@ const INTEREST_TO_TYPES: Record<string, ('heritage' | 'spot' | 'dining')[]> = {
   'Culture & Festivals':  ['heritage'],
 };
 
-const SAVED_TRIPS_KEY = 'liliw-saved-trips';
-function loadSavedTrips(): SavedTrip[] {
-  if (typeof window === 'undefined') return [];
-  try { return JSON.parse(localStorage.getItem(SAVED_TRIPS_KEY) || '[]'); } catch { return []; }
-}
-function persistSavedTrips(trips: SavedTrip[]) {
-  try { localStorage.setItem(SAVED_TRIPS_KEY, JSON.stringify(trips)); } catch {}
-}
 
 function WizardCard({ value, label, sub, selected, onClick }: {
   value: string; label: string; sub: string; selected: boolean; onClick: () => void;
@@ -461,7 +453,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: { p
 type WizardStep = 'duration' | 'budget' | 'interests' | 'favorites' | 'generating' | 'result';
 
 function ItineraryWizard() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { favorites } = useFavorites();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [step, setStep]             = useState<WizardStep>('duration');
@@ -513,21 +505,25 @@ function ItineraryWizard() {
     }
   };
 
-  const saveTrip = (editedPlan: GeneratedPlan) => {
+  const saveTrip = async (editedPlan: GeneratedPlan) => {
     if (!plan) return;
-    if (!user) { setShowLoginModal(true); return; }
-    const trips = loadSavedTrips();
-    const newTrip: SavedTrip = {
-      id: crypto.randomUUID(),
-      savedAt: new Date().toISOString(),
-      title: editedPlan.title,
-      plan: editedPlan,
-      duration: effectiveDuration,
-      budget: effectiveBudget,
-    };
-    persistSavedTrips([newTrip, ...trips]);
-    setTripSaved(true);
-    window.dispatchEvent(new Event('liliw-trips-updated'));
+    if (!user || !token) { setShowLoginModal(true); return; }
+    try {
+      const res = await fetch('/api/itineraries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          title: editedPlan.title,
+          plan: editedPlan,
+          duration: effectiveDuration,
+          budget: effectiveBudget,
+        }),
+      });
+      if (res.ok) {
+        setTripSaved(true);
+        window.dispatchEvent(new Event('liliw-trips-updated'));
+      }
+    } catch {}
   };
 
   const reset = () => {
@@ -1167,26 +1163,48 @@ function DatabaseItineraries() {
    ══════════════════════════════════════════════════════════ */
 
 function SavedTripsSection() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [trips, setTrips] = useState<SavedTrip[]>([]);
   const [open, setOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const reload = () => setTrips(loadSavedTrips());
+  const reload = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/itineraries', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTrips((data.trips || []).map((row: any) => ({
+          id: row.id,
+          savedAt: row.saved_at,
+          title: row.title,
+          plan: row.plan,
+          duration: row.duration,
+          budget: row.budget,
+        })));
+      }
+    } catch {}
+  }, [token]);
 
   useEffect(() => {
     reload();
     window.addEventListener('liliw-trips-updated', reload);
     return () => window.removeEventListener('liliw-trips-updated', reload);
-  }, []);
+  }, [reload]);
 
   if (!user || trips.length === 0) return null;
 
-  const deleteTrip = (id: string) => {
-    const updated = trips.filter(t => t.id !== id);
-    persistSavedTrips(updated);
-    setTrips(updated);
+  const deleteTrip = async (id: string) => {
+    setTrips(prev => prev.filter(t => t.id !== id));
     if (expandedId === id) setExpandedId(null);
+    try {
+      await fetch(`/api/itineraries?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {}
   };
 
   return (

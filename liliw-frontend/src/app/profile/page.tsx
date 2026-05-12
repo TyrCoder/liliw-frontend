@@ -1,34 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, BookmarkCheck, Heart, Trash2, ChevronDown,
-  MapPin, Calendar, User,
+  MapPin, Calendar,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useFavorites } from '@/context/FavoritesContext';
 
-/* ── saved trips helpers (mirrors itineraries/page.tsx) ── */
 interface Stop { time: string; place: string; activity: string; duration: string; tip: string; }
 interface Day  { day: number; theme: string; stops: Stop[]; }
 interface GeneratedPlan { title: string; summary: string; days: Day[]; tips: string[]; estimatedCostPerDay: string; }
 interface SavedTrip { id: string; savedAt: string; title: string; plan: GeneratedPlan; duration: string; budget: string; }
 
-const SAVED_TRIPS_KEY = 'liliw-saved-trips';
-function loadSavedTrips(): SavedTrip[] {
-  if (typeof window === 'undefined') return [];
-  try { return JSON.parse(localStorage.getItem(SAVED_TRIPS_KEY) || '[]'); } catch { return []; }
-}
-function persistSavedTrips(trips: SavedTrip[]) {
-  try { localStorage.setItem(SAVED_TRIPS_KEY, JSON.stringify(trips)); } catch {}
-}
-
 export default function ProfilePage() {
   const router  = useRouter();
-  const { user, loading } = useAuth();
+  const { user, token, loading } = useAuth();
   const { favorites } = useFavorites();
 
   const [trips, setTrips]           = useState<SavedTrip[]>([]);
@@ -39,12 +29,31 @@ export default function ProfilePage() {
     if (!loading && !user) router.replace('/');
   }, [user, loading, router]);
 
+  const loadTrips = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/itineraries', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTrips((data.trips || []).map((row: any) => ({
+          id: row.id,
+          savedAt: row.saved_at,
+          title: row.title,
+          plan: row.plan,
+          duration: row.duration,
+          budget: row.budget,
+        })));
+      }
+    } catch {}
+  }, [token]);
+
   useEffect(() => {
-    setTrips(loadSavedTrips());
-    const handler = () => setTrips(loadSavedTrips());
-    window.addEventListener('liliw-trips-updated', handler);
-    return () => window.removeEventListener('liliw-trips-updated', handler);
-  }, []);
+    loadTrips();
+    window.addEventListener('liliw-trips-updated', loadTrips);
+    return () => window.removeEventListener('liliw-trips-updated', loadTrips);
+  }, [loadTrips]);
 
   // Scroll to #saved on load
   useEffect(() => {
@@ -54,12 +63,15 @@ export default function ProfilePage() {
     }
   }, []);
 
-  const deleteTrip = (id: string) => {
-    const updated = trips.filter(t => t.id !== id);
-    persistSavedTrips(updated);
-    setTrips(updated);
+  const deleteTrip = async (id: string) => {
+    setTrips(prev => prev.filter(t => t.id !== id));
     if (expandedId === id) setExpandedId(null);
-    window.dispatchEvent(new Event('liliw-trips-updated'));
+    try {
+      await fetch(`/api/itineraries?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {}
   };
 
   if (loading || !user) return null;

@@ -187,7 +187,7 @@ export default function Home() {
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-3">Interactive Map</h3>
             <p className="text-gray-600 mb-6">Navigate attractions with our interactive map.</p>
-            <Link href="/attractions" className="inline-flex items-center font-semibold" style={{ color: '#00BFB3' }}>View Map <ArrowRight className="w-4 h-4 ml-2 transition" /></Link>
+            <Link href="/map" className="inline-flex items-center font-semibold" style={{ color: '#00BFB3' }}>View Map <ArrowRight className="w-4 h-4 ml-2 transition" /></Link>
           </motion.div>
         </motion.div>
 

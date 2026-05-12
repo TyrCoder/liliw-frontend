@@ -7,44 +7,49 @@ export async function GET(req: NextRequest) {
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data, error } = await supabase
-    .from('saved_itineraries')
+    .from('saved_favorites')
     .select('*')
     .eq('user_id', auth.userId)
-    .order('saved_at', { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ trips: data });
+  return NextResponse.json({ favorites: data });
 }
 
 export async function POST(req: NextRequest) {
   const auth = await verifyToken(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { title, plan, duration, budget } = await req.json();
-  if (!title || !plan) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  const { attraction_id, name, type, category } = await req.json();
+  if (!attraction_id || !name || !type) {
+    return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  }
 
   const { data, error } = await supabase
-    .from('saved_itineraries')
-    .insert({ user_id: auth.userId, title, plan, duration, budget })
+    .from('saved_favorites')
+    .upsert(
+      { user_id: auth.userId, attraction_id, name, type, category: category ?? null },
+      { onConflict: 'user_id,attraction_id' }
+    )
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ trip: data }, { status: 201 });
+  return NextResponse.json({ favorite: data }, { status: 201 });
 }
 
 export async function DELETE(req: NextRequest) {
   const auth = await verifyToken(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const id = req.nextUrl.searchParams.get('id');
-  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+  const attractionId = req.nextUrl.searchParams.get('attraction_id');
+  if (!attractionId) return NextResponse.json({ error: 'Missing attraction_id' }, { status: 400 });
 
   const { error } = await supabase
-    .from('saved_itineraries')
+    .from('saved_favorites')
     .delete()
-    .eq('id', id)
-    .eq('user_id', auth.userId);
+    .eq('user_id', auth.userId)
+    .eq('attraction_id', attractionId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
