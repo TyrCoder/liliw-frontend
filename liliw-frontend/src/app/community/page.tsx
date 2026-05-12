@@ -150,26 +150,15 @@ export default function CommunityPage() {
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
       {/* Page Header */}
-      <div className="py-12" style={{ background: 'linear-gradient(to bottom right, rgba(0, 191, 179, 0.05), rgba(0, 191, 179, 0.1))' }}>
-        <div className="max-w-4xl mx-auto px-4">
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6 }}
-          >
-            <Link
-              href="/"
-              className="inline-flex items-center font-semibold mb-6 group" style={{ color: '#00BFB3' }}
-            >
-              <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" />
-              Back to Home
-            </Link>
-            <h1 className="text-5xl font-bold mb-3" style={{ color: '#00BFB3' }}>Community Engagement</h1>
-            <p className="text-xl text-gray-600">
-              Be part of Liliw's tourism story
-            </p>
-          </motion.div>
-        </div>
+      <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12">
+        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="mb-6 sm:mb-8">
+          <Link href="/" className="inline-flex items-center font-semibold mb-4 sm:mb-6 group text-sm sm:text-base" style={{ color: '#00BFB3' }}>
+            <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" />
+            Back to Home
+          </Link>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-3" style={{ color: '#00BFB3' }}>Community Engagement</h1>
+          <p className="text-base sm:text-lg md:text-xl text-gray-600">Be part of Liliw&apos;s tourism story</p>
+        </motion.div>
       </div>
 
       {/* Content Section */}
@@ -273,31 +262,31 @@ export default function CommunityPage() {
 
           {/* Why Participate */}
           <motion.div variants={itemVariants} className="mt-16 space-y-6">
-            <h2 className="text-4xl font-bold text-gray-900">💖 Why Your Participation Matters</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Why Your Participation Matters</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="p-6 rounded-lg border" style={{ backgroundColor: 'rgba(0, 191, 179, 0.08)', borderColor: '#00BFB3' }}>
-                <h4 className="text-lg font-bold text-gray-900 mb-3">💬 Share Your Voice</h4>
+                <h4 className="text-lg font-bold text-gray-900 mb-3">Share Your Voice</h4>
                 <p className="text-gray-700">
                   Your feedback helps us create better experiences for residents and visitors alike. 
                   Every opinion matters in shaping Liliw's future as a tourism destination.
                 </p>
               </div>
               <div className="p-6 rounded-lg border" style={{ backgroundColor: 'rgba(0, 191, 179, 0.08)', borderColor: '#00BFB3' }}>
-                <h4 className="text-lg font-bold text-gray-900 mb-3">🤝 Build Connections</h4>
+                <h4 className="text-lg font-bold text-gray-900 mb-3">Build Connections</h4>
                 <p className="text-gray-700">
                   Join a vibrant community of locals and travelers. Volunteer opportunities allow you to 
                   meet people from around the world and grow your network.
                 </p>
               </div>
               <div className="p-6 rounded-lg border" style={{ backgroundColor: 'rgba(0, 191, 179, 0.08)', borderColor: '#00BFB3' }}>
-                <h4 className="text-lg font-bold text-gray-900 mb-3">💰 Create Economic Opportunities</h4>
+                <h4 className="text-lg font-bold text-gray-900 mb-3">Create Economic Opportunities</h4>
                 <p className="text-gray-700">
                   Business partnerships and community enterprises generate income while preserving local culture.
                   Support sustainable tourism that benefits everyone.
                 </p>
               </div>
               <div className="p-6 rounded-lg border" style={{ backgroundColor: 'rgba(0, 191, 179, 0.08)', borderColor: '#00BFB3' }}>
-                <h4 className="text-lg font-bold text-gray-900 mb-3">🎓 Learn & Grow</h4>
+                <h4 className="text-lg font-bold text-gray-900 mb-3">Learn & Grow</h4>
                 <p className="text-gray-700">
                   Develop new skills through training programs and workshops. Share your knowledge with 
                   visitors and fellow community members.
@@ -308,14 +297,14 @@ export default function CommunityPage() {
 
           {/* Contact & Resources */}
           <motion.div variants={itemVariants} className="mt-16 space-y-6">
-            <h2 className="text-3xl font-bold text-gray-900">📞 Get Involved Today</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Get Involved Today</h2>
             <div className="text-white rounded-2xl p-8" style={{ backgroundColor: '#00BFB3' }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <h4 className="text-lg font-bold mb-3">Liliw Tourism Office</h4>
-                  <p className="mb-2">📍 Municipal Hall, Liliw, Laguna 4004</p>
+                  <p className="mb-2">Municipal Hall, Liliw, Laguna 4004</p>
                   <p className="mb-2">Contact: +63 (2) XXXX-XXXX</p>
-                  <p className="mb-4">📧 Email: tourism@liliw.gov.ph</p>
+                  <p className="mb-4">Email: tourism@liliw.gov.ph</p>
                   <p className="opacity-90">Hours: Monday - Friday, 8:00 AM - 5:00 PM</p>
                 </div>
                 <div>
@@ -324,7 +313,7 @@ export default function CommunityPage() {
                   <div className="space-y-2">
                     <p>Facebook: @LiliwTourism</p>
                     <p>Instagram: @LiliwTourism</p>
-                    <p>🌐 Website: tourism.liliw.gov.ph</p>
+                    <p>Website: tourism.liliw.gov.ph</p>
                   </div>
                 </div>
               </div>
@@ -333,7 +322,7 @@ export default function CommunityPage() {
 
           {/* Form CTA — auth gated */}
           <motion.div variants={itemVariants} className="mt-12 p-8 rounded-lg bg-blue-50 border-2 border-blue-200">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">✍️ Interested in Participating?</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Interested in Participating?</h3>
 
             {!user ? (
               /* Not logged in — show login prompt */
