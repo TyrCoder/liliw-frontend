@@ -29,10 +29,6 @@ const extractText = (rt: any): string => {
   return '';
 };
 
-const FALLBACK_ANNOUNCEMENTS = [
-  { title: 'Cultural Heritage Festival', date: 'May 2026', category: 'festival', excerpt: "Join us celebrating Liliw's rich cultural heritage.", link: '/news', isEvent: true },
-  { title: 'Adventure Itineraries', date: 'New Guides', category: 'announcement', excerpt: 'Explore with our curated tour guides and itineraries.', link: '/itineraries', isEvent: false },
-];
 
 function getDailyFeatured(attractions: any[], count = 3): any[] {
   if (!attractions.length) return [];
@@ -44,7 +40,7 @@ function getDailyFeatured(attractions: any[], count = 3): any[] {
 }
 
 export default function Home() {
-  const [announcements, setAnnouncements] = useState<any[]>(FALLBACK_ANNOUNCEMENTS);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [featured, setFeatured] = useState<any[]>([]);
 
   useEffect(() => {
@@ -121,8 +117,8 @@ export default function Home() {
       )}
 
       <section className="max-w-6xl mx-auto px-4 py-16">
-        {/* Latest Announcements */}
-        <motion.div
+        {/* Latest Announcements — only render when Strapi returns data */}
+        {announcements.length > 0 && <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -165,7 +161,7 @@ export default function Home() {
               </motion.div>
             ))}
           </div>
-        </motion.div>
+        </motion.div>}
 
         {/* Feature Cards */}
         <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">

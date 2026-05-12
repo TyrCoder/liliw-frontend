@@ -5,16 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-const FALLBACK_SLIDES = [
-  { title: 'Welcome to Liliw', subtitle: 'Discover Hidden Treasures in Laguna', gradient: 'from-teal-600 to-cyan-600', cta_text: 'Explore Attractions', cta_link: '/attractions', image: null },
-  { title: 'Heritage & Culture', subtitle: 'Experience Authentic Local Traditions', gradient: 'from-blue-600 to-teal-600', cta_text: 'Learn More', cta_link: '/culture', image: null },
-  { title: 'Natural Beauty', subtitle: 'Explore Scenic Wonders and Landscapes', gradient: 'from-emerald-600 to-teal-600', cta_text: 'Discover Nature', cta_link: '/tourist-spots', image: null },
-];
-
 const GRADIENTS = ['from-teal-600 to-cyan-600', 'from-blue-600 to-teal-600', 'from-emerald-600 to-teal-600', 'from-purple-600 to-teal-600'];
 
 export default function HeroCarousel() {
-  const [slides, setSlides] = useState(FALLBACK_SLIDES);
+  const [slides, setSlides] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
@@ -30,7 +25,8 @@ export default function HeroCarousel() {
             return { ...a, gradient: GRADIENTS[i % GRADIENTS.length], image: fullImg };
           }));
         }
-      }).catch(() => {});
+      }).catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -42,6 +38,25 @@ export default function HeroCarousel() {
 
   const next = () => setCurrent((prev) => (prev + 1) % slides.length);
   const prev = () => setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
+
+  if (loading) {
+    return <div className="h-64 sm:h-80 md:h-96 lg:h-[550px] rounded-2xl sm:rounded-3xl bg-gray-200 animate-pulse" />;
+  }
+
+  if (!slides.length) {
+    return (
+      <div className="h-64 sm:h-80 md:h-96 lg:h-[550px] rounded-2xl sm:rounded-3xl bg-gradient-to-br from-teal-600 to-cyan-600 flex items-center justify-center">
+        <div className="text-center text-white">
+          <h2 className="text-3xl sm:text-5xl font-bold mb-3 drop-shadow-lg">Welcome to Liliw</h2>
+          <p className="text-lg sm:text-xl text-white/90 mb-6">Discover Hidden Treasures in Laguna</p>
+          <Link href="/attractions" className="inline-flex items-center bg-white text-teal-700 font-bold py-3 px-7 rounded-full shadow-xl hover:shadow-2xl transition group">
+            Explore Attractions <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const slide = slides[current];
 
   return (

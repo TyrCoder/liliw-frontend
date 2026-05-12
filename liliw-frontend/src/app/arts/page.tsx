@@ -7,23 +7,6 @@ import { ChevronLeft, Star, MapPin, Phone, ExternalLink, Search, Filter } from '
 
 const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || '';
 
-const FALLBACK_ARTS = [
-  { name: 'Tsinelas Crafting', description: 'Liliw is world-renowned for its handmade tsinelas (slippers). Skilled artisans have perfected this craft over generations, creating footwear that blends comfort, artistry, and cultural identity.', icon_emoji: '', features: ['Hand-stitched leather', 'Traditional techniques', 'Hundreds of designs', 'Export-quality products'] },
-  { name: 'Traditional Weaving', description: 'Intricate textiles and fabrics created using traditional looms. Local weavers transform natural fibers into beautiful patterns that tell stories of the community.', icon_emoji: '', features: ['Native fiber materials', 'Generational skills', 'Intricate patterns', 'Wearable cultural art'] },
-  { name: 'Culinary Arts', description: "Local delicacies and traditional dishes representing Liliw's rich gastronomic heritage, passed down through family recipes and community traditions.", icon_emoji: '', features: ['Traditional recipes', 'Local ingredients', 'Family traditions', 'Unique flavors'] },
-  { name: 'Visual Arts & Crafts', description: 'A thriving community of painters, sculptors, and craft artists who draw inspiration from Liliw\'s natural beauty and cultural heritage.', icon_emoji: '', features: ['Landscape paintings', 'Local sculptures', 'Mixed media works', 'Craft workshops'] },
-  { name: 'Music & Performing Arts', description: "Traditional music and dance performances that celebrate Liliw's vibrant culture, from folk songs to contemporary interpretations.", icon_emoji: '', features: ['Folk music', 'Cultural dance', 'Community performances', 'Festival celebrations'] },
-  { name: 'Woodcarving & Sculpture', description: 'Master woodcarvers transform native timber into intricate sculptures, furniture, and decorative pieces that reflect Filipino artistry.', icon_emoji: '', features: ['Native timber', 'Intricate detailing', 'Custom commissions', 'Heritage motifs'] },
-];
-
-const FALLBACK_ARTISANS = [
-  { name: 'Liliw Tsinelas Makers', craft_type: 'Footwear Artisans', location: 'Footwear District, Liliw', rating: 5, description: 'Master craftsmen producing handmade tsinelas for over 50 years.' },
-  { name: 'Laguna Weavers Guild', craft_type: 'Textile Weavers', location: 'Liliw, Laguna', rating: 5, description: 'Collective preserving traditional weaving techniques and patterns.' },
-  { name: 'Liliw Culinary Masters', craft_type: 'Culinary Artists', location: 'Public Market, Liliw', rating: 4, description: 'Keepers of traditional Liliw recipes and local delicacies.' },
-  { name: 'Native Arts Collective', craft_type: 'Visual Artists', location: 'Arts District, Liliw', rating: 5, description: 'Contemporary Filipino artists inspired by local culture.' },
-  { name: 'Budol Craft Makers', craft_type: 'Woodcarvers', location: 'Liliw, Laguna', rating: 4, description: 'Skilled woodcarvers specializing in decorative and functional pieces.' },
-  { name: 'Liliw Dance Company', craft_type: 'Performing Artists', location: 'Cultural Center, Liliw', rating: 5, description: 'Traditional and contemporary dance troupe celebrating Filipino culture.' },
-];
 
 const CATEGORIES = ['All', 'Footwear', 'Textile', 'Culinary', 'Visual', 'Music', 'Woodcarving'];
 
@@ -39,8 +22,8 @@ function StarRow({ rating }: { rating: number }) {
 
 export default function ArtsPage() {
   const [loading, setLoading] = useState(true);
-  const [artForms, setArtForms] = useState<any[]>(FALLBACK_ARTS);
-  const [artisans, setArtisans] = useState<any[]>(FALLBACK_ARTISANS);
+  const [artForms, setArtForms] = useState<any[]>([]);
+  const [artisans, setArtisans] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedArtisan, setSelectedArtisan] = useState<any | null>(null);
@@ -85,6 +68,17 @@ export default function ArtsPage() {
           <p className="text-gray-500 ml-4 max-w-2xl">Living traditions passed down through generations of Liliw's creative community.</p>
         </motion.div>
 
+        {loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => <div key={i} className="rounded-2xl bg-gray-100 h-48 animate-pulse" />)}
+          </div>
+        )}
+        {!loading && artForms.length === 0 && (
+          <div className="text-center py-16 text-gray-400">
+            <p className="font-semibold text-lg">No art forms listed yet</p>
+            <p className="text-sm mt-1">Check back soon as we add local arts and traditions.</p>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {artForms.map((art, idx) => (
             <motion.div
