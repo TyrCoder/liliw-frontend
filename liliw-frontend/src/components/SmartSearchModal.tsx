@@ -43,16 +43,25 @@ export default function SmartSearchModal({ onClose }: SmartSearchProps) {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'heritage':
-        return 'bg-blue-100 text-blue-700';
-      case 'spot':
-        return 'bg-green-100 text-green-700';
-      case 'faq':
-        return 'bg-purple-100 text-purple-700';
-      case 'event':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
+      case 'heritage':   return 'bg-blue-100 text-blue-700';
+      case 'spot':       return 'bg-green-100 text-green-700';
+      case 'dining':     return 'bg-orange-100 text-orange-700';
+      case 'faq':        return 'bg-purple-100 text-purple-700';
+      case 'event':      return 'bg-red-100 text-red-700';
+      case 'news':       return 'bg-yellow-100 text-yellow-700';
+      default:           return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'heritage': return 'Heritage Site';
+      case 'spot':     return 'Tourist Spot';
+      case 'dining':   return 'Dining';
+      case 'faq':      return 'FAQ';
+      case 'event':    return 'Event';
+      case 'news':     return 'News';
+      default:         return type;
     }
   };
 
@@ -82,7 +91,7 @@ export default function SmartSearchModal({ onClose }: SmartSearchProps) {
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Search attractions, FAQs, events, itineraries..."
+                placeholder="Search heritage sites, spots, dining, events, FAQs..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 outline-none text-lg"
@@ -133,7 +142,7 @@ export default function SmartSearchModal({ onClose }: SmartSearchProps) {
                             </p>
                             <div className="flex items-center gap-2 mt-2">
                               <span className={`text-xs px-2 py-1 rounded-full font-medium ${getTypeColor(result.type)}`}>
-                                {result.type}
+                                {getTypeLabel(result.type)}
                               </span>
                               {result.location && (
                                 <span className="text-xs text-gray-500">

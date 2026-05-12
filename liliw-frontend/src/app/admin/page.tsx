@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import {
   BarChart3, Users, Eye, TrendingUp, ExternalLink,
   FileText, Clock, CheckCircle, AlertCircle, Loader2,
-  ChevronLeft, Mail, Phone, Calendar, MessageSquare, Star,
+  ChevronLeft, Mail, Phone, Calendar, MessageSquare, Star, RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -102,6 +102,8 @@ export default function AdminDashboard() {
   const [reviews, setReviews]           = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [activeTab, setActiveTab]       = useState<'overview' | 'submissions' | 'signups' | 'ratings'>('overview');
+  const [syncStatus, setSyncStatus]     = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
+  const [syncCount, setSyncCount]       = useState<number | null>(null);
 
   // Auth guard
   useEffect(() => {
@@ -140,6 +142,23 @@ export default function AdminDashboard() {
       .catch(() => setReviews([]))
       .finally(() => setLoadingReviews(false));
   }, [isAdmin, token]);
+
+  const handleSyncSearch = async () => {
+    setSyncStatus('syncing');
+    try {
+      const res = await fetch('/api/admin/sync-search', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncCount(data.synced);
+        setSyncStatus('done');
+      } else {
+        setSyncStatus('error');
+      }
+    } catch {
+      setSyncStatus('error');
+    }
+    setTimeout(() => setSyncStatus('idle'), 4000);
+  };
 
   if (loading) {
     return (
@@ -225,6 +244,32 @@ export default function AdminDashboard() {
                 sub="total registrations" color="#F59E0B" />
               <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Bounce Rate"
                 value={loadingStats ? '—' : (analytics?.bounceRate ?? '—')} color="#F59E0B" />
+            </div>
+
+            {/* Search index sync */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p className="text-sm font-bold text-gray-900">Search Index</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {syncStatus === 'done' ? `Synced ${syncCount} items to Algolia` :
+                   syncStatus === 'error' ? 'Sync failed — check Algolia credentials' :
+                   'Sync Strapi content to Algolia so the search bar is always up to date'}
+                </p>
+              </div>
+              <button
+                onClick={handleSyncSearch}
+                disabled={syncStatus === 'syncing'}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-60"
+                style={{ backgroundColor: syncStatus === 'error' ? '#EF4444' : syncStatus === 'done' ? '#10B981' : '#00BFB3' }}
+              >
+                {syncStatus === 'syncing'
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Syncing…</>
+                  : syncStatus === 'done'
+                  ? <><CheckCircle className="w-4 h-4" /> Synced</>
+                  : syncStatus === 'error'
+                  ? <><AlertCircle className="w-4 h-4" /> Retry Sync</>
+                  : <><RefreshCw className="w-4 h-4" /> Sync Search</>}
+              </button>
             </div>
 
             {/* Participation breakdown */}

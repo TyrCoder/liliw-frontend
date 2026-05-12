@@ -12,7 +12,7 @@ export interface SearchResult {
   objectID: string;
   name: string;
   description: string;
-  type: 'heritage' | 'spot' | 'faq' | 'event' | 'itinerary';
+  type: 'heritage' | 'spot' | 'dining' | 'faq' | 'event' | 'news' | 'itinerary';
   category?: string;
   location?: string;
   rating?: number;
