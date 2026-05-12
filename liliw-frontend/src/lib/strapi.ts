@@ -322,4 +322,16 @@ export const getNews = async () => {
   } catch { return []; }
 };
 
+export const getCultureHeritages = async () => {
+  const cacheKey = 'culture-heritages';
+  const cached = getCachedResponse(cacheKey);
+  if (cached) return cached;
+  try {
+    const response = await fetchWithRetry<StrapiResponse<any[]>>('/culture-heritages?populate=*&publicationState=live');
+    const data = response.data || [];
+    setCachedResponse(cacheKey, data);
+    return data;
+  } catch { return []; }
+};
+
 export default strapiApi;
