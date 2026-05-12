@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Users, Briefcase, MessageSquare, CheckCircle, AlertCircle, LogIn, Calendar, MapPin, ChevronRight } from 'lucide-react';
+import { ChevronLeft, Users, Briefcase, MessageSquare, CheckCircle, AlertCircle, LogIn, Calendar, MapPin, ChevronRight, Clock, UserCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
@@ -189,54 +189,87 @@ export default function CommunityPage() {
               {eventsLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[1, 2].map(i => (
-                    <div key={i} className="h-48 rounded-2xl bg-gray-100 animate-pulse" />
+                    <div key={i} className="h-56 rounded-2xl bg-gray-100 animate-pulse" />
                   ))}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {joinableEvents.map(item => {
                     const a = item.attributes || item;
-                    const cover = getPhotoUrl(a.cover_image?.data?.attributes || a.cover_image?.attributes || a.cover_image);
+
+                    // Extract plain text from rich-text blocks or plain string
+                    const description = (() => {
+                      const d = a.description;
+                      if (!d) return '';
+                      if (typeof d === 'string') return d;
+                      if (Array.isArray(d)) {
+                        return d.map((b: any) => (b?.children ?? []).map((c: any) => c?.text ?? '').join(' ')).join(' ');
+                      }
+                      return '';
+                    })();
+
                     const dateStart = a.date_start ? new Date(a.date_start) : null;
+                    const schedule = a.schedule ||
+                      (dateStart ? dateStart.toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }) : null);
+
+                    const pricingLabel: string = a.pricing_label || (a.is_free ? 'Free entry' : a.price ? `Starting at ₱${a.price}` : '');
+                    const pricingColor =
+                      pricingLabel.toLowerCase().includes('free') ? 'bg-teal-50 text-teal-700 border border-teal-200' :
+                      pricingLabel.toLowerCase().includes('limited') ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                      'bg-purple-50 text-purple-700 border border-purple-200';
+
                     return (
-                      <Link key={item.id} href={`/community/events/${a.slug}`}>
-                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                          className="group relative rounded-2xl overflow-hidden border-2 bg-white shadow-sm hover:shadow-lg transition-all cursor-pointer"
-                          style={{ borderColor: '#00BFB3' }}>
-                          <div className="relative h-40 bg-linear-to-br from-teal-100 to-cyan-50">
-                            {cover
-                              ? <img src={cover} alt={a.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                              : <div className="absolute inset-0 flex items-center justify-center opacity-10"><svg viewBox="0 0 24 24" className="w-16 h-16 text-teal-300" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
-                            }
-                            <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
-                            {a.category && (
-                              <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold capitalize ${CATEGORY_BADGE[a.category] || 'bg-gray-100 text-gray-600'}`}>
-                                {a.category}
+                      <Link key={item.id} href={`/community/events/${a.slug || item.id}`}>
+                        <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }}
+                          className="group rounded-2xl bg-white border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer p-5 flex flex-col gap-3">
+
+                          {/* Badges */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-teal-500 inline-block" />
+                              Open
+                            </span>
+                            {pricingLabel && (
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${pricingColor}`}>
+                                {pricingLabel}
                               </span>
                             )}
-                            <div className="absolute bottom-3 left-4 right-4">
-                              <p className="text-white font-bold text-base leading-snug">{a.title}</p>
-                            </div>
                           </div>
-                          <div className="px-4 py-3 flex items-center justify-between">
-                            <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-                              {dateStart && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3.5 h-3.5" style={{ color: '#00BFB3' }} />
-                                  {dateStart.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </span>
-                              )}
-                              {a.venue && (
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="w-3.5 h-3.5" style={{ color: '#00BFB3' }} />
-                                  {a.venue}
-                                </span>
-                              )}
-                            </div>
-                            <span className="flex items-center gap-1 text-xs font-bold shrink-0 ml-2" style={{ color: '#00BFB3' }}>
-                              Join <ChevronRight className="w-3.5 h-3.5" />
-                            </span>
+
+                          {/* Title */}
+                          <h3 className="font-bold text-gray-900 text-base leading-snug group-hover:text-teal-600 transition-colors">
+                            {a.title}
+                          </h3>
+
+                          {/* Meta rows */}
+                          <div className="space-y-1.5 text-xs text-gray-500">
+                            {schedule && (
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
+                                <span>{schedule}</span>
+                              </div>
+                            )}
+                            {a.venue && (
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
+                                <span>{a.venue}</span>
+                              </div>
+                            )}
+                            {a.capacity_note && (
+                              <div className="flex items-center gap-2">
+                                <UserCheck className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
+                                <span>{a.capacity_note}</span>
+                              </div>
+                            )}
                           </div>
+
+                          {/* Divider */}
+                          {description && <hr className="border-gray-100" />}
+
+                          {/* Description */}
+                          {description && (
+                            <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">{description}</p>
+                          )}
                         </motion.div>
                       </Link>
                     );
