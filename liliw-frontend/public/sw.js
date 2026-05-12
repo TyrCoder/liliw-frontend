@@ -1,14 +1,35 @@
-const CACHE_NAME = 'liliw-v1';
+const CACHE_NAME = 'liliw-v2';
+const API_CACHE  = 'liliw-api-v1';
 
 // Key routes to pre-cache on install
 const PRECACHE_URLS = ['/', '/attractions', '/map', '/news', '/about', '/faq'];
+
+// Public Strapi API routes safe to serve stale (content doesn't change by the second)
+const CACHEABLE_API = [
+  '/api/strapi/hero-slides',
+  '/api/strapi/events',
+  '/api/strapi/news-events',
+  '/api/strapi/arts',
+  '/api/strapi/culture-aspects',
+];
+const API_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+
+function isCacheableApi(pathname) {
+  return CACHEABLE_API.some((p) => pathname.startsWith(p));
+}
+
+function isFresh(response) {
+  const date = response.headers.get('date');
+  if (!date) return false;
+  return Date.now() - new Date(date).getTime() < API_MAX_AGE_MS;
+}
 
 // ── Install ──────────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(PRECACHE_URLS))
-      .catch(() => {}) // non-fatal if a precache URL fails
+      .catch(() => {})
   );
   self.skipWaiting();
 });
@@ -17,7 +38,11 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(
+        keys
+          .filter((k) => k !== CACHE_NAME && k !== API_CACHE)
+          .map((k) => caches.delete(k))
+      )
     )
   );
   self.clients.claim();
@@ -28,11 +53,42 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET and non-http(s) requests
   if (request.method !== 'GET') return;
   if (!url.protocol.startsWith('http')) return;
 
-  // ── API routes: network-first, no caching ──
+  // ── Public Strapi API: stale-while-revalidate ──────────────────────────────
+  if (isCacheableApi(url.pathname)) {
+    event.respondWith(
+      caches.open(API_CACHE).then(async (cache) => {
+        const cached = await cache.match(request);
+
+        const networkFetch = fetch(request)
+          .then((res) => {
+            if (res.ok) cache.put(request, res.clone());
+            return res;
+          })
+          .catch(() => null);
+
+        // Serve stale if fresh enough; background-refresh in parallel
+        if (cached && isFresh(cached)) {
+          networkFetch; // fire and forget
+          return cached;
+        }
+
+        // Stale or missing — wait for network, fall back to stale cache
+        const networkRes = await networkFetch;
+        if (networkRes) return networkRes;
+        if (cached) return cached;
+        return new Response(JSON.stringify({ error: 'You are offline' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      })
+    );
+    return;
+  }
+
+  // ── Other API routes: network-first, no caching ────────────────────────────
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request).catch(() =>
@@ -45,11 +101,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ── Images (Cloudinary + local): cache-first ──
-  if (
-    url.hostname.includes('cloudinary.com') ||
-    request.destination === 'image'
-  ) {
+  // ── Images (Cloudinary + local): cache-first ──────────────────────────────
+  if (url.hostname.includes('cloudinary.com') || request.destination === 'image') {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
         const cached = await cache.match(request);
@@ -66,7 +119,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ── Next.js static assets (_next/static): cache-first ──
+  // ── Next.js static assets: cache-first ────────────────────────────────────
   if (url.pathname.startsWith('/_next/static/')) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
@@ -80,7 +133,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ── HTML page navigation: network-first, cache as offline fallback ──
+  // ── HTML page navigation: network-first, cache as offline fallback ─────────
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
