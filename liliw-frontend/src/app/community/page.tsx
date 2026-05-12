@@ -100,7 +100,9 @@ export default function CommunityPage() {
               icon: a.icon || 'feedback',
               title: a.title || '',
               description: a.description || '',
-              items: Array.isArray(a.items) ? a.items : [],
+              items: typeof a.items === 'string'
+                ? a.items.split('\n').map((s: string) => s.trim()).filter(Boolean)
+                : Array.isArray(a.items) ? a.items : [],
               cta_label: a.cta_label || 'Learn More',
             };
           }));
