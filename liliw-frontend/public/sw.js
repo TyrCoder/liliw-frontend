@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liliw-v2';
+const CACHE_NAME = 'liliw-v3';
 const API_CACHE  = 'liliw-api-v1';
 
 // Key routes to pre-cache on install
