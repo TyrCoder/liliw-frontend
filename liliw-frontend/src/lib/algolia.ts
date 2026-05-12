@@ -27,6 +27,11 @@ export async function searchAlgolia(query: string): Promise<SearchResult[]> {
       hitsPerPage: 10,
       attributesToHighlight: ['name', 'description'],
       attributesToSnippet: ['description:50'],
+      typoTolerance: true,
+      minWordSizefor1Typo: 3,
+      minWordSizefor2Typos: 7,
+      ignorePlurals: true,
+      removeStopWords: true,
     });
     
     return hits;
