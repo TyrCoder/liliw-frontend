@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Users, Briefcase, MessageSquare, CheckCircle, AlertCircle, LogIn, Calendar, MapPin, ChevronRight, Clock, UserCheck } from 'lucide-react';
+import { ChevronLeft, Users, Briefcase, MessageSquare, LogIn, Calendar, MapPin, ChevronRight, UserCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
@@ -112,57 +112,6 @@ export default function CommunityPage() {
       })
       .catch(() => {});
   }, []);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    message: '',
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [statusMessage, setStatusMessage] = useState('');
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setSubmitStatus('idle');
-
-    try {
-      const response = await fetch('/api/submissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          type: 'feedback',
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSubmitStatus('success');
-        setStatusMessage(data.message || 'Thank you for your submission!');
-        setFormData({ name: '', email: '', phone: '', message: '' });
-        setTimeout(() => setSubmitStatus('idle'), 5000);
-      } else {
-        setSubmitStatus('error');
-        setStatusMessage(data.error || 'Failed to submit form');
-      }
-    } catch (error) {
-      setSubmitStatus('error');
-      setStatusMessage('An error occurred. Please try again later.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
 
   return (
@@ -397,82 +346,6 @@ export default function CommunityPage() {
             </div>
           </motion.div>
 
-          {/* Form CTA — auth gated */}
-          <motion.div id="participate-form" variants={itemVariants} className="mt-12 p-8 rounded-lg bg-blue-50 border-2 border-blue-200">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Interested in Participating?</h3>
-
-            {!user ? (
-              /* Not logged in — show login prompt */
-              <div className="flex flex-col items-center text-center py-8 gap-4">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0,191,179,.12)' }}>
-                  <LogIn className="w-7 h-7" style={{ color: '#00BFB3' }} />
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900 text-lg mb-1">Login to Participate</p>
-                  <p className="text-gray-500 text-sm max-w-sm">
-                    You need a Liliw account to submit your participation. It only takes a minute to register!
-                  </p>
-                </div>
-                <button
-                  onClick={() => setAuthModal(true)}
-                  className="px-6 py-3 rounded-xl text-white font-bold text-sm transition hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)', boxShadow: '0 6px 20px rgba(0,191,179,.35)' }}
-                >
-                  Login / Create Account
-                </button>
-              </div>
-            ) : (
-              /* Logged in — show form */
-              <>
-                <p className="text-gray-700 mb-6">
-                  Fill out this form with your preferred area of involvement.
-                  Our team will reach out within 3 business days.
-                </p>
-
-                {submitStatus === 'success' && (
-                  <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-green-900">Submission Successful</h4>
-                      <p className="text-sm text-green-800">{statusMessage}</p>
-                    </div>
-                  </div>
-                )}
-
-                {submitStatus === 'error' && (
-                  <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-red-900">Submission Error</h4>
-                      <p className="text-sm text-red-800">{statusMessage}</p>
-                    </div>
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="text" name="name" placeholder="Full Name"
-                      value={formData.name} onChange={handleInputChange} required
-                      className="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-400" />
-                    <input type="email" name="email" placeholder="Email Address"
-                      value={formData.email} onChange={handleInputChange} required
-                      className="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-400" />
-                  </div>
-                  <input type="tel" name="phone" placeholder="Phone Number"
-                    value={formData.phone} onChange={handleInputChange} required
-                    className="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-400" />
-                  <textarea name="message" placeholder="Tell us how you'd like to get involved..."
-                    rows={4} value={formData.message} onChange={handleInputChange} required
-                    className="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-400" />
-                  <button type="submit" disabled={isLoading}
-                    className={`px-6 py-3 font-semibold rounded-lg transition ${isLoading ? 'bg-gray-400 text-gray-600 cursor-not-allowed' : 'text-white hover:opacity-90'}`}
-                    style={{ backgroundColor: isLoading ? undefined : '#00BFB3' }}>
-                    {isLoading ? 'Submitting...' : 'Send Application'}
-                  </button>
-                </form>
-              </>
-            )}
-          </motion.div>
         </motion.div>
       </div>
 
