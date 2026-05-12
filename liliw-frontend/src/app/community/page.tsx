@@ -2,10 +2,9 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Users, Briefcase, MessageSquare, LogIn, Calendar, MapPin, ChevronRight, UserCheck, Bell } from 'lucide-react';
+import { ChevronLeft, Users, Briefcase, MessageSquare, Calendar, MapPin, ChevronRight, Bell } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import AuthModal from '@/components/AuthModal';
 import EventModal from '@/components/EventModal';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
@@ -76,7 +75,6 @@ const DEFAULT_OPTIONS = [
 
 export default function CommunityPage() {
   const { user } = useAuth();
-  const [authModal, setAuthModal] = useState(false);
   const [joinableEvents, setJoinableEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -346,8 +344,7 @@ export default function CommunityPage() {
         </motion.div>
       </div>
 
-      {authModal && <AuthModal defaultTab="login" onClose={() => setAuthModal(false)} />}
-      {selectedEvent && <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+{selectedEvent && <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
     </div>
   );
 }
