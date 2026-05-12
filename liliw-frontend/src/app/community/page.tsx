@@ -97,13 +97,15 @@ export default function CommunityPage() {
           setParticipationOptions(items.map((item: any) => {
             const a = item.attributes || item;
             return {
-              icon: a.icon || 'feedback',
+              icon: a.card_type || a.icon || 'feedback',
               title: a.title || '',
               description: a.description || '',
-              items: typeof a.items === 'string'
+              items: typeof a.bullet_points === 'string'
+                ? a.bullet_points.split('\n').map((s: string) => s.replace(/^[-*•]\s*/, '').trim()).filter(Boolean)
+                : typeof a.items === 'string'
                 ? a.items.split('\n').map((s: string) => s.replace(/^[-*•]\s*/, '').trim()).filter(Boolean)
-                : Array.isArray(a.items) ? a.items : [],
-              cta_label: a.cta_label || 'Learn More',
+                : [],
+              cta_label: a.button_text || a.cta_label || 'Learn More',
             };
           }));
         }
