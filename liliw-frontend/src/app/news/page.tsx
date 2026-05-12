@@ -17,11 +17,6 @@ const extractText = (richText: any): string => {
   return '';
 };
 
-const FALLBACK_NEWS = [
-  { title: 'Gat Tayaw Tsinelas Festival 2026', date: '2026-03-15', category: 'festival', excerpt: "Annual festival celebrating Liliw's famous tsinelas craftsmanship and cultural heritage. Join the community for a week of events and activities.", source: 'Liliw Tourism Office', isEvent: true },
-  { title: 'Heritage Conservation Project Launch', date: '2026-02-20', category: 'announcement', excerpt: 'Liliw municipality launches a new initiative to preserve and promote historical landmarks and cultural sites throughout the town.', source: 'Municipal Hall', isEvent: false },
-  { title: 'New Artisan Workshops Open for Visitors', date: '2026-01-10', category: 'advisory', excerpt: 'Several tsinelas workshops in the town center are now open for guided tours and hands-on making experiences. Book your slot today!', source: 'Liliw Tourism', isEvent: false },
-];
 
 const CATEGORY_STYLE: Record<string, string> = {
   advisory: 'bg-blue-100 text-blue-700',
@@ -37,7 +32,7 @@ const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, trans
 const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 0.4 } } };
 
 export default function NewsPage() {
-  const [news, setNews] = useState<any[]>(FALLBACK_NEWS);
+  const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -102,6 +97,12 @@ export default function NewsPage() {
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2" style={{ borderColor: '#00BFB3' }} />
+          </div>
+        ) : news.length === 0 ? (
+          <div className="text-center py-20 text-gray-400">
+            <Bell className="w-12 h-12 mx-auto mb-4 opacity-30" />
+            <p className="font-semibold text-lg">No news or announcements yet</p>
+            <p className="text-sm mt-1">Check back soon for updates from Liliw.</p>
           </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} className="space-y-12">

@@ -25,21 +25,18 @@ const itemVariants = {
   },
 };
 
-const FALLBACK_CULTURE = [
-  { title: 'Tsinelas-Making Tradition', description: "The renowned handmade Filipino slipper craft that has made Liliw world-famous", icon_emoji: '', details: ['Handed down through generations of skilled artisans', 'Intricate designs and superior craftsmanship', 'Visit workshops to see artisans at work'] },
-  { title: 'Festivals & Celebrations', description: "Vibrant cultural events celebrating Liliw's heritage and traditions", icon_emoji: '', details: ['Gat Tayaw Tsinelas Festival', 'Mutya ng Liliw', 'Parish celebrations and religious festivals'] },
-  { title: 'Intangible Heritage', description: "The living cultural expressions that define Liliw's identity", icon_emoji: '', details: ['Traditional crafting techniques', 'Cultural narratives and oral histories', 'Culinary traditions and heritage recipes'] },
-];
 
 export default function CulturePage() {
-  const [culturalAspects, setCulturalAspects] = useState<any[]>(FALLBACK_CULTURE);
+  const [culturalAspects, setCulturalAspects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/strapi/culture-aspects')
       .then(r => r.json())
       .then(data => {
         if (data?.data?.length) setCulturalAspects(data.data.map((i: any) => i.attributes || i));
-      }).catch(() => {});
+      }).catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -65,6 +62,17 @@ export default function CulturePage() {
           className="space-y-12"
         >
           {/* Cultural Aspects */}
+          {loading && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => <div key={i} className="rounded-2xl bg-gray-100 h-64 animate-pulse" />)}
+            </div>
+          )}
+          {!loading && culturalAspects.length === 0 && (
+            <div className="text-center py-16 text-gray-400">
+              <p className="font-semibold text-lg">No cultural aspects listed yet</p>
+              <p className="text-sm mt-1">Content will be added soon.</p>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {culturalAspects.map((aspect, idx) => (
               <motion.div
