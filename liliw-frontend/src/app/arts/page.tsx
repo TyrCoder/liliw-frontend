@@ -64,30 +64,15 @@ export default function ArtsPage() {
   return (
     <div className="min-h-screen bg-white">
 
-      {/* Hero */}
-      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0F1F3C 0%, #1a3a5c 60%, #0F1F3C 100%)' }}>
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #00BFB3 0%, transparent 50%), radial-gradient(circle at 80% 20%, #FFB400 0%, transparent 40%)' }} />
-        <div className="relative max-w-6xl mx-auto px-4 py-16 sm:py-24">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold mb-8 px-3 py-1.5 rounded-lg transition hover:bg-white/10" style={{ color: '#00BFB3' }}>
-              <ChevronLeft className="w-4 h-4" /> Back to Home
-            </Link>
-            <div className="flex items-center gap-3 mb-4">
-              <div>
-                <p className="text-sm font-bold tracking-widest uppercase mb-1" style={{ color: '#00BFB3' }}>Discover</p>
-                <h1 className="text-4xl sm:text-6xl font-bold text-white leading-tight">Arts &<br />Creatives</h1>
-              </div>
-            </div>
-            <p className="text-lg text-gray-300 max-w-2xl mt-6 leading-relaxed">
-              Explore the vibrant artistic soul of Liliw — from world-renowned tsinelas craftsmanship to contemporary Filipino art that blends heritage with innovation.
-            </p>
-            <div className="flex flex-wrap gap-3 mt-8">
-              {['100+ Artisans', 'UNESCO Heritage Craft', 'Live Workshops', 'Open Ateliers'].map(tag => (
-                <span key={tag} className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ backgroundColor: 'rgba(0,191,179,0.15)', color: '#00BFB3', border: '1px solid rgba(0,191,179,0.3)' }}>{tag}</span>
-              ))}
-            </div>
-          </motion.div>
-        </div>
+      {/* Page Header */}
+      <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-6 sm:mb-8">
+          <Link href="/" className="inline-flex items-center font-semibold mb-4 sm:mb-6 group text-sm sm:text-base" style={{ color: '#00BFB3' }}>
+            <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" /> Back to Home
+          </Link>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-3" style={{ color: '#00BFB3' }}>Arts & Creatives</h1>
+          <p className="text-base sm:text-lg md:text-xl text-gray-600">Explore the vibrant artistic soul of Liliw — tsinelas craftsmanship to contemporary Filipino art</p>
+        </motion.div>
       </div>
 
       {/* Art Forms */}
