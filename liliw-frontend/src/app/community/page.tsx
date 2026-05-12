@@ -19,48 +19,52 @@ const stagger = { visible: { transition: { staggerChildren: 0.1 } } };
 
 const TEAL = '#00BFB3';
 
-// ── Static participation activities ─────────────────────────────────────────
-const ACTIVITIES = [
+const ICON_MAP: Record<string, React.ReactNode> = {
+  volunteer:   <Users className="w-5 h-5" />,
+  partnership: <Briefcase className="w-5 h-5" />,
+  feedback:    <MessageSquare className="w-5 h-5" />,
+};
+
+// ── Fallback static cards (shown while loading or if Strapi is empty) ────────
+const DEFAULT_ACTIVITIES = [
   {
     type: 'volunteer',
-    icon: <Users className="w-5 h-5" />,
     title: 'Volunteer with Us',
     description: 'Give your time, gain a world of experience',
-    items: [
-      'Tour guide for local and foreign visitors',
-      'Festival and cultural event support',
-      'Youth cultural ambassador programs',
-      'Community workshop facilitation',
-    ],
+    items: ['Tour guide for local and foreign visitors', 'Festival and cultural event support', 'Youth cultural ambassador programs', 'Community workshop facilitation'],
     cta: 'Sign Up to Volunteer',
   },
   {
     type: 'partnership',
-    icon: <Briefcase className="w-5 h-5" />,
     title: 'Business Partnerships',
     description: 'Grow your business through tourism',
-    items: [
-      'Tourism enterprise development',
-      'Artisan cooperative formation',
-      'Hospitality and accommodation ties',
-      'Craft, product & souvenir collaborations',
-    ],
+    items: ['Tourism enterprise development', 'Artisan cooperative formation', 'Hospitality and accommodation ties', 'Craft, product & souvenir collaborations'],
     cta: 'Become a Partner',
   },
   {
     type: 'feedback',
-    icon: <MessageSquare className="w-5 h-5" />,
     title: 'Share Your Feedback',
-    description: 'Your voice shapes Liliw\'s future',
-    items: [
-      'Tourist satisfaction surveys',
-      'Event and service evaluation forms',
-      'Improvement suggestions and ideas',
-      'Experience sharing and testimonials',
-    ],
+    description: "Your voice shapes Liliw's future",
+    items: ['Tourist satisfaction surveys', 'Event and service evaluation forms', 'Improvement suggestions and ideas', 'Experience sharing and testimonials'],
     cta: 'Give Feedback',
   },
 ];
+
+// Parse Strapi richtext blocks or plain string into a bullet array
+function parseBullets(raw: any): string[] {
+  if (!raw) return [];
+  // Plain string (one bullet per line)
+  if (typeof raw === 'string') {
+    return raw.split('\n').map((s: string) => s.replace(/^[-*•]\s*/, '').trim()).filter(Boolean);
+  }
+  // Strapi 5 blocks format
+  if (Array.isArray(raw)) {
+    return raw
+      .map((block: any) => (block?.children ?? []).map((c: any) => c?.text ?? '').join('').replace(/^[-*•]\s*/, '').trim())
+      .filter(Boolean);
+  }
+  return [];
+}
 
 // ── Category badge colors ────────────────────────────────────────────────────
 const CATEGORY_BADGE: Record<string, string> = {
@@ -70,15 +74,41 @@ const CATEGORY_BADGE: Record<string, string> = {
   other:       'bg-gray-100 text-gray-600',
 };
 
+type Activity = { type: string; title: string; description: string; items: string[]; cta: string };
+
 export default function CommunityPage() {
-  const [events, setEvents]               = useState<any[]>([]);
-  const [eventsLoading, setEventsLoading] = useState(true);
+  const [activities, setActivities]         = useState<Activity[]>(DEFAULT_ACTIVITIES);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [events, setEvents]                 = useState<any[]>([]);
+  const [eventsLoading, setEventsLoading]   = useState(true);
 
   const [selectedEvent, setSelectedEvent]   = useState<any>(null);
   const [eventModalStep, setEventModalStep] = useState<'details' | 'form'>('details');
   const [activeActivity, setActiveActivity] = useState<{ title: string; type: string } | null>(null);
 
   useEffect(() => {
+    // Fetch participation activities from Strapi
+    fetch('/api/strapi/participation-options')
+      .then(r => r.json())
+      .then(data => {
+        const items: any[] = data.data || [];
+        if (items.length > 0) {
+          setActivities(items.map(item => {
+            const a = item.attributes || item;
+            return {
+              type:        a.card_type || 'feedback',
+              title:       a.title || '',
+              description: a.description || '',
+              items:       parseBullets(a.bullet_points),
+              cta:         a.button_text || 'Sign Up',
+            };
+          }));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setActivitiesLoading(false));
+
+    // Fetch events
     fetch('/api/strapi/events')
       .then(r => r.json())
       .then(d => setEvents(d.data || []))
@@ -120,41 +150,61 @@ export default function CommunityPage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {ACTIVITIES.map((act) => (
-              <motion.div key={act.type} variants={fadeUp}
-                className="group flex flex-col rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white"
-              >
-                <div className="h-1.5 w-full" style={{ backgroundColor: TEAL }} />
-                <div className="flex flex-col flex-1 p-6">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
-                    style={{ backgroundColor: 'rgba(0,191,179,.12)', color: TEAL }}>
-                    {act.icon}
+          {activitiesLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="rounded-2xl border border-gray-100 overflow-hidden">
+                  <div className="h-1.5 w-full bg-teal-200 animate-pulse" />
+                  <div className="p-6 space-y-3">
+                    <div className="w-11 h-11 rounded-xl bg-gray-100 animate-pulse" />
+                    <div className="h-5 w-3/4 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-3 w-full bg-gray-100 rounded animate-pulse" />
+                    <div className="h-3 w-5/6 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-3 w-4/6 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-10 w-full bg-gray-100 rounded-xl animate-pulse mt-4" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">{act.title}</h3>
-                  <p className="text-sm text-gray-400 mb-5">{act.description}</p>
-                  <ul className="space-y-2.5 mb-7 flex-1">
-                    {act.items.map((b, i) => (
-                      <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
-                        <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-white text-[9px] font-bold"
-                          style={{ backgroundColor: TEAL }}>
-                          ✓
-                        </span>
-                        {b}
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    onClick={() => setActiveActivity({ title: act.title, type: act.type })}
-                    className="mt-auto w-full py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition flex items-center justify-center gap-2"
-                    style={{ backgroundColor: TEAL }}
-                  >
-                    {act.cta} <ChevronRight className="w-4 h-4" />
-                  </button>
                 </div>
-              </motion.div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {activities.map((act, idx) => (
+                <motion.div key={idx} variants={fadeUp}
+                  className="group flex flex-col rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white"
+                >
+                  <div className="h-1.5 w-full" style={{ backgroundColor: TEAL }} />
+                  <div className="flex flex-col flex-1 p-6">
+                    <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+                      style={{ backgroundColor: 'rgba(0,191,179,.12)', color: TEAL }}>
+                      {ICON_MAP[act.type] ?? <Users className="w-5 h-5" />}
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">{act.title}</h3>
+                    {act.description && <p className="text-sm text-gray-400 mb-5">{act.description}</p>}
+                    {act.items.length > 0 && (
+                      <ul className="space-y-2.5 mb-7 flex-1">
+                        {act.items.map((b, i) => (
+                          <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+                            <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-white text-[9px] font-bold"
+                              style={{ backgroundColor: TEAL }}>
+                              ✓
+                            </span>
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <button
+                      onClick={() => setActiveActivity({ title: act.title, type: act.type })}
+                      className="mt-auto w-full py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition flex items-center justify-center gap-2"
+                      style={{ backgroundColor: TEAL }}
+                    >
+                      {act.cta} <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </motion.section>
 
         {/* ── Upcoming Events ── */}
