@@ -9,7 +9,6 @@ import type {
   FAQ,
   Itinerary,
   StrapiBlocksContent,
-  StrapiImageAttribute,
 } from './types';
 
 const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
@@ -152,7 +151,7 @@ export const getItineraries = async (): Promise<Itinerary[]> => {
   if (cached) return cached;
 
   try {
-    const response = await fetchWithRetry<StrapiResponse<Itinerary[]>>('/iteneraries?populate=*');
+    const response = await fetchWithRetry<StrapiResponse<Itinerary[]>>('/itineraries?populate=*');
     const data = response.data || [];
     setCachedResponse(cacheKey, data);
     return data;
