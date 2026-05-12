@@ -208,7 +208,6 @@ export default function ContactPage() {
                   <option value="events">Event Information</option>
                   <option value="cultural">Cultural Programs</option>
                   <option value="arts">Arts & Crafts</option>
-                  <option value="booking">Itinerary Booking</option>
                   <option value="feedback">Feedback</option>
                   <option value="other">Other</option>
                 </select>
