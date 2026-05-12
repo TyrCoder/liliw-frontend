@@ -1,75 +1,58 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Bell, Calendar, MapPin,
-  MessageSquare, Users, Briefcase, Heart, Globe, Lightbulb, Star,
+  MessageSquare, Users, Briefcase,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import EventModal from '@/components/EventModal';
+import ParticipationModal from '@/components/ParticipationModal';
 
 // ── Animation helpers ────────────────────────────────────────────────────────
-const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
-const stagger = { visible: { transition: { staggerChildren: 0.12 } } };
+const fadeUp = {
+  hidden:  { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.45 } },
+};
+const stagger = { visible: { transition: { staggerChildren: 0.1 } } };
 
-// ── Static participation cards ───────────────────────────────────────────────
-const WAYS = [
+// ── Fallback participation activities ────────────────────────────────────────
+const DEFAULT_ACTIVITIES = [
   {
-    type: 'volunteer',
-    icon: <Users className="w-6 h-6" />,
-    color: '#00BFB3',
-    bg: 'rgba(0,191,179,.1)',
+    icon: 'volunteer',
     title: 'Volunteer with Us',
-    tagline: 'Give your time, gain a world of experience',
-    bullets: [
-      'Tour guide for local and foreign visitors',
-      'Festival and cultural event support',
-      'Youth cultural ambassador programs',
-      'Community workshop facilitation',
-    ],
-    cta: 'Become a Volunteer',
+    description: 'Give your time, gain a world of experience',
+    items: ['Tour guide for local and foreign visitors', 'Festival and cultural event support', 'Youth cultural ambassador programs', 'Community workshop facilitation'],
+    cta_label: 'Sign Up to Volunteer',
   },
   {
-    type: 'partnership',
-    icon: <Briefcase className="w-6 h-6" />,
-    color: '#3B82F6',
-    bg: 'rgba(59,130,246,.1)',
+    icon: 'partnership',
     title: 'Business Partnerships',
-    tagline: 'Grow your business through tourism',
-    bullets: [
-      'Tourism enterprise development',
-      'Artisan cooperative formation',
-      'Hospitality and accommodation ties',
-      'Craft, product & souvenir collaborations',
-    ],
-    cta: 'Explore Partnerships',
+    description: 'Grow your business through tourism',
+    items: ['Tourism enterprise development', 'Artisan cooperative formation', 'Hospitality and accommodation ties', 'Craft, product & souvenir collaborations'],
+    cta_label: 'Become a Partner',
   },
   {
-    type: 'feedback',
-    icon: <MessageSquare className="w-6 h-6" />,
-    color: '#8B5CF6',
-    bg: 'rgba(139,92,246,.1)',
+    icon: 'feedback',
     title: 'Share Your Feedback',
-    tagline: 'Your voice shapes Liliw\'s future',
-    bullets: [
-      'Tourist satisfaction surveys',
-      'Event and service evaluation forms',
-      'Improvement suggestions & ideas',
-      'Experience sharing and testimonials',
-    ],
-    cta: 'Give Feedback',
+    description: 'Your voice shapes Liliw\'s future',
+    items: ['Tourist satisfaction surveys', 'Event and service evaluation forms', 'Improvement suggestions and ideas', 'Experience sharing and testimonials'],
+    cta_label: 'Give Feedback',
   },
 ];
 
-// ── Impact stats ─────────────────────────────────────────────────────────────
-const IMPACT = [
-  { icon: <Heart className="w-5 h-5" />, label: 'Local Volunteers', value: '120+' },
-  { icon: <Globe className="w-5 h-5" />, label: 'Annual Visitors', value: '50K+' },
-  { icon: <Lightbulb className="w-5 h-5" />, label: 'Community Events', value: '30+' },
-  { icon: <Star className="w-5 h-5" />, label: 'Partner Businesses', value: '80+' },
-];
+const ICON_MAP: Record<string, React.ReactNode> = {
+  feedback:    <MessageSquare className="w-5 h-5" />,
+  volunteer:   <Users className="w-5 h-5" />,
+  partnership: <Briefcase className="w-5 h-5" />,
+};
+
+const CARD_ACCENT: Record<string, string> = {
+  feedback:    '#8B5CF6',
+  volunteer:   '#00BFB3',
+  partnership: '#3B82F6',
+};
 
 // ── Category badge colors ────────────────────────────────────────────────────
 const CATEGORY_BADGE: Record<string, string> = {
@@ -80,12 +63,41 @@ const CATEGORY_BADGE: Record<string, string> = {
 };
 
 export default function CommunityPage() {
-  const router = useRouter();
-  const [events, setEvents] = useState<any[]>([]);
+  const [activities, setActivities]   = useState(DEFAULT_ACTIVITIES);
+  const [events, setEvents]           = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+
+  // event modal state
+  const [selectedEvent, setSelectedEvent]   = useState<any>(null);
+  const [eventModalStep, setEventModalStep] = useState<'details' | 'form'>('details');
+
+  // participation modal state
+  const [activeActivity, setActiveActivity] = useState<{ title: string; type: string } | null>(null);
 
   useEffect(() => {
+    // Fetch dynamic participation activities from Strapi
+    fetch('/api/strapi/participation-options')
+      .then(r => r.json())
+      .then(data => {
+        const items = data.data || [];
+        if (items.length > 0) {
+          setActivities(items.map((item: any) => {
+            const a = item.attributes || item;
+            return {
+              icon: a.card_type || 'feedback',
+              title: a.title || '',
+              description: a.description || '',
+              items: typeof a.bullet_points === 'string'
+                ? a.bullet_points.split('\n').map((s: string) => s.replace(/^[-*•]\s*/, '').trim()).filter(Boolean)
+                : [],
+              cta_label: a.button_text || 'Sign Up',
+            };
+          }));
+        }
+      })
+      .catch(() => {});
+
+    // Fetch events
     fetch('/api/strapi/events')
       .then(r => r.json())
       .then(d => setEvents(d.data || []))
@@ -93,14 +105,16 @@ export default function CommunityPage() {
       .finally(() => setEventsLoading(false));
   }, []);
 
+  const openEventDetails = (item: any) => { setEventModalStep('details'); setSelectedEvent(item); };
+  const openEventJoin    = (item: any) => { setEventModalStep('form');    setSelectedEvent(item); };
+
   return (
     <div className="min-h-screen bg-white">
 
       {/* ── Hero ── */}
-      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg,#00BFB3 0%,#009E99 60%,#007A75 100%)' }}>
-        {/* decorative circles */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-10 bg-white" />
-        <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full opacity-10 bg-white" />
+      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg,#00BFB3 0%,#009E99 55%,#007A75 100%)' }}>
+        <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/10 pointer-events-none" />
+        <div className="absolute -bottom-12 -left-12 w-56 h-56 rounded-full bg-white/10 pointer-events-none" />
 
         <div className="relative max-w-6xl mx-auto px-4 py-14 sm:py-20">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
@@ -109,18 +123,18 @@ export default function CommunityPage() {
               Back to Home
             </Link>
             <div className="max-w-2xl">
-              <span className="inline-block px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold mb-4 tracking-wide uppercase">
+              <span className="inline-block px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold mb-4 tracking-wider uppercase">
                 Community Engagement
               </span>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
+              <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4 leading-tight">
                 Be Part of<br />Liliw&apos;s Story
               </h1>
-              <p className="text-white/85 text-lg sm:text-xl mb-8 leading-relaxed">
-                Join our growing community of volunteers, partners, and tourism advocates. Together, we shape the future of Liliw as a world-class destination.
+              <p className="text-white/85 text-lg mb-8 leading-relaxed">
+                Volunteer, partner, or share your feedback — every contribution helps shape Liliw as a world-class destination.
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={() => document.getElementById('ways')?.scrollIntoView({ behavior: 'smooth' })}
+                  onClick={() => document.getElementById('activities')?.scrollIntoView({ behavior: 'smooth' })}
                   className="px-6 py-3 bg-white font-bold text-sm rounded-xl hover:bg-white/90 transition shadow-lg"
                   style={{ color: '#00BFB3' }}
                 >
@@ -138,81 +152,60 @@ export default function CommunityPage() {
         </div>
       </div>
 
-      {/* ── Impact Stats ── */}
-      <div className="border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-2 sm:grid-cols-4 gap-6">
-          {IMPACT.map((stat, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
-              className="flex flex-col items-center text-center"
-            >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2"
-                style={{ backgroundColor: 'rgba(0,191,179,.1)', color: '#00BFB3' }}>
-                {stat.icon}
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Ways to Participate ── */}
-      <section id="ways" className="max-w-6xl mx-auto px-4 py-16 sm:py-20">
+      {/* ── Participation Activities ── */}
+      <section id="activities" className="max-w-6xl mx-auto px-4 py-16 sm:py-20">
         <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
           <motion.div variants={fadeUp} className="mb-10">
-            <p className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: '#00BFB3' }}>How to Join</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Three Ways to Get Involved</h2>
-            <p className="text-gray-500 max-w-xl">Whether you have time, skills, or a business — there&apos;s a place for you in the Liliw community.</p>
+            <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#00BFB3' }}>How to Join</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Ways to Participate</h2>
+            <p className="text-gray-400 text-sm max-w-lg">
+              Whether you have time, skills, or a business — there&apos;s a place for you in the Liliw community.
+            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {WAYS.map((w) => (
-              <motion.div
-                key={w.type}
-                variants={fadeUp}
-                className="group flex flex-col rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-              >
-                {/* Color top bar */}
-                <div className="h-1.5 w-full" style={{ backgroundColor: w.color }} />
+            {activities.map((act, idx) => {
+              const accent = CARD_ACCENT[act.icon] ?? '#00BFB3';
+              return (
+                <motion.div key={idx} variants={fadeUp}
+                  className="group flex flex-col rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white"
+                >
+                  <div className="h-1.5 w-full" style={{ backgroundColor: accent }} />
+                  <div className="flex flex-col flex-1 p-6">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
+                      style={{ backgroundColor: `${accent}18`, color: accent }}>
+                      {ICON_MAP[act.icon] ?? <Users className="w-5 h-5" />}
+                    </div>
 
-                <div className="flex flex-col flex-1 p-6">
-                  {/* Icon */}
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
-                    style={{ backgroundColor: w.bg, color: w.color }}>
-                    {w.icon}
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">{act.title}</h3>
+                    <p className="text-sm text-gray-400 mb-5">{act.description}</p>
+
+                    {act.items.length > 0 && (
+                      <ul className="space-y-2.5 mb-6 flex-1">
+                        {act.items.map((b, i) => (
+                          <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+                            <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-white text-[9px] font-bold"
+                              style={{ backgroundColor: accent }}>
+                              ✓
+                            </span>
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <button
+                      onClick={() => setActiveActivity({ title: act.title, type: act.icon })}
+                      className="mt-auto w-full py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition flex items-center justify-center gap-2"
+                      style={{ backgroundColor: accent }}
+                    >
+                      {act.cta_label}
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
-
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">{w.title}</h3>
-                  <p className="text-sm text-gray-400 mb-5">{w.tagline}</p>
-
-                  <ul className="space-y-2.5 mb-7 flex-1">
-                    {w.bullets.map((b, i) => (
-                      <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
-                        <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-white text-[10px] font-bold"
-                          style={{ backgroundColor: w.color }}>
-                          ✓
-                        </span>
-                        {b}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <button
-                    onClick={() => router.push(`/participate?type=${w.type}`)}
-                    className="mt-auto w-full py-2.5 rounded-xl text-sm font-bold text-white transition hover:opacity-90 flex items-center justify-center gap-2"
-                    style={{ backgroundColor: w.color }}
-                  >
-                    {w.cta}
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
       </section>
@@ -221,16 +214,15 @@ export default function CommunityPage() {
       <section id="events" className="border-t border-gray-100 bg-gray-50/60">
         <div className="max-w-6xl mx-auto px-4 py-16 sm:py-20">
           <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <motion.div variants={fadeUp} className="mb-8 flex items-end justify-between flex-wrap gap-4">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: '#00BFB3' }}>Open to All</p>
-                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Upcoming Events</h2>
-              </div>
+            <motion.div variants={fadeUp} className="mb-8">
+              <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#00BFB3' }}>Open to Everyone</p>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Upcoming Events</h2>
+              <p className="text-gray-400 text-sm mt-2">Join an event and be part of the Liliw community in action.</p>
             </motion.div>
 
             {eventsLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[1, 2].map(i => <div key={i} className="h-36 rounded-2xl bg-gray-200 animate-pulse" />)}
+                {[1, 2].map(i => <div key={i} className="h-40 rounded-2xl bg-gray-200 animate-pulse" />)}
               </div>
             ) : events.length === 0 ? (
               <motion.div variants={fadeUp} className="text-center py-16">
@@ -238,7 +230,7 @@ export default function CommunityPage() {
                   style={{ backgroundColor: 'rgba(0,191,179,.1)', color: '#00BFB3' }}>
                   <Calendar className="w-6 h-6" />
                 </div>
-                <p className="font-semibold text-gray-700 mb-1">No events right now</p>
+                <p className="font-semibold text-gray-700 mb-1">No upcoming events yet</p>
                 <p className="text-sm text-gray-400">Check back soon — new events are added regularly.</p>
               </motion.div>
             ) : (
@@ -260,11 +252,11 @@ export default function CommunityPage() {
 
                   return (
                     <motion.div key={item.id} variants={fadeUp}
-                      whileHover={{ x: 3 }}
                       className="group bg-white border border-gray-200 hover:border-teal-300 hover:shadow-sm transition-all flex overflow-hidden rounded-xl"
                     >
                       <div className="w-1 shrink-0" style={{ backgroundColor: '#00BFB3' }} />
                       <div className="flex-1 px-5 py-4">
+                        {/* Top row */}
                         <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                           <div className="flex items-center gap-2 flex-wrap">
                             <Bell className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
@@ -281,21 +273,33 @@ export default function CommunityPage() {
                             </span>
                           )}
                         </div>
+
                         <h3 className="font-bold text-gray-900 text-sm leading-snug mb-1">{a.title}</h3>
-                        {description && <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-2">{description}</p>}
-                        <div className="flex items-center justify-between gap-2 mt-1">
-                          {a.venue && (
+                        {description && <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3">{description}</p>}
+
+                        {/* Bottom row — venue + actions */}
+                        <div className="flex items-center justify-between gap-3 mt-1 flex-wrap">
+                          {a.venue ? (
                             <span className="flex items-center gap-1 text-xs text-gray-400">
                               <MapPin className="w-3 h-3 shrink-0" />{a.venue}
                             </span>
-                          )}
-                          <button
-                            onClick={() => setSelectedEvent(item)}
-                            className="text-xs font-bold shrink-0 ml-auto flex items-center gap-1 hover:underline transition"
-                            style={{ color: '#00BFB3' }}
-                          >
-                            View Details <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
+                          ) : <span />}
+
+                          <div className="flex items-center gap-3 ml-auto shrink-0">
+                            <button
+                              onClick={() => openEventDetails(item)}
+                              className="text-xs font-semibold flex items-center gap-1 hover:underline transition text-gray-400 hover:text-gray-600"
+                            >
+                              Details <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => openEventJoin(item)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-bold text-white hover:opacity-90 transition"
+                              style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)' }}
+                            >
+                              Join This Event
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -311,16 +315,15 @@ export default function CommunityPage() {
       <section className="max-w-6xl mx-auto px-4 py-16 sm:py-20">
         <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
           <motion.div variants={fadeUp} className="mb-10">
-            <p className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: '#00BFB3' }}>Why Participate</p>
+            <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#00BFB3' }}>Why Participate</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Your Participation Matters</h2>
           </motion.div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {[
-              { title: 'Share Your Voice', body: 'Your feedback helps create better experiences for residents and visitors alike. Every opinion shapes Liliw\'s future as a tourism destination.' },
-              { title: 'Build Real Connections', body: 'Volunteer opportunities let you meet people from around the world and grow your network in a vibrant, welcoming community.' },
-              { title: 'Create Economic Opportunities', body: 'Business partnerships and community enterprises generate income while preserving local culture and supporting sustainable tourism.' },
-              { title: 'Learn & Grow Together', body: 'Develop new skills through training programs and workshops. Share your knowledge and gain perspective from visitors and fellow residents.' },
+              { title: 'Share Your Voice',              body: 'Your feedback helps create better experiences for residents and visitors alike. Every opinion shapes Liliw\'s future.' },
+              { title: 'Build Real Connections',        body: 'Volunteer opportunities let you meet people from around the world and grow your network in a welcoming community.' },
+              { title: 'Create Economic Opportunities', body: 'Partnerships and community enterprises generate income while preserving local culture and supporting sustainable tourism.' },
+              { title: 'Learn & Grow Together',         body: 'Develop new skills through workshops. Share your knowledge and gain perspective from visitors and fellow residents.' },
             ].map((card, i) => (
               <motion.div key={i} variants={fadeUp}
                 className="p-6 rounded-2xl border"
@@ -333,39 +336,21 @@ export default function CommunityPage() {
         </motion.div>
       </section>
 
-      {/* ── Contact CTA ── */}
-      <section className="max-w-6xl mx-auto px-4 pb-16 sm:pb-24">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
-          <div className="rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg,#00BFB3 0%,#009E99 60%,#007A75 100%)' }}>
-            <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-white/10" />
-            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-              <div>
-                <h3 className="text-2xl font-bold mb-2">Ready to Get Involved?</h3>
-                <p className="text-white/80 mb-6 text-sm leading-relaxed">
-                  Reach out to the Liliw Tourism Office or fill out our participation form and we&apos;ll get back to you.
-                </p>
-                <button
-                  onClick={() => router.push('/participate')}
-                  className="px-6 py-3 bg-white font-bold text-sm rounded-xl hover:bg-white/90 transition shadow-md"
-                  style={{ color: '#00BFB3' }}
-                >
-                  Submit a Request
-                </button>
-              </div>
-              <div className="space-y-2 text-sm text-white/90">
-                <p className="font-bold text-white text-base mb-3">Liliw Tourism Office</p>
-                <p>Municipal Hall, Liliw, Laguna 4004</p>
-                <p>+63 (2) XXXX-XXXX</p>
-                <p>tourism@liliw.gov.ph</p>
-                <p className="pt-2 opacity-70">Mon – Fri, 8:00 AM – 5:00 PM</p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </section>
-
-      {selectedEvent && <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+      {/* ── Modals ── */}
+      {selectedEvent && (
+        <EventModal
+          event={selectedEvent}
+          defaultStep={eventModalStep}
+          onClose={() => setSelectedEvent(null)}
+        />
+      )}
+      {activeActivity && (
+        <ParticipationModal
+          activityTitle={activeActivity.title}
+          activityType={activeActivity.type}
+          onClose={() => setActiveActivity(null)}
+        />
+      )}
     </div>
   );
 }

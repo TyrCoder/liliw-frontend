@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 interface EventModalProps {
   event: any;
   onClose: () => void;
+  defaultStep?: 'details' | 'form';
 }
 
 function extractText(richText: any): string {
@@ -21,11 +22,11 @@ function extractText(richText: any): string {
   return '';
 }
 
-export default function EventModal({ event, onClose }: EventModalProps) {
+export default function EventModal({ event, onClose, defaultStep = 'details' }: EventModalProps) {
   const a = event.attributes || event;
   const { user, token } = useAuth();
 
-  const [step, setStep] = useState<'details' | 'form' | 'success'>('details');
+  const [step, setStep] = useState<'details' | 'form' | 'success'>(defaultStep);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
