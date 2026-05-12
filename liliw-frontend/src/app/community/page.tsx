@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Users, Briefcase, MessageSquare, LogIn, Calendar, MapPin, ChevronRight, UserCheck } from 'lucide-react';
+import { ChevronLeft, Users, Briefcase, MessageSquare, LogIn, Calendar, MapPin, ChevronRight, UserCheck, Bell } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
@@ -148,7 +148,7 @@ export default function CommunityPage() {
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-3">
                   {joinableEvents.map(item => {
                     const a = item.attributes || item;
 
@@ -174,63 +174,60 @@ export default function CommunityPage() {
                       'bg-purple-50 text-purple-700 border border-purple-200';
 
                     return (
-                      <motion.div key={item.id} whileHover={{ y: -2 }}
-                        className="group rounded-2xl bg-white border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all p-5 flex flex-col gap-3">
+                      <motion.div key={item.id}
+                        whileHover={{ x: 2 }}
+                        className="group bg-white border border-gray-200 hover:border-teal-300 hover:shadow-sm transition-all flex overflow-hidden rounded-lg"
+                      >
+                        {/* Left teal accent bar */}
+                        <div className="w-1 shrink-0" style={{ backgroundColor: '#00BFB3' }} />
 
-                        {/* Badges */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-teal-500 inline-block" />
-                            Open
-                          </span>
-                          {pricingLabel && (
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${pricingColor}`}>
-                              {pricingLabel}
-                            </span>
+                        <div className="flex-1 px-4 py-4">
+                          {/* Top row: bell + badges + date */}
+                          <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Bell className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
+                              {a.category && (
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${CATEGORY_BADGE[a.category] || 'bg-gray-100 text-gray-600'}`}>
+                                  {a.category}
+                                </span>
+                              )}
+                              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700">
+                                Event
+                              </span>
+                            </div>
+                            {schedule && (
+                              <span className="flex items-center gap-1 text-xs text-gray-400 shrink-0">
+                                <Calendar className="w-3.5 h-3.5" />
+                                {schedule}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Title */}
+                          <h3 className="font-bold text-gray-900 text-sm leading-snug mb-1.5">{a.title}</h3>
+
+                          {/* Description */}
+                          {description && (
+                            <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-2">{description}</p>
                           )}
+
+                          {/* Bottom row: venue + Read More */}
+                          <div className="flex items-center justify-between gap-2 mt-1">
+                            {a.venue && (
+                              <span className="flex items-center gap-1 text-xs text-gray-400">
+                                <MapPin className="w-3 h-3 shrink-0" />
+                                {a.venue}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => setSelectedEvent(item)}
+                              className="text-xs font-semibold shrink-0 ml-auto flex items-center gap-1 hover:underline transition"
+                              style={{ color: '#00BFB3' }}
+                            >
+                              Read More <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
-
-                        {/* Title */}
-                        <h3 className="font-bold text-gray-900 text-base leading-snug">{a.title}</h3>
-
-                        {/* Meta rows */}
-                        <div className="space-y-1.5 text-xs text-gray-500">
-                          {schedule && (
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
-                              <span>{schedule}</span>
-                            </div>
-                          )}
-                          {a.venue && (
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
-                              <span>{a.venue}</span>
-                            </div>
-                          )}
-                          {(a.capacity_note || a.max_participants) && (
-                            <div className="flex items-center gap-2">
-                              <UserCheck className="w-3.5 h-3.5 shrink-0" style={{ color: '#00BFB3' }} />
-                              <span>{a.capacity_note || `Max ${a.max_participants} participants`}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Divider + description */}
-                        {description && (
-                          <>
-                            <hr className="border-gray-100" />
-                            <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">{description}</p>
-                          </>
-                        )}
-
-                        {/* View Event button */}
-                        <button
-                          onClick={() => setSelectedEvent(item)}
-                          className="mt-1 w-full py-2 rounded-xl text-sm font-semibold border-2 transition hover:text-white hover:bg-teal-500"
-                          style={{ borderColor: '#00BFB3', color: '#00BFB3' }}
-                        >
-                          View Event
-                        </button>
                       </motion.div>
                     );
                   })}
