@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Users, Briefcase, MessageSquare, Calendar, MapPin, ChevronRight, Bell } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -64,6 +65,7 @@ const DEFAULT_OPTIONS = [
 ];
 
 export default function CommunityPage() {
+  const router = useRouter();
   const [joinableEvents, setJoinableEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -257,9 +259,9 @@ export default function CommunityPage() {
                     </ul>
                   )}
 
-                  {/* CTA button — scrolls to form */}
+                  {/* CTA button — routes to /participate page */}
                   <button
-                    onClick={() => document.getElementById('participate-form')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => router.push(`/participate?type=${option.icon}`)}
                     className="mt-auto w-full py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90"
                     style={{ backgroundColor: '#00BFB3' }}
                   >
