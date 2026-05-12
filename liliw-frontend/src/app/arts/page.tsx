@@ -8,12 +8,12 @@ import { ChevronLeft, Star, MapPin, Phone, ExternalLink, Search, Filter } from '
 const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || '';
 
 const FALLBACK_ARTS = [
-  { name: 'Tsinelas Crafting', description: 'Liliw is world-renowned for its handmade tsinelas (slippers). Skilled artisans have perfected this craft over generations, creating footwear that blends comfort, artistry, and cultural identity.', icon_emoji: '👞', features: ['Hand-stitched leather', 'Traditional techniques', 'Hundreds of designs', 'Export-quality products'] },
-  { name: 'Traditional Weaving', description: 'Intricate textiles and fabrics created using traditional looms. Local weavers transform natural fibers into beautiful patterns that tell stories of the community.', icon_emoji: '🧵', features: ['Native fiber materials', 'Generational skills', 'Intricate patterns', 'Wearable cultural art'] },
-  { name: 'Culinary Arts', description: "Local delicacies and traditional dishes representing Liliw's rich gastronomic heritage, passed down through family recipes and community traditions.", icon_emoji: '🍲', features: ['Traditional recipes', 'Local ingredients', 'Family traditions', 'Unique flavors'] },
-  { name: 'Visual Arts & Crafts', description: 'A thriving community of painters, sculptors, and craft artists who draw inspiration from Liliw\'s natural beauty and cultural heritage.', icon_emoji: '🎨', features: ['Landscape paintings', 'Local sculptures', 'Mixed media works', 'Craft workshops'] },
-  { name: 'Music & Performing Arts', description: "Traditional music and dance performances that celebrate Liliw's vibrant culture, from folk songs to contemporary interpretations.", icon_emoji: '🎵', features: ['Folk music', 'Cultural dance', 'Community performances', 'Festival celebrations'] },
-  { name: 'Woodcarving & Sculpture', description: 'Master woodcarvers transform native timber into intricate sculptures, furniture, and decorative pieces that reflect Filipino artistry.', icon_emoji: '🪵', features: ['Native timber', 'Intricate detailing', 'Custom commissions', 'Heritage motifs'] },
+  { name: 'Tsinelas Crafting', description: 'Liliw is world-renowned for its handmade tsinelas (slippers). Skilled artisans have perfected this craft over generations, creating footwear that blends comfort, artistry, and cultural identity.', icon_emoji: '', features: ['Hand-stitched leather', 'Traditional techniques', 'Hundreds of designs', 'Export-quality products'] },
+  { name: 'Traditional Weaving', description: 'Intricate textiles and fabrics created using traditional looms. Local weavers transform natural fibers into beautiful patterns that tell stories of the community.', icon_emoji: '', features: ['Native fiber materials', 'Generational skills', 'Intricate patterns', 'Wearable cultural art'] },
+  { name: 'Culinary Arts', description: "Local delicacies and traditional dishes representing Liliw's rich gastronomic heritage, passed down through family recipes and community traditions.", icon_emoji: '', features: ['Traditional recipes', 'Local ingredients', 'Family traditions', 'Unique flavors'] },
+  { name: 'Visual Arts & Crafts', description: 'A thriving community of painters, sculptors, and craft artists who draw inspiration from Liliw\'s natural beauty and cultural heritage.', icon_emoji: '', features: ['Landscape paintings', 'Local sculptures', 'Mixed media works', 'Craft workshops'] },
+  { name: 'Music & Performing Arts', description: "Traditional music and dance performances that celebrate Liliw's vibrant culture, from folk songs to contemporary interpretations.", icon_emoji: '', features: ['Folk music', 'Cultural dance', 'Community performances', 'Festival celebrations'] },
+  { name: 'Woodcarving & Sculpture', description: 'Master woodcarvers transform native timber into intricate sculptures, furniture, and decorative pieces that reflect Filipino artistry.', icon_emoji: '', features: ['Native timber', 'Intricate detailing', 'Custom commissions', 'Heritage motifs'] },
 ];
 
 const FALLBACK_ARTISANS = [
@@ -73,7 +73,6 @@ export default function ArtsPage() {
               <ChevronLeft className="w-4 h-4" /> Back to Home
             </Link>
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-5xl">🎨</span>
               <div>
                 <p className="text-sm font-bold tracking-widest uppercase mb-1" style={{ color: '#00BFB3' }}>Discover</p>
                 <h1 className="text-4xl sm:text-6xl font-bold text-white leading-tight">Arts &<br />Creatives</h1>
@@ -113,7 +112,7 @@ export default function ArtsPage() {
               className="group relative rounded-2xl p-6 bg-white border-2 border-gray-100 hover:border-teal-200 transition-all duration-300 overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-5 group-hover:opacity-10 transition-opacity" style={{ backgroundColor: '#00BFB3' }} />
-              <div className="text-5xl mb-4">{art.icon_emoji || '🎨'}</div>
+              {art.icon_emoji && <div className="text-5xl mb-4">{art.icon_emoji}</div>}
               <h3 className="text-lg font-bold mb-2" style={{ color: '#0F1F3C' }}>{art.name || art.title}</h3>
               <p className="text-gray-500 text-sm leading-relaxed mb-4">{art.description}</p>
               <div className="space-y-1.5">
@@ -201,7 +200,7 @@ export default function ArtsPage() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={photoUrl} alt={artisan.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-30">🎨</div>
+                        <div className="absolute inset-0 flex items-center justify-center opacity-10"><svg viewBox="0 0 24 24" className="w-14 h-14 text-teal-300" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm-1 14H9V7h2v10zm4 0h-2V7h2v10z"/></svg></div>
                       )}
                       <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent" />
                       <div className="absolute bottom-3 left-3">
@@ -264,7 +263,7 @@ export default function ArtsPage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={url} alt={selectedArtisan.name} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-20">🎨</div>
+                    <div className="absolute inset-0 flex items-center justify-center opacity-10"><svg viewBox="0 0 24 24" className="w-20 h-20 text-teal-300" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm-1 14H9V7h2v10zm4 0h-2V7h2v10z"/></svg></div>
                   );
                 })()}
                 <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
@@ -326,7 +325,6 @@ export default function ArtsPage() {
         >
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, #00BFB3, transparent 60%), radial-gradient(circle at 70% 30%, #FFB400, transparent 50%)' }} />
           <div className="relative">
-            <div className="text-5xl mb-4">✨</div>
             <h2 className="text-3xl font-bold text-white mb-3">Support Local Creatives</h2>
             <p className="text-gray-400 mb-8 max-w-xl mx-auto">
               Visit artisan workshops, attend live demonstrations, and bring home unique handcrafted pieces from Liliw's talented creators.

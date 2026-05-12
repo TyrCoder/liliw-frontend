@@ -15,12 +15,12 @@ interface Message extends ChatMessage {
 // Varied opening greetings for natural conversation
 const getRandomGreeting = () => {
   const greetings = [
-    'Kumusta? 🌞 Welcome to Liliw! I\'m Lilio, your tour guide. What brings you to our wonderful town?',
-    'Hey there! 👋 I\'m Lilio, and I\'m here to help you explore Liliw! What would you like to know?',
-    'Magandang araw! 🏝️ Welcome to Liliw, Laguna! I\'m Lilio. Excited to show you around?',
-    'Hi! I\'m Lilio, your Liliw guide 🌴 What interests you most - our heritage, shopping, food, or something else?',
-    'Welcome to Liliw! 😊 I\'m Lilio. Been here many times? I\'d love to help you discover our gems!',
-    'Hola, travel friend! 🎉 I\'m Lilio, your Liliw companion. What shall we explore together?',
+    'Kumusta! Welcome to Liliw! I\'m Lilio, your tour guide. What brings you to our wonderful town?',
+    'Hey there! I\'m Lilio, and I\'m here to help you explore Liliw! What would you like to know?',
+    'Magandang araw! Welcome to Liliw, Laguna! I\'m Lilio. Excited to show you around?',
+    'Hi! I\'m Lilio, your Liliw guide. What interests you most — our heritage, shopping, food, or something else?',
+    'Welcome to Liliw! I\'m Lilio. Been here many times? I\'d love to help you discover our gems!',
+    'Hello, travel friend! I\'m Lilio, your Liliw companion. What shall we explore together?',
   ];
   return greetings[Math.floor(Math.random() * greetings.length)];
 };
@@ -165,10 +165,9 @@ export default function AIChat() {
             <div className="p-5 text-white bg-gradient-to-r" style={{ backgroundImage: COLORS.gradient }}>
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h3 className="font-bold text-xl">Lilio 🏝️</h3>
+                  <h3 className="font-bold text-xl">Lilio</h3>
                   <p className="text-sm opacity-90">Your Liliw Travel Guide</p>
                 </div>
-                <div className="text-2xl">✨</div>
               </div>
               <p className="text-xs opacity-85 mt-2">Only answers about Liliw tourism & attractions</p>
             </div>

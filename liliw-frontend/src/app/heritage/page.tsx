@@ -83,7 +83,7 @@ export default function HeritageHeritagePages() {
             <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" />
             Back to Home
           </Link>
-          <h1 className="text-5xl font-bold mb-3" style={{ color: '#00BFB3' }}>🏛️ Heritage Sites</h1>
+          <h1 className="text-5xl font-bold mb-3" style={{ color: '#00BFB3' }}>Heritage Sites</h1>
           <p className="text-xl text-gray-600">
             Discover the historical treasures and cultural landmarks of Liliw
           </p>

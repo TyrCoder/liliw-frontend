@@ -26,7 +26,7 @@ async function buildKnowledge(): Promise<string> {
     for (const a of attractions.value.slice(0, 30)) {
       const attr = a.attributes;
       const typeLabel = a.type === 'heritage' ? 'Heritage' : a.type === 'spot' ? 'Tourist Spot' : 'Dining';
-      lines.push(`- [${typeLabel}] ${attr.name} | URL: /attractions/${a.id}${attr.location ? ` | ${attr.location}` : ''}${attr.description ? ` | ${attr.description.slice(0, 100)}` : ''}${attr.rating ? ` | ⭐${attr.rating}/5` : ''}`);
+      lines.push(`- [${typeLabel}] ${attr.name} | URL: /attractions/${a.id}${attr.location ? ` | ${attr.location}` : ''}${attr.description ? ` | ${attr.description.slice(0, 100)}` : ''}${attr.rating ? ` | Rating: ${attr.rating}/5` : ''}`);
     }
     lines.push('');
   }

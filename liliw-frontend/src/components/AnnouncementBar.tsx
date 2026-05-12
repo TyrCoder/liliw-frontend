@@ -8,7 +8,7 @@ interface AnnouncementBarProps {
   defaultOpen?: boolean;
 }
 
-const DEFAULT_TEXT = '🎉 Welcome to Liliw Tourism! Discover authentic traditions, local experiences, and scenic wonders.';
+const DEFAULT_TEXT = 'Welcome to Liliw Tourism! Discover authentic traditions, local experiences, and scenic wonders.';
 
 export default function AnnouncementBar({ defaultOpen = true }: AnnouncementBarProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -22,7 +22,7 @@ export default function AnnouncementBar({ defaultOpen = true }: AnnouncementBarP
         const item = combined?.news?.data?.[0];
         if (item) {
           const a = item.attributes || item;
-          if (a.title) setText(`🔔 ${a.title}`);
+          if (a.title) setText(a.title);
           if (a.summary || a.excerpt) setSubtext(a.summary || a.excerpt);
         }
       }).catch(() => {});
