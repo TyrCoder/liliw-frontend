@@ -38,29 +38,29 @@ function blocksToText(blocks: any): string {
    ══════════════════════════════════════════════════════════ */
 
 const DURATIONS = [
-  { value: 'half-day', label: 'Half Day', sub: '4 hours', icon: '🌅' },
-  { value: 'full-day', label: 'Full Day', sub: '8 hours', icon: '☀️' },
-  { value: '2 days',   label: '2 Days',   sub: 'Weekend', icon: '🗓️' },
-  { value: '3 days',   label: '3 Days',   sub: 'Extended', icon: '✈️' },
-  { value: 'custom',   label: 'Custom',   sub: 'Set your own', icon: '✏️' },
+  { value: 'half-day', label: 'Half Day',  sub: '4 hours' },
+  { value: 'full-day', label: 'Full Day',  sub: '8 hours' },
+  { value: '2 days',   label: '2 Days',    sub: 'Weekend' },
+  { value: '3 days',   label: '3 Days',    sub: 'Extended' },
+  { value: 'custom',   label: 'Custom',    sub: 'Set your own' },
 ];
 
 const BUDGETS = [
-  { value: 'budget-friendly (under ₱1,000/day)', label: 'Budget',   sub: 'Under ₱1,000/day', icon: '💸' },
-  { value: 'mid-range (₱1,000–₱3,000/day)',      label: 'Mid-range', sub: '₱1,000 – ₱3,000/day', icon: '💳' },
-  { value: 'premium (₱3,000+/day)',               label: 'Premium',  sub: '₱3,000+/day', icon: '✨' },
-  { value: 'custom',                              label: 'Custom',   sub: 'Set your own', icon: '✏️' },
+  { value: 'budget-friendly (under ₱1,000/day)', label: 'Budget',    sub: 'Under ₱1,000/day' },
+  { value: 'mid-range (₱1,000–₱3,000/day)',      label: 'Mid-range', sub: '₱1,000 – ₱3,000/day' },
+  { value: 'premium (₱3,000+/day)',               label: 'Premium',   sub: '₱3,000+/day' },
+  { value: 'custom',                              label: 'Custom',    sub: 'Set your own' },
 ];
 
 const INTERESTS = [
-  { value: 'Heritage & History',   icon: '🏛️' },
-  { value: 'Local Food & Cuisine', icon: '🍜' },
-  { value: 'Arts & Crafts',        icon: '👟' },
-  { value: 'Nature & Outdoors',    icon: '🌿' },
-  { value: 'Family Activities',    icon: '👨‍👩‍👧' },
-  { value: 'Photography',          icon: '📸' },
-  { value: 'Shopping',             icon: '🛍️' },
-  { value: 'Culture & Festivals',  icon: '🎉' },
+  { value: 'Heritage & History'   },
+  { value: 'Local Food & Cuisine' },
+  { value: 'Arts & Crafts'        },
+  { value: 'Nature & Outdoors'    },
+  { value: 'Family Activities'    },
+  { value: 'Photography'          },
+  { value: 'Shopping'             },
+  { value: 'Culture & Festivals'  },
 ];
 
 interface Stop { time: string; place: string; activity: string; duration: string; tip: string; }
@@ -88,21 +88,20 @@ function persistSavedTrips(trips: SavedTrip[]) {
   try { localStorage.setItem(SAVED_TRIPS_KEY, JSON.stringify(trips)); } catch {}
 }
 
-function WizardCard({ value, label, sub, icon, selected, onClick }: {
-  value: string; label: string; sub: string; icon: string; selected: boolean; onClick: () => void;
+function WizardCard({ value, label, sub, selected, onClick }: {
+  value: string; label: string; sub: string; selected: boolean; onClick: () => void;
 }) {
   return (
-    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={onClick}
-      className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${
-        selected ? 'border-teal-400 bg-teal-50 shadow-md' : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onClick}
+      className={`w-full flex items-center justify-between p-4 rounded-xl border text-left transition-all ${
+        selected ? 'border-teal-400 bg-teal-50' : 'border-gray-200 bg-white hover:border-gray-300'
       }`}>
-      <span className="text-2xl">{icon}</span>
       <div>
-        <p className={`font-bold text-sm ${selected ? 'text-teal-700' : 'text-gray-900'}`}>{label}</p>
-        <p className="text-xs text-gray-500">{sub}</p>
+        <p className={`font-semibold text-sm ${selected ? 'text-teal-700' : 'text-gray-900'}`}>{label}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
       </div>
       {selected && (
-        <div className="ml-auto w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#00BFB3' }}>
+        <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#00BFB3' }}>
           <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
@@ -112,13 +111,13 @@ function WizardCard({ value, label, sub, icon, selected, onClick }: {
   );
 }
 
-function InterestChip({ value, icon, selected, onClick }: { value: string; icon: string; selected: boolean; onClick: () => void }) {
+function InterestChip({ value, selected, onClick }: { value: string; selected: boolean; onClick: () => void }) {
   return (
-    <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.95 }} onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-semibold transition-all ${
-        selected ? 'border-teal-400 bg-teal-50 text-teal-700 shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={onClick}
+      className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
+        selected ? 'border-teal-400 bg-teal-50 text-teal-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
       }`}>
-      <span>{icon}</span>{value}
+      {value}
     </motion.button>
   );
 }
@@ -348,7 +347,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: { p
                           {(['heritage', 'spot', 'dining'] as const)
                             .filter(type => filteredAttractions.some(a => a.type === type))
                             .map(type => {
-                              const label = type === 'heritage' ? '🏛️ Heritage' : type === 'spot' ? '🏞️ Tourist Spots' : '🍽️ Dining';
+                              const label = type === 'heritage' ? 'Heritage' : type === 'spot' ? 'Tourist Spots' : 'Dining';
                               return (
                                 <optgroup key={type} label={label}>
                                   {filteredAttractions
@@ -442,7 +441,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: { p
               : 'bg-teal-500 text-white hover:bg-teal-600 shadow-lg shadow-teal-100'
           }`}>
           {isLoggedIn ? <BookmarkCheck className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
-          {saved ? 'Saved to My Trips ✓' : isLoggedIn ? 'Save This Itinerary' : 'Log In to Save'}
+          {saved ? 'Saved to My Trips' : isLoggedIn ? 'Save This Itinerary' : 'Log In to Save'}
         </motion.button>
         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onReset}
           className="shrink-0 flex items-center justify-center gap-2 px-5 py-4 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold hover:border-gray-300 hover:bg-gray-50 transition">
@@ -541,6 +540,32 @@ function ItineraryWizard() {
   const stepNumber = step === 'duration' ? 1 : step === 'budget' ? 2 : step === 'interests' ? 3 : step === 'favorites' ? 4 : null;
   const stepLabel  = (n: number) => n === 1 ? 'Duration' : n === 2 ? 'Budget' : n === 3 ? 'Interests' : 'Favorites';
 
+  if (!user) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-3">
+          <Sparkles className="w-5 h-5" style={{ color: '#00BFB3' }} />
+          <h2 className="text-lg font-semibold text-gray-900">AI Itinerary Builder</h2>
+        </div>
+        <div className="flex flex-col items-center py-14 px-8 text-center">
+          <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-4">
+            <LogIn className="w-5 h-5 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">Log in to Make Itinerary</h3>
+          <p className="text-sm text-gray-400 mb-6 max-w-xs">Create a free account to build personalized AI trip plans and save them to your profile.</p>
+          <button
+            onClick={() => setShowLoginModal(true)}
+            className="px-6 py-2.5 rounded-xl font-semibold text-white text-sm transition hover:opacity-90"
+            style={{ backgroundColor: '#00BFB3' }}
+          >
+            Log In / Register
+          </button>
+        </div>
+        {showLoginModal && <AuthModal defaultTab="login" onClose={() => setShowLoginModal(false)} />}
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
       {/* Wizard header */}
@@ -561,7 +586,7 @@ function ItineraryWizard() {
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all ${
                   n <= stepNumber ? 'text-white' : 'bg-gray-200 text-gray-400'
                 }`} style={n <= stepNumber ? { backgroundColor: '#00BFB3' } : {}}>
-                  {n < stepNumber ? '✓' : n}
+                  {n < stepNumber ? <Check className="w-3 h-3" /> : n}
                 </div>
                 <p className={`text-xs font-medium truncate ${n === stepNumber ? 'text-gray-900' : 'text-gray-400'}`}>
                   {stepLabel(n)}
@@ -656,8 +681,8 @@ function ItineraryWizard() {
                 <p className="font-semibold text-gray-700 text-sm">What are you into? (pick as many as you like)</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {INTERESTS.map(({ value, icon }) => (
-                  <InterestChip key={value} value={value} icon={icon}
+                {INTERESTS.map(({ value }) => (
+                  <InterestChip key={value} value={value}
                     selected={interests.includes(value)} onClick={() => toggleInterest(value)} />
                 ))}
               </div>
@@ -700,7 +725,7 @@ function ItineraryWizard() {
                       <Heart className={`w-4 h-4 shrink-0 ${picked ? 'fill-rose-500 text-rose-500' : 'text-gray-300'}`} />
                       <div className="flex-1 min-w-0">
                         <p className={`font-semibold text-sm truncate ${picked ? 'text-rose-700' : 'text-gray-800'}`}>{fav.name}</p>
-                        <p className="text-xs text-gray-400 capitalize">{fav.type === 'heritage' ? '🏛️ Heritage' : fav.type === 'dining' ? '🍽️ Dining' : '🏞️ Tourist Spot'}</p>
+                        <p className="text-xs text-gray-400 capitalize">{fav.type === 'heritage' ? 'Heritage' : fav.type === 'dining' ? 'Dining' : 'Tourist Spot'}</p>
                       </div>
                       {picked && (
                         <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#f43f5e' }}>

@@ -142,7 +142,7 @@ export default function SmartSearchModal({ onClose }: SmartSearchProps) {
                               )}
                               {result.rating && (
                                 <span className="text-xs text-yellow-600">
-                                  ⭐ {result.rating}
+                                  {result.rating}/5
                                 </span>
                               )}
                             </div>

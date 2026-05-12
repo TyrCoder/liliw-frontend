@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, MapPin, Phone, Clock, Globe, Users } from 'lucide-react';
+import { ChevronLeft, MapPin, Phone, Clock, Globe, Users, Star } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
 import SocialShare from '@/components/SocialShare';
 import FavoriteButton from '@/components/FavoriteButton';
@@ -157,7 +157,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         >
           {/* Category Badge */}
           <div className="inline-block mb-3 sm:mb-4 px-3 sm:px-4 py-1.5 sm:py-2 text-white rounded-full font-semibold text-xs sm:text-sm" style={{ backgroundColor: '#00BFB3' }}>
-            {attraction.type === 'heritage' ? '🏛️ Heritage Site' : '🏞️ Tourist Spot'} {attraction.attributes.category && `• ${attraction.attributes.category}`}
+            {attraction.type === 'heritage' ? 'Heritage Site' : 'Tourist Spot'} {attraction.attributes.category && `• ${attraction.attributes.category}`}
           </div>
 
           {/* Title + Favorite */}
@@ -185,7 +185,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
             {attraction.attributes.rating && (
               <div className="flex items-center gap-2">
                 {[...Array(5)].map((_, i) => (
-                  <span key={i} className={`text-2xl ${i < Math.round(attraction.attributes.rating!) ? '⭐' : '☆'}`} />
+                  <Star key={i} className="w-5 h-5" fill={i < Math.round(attraction.attributes.rating!) ? '#FFB400' : 'none'} stroke={i < Math.round(attraction.attributes.rating!) ? '#FFB400' : '#d1d5db'} />
                 ))}
                 <span className="text-lg font-semibold text-gray-600">{attraction.attributes.rating}/5</span>
               </div>
@@ -347,7 +347,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         >
           <div className="rounded-2xl overflow-hidden border border-teal-100 flex flex-col sm:flex-row items-center gap-5 px-6 py-5"
             style={{ background: 'linear-gradient(135deg,#e0fdf4,#f0fdfa)' }}>
-            <div className="text-3xl shrink-0">🗺️</div>
+            <MapPin className="w-7 h-7 shrink-0" style={{ color: '#00BFB3' }} />
             <div className="flex-1 text-center sm:text-left">
               <p className="font-bold text-gray-800 text-base">Want to include this in an itinerary?</p>
               <p className="text-sm text-gray-500 mt-0.5">Use our AI trip planner to build a full Liliw tour around {attraction.attributes.name}.</p>

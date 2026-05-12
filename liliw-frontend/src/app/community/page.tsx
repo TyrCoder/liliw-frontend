@@ -184,7 +184,7 @@ export default function CommunityPage() {
           {/* Joinable Events */}
           {(eventsLoading || joinableEvents.length > 0) && (
             <motion.div variants={itemVariants}>
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">🎉 Open Events — Join Now</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">Open Events — Join Now</h2>
               {eventsLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[1, 2].map(i => (
@@ -205,7 +205,7 @@ export default function CommunityPage() {
                           <div className="relative h-40 bg-linear-to-br from-teal-100 to-cyan-50">
                             {cover
                               ? <img src={cover} alt={a.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                              : <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-30">🎉</div>
+                              : <div className="absolute inset-0 flex items-center justify-center opacity-10"><svg viewBox="0 0 24 24" className="w-16 h-16 text-teal-300" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
                             }
                             <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                             {a.category && (
@@ -314,7 +314,7 @@ export default function CommunityPage() {
                 <div>
                   <h4 className="text-lg font-bold mb-3">Liliw Tourism Office</h4>
                   <p className="mb-2">📍 Municipal Hall, Liliw, Laguna 4004</p>
-                  <p className="mb-2">📱 Contact: +63 (2) XXXX-XXXX</p>
+                  <p className="mb-2">Contact: +63 (2) XXXX-XXXX</p>
                   <p className="mb-4">📧 Email: tourism@liliw.gov.ph</p>
                   <p className="opacity-90">Hours: Monday - Friday, 8:00 AM - 5:00 PM</p>
                 </div>
@@ -322,8 +322,8 @@ export default function CommunityPage() {
                   <h4 className="text-lg font-bold mb-3">Follow Us Online</h4>
                   <p className="mb-3">Stay updated on community initiatives and opportunities</p>
                   <div className="space-y-2">
-                    <p>👍 Facebook: @LiliwTourism</p>
-                    <p>📷 Instagram: @LiliwTourism</p>
+                    <p>Facebook: @LiliwTourism</p>
+                    <p>Instagram: @LiliwTourism</p>
                     <p>🌐 Website: tourism.liliw.gov.ph</p>
                   </div>
                 </div>

@@ -29,10 +29,10 @@ export default function Navbar() {
   const closeMenu  = () => { setIsOpen(false); setExploreOpen(false); };
 
   const exploreLinks = [
-    { href: '/heritage', label: '🏛️ History & Heritage' },
-    { href: '/culture',  label: '🎭 Culture & Traditions' },
-    { href: '/arts',     label: '🎨 Arts & Creatives' },
-    { href: '/dining',   label: '🍽️ Dining' },
+    { href: '/heritage', label: 'History & Heritage' },
+    { href: '/culture',  label: 'Culture & Traditions' },
+    { href: '/arts',     label: 'Arts & Creatives' },
+    { href: '/dining',   label: 'Dining' },
   ];
 
   const navLinks = [
@@ -50,11 +50,10 @@ export default function Navbar() {
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="sticky top-0 z-50 backdrop-blur-lg border-b-2"
+        className="sticky top-0 z-50 backdrop-blur-md border-b"
         style={{
-          backgroundColor: 'rgba(15, 31, 60, 0.95)',
-          borderBottomColor: '#00BFB3',
-          boxShadow: '0 8px 32px rgba(0, 191, 179, 0.2)',
+          backgroundColor: 'rgba(15, 31, 60, 0.97)',
+          borderBottomColor: 'rgba(0,191,179,0.3)',
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
@@ -117,26 +116,16 @@ export default function Navbar() {
               {/* Map + 3D */}
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link href="/map"
-                  className="relative px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm text-white overflow-hidden group/map transition-all duration-300 inline-flex items-center gap-1 sm:gap-2"
-                  style={{ background: 'linear-gradient(135deg,#00BFB3,#00A39E)', boxShadow: '0 4px 15px rgba(0,191,179,.4)' }}>
-                  <span className="relative z-10 flex items-center gap-1">
-                    <span className="text-sm sm:text-base">🗺️</span>
-                    <span className="hidden sm:inline">Map</span>
-                  </span>
-                  <div className="absolute inset-0 opacity-0 group-hover/map:opacity-100 transition-opacity duration-300"
-                    style={{ background: 'linear-gradient(135deg,#00A39E,#007B78)' }} />
+                  className="px-3 sm:px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-colors inline-flex items-center gap-1.5"
+                  style={{ backgroundColor: '#00BFB3', color: '#0F1F3C' }}>
+                  Map
                 </Link>
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link href="/immersive"
-                  className="relative px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm text-white overflow-hidden group/btn transition-all duration-300 inline-flex items-center gap-1 sm:gap-2"
-                  style={{ background: 'linear-gradient(135deg,#00BFB3,#00A39E)', boxShadow: '0 4px 15px rgba(0,191,179,.4)' }}>
-                  <span className="relative z-10 flex items-center gap-1">
-                    <span className="text-sm sm:text-base">🥽</span>
-                    <span className="hidden sm:inline">3D</span>
-                  </span>
-                  <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"
-                    style={{ background: 'linear-gradient(135deg,#00A39E,#007B78)' }} />
+                  className="px-3 sm:px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm border transition-colors inline-flex items-center gap-1.5"
+                  style={{ borderColor: 'rgba(0,191,179,0.5)', color: '#00BFB3' }}>
+                  3D Tour
                 </Link>
               </motion.div>
 
@@ -198,8 +187,8 @@ export default function Navbar() {
               ) : (
                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                   onClick={() => setAuthModal('login')}
-                  className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold text-white transition"
-                  style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)', boxShadow: '0 4px 12px rgba(0,191,179,.35)' }}>
+                  className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-white transition"
+                  style={{ backgroundColor: '#00BFB3' }}>
                   <User className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Login</span>
                 </motion.button>
@@ -244,11 +233,11 @@ export default function Navbar() {
                   )}
                   <div className="flex gap-2 mt-1">
                     <Link href="/map" onClick={closeMenu}
-                      className="flex-1 py-2.5 rounded-lg font-bold text-sm text-white text-center"
-                      style={{ background: 'linear-gradient(135deg,#00BFB3,#00A39E)' }}>🗺️ Map</Link>
+                      className="flex-1 py-2.5 rounded-lg font-semibold text-sm text-center"
+                      style={{ backgroundColor: '#00BFB3', color: '#0F1F3C' }}>Map</Link>
                     <Link href="/immersive" onClick={closeMenu}
-                      className="flex-1 py-2.5 rounded-lg font-bold text-sm text-white text-center"
-                      style={{ background: 'linear-gradient(135deg,#00BFB3,#00A39E)' }}>🥽 3D</Link>
+                      className="flex-1 py-2.5 rounded-lg font-semibold text-sm text-center border"
+                      style={{ borderColor: 'rgba(0,191,179,0.5)', color: '#00BFB3' }}>3D Tour</Link>
                   </div>
                   {!user && (
                     <button onClick={() => { setAuthModal('login'); closeMenu(); }}

@@ -100,7 +100,7 @@ export default function AboutPage() {
 
           {/* Why Visit */}
           <motion.div variants={itemVariants} className="space-y-4">
-            <h2 className="text-3xl font-bold text-gray-900">✨ Why Visit Liliw?</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Why Visit Liliw?</h2>
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <span className="font-bold text-lg mt-1\" style={{ color: '#00BFB3' }}>•</span>

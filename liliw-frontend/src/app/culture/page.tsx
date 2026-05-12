@@ -26,9 +26,9 @@ const itemVariants = {
 };
 
 const FALLBACK_CULTURE = [
-  { title: 'Tsinelas-Making Tradition', description: "The renowned handmade Filipino slipper craft that has made Liliw world-famous", icon_emoji: '👞', details: ['Handed down through generations of skilled artisans', 'Intricate designs and superior craftsmanship', 'Visit workshops to see artisans at work'] },
-  { title: 'Festivals & Celebrations', description: "Vibrant cultural events celebrating Liliw's heritage and traditions", icon_emoji: '🎉', details: ['Gat Tayaw Tsinelas Festival', 'Mutya ng Liliw', 'Parish celebrations and religious festivals'] },
-  { title: 'Intangible Heritage', description: "The living cultural expressions that define Liliw's identity", icon_emoji: '🏛️', details: ['Traditional crafting techniques', 'Cultural narratives and oral histories', 'Culinary traditions and heritage recipes'] },
+  { title: 'Tsinelas-Making Tradition', description: "The renowned handmade Filipino slipper craft that has made Liliw world-famous", icon_emoji: '', details: ['Handed down through generations of skilled artisans', 'Intricate designs and superior craftsmanship', 'Visit workshops to see artisans at work'] },
+  { title: 'Festivals & Celebrations', description: "Vibrant cultural events celebrating Liliw's heritage and traditions", icon_emoji: '', details: ['Gat Tayaw Tsinelas Festival', 'Mutya ng Liliw', 'Parish celebrations and religious festivals'] },
+  { title: 'Intangible Heritage', description: "The living cultural expressions that define Liliw's identity", icon_emoji: '', details: ['Traditional crafting techniques', 'Cultural narratives and oral histories', 'Culinary traditions and heritage recipes'] },
 ];
 
 export default function CulturePage() {
@@ -84,7 +84,7 @@ export default function CulturePage() {
                 variants={itemVariants}
                 className="p-8 rounded-2xl bg-white border-2 transition-all duration-300 hover:shadow-lg" style={{ borderColor: '#00BFB3' }}
               >
-                <div className="mb-4 text-3xl">{aspect.icon_emoji || '🎭'}</div>
+                {aspect.icon_emoji && <div className="mb-4 text-3xl">{aspect.icon_emoji}</div>}
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{aspect.title}</h3>
                 <p className="text-gray-600 mb-6">{aspect.description}</p>
                 <ul className="space-y-2">
@@ -101,7 +101,7 @@ export default function CulturePage() {
 
           {/* Local Arts & Creative Industries */}
           <motion.div variants={itemVariants} className="mt-16 space-y-6">
-            <h2 className="text-4xl font-bold text-gray-900">🎨 Local Arts & Creative Industries</h2>
+            <h2 className="text-4xl font-bold text-gray-900">Local Arts & Creative Industries</h2>
             <p className="text-lg text-gray-700">
               Liliw is home to talented artisans, designers, cultural groups, and creative entrepreneurs
             </p>

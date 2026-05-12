@@ -29,7 +29,7 @@ async function buildKnowledge(): Promise<string> {
         `- [${type}] ${attr.name}` +
         (attr.location ? ` | ${attr.location}` : '') +
         (attr.description ? ` | ${String(attr.description).slice(0, 120)}` : '') +
-        (attr.rating ? ` | ⭐${attr.rating}/5` : '')
+        (attr.rating ? ` | Rating: ${attr.rating}/5` : '')
       );
     }
     lines.push('');

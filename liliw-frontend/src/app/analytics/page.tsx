@@ -237,7 +237,7 @@ export default function AnalyticsDashboard() {
             className="bg-white p-8 rounded-xl shadow-lg lg:col-span-2"
           >
             <h2 className="text-2xl font-bold mb-6" style={{ color: '#0F1F3C' }}>
-              📱 Device Types
+              Device Types
             </h2>
             {analytics.deviceTypes.length > 0 ? (
               <div className="grid grid-cols-3 gap-4">
