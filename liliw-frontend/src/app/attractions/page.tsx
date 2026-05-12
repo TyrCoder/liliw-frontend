@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Layers, Star } from 'lucide-react';
 import { getAllAttractions } from '@/lib/strapi';
 import { logger } from '@/lib/logger';
+import { fuzzyMatch } from '@/lib/fuzzySearch';
 import SearchBar from '@/components/SearchBar';
 import { COLORS } from '@/lib/constants';
 import FavoriteButton from '@/components/FavoriteButton';
@@ -93,12 +94,13 @@ export default function AttractionsPage() {
   useEffect(() => {
     let filtered = attractions;
 
-    // Search filter
+    // Search filter (fuzzy — tolerates typos)
     if (searchQuery.trim()) {
       filtered = filtered.filter(
         a =>
-          a.attributes.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          a.attributes.description?.toLowerCase().includes(searchQuery.toLowerCase())
+          fuzzyMatch(a.attributes.name, searchQuery) ||
+          fuzzyMatch(a.attributes.description ?? '', searchQuery) ||
+          fuzzyMatch(a.attributes.location ?? '', searchQuery)
       );
     }
 

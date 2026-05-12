@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronDown, Clock, HelpCircle } from 'lucide-react'
 import { getFaqs } from '@/lib/strapi'
 import { logger } from '@/lib/logger'
+import { fuzzyMatch } from '@/lib/fuzzySearch'
 import SearchBar from '@/components/SearchBar'
 import type { FAQ as FaqItem } from '@/lib/types'
 
@@ -83,11 +84,13 @@ export default function FaqPage() {
     ...Array.from(new Set(faqs.map(faq => faq.category).filter((cat): cat is string => Boolean(cat)))),
   ]
 
-  // Filter FAQs based on search and category
+  // Filter FAQs based on search and category (fuzzy — tolerates typos)
   const filteredFaqs = faqs.filter((faq) => {
     const matchesSearch =
-      faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      extractText(faq.answer).toLowerCase().includes(searchTerm.toLowerCase())
+      !searchTerm.trim() ||
+      fuzzyMatch(faq.question, searchTerm) ||
+      fuzzyMatch(faq.answer, searchTerm) ||
+      fuzzyMatch(faq.keywords ?? '', searchTerm)
 
     const matchesCategory =
       selectedCategory === 'all' || (faq.category && faq.category === selectedCategory)
