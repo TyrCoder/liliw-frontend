@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck, ChevronDown } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck, ChevronDown, Search } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
+import SmartSearchModal from '@/components/SmartSearchModal';
 
 function NavLink({ href, label, onClick }: { href: string; label: string; onClick?: () => void }) {
   return (
@@ -23,6 +24,7 @@ export default function Navbar() {
   const [authModal, setAuthModal]       = useState<'login' | 'register' | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [exploreOpen, setExploreOpen]   = useState(false);
+  const [searchOpen, setSearchOpen]     = useState(false);
   const { user, logout, isAdmin }       = useAuth();
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -113,6 +115,17 @@ export default function Navbar() {
 
             {/* Right actions */}
             <div className="flex items-center gap-2 shrink-0">
+              {/* Search */}
+              <motion.button
+                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                onClick={() => setSearchOpen(true)}
+                className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/10 transition border border-white/10"
+                aria-label="Search">
+                <Search className="w-4 h-4" />
+                <span className="hidden md:inline text-xs text-gray-400">Search...</span>
+                <span className="hidden lg:inline text-xs text-gray-500 bg-white/10 px-1.5 py-0.5 rounded font-mono">Ctrl K</span>
+              </motion.button>
+
               {/* Map + 3D */}
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link href="/map"
@@ -231,6 +244,11 @@ export default function Navbar() {
                   {isAdmin && (
                     <NavLink href="/admin" label="Admin Dashboard" onClick={closeMenu} />
                   )}
+                  <button onClick={() => { setSearchOpen(true); closeMenu(); }}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/10 transition border border-white/10 w-full">
+                    <Search className="w-4 h-4" /> Search
+                  </button>
+
                   <div className="flex gap-2 mt-1">
                     <Link href="/map" onClick={closeMenu}
                       className="flex-1 py-2.5 rounded-lg font-semibold text-sm text-center"
@@ -262,6 +280,11 @@ export default function Navbar() {
       {/* Auth modal */}
       {authModal && (
         <AuthModal defaultTab={authModal} onClose={() => setAuthModal(null)} />
+      )}
+
+      {/* Search modal */}
+      {searchOpen && (
+        <SmartSearchModal onClose={() => setSearchOpen(false)} />
       )}
     </>
   );
