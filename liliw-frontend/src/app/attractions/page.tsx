@@ -267,13 +267,29 @@ export default function AttractionsPage() {
 
                     <div className="relative z-10 flex-1">
                       {/* Category Badge */}
-                      <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full text-sm font-semibold text-white" style={{ backgroundColor: '#00BFB3' }}>
-                        <Layers className="w-4 h-4" />
-                        {attraction.type === 'heritage' ? 'Heritage' : attraction.type === 'dining' ? 'Dining & Food' : 'Tourist Spot'} {attraction.attributes?.category && `• ${attraction.attributes.category}`}
-                      </div>
+                      {(() => {
+                        const typeColors: Record<string, string> = {
+                          heritage: '#F59E0B',
+                          spot:     '#3B82F6',
+                          dining:   '#EF4444',
+                        };
+                        const typeLabel: Record<string, string> = {
+                          heritage: 'Heritage',
+                          spot:     'Tourist Spot',
+                          dining:   'Dining & Food',
+                        };
+                        const bg = typeColors[attraction.type] ?? '#00BFB3';
+                        return (
+                          <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full text-sm font-semibold text-white" style={{ backgroundColor: bg }}>
+                            <Layers className="w-4 h-4" />
+                            {typeLabel[attraction.type] ?? attraction.type}
+                            {attraction.attributes?.category && ` • ${attraction.attributes.category}`}
+                          </div>
+                        );
+                      })()}
 
                       {/* Title */}
-                      <h2 className="text-2xl font-bold mb-2 transition-colors" style={{ color: '#00BFB3' }}>
+                      <h2 className="text-2xl font-bold mb-2 transition-colors" style={{ color: '#0F1F3C' }}>
                         {attraction.attributes?.name || 'Unnamed Attraction'}
                       </h2>
 

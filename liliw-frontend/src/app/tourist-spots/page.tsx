@@ -81,10 +81,8 @@ export default function TouristSpotsPage() {
             <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" />
             Back to Home
           </Link>
-          <h1 className="text-5xl font-bold mb-3" style={{ color: '#00BFB3' }}>🏞️ Tourist Spots</h1>
-          <p className="text-xl text-gray-600">
-            Explore the natural beauty and scenic destinations in Liliw
-          </p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-3" style={{ color: '#00BFB3' }}>Tourist Spots</h1>
+          <p className="text-base sm:text-lg md:text-xl text-gray-600">Explore the natural beauty and scenic destinations in Liliw</p>
         </motion.div>
       </div>
 

@@ -88,16 +88,14 @@ export default function NewsPage() {
 
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
-      <div className="py-12" style={{ background: 'linear-gradient(to bottom right, rgba(0, 191, 179, 0.05), rgba(0, 191, 179, 0.1))' }}>
-        <div className="max-w-4xl mx-auto px-4">
-          <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }}>
-            <Link href="/" className="inline-flex items-center font-semibold mb-6 group" style={{ color: '#00BFB3' }}>
-              <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" /> Back to Home
-            </Link>
-            <h1 className="text-5xl font-bold mb-3" style={{ color: '#00BFB3' }}>News & Announcements</h1>
-            <p className="text-xl text-gray-600">Stay updated on Liliw events, festivals, and community initiatives</p>
-          </motion.div>
-        </div>
+      <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12">
+        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="mb-6 sm:mb-8">
+          <Link href="/" className="inline-flex items-center font-semibold mb-4 sm:mb-6 group text-sm sm:text-base" style={{ color: '#00BFB3' }}>
+            <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" /> Back to Home
+          </Link>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-3" style={{ color: '#00BFB3' }}>News & Announcements</h1>
+          <p className="text-base sm:text-lg md:text-xl text-gray-600">Stay updated on Liliw events, festivals, and community initiatives</p>
+        </motion.div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-20">

@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, MapPin, History, Leaf, HelpCircle, Calendar, Star, Bell } from 'lucide-react';
+import { ArrowRight, MapPin, History, Leaf, HelpCircle, Calendar, Star, Bell, Layers } from 'lucide-react';
 import HeroCarousel from '@/components/HeroCarousel';
 import AnnouncementBar from '@/components/AnnouncementBar';
+import { getAllAttractions } from '@/lib/strapi';
 
 const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.2, delayChildren: 0.3 } } };
 const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 0.5 } } };
@@ -32,8 +33,25 @@ const FALLBACK_ANNOUNCEMENTS = [
   { title: 'Adventure Itineraries', date: 'New Guides', category: 'announcement', excerpt: 'Explore with our curated tour guides and itineraries.', link: '/itineraries', isEvent: false },
 ];
 
+const TYPE_COLORS: Record<string, string> = { heritage: '#F59E0B', spot: '#3B82F6', dining: '#EF4444' };
+const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage', spot: 'Tourist Spot', dining: 'Dining & Food' };
+
+function getDailyFeatured(attractions: any[], count = 3): any[] {
+  if (!attractions.length) return [];
+  const day = Math.floor(Date.now() / 86_400_000);
+  const start = day % attractions.length;
+  const result: any[] = [];
+  for (let i = 0; i < count; i++) result.push(attractions[(start + i) % attractions.length]);
+  return result;
+}
+
 export default function Home() {
   const [announcements, setAnnouncements] = useState<any[]>(FALLBACK_ANNOUNCEMENTS);
+  const [featured, setFeatured] = useState<any[]>([]);
+
+  useEffect(() => {
+    getAllAttractions().then(all => setFeatured(getDailyFeatured(all))).catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('/api/strapi/news-events?limit=2')
@@ -85,6 +103,63 @@ export default function Home() {
       <section className="max-w-6xl mx-auto px-4 py-12 md:py-20">
         <HeroCarousel />
       </section>
+
+      {/* Featured Attractions — rotates daily */}
+      {featured.length > 0 && (
+        <section className="max-w-6xl mx-auto px-4 py-12">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }}>
+            <div className="flex items-center justify-between mb-6 sm:mb-8">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-1 h-6 sm:h-8 rounded-full" style={{ backgroundColor: '#00BFB3' }} />
+                <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: '#0F1F3C' }}>Featured Today</h2>
+              </div>
+              <Link href="/attractions" className="text-sm font-semibold flex items-center gap-1" style={{ color: '#00BFB3' }}>
+                See all <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {featured.map((a, idx) => {
+                const bg = TYPE_COLORS[a.type] ?? '#00BFB3';
+                const label = TYPE_LABELS[a.type] ?? a.type;
+                const photos: any[] = a.attributes?.photos ?? [];
+                const coverUrl = photos[0]?.url ? (photos[0].url.startsWith('http') ? photos[0].url : `${(process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '')}${photos[0].url}`) : null;
+                return (
+                  <motion.div key={a.id ?? idx} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }} viewport={{ once: true }}
+                    whileHover={{ y: -6, transition: { duration: 0.2 } }}>
+                    <Link href={`/attractions/${a.id}`} className="block rounded-2xl border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow bg-white h-full">
+                      {/* Cover */}
+                      <div className="h-44 overflow-hidden flex items-center justify-center relative" style={{ backgroundColor: `${bg}15` }}>
+                        {coverUrl
+                          ? <img src={coverUrl} alt={a.attributes?.name} className="w-full h-full object-cover" />
+                          : <Layers className="w-10 h-10 opacity-30" style={{ color: bg }} />}
+                      </div>
+                      {/* Info */}
+                      <div className="p-4">
+                        <div className="inline-flex items-center gap-1.5 mb-2 px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: bg }}>
+                          <Layers className="w-3 h-3" /> {label}
+                        </div>
+                        <h3 className="font-bold text-gray-900 mb-1 line-clamp-1">{a.attributes?.name}</h3>
+                        {a.attributes?.location && (
+                          <p className="text-xs text-gray-500 flex items-center gap-1">
+                            <MapPin className="w-3 h-3" /> {a.attributes.location}
+                          </p>
+                        )}
+                        {a.attributes?.rating > 0 && (
+                          <div className="flex items-center gap-1 mt-1.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className="w-3 h-3" fill={i < a.attributes.rating ? '#F59E0B' : 'none'} stroke={i < a.attributes.rating ? '#F59E0B' : '#d1d5db'} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        </section>
+      )}
 
       <section className="max-w-6xl mx-auto px-4 py-16">
         {/* Latest Announcements */}
