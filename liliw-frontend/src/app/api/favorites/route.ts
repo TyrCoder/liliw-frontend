@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     .eq('user_id', auth.userId)
     .order('created_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ favorites: [] });
   return NextResponse.json({ favorites: data });
 }
 
