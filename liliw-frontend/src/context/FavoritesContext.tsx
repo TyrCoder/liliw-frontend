@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 
 export interface FavoriteAttraction {
@@ -22,39 +22,71 @@ const FavoritesContext = createContext<FavoritesContextValue>({
   toggleFavorite: () => {},
 });
 
-function storageKey(userId: string) {
-  return `liliw-favorites-${userId}`;
-}
-
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, token, loading: authLoading } = useAuth();
   const [favorites, setFavorites] = useState<FavoriteAttraction[]>([]);
 
-  useEffect(() => {
-    if (!user) { setFavorites([]); return; }
+  const loadFavorites = useCallback(async () => {
+    if (!token) { setFavorites([]); return; }
     try {
-      const raw = localStorage.getItem(storageKey(user.email));
-      setFavorites(raw ? JSON.parse(raw) : []);
-    } catch {
-      setFavorites([]);
-    }
-  }, [user?.email]);
+      const res = await fetch('/api/favorites', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFavorites((data.favorites || []).map((row: any) => ({
+          id: row.attraction_id,
+          name: row.name,
+          type: row.type,
+          category: row.category,
+        })));
+      }
+    } catch {}
+  }, [token]);
 
-  const save = (updated: FavoriteAttraction[]) => {
-    if (!user) return;
-    try { localStorage.setItem(storageKey(user.email), JSON.stringify(updated)); } catch {}
-    setFavorites(updated);
-  };
+  useEffect(() => {
+    if (!authLoading) loadFavorites();
+  }, [authLoading, loadFavorites]);
 
   const isFavorite = (id: string) => favorites.some((f) => f.id === id);
 
-  const toggleFavorite = (attraction: FavoriteAttraction) => {
-    if (!user) return;
-    save(
-      isFavorite(attraction.id)
-        ? favorites.filter((f) => f.id !== attraction.id)
-        : [...favorites, attraction],
+  const toggleFavorite = async (attraction: FavoriteAttraction) => {
+    if (!user || !token) return;
+    const wasFavorite = isFavorite(attraction.id);
+
+    // Optimistic update
+    setFavorites(prev =>
+      wasFavorite
+        ? prev.filter(f => f.id !== attraction.id)
+        : [...prev, attraction]
     );
+
+    try {
+      if (wasFavorite) {
+        await fetch(`/api/favorites?attraction_id=${encodeURIComponent(attraction.id)}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            attraction_id: attraction.id,
+            name: attraction.name,
+            type: attraction.type,
+            category: attraction.category,
+          }),
+        });
+      }
+    } catch {
+      // Revert on failure
+      setFavorites(prev =>
+        wasFavorite
+          ? [...prev, attraction]
+          : prev.filter(f => f.id !== attraction.id)
+      );
+    }
   };
 
   return (
