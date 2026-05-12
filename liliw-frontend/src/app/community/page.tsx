@@ -43,11 +43,42 @@ const itemVariants = {
   },
 };
 
+const ICON_MAP: Record<string, React.ReactNode> = {
+  feedback:    <MessageSquare className="w-8 h-8" />,
+  volunteer:   <Users className="w-8 h-8" />,
+  partnership: <Briefcase className="w-8 h-8" />,
+};
+
+const DEFAULT_OPTIONS = [
+  {
+    icon: 'feedback',
+    title: 'Share Your Feedback',
+    description: 'Help us improve tourism experiences in Liliw',
+    items: ['Tourist satisfaction surveys', 'Event evaluation forms', 'Service improvement suggestions', 'Experience sharing and testimonials'],
+    cta_label: 'Give Feedback',
+  },
+  {
+    icon: 'volunteer',
+    title: 'Volunteer with Us',
+    description: 'Join our community in welcoming visitors',
+    items: ['Tour guide opportunities', 'Festival and event support', 'Cultural ambassador programs', 'Community workshop facilitation'],
+    cta_label: 'Become a Volunteer',
+  },
+  {
+    icon: 'partnership',
+    title: 'Business Partnerships',
+    description: 'Connect your business with tourism',
+    items: ['Tourism enterprise development', 'Artisan cooperative formation', 'Hospitality service partnerships', 'Craft and product collaborations'],
+    cta_label: 'Explore Partnerships',
+  },
+];
+
 export default function CommunityPage() {
   const { user } = useAuth();
   const [authModal, setAuthModal] = useState(false);
   const [joinableEvents, setJoinableEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
+  const [participationOptions, setParticipationOptions] = useState(DEFAULT_OPTIONS);
 
   useEffect(() => {
     fetch('/api/strapi/events')
@@ -55,6 +86,25 @@ export default function CommunityPage() {
       .then(data => setJoinableEvents(data.data || []))
       .catch(() => setJoinableEvents([]))
       .finally(() => setEventsLoading(false));
+
+    fetch('/api/strapi/participation-options')
+      .then(r => r.json())
+      .then(data => {
+        const items = data.data || [];
+        if (items.length > 0) {
+          setParticipationOptions(items.map((item: any) => {
+            const a = item.attributes || item;
+            return {
+              icon: a.icon || 'feedback',
+              title: a.title || '',
+              description: a.description || '',
+              items: Array.isArray(a.items) ? a.items : [],
+              cta_label: a.cta_label || 'Learn More',
+            };
+          }));
+        }
+      })
+      .catch(() => {});
   }, []);
   const [formData, setFormData] = useState({
     name: '',
@@ -108,44 +158,6 @@ export default function CommunityPage() {
     }
   };
 
-  const participationOptions = [
-    {
-      icon: <MessageSquare className="w-8 h-8" />,
-      title: 'Share Your Feedback',
-      description: 'Help us improve tourism experiences in Liliw',
-      items: [
-        'Tourist satisfaction surveys',
-        'Event evaluation forms',
-        'Service improvement suggestions',
-        'Experience sharing and testimonials',
-      ],
-      cta: 'Give Feedback',
-    },
-    {
-      icon: <Users className="w-8 h-8" />,
-      title: 'Volunteer with Us',
-      description: 'Join our community in welcoming visitors',
-      items: [
-        'Tour guide opportunities',
-        'Festival and event support',
-        'Cultural ambassador programs',
-        'Community workshop facilitation',
-      ],
-      cta: 'Become a Volunteer',
-    },
-    {
-      icon: <Briefcase className="w-8 h-8" />,
-      title: 'Business Partnerships',
-      description: 'Connect your business with tourism',
-      items: [
-        'Tourism enterprise development',
-        'Artisan cooperative formation',
-        'Hospitality service partnerships',
-        'Craft and product collaborations',
-      ],
-      cta: 'Explore Partnerships',
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
@@ -242,7 +254,7 @@ export default function CommunityPage() {
                 variants={itemVariants}
                 className="p-8 rounded-2xl bg-white border-2 hover:shadow-lg transition-all duration-300" style={{ borderColor: '#00BFB3' }}
               >
-                <div className="mb-4" style={{ color: '#00BFB3' }}>{option.icon}</div>
+                <div className="mb-4" style={{ color: '#00BFB3' }}>{ICON_MAP[option.icon] ?? <MessageSquare className="w-8 h-8" />}</div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{option.title}</h3>
                 <p className="text-gray-600 mb-6">{option.description}</p>
                 <ul className="space-y-2 mb-6">
@@ -254,7 +266,7 @@ export default function CommunityPage() {
                   ))}
                 </ul>
                 <button className="w-full px-4 py-2 text-white font-semibold rounded-lg transition" style={{ backgroundColor: '#00BFB3' }}>
-                  {option.cta}
+                  {option.cta_label}
                 </button>
               </motion.div>
             ))}
