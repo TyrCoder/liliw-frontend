@@ -45,9 +45,9 @@ const itemVariants = {
 };
 
 const ICON_MAP: Record<string, React.ReactNode> = {
-  feedback:    <MessageSquare className="w-8 h-8" />,
-  volunteer:   <Users className="w-8 h-8" />,
-  partnership: <Briefcase className="w-8 h-8" />,
+  feedback:    <MessageSquare className="w-5 h-5" />,
+  volunteer:   <Users className="w-5 h-5" />,
+  partnership: <Briefcase className="w-5 h-5" />,
 };
 
 const DEFAULT_OPTIONS = [
@@ -291,27 +291,48 @@ export default function CommunityPage() {
           )}
 
           {/* Participation Options */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {participationOptions.map((option, idx) => (
               <motion.div
                 key={idx}
                 variants={itemVariants}
-                className="p-8 rounded-2xl bg-white border-2 hover:shadow-lg transition-all duration-300" style={{ borderColor: '#00BFB3' }}
+                className="flex flex-col bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
               >
-                <div className="mb-4" style={{ color: '#00BFB3' }}>{ICON_MAP[option.icon] ?? <MessageSquare className="w-8 h-8" />}</div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{option.title}</h3>
-                <p className="text-gray-600 mb-6">{option.description}</p>
-                <ul className="space-y-2 mb-6">
-                  {option.items.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                      <span className="font-bold mt-1" style={{ color: '#00BFB3' }}>✓</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button className="w-full px-4 py-2 text-white font-semibold rounded-lg transition" style={{ backgroundColor: '#00BFB3' }}>
-                  {option.cta_label}
-                </button>
+                {/* Colored top bar */}
+                <div className="h-1.5 w-full" style={{ backgroundColor: '#00BFB3' }} />
+
+                <div className="flex flex-col flex-1 p-6">
+                  {/* Icon */}
+                  <div className="w-11 h-11 rounded-lg flex items-center justify-center mb-4"
+                    style={{ backgroundColor: 'rgba(0,191,179,.12)', color: '#00BFB3' }}>
+                    {ICON_MAP[option.icon] ?? <MessageSquare className="w-5 h-5" />}
+                  </div>
+
+                  {/* Title + description */}
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">{option.title}</h3>
+                  <p className="text-sm text-gray-500 mb-4">{option.description}</p>
+
+                  {/* Bullet points */}
+                  {option.items.length > 0 && (
+                    <ul className="space-y-2 mb-6 flex-1">
+                      {option.items.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                          <span className="font-bold mt-0.5 shrink-0" style={{ color: '#00BFB3' }}>✓</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {/* CTA button — scrolls to form */}
+                  <button
+                    onClick={() => document.getElementById('participate-form')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="mt-auto w-full py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90"
+                    style={{ backgroundColor: '#00BFB3' }}
+                  >
+                    {option.cta_label}
+                  </button>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -377,7 +398,7 @@ export default function CommunityPage() {
           </motion.div>
 
           {/* Form CTA — auth gated */}
-          <motion.div variants={itemVariants} className="mt-12 p-8 rounded-lg bg-blue-50 border-2 border-blue-200">
+          <motion.div id="participate-form" variants={itemVariants} className="mt-12 p-8 rounded-lg bg-blue-50 border-2 border-blue-200">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Interested in Participating?</h3>
 
             {!user ? (
