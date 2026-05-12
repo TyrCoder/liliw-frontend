@@ -4,17 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Users, Briefcase, MessageSquare, Calendar, MapPin, ChevronRight, Bell } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
 import EventModal from '@/components/EventModal';
-
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-
-function getPhotoUrl(p: any): string | null {
-  if (!p) return null;
-  const raw = p.url || p.data?.attributes?.url || p.attributes?.url || null;
-  if (!raw) return null;
-  return raw.startsWith('/') ? `${STRAPI}${raw}` : raw;
-}
 
 const CATEGORY_BADGE: Record<string, string> = {
   festival: 'bg-purple-100 text-purple-700',
@@ -74,7 +64,6 @@ const DEFAULT_OPTIONS = [
 ];
 
 export default function CommunityPage() {
-  const { user } = useAuth();
   const [joinableEvents, setJoinableEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
