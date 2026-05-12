@@ -5,7 +5,7 @@ const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
 export async function GET() {
   const res = await fetch(
-    `${STRAPI}/api/events?filters[is_joinable][$eq]=true&populate=cover_image&publicationState=live&sort=date_start:asc`,
+    `${STRAPI}/api/events?filters[is_joinable][$eq]=true&populate=*&publicationState=live&sort=date_start:asc`,
     { headers: { Authorization: `Bearer ${TOKEN}` }, next: { revalidate: 60 } },
   );
   if (!res.ok) return NextResponse.json({ data: [] });
