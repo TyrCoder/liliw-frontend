@@ -1,0 +1,41 @@
+import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
+import { syncAlgolia } from '@/lib/syncAlgolia';
+
+// Strapi signs webhook payloads with HMAC-SHA256 using the webhook secret.
+// Header: X-Strapi-Signature: <hex digest>
+function verifySignature(rawBody: string, secret: string, signature: string): boolean {
+  const expected = crypto.createHmac('sha256', secret).update(rawBody, 'utf8').digest('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(signature, 'hex'));
+  } catch {
+    return false;
+  }
+}
+
+export async function POST(req: NextRequest) {
+  const secret = process.env.STRAPI_WEBHOOK_SECRET;
+
+  if (secret) {
+    const signature = req.headers.get('x-strapi-signature') ?? '';
+    const rawBody = await req.text();
+
+    if (!verifySignature(rawBody, secret, signature)) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    }
+  }
+
+  // Fire-and-forget: respond immediately so Strapi doesn't time out, sync in background
+  const syncPromise = syncAlgolia().catch(err => {
+    console.error('[webhook] Algolia sync failed:', err);
+  });
+
+  // Wait up to 8 s; if still running, return 202 Accepted so Strapi doesn't retry
+  const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 8000));
+  const result = await Promise.race([syncPromise, timeout]);
+
+  if (result !== null && result !== undefined) {
+    return NextResponse.json({ synced: result });
+  }
+  return NextResponse.json({ status: 'accepted' }, { status: 202 });
+}
