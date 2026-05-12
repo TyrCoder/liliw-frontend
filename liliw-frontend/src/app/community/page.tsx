@@ -101,7 +101,7 @@ export default function CommunityPage() {
               title: a.title || '',
               description: a.description || '',
               items: typeof a.items === 'string'
-                ? a.items.split('\n').map((s: string) => s.trim()).filter(Boolean)
+                ? a.items.split('\n').map((s: string) => s.replace(/^[-*•]\s*/, '').trim()).filter(Boolean)
                 : Array.isArray(a.items) ? a.items : [],
               cta_label: a.cta_label || 'Learn More',
             };
