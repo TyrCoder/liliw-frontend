@@ -3,39 +3,45 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Heart, Play } from 'lucide-react';
+import { getCultureHeritages } from '@/lib/strapi';
+
+const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
-  },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
 };
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.4 },
-  },
+  visible: { y: 0, opacity: 1, transition: { duration: 0.4 } },
 };
 
+function extractText(richText: any): string {
+  if (!richText) return '';
+  if (typeof richText === 'string') return richText;
+  if (Array.isArray(richText)) {
+    return richText
+      .map((block: any) => (block?.children ?? []).map((c: any) => c?.text ?? '').join(' '))
+      .join(' ');
+  }
+  return '';
+}
+
+function mediaUrl(url: string | undefined): string {
+  if (!url) return '';
+  return url.startsWith('http') ? url : `${STRAPI_BASE}${url}`;
+}
 
 export default function CulturePage() {
-  const [culturalAspects, setCulturalAspects] = useState<any[]>([]);
+  const [cultureItems, setCultureItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/strapi/culture-aspects')
-      .then(r => r.json())
-      .then(data => {
-        if (data?.data?.length) setCulturalAspects(data.data.map((i: any) => i.attributes || i));
-      }).catch(() => {})
+    getCultureHeritages()
+      .then((data) => setCultureItems(data))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -48,112 +54,129 @@ export default function CulturePage() {
             <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" /> Back to About
           </Link>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-3" style={{ color: '#00BFB3' }}>Culture & Heritage</h1>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600">Experience the living traditions that make Liliw unique</p>
+          <p className="text-base sm:text-lg md:text-xl text-gray-600">Living traditions and stories that define Liliw</p>
         </motion.div>
       </div>
 
-      {/* Content Section */}
-      <div className="max-w-6xl mx-auto px-4 py-20">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="space-y-12"
-        >
-          {/* Cultural Aspects */}
+      {/* Culture & Heritage Cards */}
+      <div className="max-w-6xl mx-auto px-4 pb-20">
+        <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+
           {loading && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[...Array(3)].map((_, i) => <div key={i} className="rounded-2xl bg-gray-100 h-64 animate-pulse" />)}
-            </div>
-          )}
-          {!loading && culturalAspects.length === 0 && (
-            <div className="text-center py-16 text-gray-400">
-              <p className="font-semibold text-lg">No cultural aspects listed yet</p>
-              <p className="text-sm mt-1">Content will be added soon.</p>
-            </div>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {culturalAspects.map((aspect, idx) => (
-              <motion.div
-                key={idx}
-                variants={itemVariants}
-                className="p-8 rounded-2xl bg-white border-2 transition-all duration-300 hover:shadow-lg" style={{ borderColor: '#00BFB3' }}
-              >
-                {aspect.icon_emoji && <div className="mb-4 text-3xl">{aspect.icon_emoji}</div>}
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{aspect.title}</h3>
-                <p className="text-gray-600 mb-6">{aspect.description}</p>
-                <ul className="space-y-2">
-                  {(Array.isArray(aspect.details) ? aspect.details : []).map((detail: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                      <span className="font-bold mt-1" style={{ color: '#00BFB3' }}>✓</span>
-                      <span>{detail}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Local Arts & Creative Industries */}
-          <motion.div variants={itemVariants} className="mt-16 space-y-6">
-            <h2 className="text-4xl font-bold text-gray-900">Local Arts & Creative Industries</h2>
-            <p className="text-lg text-gray-700">
-              Liliw is home to talented artisans, designers, cultural groups, and creative entrepreneurs
-            </p>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-6 rounded-lg border" style={{ backgroundColor: 'rgba(0, 191, 179, 0.08)', borderColor: '#00BFB3' }}>
-                <h4 className="text-xl font-bold text-gray-900 mb-3">Meet Local Artists</h4>
-                <p className="text-gray-700 mb-4">
-                  Explore profiles and work of local artisans, designers, painters, and cultural performers
-                </p>
-                <ul className="space-y-2 text-sm text-gray-700">
-                  <li>• Tsinelas craftspeople and designers</li>
-                  <li>• Visual artists and painters</li>
-                  <li>• Cultural performers and musicians</li>
-                  <li>• Contemporary designers and creators</li>
-                </ul>
-              </div>
-              <div className="p-6 rounded-lg border" style={{ backgroundColor: 'rgba(0, 191, 179, 0.08)', borderColor: '#00BFB3' }}>
-                <h4 className="text-xl font-bold text-gray-900 mb-3">Creative Spaces</h4>
-                <p className="text-gray-700 mb-4">
-                  Visit galleries, workshops, and creative studios showcasing local talent
-                </p>
-                <ul className="space-y-2 text-sm text-gray-700">
-                  <li>• Tsinelas workshop tours</li>
-                  <li>• Art galleries and exhibits</li>
-                  <li>• Craft studios and maker spaces</li>
-                  <li>• Community creative centers</li>
-                </ul>
-              </div>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="rounded-2xl border border-gray-100 overflow-hidden animate-pulse">
+                  <div className="h-56 bg-gray-100" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-5 bg-gray-100 rounded w-2/3" />
+                    <div className="h-4 bg-gray-100 rounded w-full" />
+                    <div className="h-4 bg-gray-100 rounded w-5/6" />
+                  </div>
+                </div>
+              ))}
             </div>
-          </motion.div>
+          )}
 
-          {/* Engage */}
-          <motion.div variants={itemVariants} className="mt-16 rounded-2xl p-8 text-white" style={{ background: 'linear-gradient(135deg, #00BFB3 0%, #0F1F3C 100%)' }}>
-            <h3 className="text-2xl font-bold mb-4">🤝 Support Local Culture</h3>
-            <p className="mb-6 opacity-90">
-              Help preserve and celebrate Liliw's heritage through direct support of artisans and cultural initiatives
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 bg-white bg-opacity-10 rounded-lg">
-                <h4 className="font-bold mb-2">Buy Directly</h4>
-                <p className="text-sm opacity-90">Purchase tsinelas and crafts directly from makers</p>
-              </div>
-              <div className="p-4 bg-white bg-opacity-10 rounded-lg">
-                <h4 className="font-bold mb-2">Attend Events</h4>
-                <p className="text-sm opacity-90">Experience festivals and cultural celebrations</p>
-              </div>
-              <div className="p-4 bg-white bg-opacity-10 rounded-lg">
-                <h4 className="font-bold mb-2">Learn Skills</h4>
-                <p className="text-sm opacity-90">Participate in workshops and cultural tours</p>
-              </div>
+          {!loading && cultureItems.length === 0 && (
+            <div className="text-center py-20 text-gray-400 border border-dashed border-gray-200 rounded-2xl">
+              <Heart className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="font-semibold text-lg">No culture & heritage content yet</p>
+              <p className="text-sm mt-1">Add items in Strapi under Culture & Heritage.</p>
             </div>
-          </motion.div>
+          )}
+
+          {!loading && cultureItems.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {cultureItems.map((item: any, idx: number) => {
+                const a = item?.attributes ?? item;
+                const title = a?.title ?? '';
+                const description = extractText(a?.description);
+                const images: any[] = Array.isArray(a?.images) ? a.images : [];
+                const video = a?.video;
+                const coverUrl = images[0] ? mediaUrl(images[0]?.url ?? images[0]?.attributes?.url) : null;
+                const videoUrl = video ? mediaUrl(video?.url ?? video?.attributes?.url) : null;
+
+                return (
+                  <motion.div
+                    key={item.id ?? idx}
+                    variants={itemVariants}
+                    whileHover={{ y: -4 }}
+                    className="rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300"
+                  >
+                    {/* Media */}
+                    {videoUrl ? (
+                      <div className="relative h-56 bg-gray-900 flex items-center justify-center">
+                        <video src={videoUrl} className="w-full h-full object-cover opacity-80" muted playsInline />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                            <Play className="w-5 h-5 text-white fill-white" />
+                          </div>
+                        </div>
+                      </div>
+                    ) : coverUrl ? (
+                      <div className="h-56 overflow-hidden">
+                        <img src={coverUrl} alt={title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                      </div>
+                    ) : (
+                      <div className="h-56 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,191,179,0.08)' }}>
+                        <div className="w-12 h-12 rounded-xl border-2 flex items-center justify-center" style={{ borderColor: '#00BFB3' }}>
+                          <Heart className="w-6 h-6" style={{ color: '#00BFB3' }} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Text */}
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold mb-2" style={{ color: '#0F1F3C' }}>{title}</h3>
+                      {description && (
+                        <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">{description}</p>
+                      )}
+                      {images.length > 1 && (
+                        <div className="flex gap-1.5 mt-3">
+                          {images.slice(1, 4).map((img: any, i: number) => {
+                            const imgUrl = mediaUrl(img?.url ?? img?.attributes?.url);
+                            return imgUrl ? (
+                              <img key={i} src={imgUrl} alt="" className="w-12 h-12 rounded-lg object-cover border border-gray-100" />
+                            ) : null;
+                          })}
+                          {images.length > 4 && (
+                            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-500">
+                              +{images.length - 4}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Support CTA */}
+          {!loading && (
+            <motion.div variants={itemVariants} className="mt-16 rounded-2xl p-8 text-white text-center" style={{ background: 'linear-gradient(135deg, #00BFB3 0%, #0F1F3C 100%)' }}>
+              <h3 className="text-2xl font-bold mb-3">Support Local Culture</h3>
+              <p className="mb-6 opacity-90">Help preserve and celebrate Liliw's heritage through direct support of artisans and cultural initiatives</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
+                <div className="p-4 bg-white/10 rounded-lg">
+                  <h4 className="font-bold mb-1">Buy Directly</h4>
+                  <p className="text-sm opacity-90">Purchase tsinelas and crafts from local makers</p>
+                </div>
+                <div className="p-4 bg-white/10 rounded-lg">
+                  <h4 className="font-bold mb-1">Attend Events</h4>
+                  <p className="text-sm opacity-90">Experience festivals and cultural celebrations</p>
+                </div>
+                <div className="p-4 bg-white/10 rounded-lg">
+                  <h4 className="font-bold mb-1">Learn Skills</h4>
+                  <p className="text-sm opacity-90">Join workshops and cultural tours</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
         </motion.div>
       </div>
-
     </div>
   );
 }
