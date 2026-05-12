@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
@@ -6,54 +7,20 @@ export async function POST(request: NextRequest) {
     const { itemId, itemName, author, rating, comment } = await request.json();
 
     if (!itemId || !author || !rating || !comment) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
-
     if (rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { error: 'Rating must be between 1 and 5' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Rating must be between 1 and 5' }, { status: 400 });
     }
 
-    // Save to Strapi
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/reviews`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`,
-        },
-        body: JSON.stringify({
-          data: {
-            itemId,
-            itemName,
-            author,
-            rating,
-            comment,
-            createdAt: new Date(),
-          },
-        }),
-      }
-    );
+    const { error } = await supabase
+      .from('reviews')
+      .insert({ item_id: itemId, item_name: itemName || '', author, rating, comment });
 
-    if (!response.ok) {
-      throw new Error('Failed to save rating');
-    }
-
-    return NextResponse.json(
-      { success: true, message: 'Rating saved successfully' },
-      { status: 201 }
-    );
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
     logger.error('Ratings error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to save rating' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to save rating' }, { status: 500 });
   }
 }
