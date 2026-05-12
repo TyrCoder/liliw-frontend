@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { otpStore } from '../forgot-password/route';
+import { logger } from '@/lib/logger';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
@@ -43,14 +44,14 @@ export async function POST(req: NextRequest) {
 
     if (!updateRes.ok) {
       const text = await updateRes.text();
-      console.error('Strapi update error:', text);
+      logger.error('Strapi update error:', text);
       return NextResponse.json({ error: 'Failed to update password' }, { status: 500 });
     }
 
     otpStore.delete(email.toLowerCase());
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('reset-password error:', err);
+    logger.error('reset-password error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

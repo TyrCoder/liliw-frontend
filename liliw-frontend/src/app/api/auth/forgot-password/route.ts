@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { checkRateLimit } from '@/lib/ratelimit';
+import { logger } from '@/lib/logger';
 
 // In-memory OTP store: email → { otp, expiry }
 export const otpStore = new Map<string, { otp: string; expiry: number }>();
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('forgot-password error:', err);
+    logger.error('forgot-password error:', err);
     return NextResponse.json({ error: 'Failed to send email. Please try again.' }, { status: 500 });
   }
 }
