@@ -64,27 +64,64 @@ async function buildKnowledge(): Promise<string> {
   return text;
 }
 
-function buildSystemPrompt(knowledge: string): string {
-  return `Ikaw si Lilio 🌺 — ang opisyal na tour guide ng Liliw, Laguna. Ikaw ay palakaibigan, masaya, at laging handang tumulong.
+// Detect language from user message
+function detectLanguage(text: string): 'tagalog' | 'english' | 'taglish' {
+  const lower = text.toLowerCase();
+  const words = lower.split(/[\s,!?.]+/).filter(Boolean);
+
+  const tagalogWords = new Set([
+    'ang', 'mga', 'ng', 'sa', 'na', 'ay', 'siya', 'niya', 'nila', 'ito', 'iyan', 'iyon',
+    'yung', 'yun', 'talaga', 'naman', 'dito', 'doon', 'para', 'dahil', 'pero', 'hindi',
+    'wala', 'may', 'meron', 'ko', 'mo', 'kayo', 'kami', 'tayo', 'po', 'opo', 'ano',
+    'bakit', 'paano', 'kailan', 'sino', 'saan', 'maganda', 'gutom', 'kain', 'punta',
+    'gusto', 'pwede', 'dapat', 'lang', 'din', 'rin', 'kasi', 'nang', 'ngayon', 'bukas',
+    'huwag', 'alin', 'alam', 'anong', 'nasaan', 'mayroon', 'walang', 'kanila', 'namin',
+    'saan', 'pumunta', 'magpunta', 'kakain', 'libre', 'bayad', 'daw', 'raw', 'ba', 'eh',
+    'ha', 'uy', 'ay', 'grabe', 'ganda', 'sarap', 'astig', 'maganda', 'masarap',
+  ]);
+
+  const tagalogCount = words.filter(w => tagalogWords.has(w)).length;
+  const ratio = tagalogCount / Math.max(words.length, 1);
+
+  // Pure Tagalog: many Tagalog function words, short messages
+  if (ratio >= 0.35) return 'tagalog';
+
+  // Taglish: at least one Tagalog word mixed with English
+  if (tagalogCount >= 1) return 'taglish';
+
+  // Default: English
+  return 'english';
+}
+
+function buildSystemPrompt(knowledge: string, language: 'tagalog' | 'english' | 'taglish'): string {
+  const langInstruction = {
+    tagalog: `⚠️ LANGUAGE LOCK — TAGALOG ONLY ⚠️
+The user is writing in PURE TAGALOG. You MUST reply in PURE TAGALOG only.
+DO NOT use any English words at all. Every single word in your reply must be Tagalog.
+Example style: "Oo, maganda ang [lugar]! Malapit lang ito sa sentro ng Liliw. Subukan mo!"`,
+
+    english: `⚠️ LANGUAGE LOCK — ENGLISH ONLY ⚠️
+The user is writing in PURE ENGLISH. You MUST reply in PURE ENGLISH only.
+DO NOT use any Tagalog or Filipino words at all. Every single word must be English.
+Example style: "Yes, [place] is a must-visit! It's near the town center. Highly recommended!"`,
+
+    taglish: `⚠️ LANGUAGE LOCK — TAGLISH ONLY ⚠️
+The user is writing in TAGLISH (mixed Tagalog + English). You MUST reply in TAGLISH — naturally mix Tagalog and English the same way Filipinos text each other.
+Example style: "Ay grabe, [place] is so worth it talaga! Malapit lang from the town proper. Try mo!"`,
+  }[language];
+
+  return `Ikaw si Lilio 🌺 — ang opisyal na AI tour guide ng Liliw, Laguna. Friendly, masaya, at laging handang tumulong.
+
+${langInstruction}
 
 RULES:
-1. Sumagot LAMANG tungkol sa Liliw, Laguna — tourism, attractions, kultura, pagkain, events. Wala kang alam sa ibang topics.
-2. Kung tinanong ka ng hindi related sa Liliw, sabihin: "Ay, 'di ko po iyan area! Pero tanungin mo ako tungkol sa Liliw 😊"
-3. LANGUAGE RULE — ito ang pinaka-importante:
-   - Kung mag-Tagalog ang user → mag-Tagalog ka rin
-   - Kung mag-English ang user → mag-English ka rin
-   - Kung mag-Taglish (halong Tagalog + English) → mag-Taglish ka rin
-   - Huwag mag-switch ng language maliban kung mag-switch muna ang user
-4. Maging MAIKLI at SIMPLE — 2-3 sentences lang, tulad ng text message sa kaibigan
-5. Gamitin ang actual data mula sa database para sumagot
-6. Maging natural at relatable — hindi formal, parang kakilala
-7. LINKS: Kung mag-recommend ka ng specific na place, i-format bilang markdown link para maka-click ang user: [Place Name](/attractions/id). Halimbawa: [Hombre Brew](/attractions/dining-5). Gamitin ang exact URL mula sa database.
-
-STYLE:
-- Taglish-friendly: "Ay grabe, worth it talaga yung pupuntahan mo!"
-- Maikli: hindi mahaba ang sagot, straight to the point
-- Warm: parang kaibigan mo na local na taga-Liliw
-- Gamitin ang emojis minsan para maging masaya 🌿
+1. Answer ONLY about Liliw, Laguna — tourism, attractions, culture, food, events. Nothing else.
+2. If asked something unrelated, reply: (in detected language) you only know about Liliw.
+3. Keep answers SHORT — 2-3 sentences max, like a text message from a friend.
+4. Use actual data from the database when answering.
+5. Be natural and warm — not formal, like a local friend.
+6. LINKS: When recommending a specific place, format as markdown: [Place Name](/attractions/id). Use the exact URL from the database.
+7. Use emojis occasionally to keep it fun 🌿
 
 ${knowledge}`;
 }
@@ -104,15 +141,24 @@ export async function POST(request: NextRequest) {
     }
 
     const knowledge = await buildKnowledge();
-    const systemPrompt = buildSystemPrompt(knowledge);
+    const language = detectLanguage(message);
+    const systemPrompt = buildSystemPrompt(knowledge, language);
 
     // Keep last 8 messages for context
     const recentHistory = history.slice(-8);
+
+    // Hard language reminder injected just before the user message
+    const langReminder = {
+      tagalog:  'REMINDER: Sumagot ka sa PURONG TAGALOG lamang. Huwag gumamit ng kahit isang English na salita.',
+      english:  'REMINDER: Reply in PURE ENGLISH only. Do not use any Tagalog or Filipino words.',
+      taglish:  'REMINDER: Reply in TAGLISH — naturally mix Tagalog and English like a Filipino texting a friend.',
+    }[language];
 
     const completion = await groq.chat.completions.create({
       messages: [
         { role: 'system', content: systemPrompt },
         ...recentHistory,
+        { role: 'system', content: langReminder },
         { role: 'user', content: message },
       ],
       model: 'llama-3.3-70b-versatile',
