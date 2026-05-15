@@ -44,6 +44,24 @@ interface RouteInfo {
 type FilterType = 'all' | 'heritage' | 'spot' | 'dining';
 type TravelMode = 'driving' | 'walking' | 'motorcycle';
 
+const CarIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+  </svg>
+);
+
+const MotorcycleIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 7h-3.5l-2-3H11v2h1.5l2 3H6l-1.5-2H2v2h1l1.5 2H2v2h1v4h2v-4h3c0 1.1.9 2 2 2s2-.9 2-2h4c0 1.1.9 2 2 2s2-.9 2-2h2v-4c0-1.1-.9-2-2-2zm-9 6c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm8 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
+  </svg>
+);
+
+const WalkIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-3.6 13.9l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/>
+  </svg>
+);
+
 /* ─── Photo Slideshow ─────────────────────────────────────────────────── */
 function PhotoSlideshow({ photos, name }: { photos: string[]; name: string }) {
   const [index, setIndex] = useState(0);
@@ -225,7 +243,7 @@ function RouteOverlay({
                           color: travelMode === m ? '#0F1F3C' : 'rgba(255,255,255,0.5)',
                         }}
                       >
-                        {m === 'driving' ? '🚗' : m === 'motorcycle' ? '🏍️' : '🚶'}
+                        {m === 'driving' ? <CarIcon /> : m === 'motorcycle' ? <MotorcycleIcon /> : <WalkIcon />}
                       </button>
                     ))}
                   </div>
