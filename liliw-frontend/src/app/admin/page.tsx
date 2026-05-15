@@ -394,7 +394,7 @@ export default function AdminDashboard() {
 
         {/* ── USERS ──────────────────────────────────────────── */}
         {activeTab === 'users' && (
-          <TableWrap title="Registered Users" count={users.length} loading={loadingUsers} empty={users.length === 0} emptyIcon={<Users className="w-12 h-12" />}>
+          <TableWrap title="All Users" count={users.length} loading={loadingUsers} empty={users.length === 0} emptyIcon={<Users className="w-12 h-12" />}>
             <table className="w-full text-sm">
               <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
                 <th className="px-5 py-3 text-left">User</th>
@@ -407,14 +407,17 @@ export default function AdminDashboard() {
                 {users.map((u: any) => {
                   const roleName = u.role?.name || 'Authenticated';
                   const rn = roleName.toLowerCase();
-                  const isOfficer = rn.includes('officer');
-                  const isEditor  = rn.includes('editor');
-                  const isTourist = rn.includes('authenticated') || rn.includes('tourist');
-                  const roleColor = isOfficer ? { bg: 'bg-[#0F1F3C] text-white', avatar: '#0F1F3C' }
-                    : isEditor  ? { bg: 'bg-purple-50 text-purple-700', avatar: '#8B5CF6' }
-                    : isTourist ? { bg: 'bg-teal-50 text-teal-700',    avatar: '#00BFB3' }
-                    : { bg: 'bg-gray-100 text-gray-700', avatar: '#6B7280' };
-                  const RoleIcon = isOfficer ? Shield : isEditor ? Edit : UserCheck;
+                  const isSuperAdmin = rn.includes('super admin') || rn.includes('super-admin');
+                  const isOfficer   = rn.includes('officer');
+                  const isEditor    = rn.includes('editor');
+                  const isTourist   = rn.includes('authenticated') || rn.includes('tourist');
+                  const isPanel     = u.source === 'admin';
+                  const roleColor = isSuperAdmin ? { bg: 'bg-red-600 text-white',     avatar: '#DC2626' }
+                    : isOfficer   ? { bg: 'bg-[#0F1F3C] text-white',                  avatar: '#0F1F3C' }
+                    : isEditor    ? { bg: 'bg-purple-50 text-purple-700',              avatar: '#8B5CF6' }
+                    : isTourist   ? { bg: 'bg-teal-50 text-teal-700',                 avatar: '#00BFB3' }
+                    :               { bg: 'bg-gray-100 text-gray-700',                avatar: '#6B7280' };
+                  const RoleIcon = isSuperAdmin ? Shield : isOfficer ? Shield : isEditor ? Edit : UserCheck;
                   return (
                     <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-4">
@@ -422,7 +425,10 @@ export default function AdminDashboard() {
                           <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: roleColor.avatar }}>
                             {(u.username || u.email || '?')[0].toUpperCase()}
                           </div>
-                          <p className="font-semibold text-gray-900">{u.username || '—'}</p>
+                          <div>
+                            <p className="font-semibold text-gray-900">{u.username || '—'}</p>
+                            {isPanel && <span className="text-xs text-gray-400">Admin Panel</span>}
+                          </div>
                         </div>
                       </td>
                       <td className="px-5 py-4 text-gray-600"><Mail className="w-3 h-3 inline mr-1 shrink-0" />{u.email}</td>
@@ -433,7 +439,7 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-5 py-4">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${u.confirmed ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'}`}>
-                          {u.confirmed ? <><CheckCircle className="w-3 h-3" /> Confirmed</> : <><AlertCircle className="w-3 h-3" /> Pending</>}
+                          {u.confirmed ? <><CheckCircle className="w-3 h-3" /> Active</> : <><AlertCircle className="w-3 h-3" /> Inactive</>}
                         </span>
                       </td>
                       <td className="px-5 py-4 text-gray-400 text-xs">
