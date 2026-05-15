@@ -153,12 +153,10 @@ export default function GalleryPage() {
                       <span className="text-white text-xs font-semibold truncate pr-2">{item.title}</span>
                       <ZoomIn className="w-4 h-4 text-white shrink-0" />
                     </div>
-                    {item.category !== 'all' && (
-                      <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-semibold text-white"
-                        style={{ backgroundColor: CATEGORY_COLORS[item.category as Exclude<Category,'all'>] }}>
-                        {CATEGORY_LABELS[item.category as Category]}
-                      </span>
-                    )}
+                    <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-semibold text-white"
+                      style={{ backgroundColor: CATEGORY_COLORS[item.category] }}>
+                      {CATEGORY_LABELS[item.category]}
+                    </span>
                   </div>
                 </div>
               </motion.div>
