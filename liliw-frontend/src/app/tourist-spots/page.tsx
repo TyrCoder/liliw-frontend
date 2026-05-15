@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Layers, Star } from 'lucide-react';
-import { getAllAttractions } from '@/lib/strapi';
-import { logger } from '@/lib/logger';
 import FavoriteButton from '@/components/FavoriteButton';
 import { COLORS } from '@/lib/constants';
 
@@ -53,12 +51,11 @@ export default function TouristSpotsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getAllAttractions();
-        const spotsData = data.filter(a => a.type === 'spot');
-        setSpots(spotsData);
+        const res = await fetch('/api/strapi/attractions');
+        const json = await res.json();
+        setSpots((json.data ?? []).filter((a: any) => a.type === 'spot'));
       } catch (err) {
         setError('Failed to load tourist spots');
-        logger.error('Failed to load tourist spots:', err);
       } finally {
         setLoading(false);
       }

@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Star, Utensils, Layers } from 'lucide-react';
-import { getAllAttractions } from '@/lib/strapi';
-import { logger } from '@/lib/logger';
 import FavoriteButton from '@/components/FavoriteButton';
 import { COLORS } from '@/lib/constants';
 
@@ -40,12 +38,10 @@ export default function DiningPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getAllAttractions()
-      .then(data => setPlaces(data.filter((a: any) => a.type === 'dining') as DiningAttraction[]))
-      .catch(err => {
-        setError('Failed to load dining places');
-        logger.error('Failed to load dining places:', err);
-      })
+    fetch('/api/strapi/attractions')
+      .then(r => r.json())
+      .then(json => setPlaces((json.data ?? []).filter((a: any) => a.type === 'dining') as DiningAttraction[]))
+      .catch(() => setError('Failed to load dining places'))
       .finally(() => setLoading(false));
   }, []);
 

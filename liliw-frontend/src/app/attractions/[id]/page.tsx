@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Phone, Clock, Globe, Users, Star } from 'lucide-react';
-import { getAllAttractions } from '@/lib/strapi';
 import SocialShare from '@/components/SocialShare';
 import FavoriteButton from '@/components/FavoriteButton';
 import ImageGallery from '@/components/ImageGallery';
@@ -63,9 +62,11 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
 
     const fetchData = async () => {
       try {
-        const allAttractions = await getAllAttractions();
-        const current = allAttractions.find(a => String(a.id) === attractionId);
-        
+        const res = await fetch('/api/strapi/attractions');
+        const json = await res.json();
+        const allAttractions: any[] = json.data ?? [];
+        const current = allAttractions.find((a: any) => String(a.id) === attractionId);
+
         if (!current) {
           setError('Attraction not found');
           return;
@@ -73,15 +74,10 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
 
         setAttraction(current);
 
-        // Get related attractions (same category, different ID)
         const related = allAttractions
-          .filter(
-            a => 
-              a.attributes.category === current.attributes.category && 
-              a.id !== current.id
-          )
+          .filter((a: any) => a.attributes.category === current.attributes.category && a.id !== current.id)
           .slice(0, 3);
-        
+
         setRelatedAttractions(related);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load attraction');
@@ -380,20 +376,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           transition={{ duration: 0.6, delay: 0.5 }}
           className="mb-8 sm:mb-12"
         >
-          <EventCalendar events={[
-            {
-              date: new Date().toISOString().split('T')[0],
-              title: 'Guided Heritage Tour',
-              description: 'Expert-led tour through the attraction',
-              category: 'Tour'
-            },
-            {
-              date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-              title: 'Photography Workshop',
-              description: 'Learn photography tips with local experts',
-              category: 'Workshop'
-            },
-          ]} />
+          <EventCalendar attractionName={attraction?.attributes?.name} />
         </motion.div>
 
         {/* Related Attractions */}
