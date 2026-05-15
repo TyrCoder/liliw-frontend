@@ -9,6 +9,7 @@ import {
   FileText, Clock, CheckCircle, AlertCircle, Loader2,
   ChevronLeft, Mail, Phone, Calendar, MessageSquare, Star,
   RefreshCw, UserCheck, Shield, Activity, MapPin, Edit, Layers,
+  Monitor, Smartphone, Tablet, Wifi,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -104,6 +105,7 @@ export default function AdminDashboard() {
   const [users,         setUsers]         = useState<any[]>([]);
   const [attractions,   setAttractions]   = useState<Attraction[]>([]);
   const [auditLogs,     setAuditLogs]     = useState<AuditLog[]>([]);
+  const [liveVisitors,  setLiveVisitors]  = useState<{ session_id: string; page: string; device: string; last_seen: string }[]>([]);
 
   const [loadingSubs,   setLoadingSubs]   = useState(true);
   const [loadingPart,   setLoadingPart]   = useState(true);
@@ -134,6 +136,21 @@ export default function AdminDashboard() {
     fetch('/api/admin/users',          { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
     fetch('/api/strapi/attractions').then(r => r.json()).then(d => setAttractions(d.data || [])).catch(() => {}).finally(() => setLoadingAttr(false));
     fetch('/api/admin/audit-logs',     { headers: h }).then(r => r.json()).then(d => setAuditLogs(d.data || [])).catch(() => {}).finally(() => setLoadingAudit(false));
+  }, [isAdmin, token]);
+
+  // Live visitors polling — every 10 seconds
+  useEffect(() => {
+    if (!isAdmin || !token) return;
+    const h = { Authorization: `Bearer ${token}` };
+    const poll = () => {
+      fetch('/api/admin/live-visitors', { headers: h })
+        .then(r => r.json())
+        .then(d => setLiveVisitors(d.data || []))
+        .catch(() => {});
+    };
+    poll();
+    const id = setInterval(poll, 10_000);
+    return () => clearInterval(id);
   }, [isAdmin, token]);
 
   const handleSyncSearch = async () => {
@@ -238,6 +255,76 @@ export default function AdminDashboard() {
                  : syncStatus === 'error' ? <><AlertCircle className="w-4 h-4" /> Retry Sync</>
                  : <><RefreshCw className="w-4 h-4" /> Sync Search</>}
               </button>
+            </div>
+
+            {/* Live Visitors */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="relative">
+                    <Wifi className="w-5 h-5" style={{ color: '#00BFB3' }} />
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-gray-900">Live on Site</h2>
+                    <p className="text-xs text-gray-400">Active in the last 5 minutes</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-sm font-bold text-gray-700">{liveVisitors.length} active</span>
+                </div>
+              </div>
+
+              {/* Device summary */}
+              <div className="grid grid-cols-3 gap-3 mb-5">
+                {[
+                  { label: 'Desktop', icon: <Monitor className="w-4 h-4" />, count: liveVisitors.filter(v => v.device === 'desktop').length, color: '#3B82F6' },
+                  { label: 'Mobile',  icon: <Smartphone className="w-4 h-4" />, count: liveVisitors.filter(v => v.device === 'mobile').length,  color: '#00BFB3' },
+                  { label: 'Tablet',  icon: <Tablet className="w-4 h-4" />,     count: liveVisitors.filter(v => v.device === 'tablet').length,  color: '#8B5CF6' },
+                ].map(({ label, icon, count, color }) => (
+                  <div key={label} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}20`, color }}>
+                      {icon}
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-gray-900">{count}</p>
+                      <p className="text-xs text-gray-400">{label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Session feed */}
+              {liveVisitors.length === 0 ? (
+                <div className="flex flex-col items-center py-8 text-center text-gray-400">
+                  <Wifi className="w-8 h-8 mb-2 opacity-20" />
+                  <p className="text-sm font-semibold">No active visitors right now</p>
+                  <p className="text-xs mt-0.5">Sessions appear here within 30 seconds of a page visit</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {liveVisitors.map((v) => {
+                    const secsAgo = Math.floor((Date.now() - new Date(v.last_seen).getTime()) / 1000);
+                    const timeAgo = secsAgo < 60 ? 'just now' : secsAgo < 3600 ? `${Math.floor(secsAgo / 60)}m ago` : `${Math.floor(secsAgo / 3600)}h ago`;
+                    const DeviceIcon = v.device === 'mobile' ? Smartphone : v.device === 'tablet' ? Tablet : Monitor;
+                    const deviceColor = v.device === 'mobile' ? '#00BFB3' : v.device === 'tablet' ? '#8B5CF6' : '#3B82F6';
+                    return (
+                      <div key={v.session_id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-100">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${deviceColor}18`, color: deviceColor }}>
+                          <DeviceIcon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 truncate">{v.page || '/'}</p>
+                          <p className="text-xs text-gray-400 capitalize">{v.device}</p>
+                        </div>
+                        <span className="text-xs text-gray-400 shrink-0 font-medium">{timeAgo}</span>
+                        <span className="w-2 h-2 rounded-full shrink-0 bg-green-400" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Participation breakdown */}

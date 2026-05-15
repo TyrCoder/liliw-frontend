@@ -36,7 +36,13 @@ class AnalyticsTracker {
     this.send(window.location.pathname);
 
     // Track SPA navigations via popstate
-    window.addEventListener('popstate', () => this.send(window.location.pathname));
+    window.addEventListener('popstate', () => {
+      this.lastPath = '';
+      this.send(window.location.pathname);
+    });
+
+    // Heartbeat every 30s to keep session alive in active_sessions
+    setInterval(() => trackPageView(window.location.pathname), 30_000);
   }
 
   private send(path: string): void {
