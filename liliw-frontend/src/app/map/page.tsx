@@ -16,9 +16,9 @@ const LILIW_BOUNDARY_URL =
   'https://nominatim.openstreetmap.org/search?q=Liliw%2CLaguna%2CPhilippines&format=geojson&limit=1&polygon_geojson=1';
 
 const TYPE_CONFIG = {
-  heritage: { color: '#FFB400', label: '🏛️ Heritage' },
-  spot:     { color: '#00BFB3', label: '🏞️ Spots'   },
-  dining:   { color: '#FF6B6B', label: '🍽️ Dining'  },
+  heritage: { color: '#F5C518', label: '🏛️ Heritage' },
+  spot:     { color: '#2E7D32', label: '🏞️ Spots'   },
+  dining:   { color: '#EF4444', label: '🍽️ Dining'  },
 };
 
 interface MapAttraction {
@@ -100,7 +100,7 @@ function PhotoSlideshow({ photos, name }: { photos: string[]; name: string }) {
               style={{
                 width: i === index ? 14 : 5,
                 height: 5,
-                backgroundColor: i === index ? '#00BFB3' : 'rgba(255,255,255,0.45)',
+                backgroundColor: i === index ? '#F5C518' : 'rgba(255,255,255,0.45)',
               }}
             />
           ))}
@@ -118,12 +118,12 @@ function StarRating({ rating }: { rating: number }) {
         <Star
           key={i}
           className="w-3 h-3"
-          fill={i <= rating ? '#FFB400' : 'none'}
-          stroke={i <= rating ? '#FFB400' : 'rgba(255,255,255,0.3)'}
+          fill={i <= rating ? '#F5C518' : 'none'}
+          stroke={i <= rating ? '#F5C518' : 'rgba(255,255,255,0.3)'}
         />
       ))}
       {rating > 0 && (
-        <span className="text-xs ml-1 font-semibold" style={{ color: '#FFB400' }}>
+        <span className="text-xs ml-1 font-semibold" style={{ color: '#F5C518' }}>
           {rating.toFixed(1)}
         </span>
       )}
@@ -163,8 +163,8 @@ function RouteOverlay({
           <div
             className="rounded-2xl overflow-hidden shadow-2xl"
             style={{
-              backgroundColor: 'rgba(15,31,60,0.97)',
-              border: '1px solid rgba(0,191,179,0.35)',
+              backgroundColor: 'rgba(11,61,145,0.97)',
+              border: '1px solid rgba(245,197,24,0.35)',
               backdropFilter: 'blur(14px)',
             }}
           >
@@ -173,7 +173,7 @@ function RouteOverlay({
               <div className="p-4 flex items-center gap-3">
                 <span
                   className="w-4 h-4 border-2 rounded-full animate-spin flex-shrink-0"
-                  style={{ borderColor: 'rgba(0,191,179,0.3)', borderTopColor: '#00BFB3' }}
+                  style={{ borderColor: 'rgba(245,197,24,0.3)', borderTopColor: '#F5C518' }}
                 />
                 <span className="text-white/60 text-sm">Calculating shortest route…</span>
               </div>
@@ -187,13 +187,13 @@ function RouteOverlay({
                   <div className="flex items-start gap-3">
                     {/* Dot-line-dot */}
                     <div className="flex flex-col items-center pt-1 gap-0.5 flex-shrink-0">
-                      <div className="w-2.5 h-2.5 rounded-full border-2" style={{ backgroundColor: '#00BFB3', borderColor: '#00BFB3' }} />
+                      <div className="w-2.5 h-2.5 rounded-full border-2" style={{ backgroundColor: '#F5C518', borderColor: '#F5C518' }} />
                       <div className="w-px h-7 bg-white/20" />
                       <div
                         className="w-2.5 h-2.5 rounded-full border-2"
                         style={{
-                          backgroundColor: destinationAttraction ? TYPE_CONFIG[destinationAttraction.type].color : '#00BFB3',
-                          borderColor: destinationAttraction ? TYPE_CONFIG[destinationAttraction.type].color : '#00BFB3',
+                          backgroundColor: destinationAttraction ? TYPE_CONFIG[destinationAttraction.type].color : '#F5C518',
+                          borderColor: destinationAttraction ? TYPE_CONFIG[destinationAttraction.type].color : '#F5C518',
                         }}
                       />
                     </div>
@@ -221,7 +221,7 @@ function RouteOverlay({
                   className="px-4 py-3 flex items-center gap-3"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
                 >
-                  <Navigation className="w-4 h-4 flex-shrink-0" style={{ color: '#00BFB3' }} />
+                  <Navigation className="w-4 h-4 flex-shrink-0" style={{ color: '#F5C518' }} />
                   <div className="flex-1">
                     <span className="text-white font-bold">{routeInfo.distance} km</span>
                     <span className="text-white/30 mx-2">·</span>
@@ -230,7 +230,7 @@ function RouteOverlay({
                   {/* Driving / walking toggle */}
                   <div
                     className="flex rounded-lg overflow-hidden"
-                    style={{ border: '1px solid rgba(0,191,179,0.3)' }}
+                    style={{ border: '1px solid rgba(245,197,24,0.3)' }}
                   >
                     {(['driving', 'motorcycle', 'walking'] as TravelMode[]).map((m) => (
                       <button
@@ -239,8 +239,8 @@ function RouteOverlay({
                         className="px-2.5 py-1.5 text-xs font-bold transition"
                         title={m === 'driving' ? 'Driving' : m === 'motorcycle' ? 'Motorcycle' : 'Walking'}
                         style={{
-                          backgroundColor: travelMode === m ? '#00BFB3' : 'transparent',
-                          color: travelMode === m ? '#0F1F3C' : 'rgba(255,255,255,0.5)',
+                          backgroundColor: travelMode === m ? '#F5C518' : 'transparent',
+                          color: travelMode === m ? '#0B3D91' : 'rgba(255,255,255,0.5)',
                         }}
                       >
                         {m === 'driving' ? <CarIcon /> : m === 'motorcycle' ? <MotorcycleIcon /> : <WalkIcon />}
@@ -256,7 +256,7 @@ function RouteOverlay({
                       onClick={() => setStepsOpen((v) => !v)}
                       className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold transition hover:bg-white/5"
                       style={{
-                        color: '#00BFB3',
+                        color: '#F5C518',
                         borderBottom: stepsOpen ? '1px solid rgba(255,255,255,0.08)' : 'none',
                       }}
                     >
@@ -281,7 +281,7 @@ function RouteOverlay({
                               <div key={i} className="flex gap-2.5 items-start">
                                 <span
                                   className="flex-shrink-0 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mt-0.5"
-                                  style={{ backgroundColor: 'rgba(0,191,179,0.15)', color: '#00BFB3' }}
+                                  style={{ backgroundColor: 'rgba(245,197,24,0.15)', color: '#F5C518' }}
                                 >
                                   {i + 1}
                                 </span>
@@ -474,9 +474,9 @@ export default function MapPage() {
 
   if (noToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0F1F3C' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0B3D91' }}>
         <div className="text-center text-white p-8">
-          <MapPin className="w-16 h-16 mx-auto mb-4 opacity-40" style={{ color: '#00BFB3' }} />
+          <MapPin className="w-16 h-16 mx-auto mb-4 opacity-40" style={{ color: '#F5C518' }} />
           <h2 className="text-2xl font-bold mb-2">Mapbox Token Required</h2>
           <p className="text-white/60 mb-4">Add your Mapbox access token to get started:</p>
           <code className="bg-white/10 px-4 py-2 rounded-lg text-sm block mb-4">
@@ -487,7 +487,7 @@ export default function MapPage() {
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition"
-            style={{ backgroundColor: '#00BFB3', color: '#0F1F3C' }}
+            style={{ backgroundColor: '#F5C518', color: '#0B3D91' }}
           >
             Get a free token at mapbox.com
           </a>
@@ -497,12 +497,12 @@ export default function MapPage() {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 65px)', backgroundColor: '#0F1F3C' }}>
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 65px)', backgroundColor: '#0B3D91' }}>
 
       {/* Top bar */}
       <div
         className="flex items-center gap-3 px-4 py-2.5 border-b shrink-0 flex-wrap gap-y-2"
-        style={{ borderColor: '#00BFB3', backgroundColor: 'rgba(15,31,60,0.98)' }}
+        style={{ borderColor: '#F5C518', backgroundColor: 'rgba(11,61,145,0.98)' }}
       >
         <Link
           href="/attractions"
@@ -512,12 +512,12 @@ export default function MapPage() {
         </Link>
 
         <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5" style={{ color: '#00BFB3' }} />
+          <Layers className="w-5 h-5" style={{ color: '#F5C518' }} />
           <span className="text-white font-bold text-base">Liliw Map</span>
           {!loading && (
             <span
               className="text-xs px-2 py-0.5 rounded-full font-semibold"
-              style={{ backgroundColor: 'rgba(0,191,179,0.2)', color: '#00BFB3' }}
+              style={{ backgroundColor: 'rgba(245,197,24,0.2)', color: '#F5C518' }}
             >
               {filtered.length} places
             </span>
@@ -532,8 +532,8 @@ export default function MapPage() {
               onClick={() => setFilter(f)}
               className="px-3 py-1.5 rounded-full text-xs font-bold transition"
               style={{
-                backgroundColor: filter === f ? '#00BFB3' : 'rgba(255,255,255,0.08)',
-                color: filter === f ? '#0F1F3C' : 'rgba(255,255,255,0.7)',
+                backgroundColor: filter === f ? '#F5C518' : 'rgba(255,255,255,0.08)',
+                color: filter === f ? '#0B3D91' : 'rgba(255,255,255,0.7)',
               }}
             >
               {f === 'all' ? 'All' : TYPE_CONFIG[f].label}
@@ -550,7 +550,7 @@ export default function MapPage() {
             <div className="text-center">
               <div
                 className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto mb-3"
-                style={{ borderColor: '#00BFB3' }}
+                style={{ borderColor: '#F5C518' }}
               />
               <p className="text-white/60 text-sm">Loading attractions…</p>
             </div>
@@ -579,13 +579,13 @@ export default function MapPage() {
                 <Layer
                   id="liliw-fill"
                   type="fill"
-                  paint={{ 'fill-color': '#00BFB3', 'fill-opacity': 0.06 }}
+                  paint={{ 'fill-color': '#F5C518', 'fill-opacity': 0.06 }}
                 />
                 <Layer
                   id="liliw-border"
                   type="line"
                   paint={{
-                    'line-color': '#00BFB3',
+                    'line-color': '#F5C518',
                     'line-width': 2.5,
                     'line-opacity': 0.75,
                     'line-dasharray': [4, 2],
@@ -611,7 +611,7 @@ export default function MapPage() {
                   id="route-line"
                   type="line"
                   layout={{ 'line-join': 'round', 'line-cap': 'round' }}
-                  paint={{ 'line-color': '#00BFB3', 'line-width': 4, 'line-opacity': 0.9 }}
+                  paint={{ 'line-color': '#F5C518', 'line-width': 4, 'line-opacity': 0.9 }}
                 />
               </Source>
             )}
@@ -697,7 +697,7 @@ export default function MapPage() {
                   exit={{ opacity: 0, y: 10, scale: 0.9 }}
                   transition={{ type: 'spring', stiffness: 420, damping: 22 }}
                   className="rounded-2xl overflow-hidden shadow-2xl"
-                  style={{ backgroundColor: '#0F1F3C', border: '1px solid rgba(0,191,179,0.3)', minWidth: 240 }}
+                  style={{ backgroundColor: '#0B3D91', border: '1px solid rgba(245,197,24,0.3)', minWidth: 240 }}
                 >
                   {selected.photos.length > 0 && (
                     <div className="relative">
@@ -750,7 +750,7 @@ export default function MapPage() {
                       <Link
                         href={`/attractions/${selected.id}`}
                         className="flex-1 py-2 rounded-xl text-xs font-bold text-center transition hover:opacity-90 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: '#00BFB3', color: '#0F1F3C' }}
+                        style={{ backgroundColor: '#F5C518', color: '#0B3D91' }}
                       >
                         <Eye className="w-3.5 h-3.5" /> View
                       </Link>
@@ -771,7 +771,7 @@ export default function MapPage() {
                       <Link
                         href="/immersive"
                         className="w-full py-2 rounded-xl text-xs font-bold text-center transition hover:opacity-90 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: '#FFB400', color: '#0F1F3C' }}
+                        style={{ backgroundColor: '#F5C518', color: '#0B3D91' }}
                       >
                         🥽 Virtual Tour
                       </Link>
@@ -801,8 +801,8 @@ export default function MapPage() {
             transition={{ delay: 0.6, duration: 0.4 }}
             className="absolute bottom-4 left-4 rounded-xl p-3 text-xs space-y-1.5 border"
             style={{
-              backgroundColor: 'rgba(15,31,60,0.92)',
-              borderColor: 'rgba(0,191,179,0.2)',
+              backgroundColor: 'rgba(11,61,145,0.92)',
+              borderColor: 'rgba(245,197,24,0.2)',
               backdropFilter: 'blur(8px)',
             }}
           >

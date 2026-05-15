@@ -6,15 +6,15 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, Heart, Play, AlertCircle } from 'lucide-react';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+const HL = 'var(--font-heading), Outfit, sans-serif';
+const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
+const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 function extractText(richText: any): string {
   if (!richText) return '';
   if (typeof richText === 'string') return richText;
-  if (Array.isArray(richText)) {
-    return richText
-      .map((block: any) => (block?.children ?? []).map((c: any) => c?.text ?? '').join(' '))
-      .join(' ');
-  }
+  if (Array.isArray(richText))
+    return richText.map((block: any) => (block?.children ?? []).map((c: any) => c?.text ?? '').join(' ')).join(' ');
   return '';
 }
 
@@ -30,40 +30,37 @@ export default function CulturePage() {
 
   useEffect(() => {
     fetch('/api/strapi/culture-heritages')
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then(json => {
-        const raw = json?.data ?? json ?? [];
-        const items = Array.isArray(raw) ? raw : [];
-        setCultureItems(items);
-      })
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(json => { const raw = json?.data ?? json ?? []; setCultureItems(Array.isArray(raw) ? raw : []); })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="min-h-screen bg-white" suppressHydrationWarning>
-      {/* Page Header */}
-      <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12">
-        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="mb-6 sm:mb-8">
-          <Link href="/about" className="inline-flex items-center font-semibold mb-4 sm:mb-6 group text-sm sm:text-base" style={{ color: '#00BFB3' }}>
-            <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" /> Back to About
-          </Link>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-3" style={{ color: '#00BFB3' }}>Culture & Heritage</h1>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600">Living traditions and stories that define Liliw</p>
-        </motion.div>
+    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+
+      {/* Hero */}
+      <div style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
+        <div className="max-w-6xl mx-auto px-4 py-14">
+          <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
+            <Link href="/about" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>
+              <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to About
+            </Link>
+            <p className="section-label mb-3" style={{ color: 'rgba(245,197,24,0.9)' }}>Living Traditions</p>
+            <h1 className="text-4xl sm:text-6xl font-bold text-white mb-4" style={{ fontFamily: DL }}>Culture & Heritage</h1>
+            <div className="w-12 h-0.5 mb-4 rounded-full" style={{ backgroundColor: '#F5C518' }} />
+            <p className="text-white/70 text-lg" style={{ fontFamily: BL }}>Living traditions and stories that define Liliw</p>
+          </motion.div>
+        </div>
       </div>
 
-      {/* Culture & Heritage Cards */}
-      <div className="max-w-6xl mx-auto px-4 pb-20">
+      <div className="max-w-6xl mx-auto px-4 py-12 pb-20">
 
         {/* Skeleton */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="rounded-2xl border border-gray-200 overflow-hidden animate-pulse">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="rounded-2xl border border-gray-100 overflow-hidden animate-pulse bg-white">
                 <div className="h-56 bg-gray-200" />
                 <div className="p-5 space-y-3">
                   <div className="h-5 bg-gray-200 rounded w-2/3" />
@@ -75,21 +72,21 @@ export default function CulturePage() {
           </div>
         )}
 
-        {/* Error state */}
+        {/* Error */}
         {!loading && error && (
-          <div className="text-center py-20 rounded-2xl" style={{ backgroundColor: 'rgba(239,68,68,0.05)', border: '1px dashed #fca5a5' }}>
+          <div className="text-center py-20 rounded-2xl border border-dashed border-red-200 bg-red-50">
             <AlertCircle className="w-10 h-10 mx-auto mb-3 text-red-400" />
-            <p className="font-semibold text-lg text-red-500">Could not load content</p>
-            <p className="text-sm mt-1 text-red-400">Make sure Strapi is running and the API token is valid.</p>
+            <p className="font-semibold text-lg text-red-600" style={{ fontFamily: HL }}>Could not load content</p>
+            <p className="text-sm mt-1 text-red-400" style={{ fontFamily: BL }}>Make sure Strapi is running and the API token is valid.</p>
           </div>
         )}
 
-        {/* Empty state */}
+        {/* Empty */}
         {!loading && !error && cultureItems.length === 0 && (
-          <div className="text-center py-20 rounded-2xl" style={{ backgroundColor: 'rgba(0,191,179,0.04)', border: '2px dashed #00BFB3' }}>
-            <Heart className="w-10 h-10 mx-auto mb-3" style={{ color: '#00BFB3', opacity: 0.5 }} />
-            <p className="font-semibold text-lg" style={{ color: '#0F1F3C' }}>No culture & heritage content yet</p>
-            <p className="text-sm mt-1 text-gray-500">Add and <strong>publish</strong> items in Strapi under Culture &amp; Heritage.</p>
+          <div className="text-center py-20 rounded-2xl border-2 border-dashed" style={{ borderColor: 'rgba(11,61,145,0.2)' }}>
+            <Heart className="w-10 h-10 mx-auto mb-3 opacity-30" style={{ color: '#0B3D91' }} />
+            <p className="font-semibold text-lg" style={{ color: '#1A1A2E', fontFamily: HL }}>No culture & heritage content yet</p>
+            <p className="text-sm mt-1 text-gray-500" style={{ fontFamily: BL }}>Add and publish items in Strapi under Culture &amp; Heritage.</p>
           </div>
         )}
 
@@ -101,25 +98,17 @@ export default function CulturePage() {
               const title = a?.title ?? '';
               const description = extractText(a?.description);
               const rawImages = a?.images;
-              const images: any[] = Array.isArray(rawImages)
-                ? rawImages
-                : Array.isArray(rawImages?.data)
-                ? rawImages.data.map((d: any) => d?.attributes ?? d)
-                : [];
+              const images: any[] = Array.isArray(rawImages) ? rawImages : Array.isArray(rawImages?.data) ? rawImages.data.map((d: any) => d?.attributes ?? d) : [];
               const rawVideo = a?.video;
               const video = rawVideo?.data?.attributes ?? rawVideo;
               const coverUrl = images[0] ? mediaUrl(images[0]?.url ?? images[0]?.attributes?.url) : null;
               const videoUrl = video?.url ? mediaUrl(video.url) : null;
 
               return (
-                <motion.div
-                  key={item.id ?? idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: idx * 0.1 }}
+                <motion.div key={item.id ?? idx}
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: idx * 0.1 }}
                   whileHover={{ y: -4 }}
-                  className="rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300"
-                >
+                  className="rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 bg-white editorial-card">
                   {/* Media */}
                   {videoUrl ? (
                     <div className="relative h-56 bg-gray-900 flex items-center justify-center">
@@ -132,29 +121,25 @@ export default function CulturePage() {
                     </div>
                   ) : coverUrl ? (
                     <div className="h-56 overflow-hidden">
-                      <img src={coverUrl} alt={title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                      <img src={coverUrl} alt={title} className="w-full h-full object-cover card-img" />
                     </div>
                   ) : (
-                    <div className="h-56 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,191,179,0.08)' }}>
-                      <div className="w-12 h-12 rounded-xl border-2 flex items-center justify-center" style={{ borderColor: '#00BFB3' }}>
-                        <Heart className="w-6 h-6" style={{ color: '#00BFB3' }} />
+                    <div className="h-56 flex items-center justify-center" style={{ backgroundColor: 'rgba(11,61,145,0.06)' }}>
+                      <div className="w-12 h-12 rounded-xl border-2 flex items-center justify-center" style={{ borderColor: '#0B3D91' }}>
+                        <Heart className="w-6 h-6" style={{ color: '#0B3D91' }} />
                       </div>
                     </div>
                   )}
 
                   {/* Text */}
                   <div className="p-5">
-                    <h3 className="text-lg font-bold mb-2" style={{ color: '#0F1F3C' }}>{title}</h3>
-                    {description && (
-                      <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">{description}</p>
-                    )}
+                    <h3 className="text-lg font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>{title}</h3>
+                    {description && <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed" style={{ fontFamily: BL }}>{description}</p>}
                     {images.length > 1 && (
                       <div className="flex gap-1.5 mt-3">
                         {images.slice(1, 4).map((img: any, i: number) => {
                           const imgUrl = mediaUrl(img?.url ?? img?.attributes?.url);
-                          return imgUrl ? (
-                            <img key={i} src={imgUrl} alt="" className="w-12 h-12 rounded-lg object-cover border border-gray-100" />
-                          ) : null;
+                          return imgUrl ? <img key={i} src={imgUrl} alt="" className="w-12 h-12 rounded-lg object-cover border border-gray-100" /> : null;
                         })}
                         {images.length > 4 && (
                           <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-500">
@@ -172,33 +157,27 @@ export default function CulturePage() {
 
         {/* Support CTA */}
         {!loading && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
             className="mt-16 rounded-2xl p-8 text-white text-center"
-            style={{ background: 'linear-gradient(135deg, #00BFB3 0%, #0F1F3C 100%)' }}
-          >
-            <h3 className="text-2xl font-bold mb-3">Support Local Culture</h3>
-            <p className="mb-6 opacity-90">Help preserve and celebrate Liliw&apos;s heritage through direct support of artisans and cultural initiatives</p>
+            style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)' }}>
+            <h3 className="text-2xl font-bold mb-3" style={{ fontFamily: HL }}>Support Local Culture</h3>
+            <p className="mb-6 text-white/70 text-sm" style={{ fontFamily: BL }}>
+              Help preserve and celebrate Liliw&apos;s heritage through direct support of artisans and cultural initiatives
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
-              <div className="p-4 bg-white/10 rounded-lg">
-                <h4 className="font-bold mb-1">Buy Directly</h4>
-                <p className="text-sm opacity-90">Purchase tsinelas and crafts from local makers</p>
-              </div>
-              <div className="p-4 bg-white/10 rounded-lg">
-                <h4 className="font-bold mb-1">Attend Events</h4>
-                <p className="text-sm opacity-90">Experience festivals and cultural celebrations</p>
-              </div>
-              <div className="p-4 bg-white/10 rounded-lg">
-                <h4 className="font-bold mb-1">Learn Skills</h4>
-                <p className="text-sm opacity-90">Join workshops and cultural tours</p>
-              </div>
+              {[
+                { title: 'Buy Directly',   body: 'Purchase tsinelas and crafts from local makers' },
+                { title: 'Attend Events',  body: 'Experience festivals and cultural celebrations' },
+                { title: 'Learn Skills',   body: 'Join workshops and cultural tours' },
+              ].map(card => (
+                <div key={card.title} className="p-4 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                  <h4 className="font-bold mb-1" style={{ fontFamily: HL }}>{card.title}</h4>
+                  <p className="text-sm text-white/80" style={{ fontFamily: BL }}>{card.body}</p>
+                </div>
+              ))}
             </div>
           </motion.div>
         )}
-
       </div>
     </div>
   );

@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ChevronLeft, Layers, PenLine, Lock, X, Eye, EyeOff, Camera, Trash2, Upload } from 'lucide-react';
 import { logger } from '@/lib/logger';
-import { COLORS } from '@/lib/constants';
 import ImmersiveViewer from '@/components/ImmersiveViewer';
 import type { Hotspot } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
@@ -331,9 +330,9 @@ export default function ImmersivePage() {
         transition={{ duration: 0.4 }}
         className="sticky top-0 z-40 border-b-2 backdrop-blur-sm"
         style={{
-          borderBottomColor: COLORS.primary,
-          backgroundColor: 'rgba(15, 31, 60, 0.95)',
-          boxShadow: `0 4px 12px ${COLORS.primary}1a`
+          borderBottomColor: '#F5C518',
+          backgroundColor: 'rgba(11, 61, 145, 0.97)',
+          boxShadow: '0 4px 12px rgba(245,197,24,0.1)',
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -345,7 +344,7 @@ export default function ImmersivePage() {
           </motion.div>
 
           <motion.h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2" whileHover={{ scale: 1.02 }}>
-            <Layers className="w-6 h-6" style={{ color: COLORS.primary }} />
+            <Layers className="w-6 h-6" style={{ color: '#F5C518' }} />
             <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent hidden sm:inline">3D Tours</span>
             <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent sm:hidden">3D</span>
             {editMode && (
@@ -386,7 +385,7 @@ export default function ImmersivePage() {
       <div className="px-3 sm:px-5 py-4">
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto" style={{ borderColor: '#00BFB3' }} />
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto" style={{ borderColor: '#F5C518' }} />
             <p className="text-white mt-4">Loading immersive experiences...</p>
           </div>
         ) : (
@@ -429,7 +428,7 @@ export default function ImmersivePage() {
             >
               {/* Attraction List */}
               <div className="sticky top-24 space-y-4">
-                <div className="bg-gray-900 rounded-xl p-4 border-2" style={{ borderColor: '#E0F7F5' }}>
+                <div className="bg-gray-900 rounded-xl p-4 border-2" style={{ borderColor: 'rgba(245,197,24,0.3)' }}>
                   <h2 className="text-white font-bold mb-4">Available Tours</h2>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {attractions.map((attraction, index) => (
@@ -443,8 +442,8 @@ export default function ImmersivePage() {
                           selectedAttractionId === attraction.id ? 'text-white font-semibold' : 'text-gray-300 hover:text-white'
                         }`}
                         style={{
-                          backgroundColor: selectedAttractionId === attraction.id ? 'rgba(0, 191, 179, 0.3)' : 'transparent',
-                          borderLeft: selectedAttractionId === attraction.id ? '3px solid #00BFB3' : 'none',
+                          backgroundColor: selectedAttractionId === attraction.id ? 'rgba(245,197,24,0.15)' : 'transparent',
+                          borderLeft: selectedAttractionId === attraction.id ? '3px solid #F5C518' : 'none',
                           paddingLeft: '12px',
                         }}
                       >
@@ -522,7 +521,7 @@ export default function ImmersivePage() {
                       {/* Progress bar */}
                       {uploading && (
                         <div className="mt-2 bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                          <div className="h-1.5 rounded-full animate-pulse" style={{ width: '100%', backgroundColor: '#00BFB3' }} />
+                          <div className="h-1.5 rounded-full animate-pulse" style={{ width: '100%', backgroundColor: '#F5C518' }} />
                         </div>
                       )}
 
@@ -540,7 +539,7 @@ export default function ImmersivePage() {
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.4 }}
                     className="rounded-xl p-4 border-2"
-                    style={{ backgroundColor: 'rgba(0, 191, 179, 0.1)', borderColor: '#00BFB3' }}
+                    style={{ backgroundColor: 'rgba(245,197,24,0.06)', borderColor: 'rgba(245,197,24,0.4)' }}
                   >
                     <h3 className="text-white font-semibold mb-2">💡 How It Works</h3>
                     <ul className="text-gray-300 text-sm space-y-2">
