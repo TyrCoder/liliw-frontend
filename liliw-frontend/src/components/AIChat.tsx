@@ -76,12 +76,6 @@ export default function AIChat() {
     scrollToBottom();
   }, [messages]);
 
-  // Listen for footer chat button
-  useEffect(() => {
-    const handler = () => setIsOpen(true);
-    window.addEventListener('open-lilio-chat', handler);
-    return () => window.removeEventListener('open-lilio-chat', handler);
-  }, []);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,6 +138,20 @@ export default function AIChat() {
 
   return (
     <>
+      {/* Floating chat button */}
+      <motion.button
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        whileHover={{ scale: 1.15 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setIsOpen(!isOpen)}
+        className={`fixed bottom-6 z-40 p-4 rounded-full text-white shadow-xl hover:shadow-2xl transition ${isMapPage ? 'right-24' : 'right-6'}`}
+        style={{ backgroundColor: COLORS.primary }}
+        title="Chat with Lilio"
+      >
+        {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
+      </motion.button>
+
       {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (
@@ -151,7 +159,7 @@ export default function AIChat() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-40 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border-2"
+            className={`fixed bottom-24 z-40 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border-2 ${isMapPage ? 'right-24' : 'right-6'}`}
             style={{ maxHeight: '650px', borderColor: COLORS.primary }}
           >
             {/* Header - Gradient */}
