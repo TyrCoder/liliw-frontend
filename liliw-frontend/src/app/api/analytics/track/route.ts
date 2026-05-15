@@ -48,12 +48,12 @@ export async function POST(request: NextRequest) {
     // Upsert live session into Supabase (fire-and-forget)
     if (sessionId) {
       const d: Device = ['desktop', 'mobile', 'tablet'].includes(device) ? device : 'desktop';
-      supabaseServer.from('active_sessions').upsert({
+      void supabaseServer.from('active_sessions').upsert({
         session_id: sessionId,
         page: path,
         device: d,
         last_seen: new Date().toISOString(),
-      }, { onConflict: 'session_id' }).then(() => {}).catch(() => {});
+      }, { onConflict: 'session_id' });
     }
 
     return NextResponse.json({ success: true });
