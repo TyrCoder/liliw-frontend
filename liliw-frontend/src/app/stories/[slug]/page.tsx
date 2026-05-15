@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, User, Calendar, BookOpen } from 'lucide-react';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
 const CATEGORY_COLORS: Record<string, string> = {
   history:  '#00BFB3',
@@ -23,28 +22,40 @@ function mediaUrl(url: string | undefined): string {
   return url.startsWith('http') ? url : `${STRAPI_BASE}${url}`;
 }
 
+const HEADING_SIZES: Record<number, string> = { 1: 'text-3xl', 2: 'text-2xl', 3: 'text-xl', 4: 'text-lg' };
+const HEADING_TAGS: Record<number, keyof React.JSX.IntrinsicElements> = { 1: 'h1', 2: 'h2', 3: 'h3', 4: 'h4' };
+
+function blockText(children: any[]): string {
+  return (children ?? []).map((c: any) => c?.text ?? '').join('');
+}
+
 function RichTextBlock({ block }: { block: any }) {
-  const text = (block?.children ?? []).map((c: any) => c?.text ?? '').join('');
-  switch (block?.type) {
-    case 'heading':
-      const Tag = `h${block.level ?? 2}` as keyof JSX.IntrinsicElements;
-      const sizes: Record<number, string> = { 1: 'text-3xl', 2: 'text-2xl', 3: 'text-xl', 4: 'text-lg' };
-      return <Tag className={`${sizes[block.level] ?? 'text-xl'} font-bold mt-8 mb-3`} style={{ color: '#0F1F3C' }}>{text}</Tag>;
-    case 'paragraph':
-      return <p className="text-gray-700 leading-relaxed mb-4">{text}</p>;
-    case 'list':
-      const items = block?.children ?? [];
-      return block.format === 'ordered'
-        ? <ol className="list-decimal pl-6 mb-4 space-y-1 text-gray-700">{items.map((item: any, i: number) => <li key={i}>{(item?.children ?? []).map((c: any) => c?.text ?? '').join('')}</li>)}</ol>
-        : <ul className="list-disc pl-6 mb-4 space-y-1 text-gray-700">{items.map((item: any, i: number) => <li key={i}>{(item?.children ?? []).map((c: any) => c?.text ?? '').join('')}</li>)}</ul>;
-    case 'image':
-      const src = mediaUrl(block?.image?.url);
-      return src ? <img src={src} alt={block?.image?.alternativeText ?? ''} className="w-full rounded-xl my-6 object-cover" /> : null;
-    case 'quote':
-      return <blockquote className="border-l-4 pl-5 py-1 my-6 italic text-gray-600" style={{ borderColor: '#00BFB3' }}>{text}</blockquote>;
-    default:
-      return text ? <p className="text-gray-700 leading-relaxed mb-4">{text}</p> : null;
+  if (block?.type === 'heading') {
+    const Tag = HEADING_TAGS[block.level as number] ?? 'h2';
+    const size = HEADING_SIZES[block.level as number] ?? 'text-xl';
+    return <Tag className={`${size} font-bold mt-8 mb-3`} style={{ color: '#0F1F3C' }}>{blockText(block.children)}</Tag>;
   }
+  if (block?.type === 'paragraph') {
+    return <p className="text-gray-700 leading-relaxed mb-4">{blockText(block.children)}</p>;
+  }
+  if (block?.type === 'list') {
+    const items: any[] = block?.children ?? [];
+    const listItems = items.map((item: any, i: number) => (
+      <li key={i}>{blockText(item?.children)}</li>
+    ));
+    return block.format === 'ordered'
+      ? <ol className="list-decimal pl-6 mb-4 space-y-1 text-gray-700">{listItems}</ol>
+      : <ul className="list-disc pl-6 mb-4 space-y-1 text-gray-700">{listItems}</ul>;
+  }
+  if (block?.type === 'image') {
+    const src = mediaUrl(block?.image?.url);
+    return src ? <img src={src} alt={block?.image?.alternativeText ?? ''} className="w-full rounded-xl my-6 object-cover" /> : null;
+  }
+  if (block?.type === 'quote') {
+    return <blockquote className="border-l-4 pl-5 py-1 my-6 italic text-gray-600" style={{ borderColor: '#00BFB3' }}>{blockText(block.children)}</blockquote>;
+  }
+  const fallback = blockText(block?.children ?? []);
+  return fallback ? <p className="text-gray-700 leading-relaxed mb-4">{fallback}</p> : null;
 }
 
 export default function StoryDetailPage() {
