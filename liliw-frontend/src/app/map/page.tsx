@@ -42,7 +42,7 @@ interface RouteInfo {
 }
 
 type FilterType = 'all' | 'heritage' | 'spot' | 'dining';
-type TravelMode = 'driving' | 'walking';
+type TravelMode = 'driving' | 'walking' | 'motorcycle';
 
 /* ─── Photo Slideshow ─────────────────────────────────────────────────── */
 function PhotoSlideshow({ photos, name }: { photos: string[]; name: string }) {
@@ -214,18 +214,18 @@ function RouteOverlay({
                     className="flex rounded-lg overflow-hidden"
                     style={{ border: '1px solid rgba(0,191,179,0.3)' }}
                   >
-                    {(['driving', 'walking'] as TravelMode[]).map((m) => (
+                    {(['driving', 'motorcycle', 'walking'] as TravelMode[]).map((m) => (
                       <button
                         key={m}
                         onClick={() => onModeChange(m)}
                         className="px-2.5 py-1.5 text-xs font-bold transition"
-                        title={m === 'driving' ? 'Driving' : 'Walking'}
+                        title={m === 'driving' ? 'Driving' : m === 'motorcycle' ? 'Motorcycle' : 'Walking'}
                         style={{
                           backgroundColor: travelMode === m ? '#00BFB3' : 'transparent',
                           color: travelMode === m ? '#0F1F3C' : 'rgba(255,255,255,0.5)',
                         }}
                       >
-                        {m === 'driving' ? '🚗' : '🚶'}
+                        {m === 'driving' ? '🚗' : m === 'motorcycle' ? '🏍️' : '🚶'}
                       </button>
                     ))}
                   </div>
@@ -384,8 +384,9 @@ export default function MapPage() {
       const originName = userLocation ? 'Your Location' : 'Liliw Town Center';
 
       try {
+        const mapboxProfile = activeMode === 'motorcycle' ? 'driving' : activeMode;
         const res = await fetch(
-          `https://api.mapbox.com/directions/v5/mapbox/${activeMode}/${origin[0]},${origin[1]};${destination.lng},${destination.lat}?geometries=geojson&overview=full&steps=true&alternatives=true&access_token=${TOKEN}`
+          `https://api.mapbox.com/directions/v5/mapbox/${mapboxProfile}/${origin[0]},${origin[1]};${destination.lng},${destination.lat}?geometries=geojson&overview=full&steps=true&alternatives=true&access_token=${TOKEN}`
         );
         const data = await res.json();
 
