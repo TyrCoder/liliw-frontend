@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -22,18 +22,19 @@ function mediaUrl(url: string | undefined): string {
   return url.startsWith('http') ? url : `${STRAPI_BASE}${url}`;
 }
 
-const HEADING_SIZES: Record<number, string> = { 1: 'text-3xl', 2: 'text-2xl', 3: 'text-xl', 4: 'text-lg' };
-const HEADING_TAGS: Record<number, React.ElementType> = { 1: 'h1', 2: 'h2', 3: 'h3', 4: 'h4' };
-
 function blockText(children: any[]): string {
   return (children ?? []).map((c: any) => c?.text ?? '').join('');
 }
 
 function RichTextBlock({ block }: { block: any }) {
   if (block?.type === 'heading') {
-    const Tag = HEADING_TAGS[block.level as number] ?? 'h2';
-    const size = HEADING_SIZES[block.level as number] ?? 'text-xl';
-    return <Tag className={`${size} font-bold mt-8 mb-3`} style={{ color: '#0F1F3C' }}>{blockText(block.children)}</Tag>;
+    const text = blockText(block.children);
+    const cls = `${['text-3xl','text-2xl','text-xl','text-lg'][((block.level ?? 2) - 1)] ?? 'text-xl'} font-bold mt-8 mb-3`;
+    const s = { color: '#0F1F3C' };
+    if (block.level === 1) return <h1 className={cls} style={s}>{text}</h1>;
+    if (block.level === 3) return <h3 className={cls} style={s}>{text}</h3>;
+    if (block.level === 4) return <h4 className={cls} style={s}>{text}</h4>;
+    return <h2 className={cls} style={s}>{text}</h2>;
   }
   if (block?.type === 'paragraph') {
     return <p className="text-gray-700 leading-relaxed mb-4">{blockText(block.children)}</p>;
