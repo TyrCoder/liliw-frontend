@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Layers, Star } from 'lucide-react';
-import { getAllAttractions } from '@/lib/strapi';
-import { logger } from '@/lib/logger';
 import FavoriteButton from '@/components/FavoriteButton';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
@@ -54,9 +52,10 @@ export default function HeritagePage() {
   const [error, setError]       = useState('');
 
   useEffect(() => {
-    getAllAttractions()
-      .then(data => setHeritage(data.filter(a => a.type === 'heritage')))
-      .catch(err => { setError('Failed to load heritage sites'); logger.error('Heritage fetch error:', err); })
+    fetch('/api/strapi/attractions')
+      .then(r => r.json())
+      .then(json => setHeritage((json.data ?? []).filter((a: any) => a.type === 'heritage')))
+      .catch(() => setError('Failed to load heritage sites'))
       .finally(() => setLoading(false));
   }, []);
 

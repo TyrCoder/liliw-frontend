@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronDown, Clock, HelpCircle } from 'lucide-react'
-import { getFaqs } from '@/lib/strapi'
-import { logger } from '@/lib/logger'
 import { fuzzyMatch } from '@/lib/fuzzySearch'
 import SearchBar from '@/components/SearchBar'
 import type { FAQ as FaqItem } from '@/lib/types'
@@ -47,17 +45,15 @@ export default function FaqPage() {
     const fetchFaqs = async () => {
       setIsLoading(true)
       try {
-        const data = await getFaqs()
-        // Transform Strapi FAQ to display format
-        const transformed: DisplayFaq[] = data.map(faq => ({
-          id: faq.id,
-          question: faq.attributes.question,
-          answer: extractText(faq.attributes.answer),
-          category: faq.attributes.category,
-        }))
+        const res = await fetch('/api/strapi/faqs')
+        const json = await res.json()
+        const transformed: DisplayFaq[] = (json.data ?? []).map((faq: any) => {
+          const a = faq.attributes ?? faq
+          return { id: faq.id, question: a.question, answer: extractText(a.answer), category: a.category }
+        })
         setFaqs(transformed)
-      } catch (err) {
-        logger.error('Failed to load FAQs:', err)
+      } catch {
+        // silent
       }
       setIsLoading(false)
     }

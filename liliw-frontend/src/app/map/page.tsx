@@ -7,7 +7,6 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { MapPin, Navigation, X, Layers, ChevronLeft, Eye, Star } from 'lucide-react';
-import { getAllAttractions } from '@/lib/strapi';
 
 const LILIW_CENTER = { longitude: 121.43605859033404, latitude: 14.130301377593792 };
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -139,7 +138,7 @@ export default function MapPage() {
       setLoading(false);
       return;
     }
-    getAllAttractions().then((data) => {
+    fetch('/api/strapi/attractions').then(r => r.json()).then((json) => { const data = json.data ?? []; return data; }).then((data) => {
       const mapped: MapAttraction[] = data
         .filter((a) => {
           const c = a.attributes.coordinates;

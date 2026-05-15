@@ -10,7 +10,6 @@ import {
   Trash2, ChevronDown, LogIn, Pencil, Plus, ExternalLink, Check,
 } from 'lucide-react';
 import AuthModal from '@/components/AuthModal';
-import { getItineraries, getAllAttractions } from '@/lib/strapi';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useAuth } from '@/context/AuthContext';
 
@@ -119,7 +118,7 @@ function AttractionQuickModal({ placeName, onClose }: { placeName: string; onClo
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getAllAttractions().then((all: any[]) => {
+    fetch('/api/strapi/attractions').then(r => r.json()).then(json => { const all: any[] = json.data ?? []; return all; }).then((all: any[]) => {
       const needle = placeName.toLowerCase();
       const found = all.find((a: any) => {
         const name = (a.attributes?.name || '').toLowerCase();
@@ -213,7 +212,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: { p
   const [allAttractions, setAllAttractions] = useState<any[]>([]);
 
   useEffect(() => {
-    getAllAttractions().then(setAllAttractions).catch(() => {});
+    fetch('/api/strapi/attractions').then(r => r.json()).then(json => setAllAttractions(json.data ?? [])).catch(() => {});
   }, []);
 
   const allowedTypes = Array.from(
@@ -1034,7 +1033,7 @@ function DatabaseItineraries() {
   const [detail, setDetail]           = useState<Itinerary | null>(null);
 
   useEffect(() => {
-    getItineraries().then((data: any[]) => {
+    fetch('/api/strapi/itineraries').then(r => r.json()).then(json => { const data: any[] = json.data ?? []; return data; }).then((data: any[]) => {
       setItineraries(data.map((item: any) => {
         const a = item.attributes || item;
         const rawPhotos = a.photos?.data || a.photos || [];
