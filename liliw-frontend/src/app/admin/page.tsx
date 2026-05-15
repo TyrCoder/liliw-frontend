@@ -18,7 +18,7 @@ const STRAPI_URL = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '')
 interface Submission { id: any; attributes: { name: string; email: string; phone: string; message: string; type: string; status: string; createdAt: string }; }
 interface EventSignup { id: any; attributes: { full_name: string; email: string; phone: string; notes: string; username: string; status: string; createdAt: string; event: { data: { id: number; attributes: { title: string; date_start: string } } } }; }
 interface Analytics { pageViews: number; uniqueVisitors: number; avgSessionTime: string; bounceRate: string; topPages: { path: string; views: number }[]; devices?: { desktop: { count: number; pct: number }; mobile: { count: number; pct: number }; tablet: { count: number; pct: number } }; }
-interface AuditLog { id: string; event: string; model: string; uid?: string; entry_id: string; entry_title: string; changes?: any; created_at: string; }
+interface AuditLog { id: string; event: string; model: string; uid?: string; entry_id: string; entry_title: string; performed_by?: string; changes?: any; created_at: string; }
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[] }; }
 
@@ -571,7 +571,7 @@ export default function AdminDashboard() {
                 <th className="px-5 py-3 text-left">Event</th>
                 <th className="px-5 py-3 text-left">Entry</th>
                 <th className="px-5 py-3 text-left">Model</th>
-                <th className="px-5 py-3 text-left">Entry ID</th>
+                <th className="px-5 py-3 text-left">Performed By</th>
                 <th className="px-5 py-3 text-left">When</th>
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
@@ -582,11 +582,25 @@ export default function AdminDashboard() {
                         {log.event}
                       </span>
                     </td>
-                    <td className="px-5 py-4 font-medium text-gray-900 max-w-xs truncate">{log.entry_title}</td>
+                    <td className="px-5 py-4">
+                      <p className="font-medium text-gray-900 truncate max-w-[180px]">{log.entry_title}</p>
+                      <p className="text-xs text-gray-400 font-mono">{log.model}</p>
+                    </td>
                     <td className="px-5 py-4">
                       <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">{log.model}</span>
                     </td>
-                    <td className="px-5 py-4 text-gray-400 text-xs font-mono">{log.entry_id || '—'}</td>
+                    <td className="px-5 py-4">
+                      {log.performed_by ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#00BFB3' }}>
+                            {log.performed_by[0].toUpperCase()}
+                          </div>
+                          <span className="text-sm text-gray-700 truncate max-w-[140px]">{log.performed_by}</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
+                    </td>
                     <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
                       <Clock className="w-3 h-3 inline mr-1" />{fmt(log.created_at)}
                     </td>

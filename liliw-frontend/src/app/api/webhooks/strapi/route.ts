@@ -25,6 +25,10 @@ export async function POST(req: NextRequest) {
 
   // Save audit log — use 'system' as model fallback for test pings
   if (event) {
+    const actor = entry?.updatedBy || entry?.createdBy || null;
+    const performedBy = actor?.email ||
+      (actor?.firstname ? `${actor.firstname} ${actor.lastname || ''}`.trim() : null);
+
     const { error } = await supabaseServer.from('audit_logs').insert({
       event,
       model: model || 'system',
@@ -32,6 +36,7 @@ export async function POST(req: NextRequest) {
       entry_id: String(entry?.documentId || entry?.id || ''),
       entry_title: titleFromEntry(entry),
       changes: entry || null,
+      performed_by: performedBy || null,
     });
     if (error) console.error('[webhook] audit log insert failed:', error.code, error.message);
   }
