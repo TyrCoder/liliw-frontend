@@ -605,7 +605,7 @@ export default function MapPage() {
                   longitude={a.lng}
                   latitude={a.lat}
                   anchor="bottom"
-                  style={{ zIndex: isSelected ? 3 : 2 }}
+                  style={{ zIndex: isSelected ? 3 : selected ? 1 : 2 }}
                   onClick={(e) => {
                     e.originalEvent.stopPropagation();
                     handleMarkerClick(a);
