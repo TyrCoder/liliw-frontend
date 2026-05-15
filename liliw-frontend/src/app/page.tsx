@@ -560,7 +560,7 @@ export default function Home() {
             {
               href: '/culture', label: 'Culture',
               title: 'Culture & Traditions',
-              sub: 'Experience vibrant festivals, folk arts, and the enduring customs of Liliw's communities.',
+              sub: "Experience vibrant festivals, folk arts, and the enduring customs of Liliw's communities.",
               icon: <Camera className="w-6 h-6" />,
               bg: '#1565C0', accent: '#F5C518',
             },
