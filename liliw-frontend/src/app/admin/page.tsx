@@ -139,7 +139,7 @@ export default function AdminDashboard() {
   const handleSyncSearch = async () => {
     setSyncStatus('syncing');
     try {
-      const res = await fetch('/api/admin/sync-search', { method: 'POST' });
+      const res = await fetch('/api/admin/sync-search', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       res.ok ? (setSyncCount(data.synced), setSyncStatus('done')) : setSyncStatus('error');
     } catch { setSyncStatus('error'); }
