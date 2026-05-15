@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cormorant_Garamond, Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
@@ -10,18 +10,29 @@ import AnalyticsInit from "@/components/AnalyticsInit";
 import { AuthProvider } from "@/context/AuthContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const cormorant = Cormorant_Garamond({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const outfit = Outfit({
+  variable: "--font-heading",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-body",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Liliw Tourism - Discover the Beauty",
+  title: "Liliw Tourism - Discover the Beauty of Laguna",
   description: "Explore heritage sites, tourist attractions, and cultural experiences in Liliw, Laguna. Book tours, discover local artisans, and immerse yourself in authentic Filipino culture.",
   keywords: "Liliw, tourism, heritage, attractions, tours, Laguna, Philippines, travel",
   manifest: "/manifest.json",
@@ -31,9 +42,7 @@ export const metadata: Metadata = {
     title: "Liliw Tourism",
     startupImage: "/icons/icon-512x512.png",
   },
-  formatDetection: {
-    telephone: true,
-  },
+  formatDetection: { telephone: true },
 };
 
 export const viewport: Viewport = {
@@ -42,19 +51,15 @@ export const viewport: Viewport = {
   maximumScale: 5,
   minimumScale: 1,
   userScalable: true,
-  themeColor: "#00BFB3",
+  themeColor: "#0B3D91",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${cormorant.variable} ${outfit.variable} ${plusJakarta.variable} h-full antialiased`}
     >
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
@@ -65,9 +70,9 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-72x72.png" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#00BFB3" />
+        <meta name="theme-color" content="#0B3D91" />
       </head>
-      <body className="min-h-full flex flex-col bg-white">
+      <body className="min-h-full flex flex-col" style={{ backgroundColor: '#F9F6F0', color: '#1A1A2E' }}>
         <AuthProvider>
           <FavoritesProvider>
             <PWAHandler />

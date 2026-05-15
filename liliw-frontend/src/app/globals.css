@@ -1,24 +1,72 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --liliw-blue: #1565C0;
+  --deep-navy: #0B3D91;
+  --fiesta-gold: #F5C518;
+  --laguna-green: #2E7D32;
+  --warm-white: #F9F6F0;
+  --ink: #1A1A2E;
+  --background: #F9F6F0;
+  --foreground: #1A1A2E;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 body {
-  background: #ffffff;
-  color: #171717;
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--warm-white);
+  color: var(--ink);
+  font-family: var(--font-body), 'Plus Jakarta Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Mapbox popup – transparent shell so we can style the content ourselves */
+/* ── Font utilities ─────────────────────────── */
+.font-display {
+  font-family: var(--font-display), 'Cormorant Garamond', Georgia, serif;
+}
+.font-heading {
+  font-family: var(--font-heading), 'Outfit', system-ui, sans-serif;
+}
+
+/* ── Section label chip ─────────────────────── */
+.section-label {
+  font-family: var(--font-heading), 'Outfit', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ── Gold underline decoration ──────────────── */
+.gold-underline::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 3px;
+  background: var(--fiesta-gold);
+  margin-top: 10px;
+  border-radius: 2px;
+}
+
+/* ── Scrollbar hide ─────────────────────────── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Mapbox customizations ──────────────────── */
 .mapboxgl-popup-content {
   background: transparent !important;
   padding: 0 !important;
@@ -28,10 +76,27 @@ body {
 .mapboxgl-popup-tip {
   display: none !important;
 }
+.mapboxgl-popup {
+  z-index: 10 !important;
+}
 .mapboxgl-ctrl-group {
-  background: rgba(15, 31, 60, 0.9) !important;
-  border: 1px solid rgba(0, 191, 179, 0.3) !important;
+  background: rgba(11, 61, 145, 0.92) !important;
+  border: 1px solid rgba(245, 197, 24, 0.35) !important;
 }
 .mapboxgl-ctrl-group button {
   filter: invert(1);
+}
+
+/* ── Editorial card hover ───────────────────── */
+.editorial-card {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.editorial-card:hover {
+  transform: translateY(-4px);
+}
+.editorial-card:hover .card-img {
+  transform: scale(1.05);
+}
+.card-img {
+  transition: transform 500ms ease;
 }
