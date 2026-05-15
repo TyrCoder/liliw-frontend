@@ -319,12 +319,20 @@ export default function AdminDashboard() {
               <tbody className="divide-y divide-gray-50">
                 {users.map((u: any) => {
                   const roleName = u.role?.name || 'Authenticated';
-                  const isAdm = roleName.toLowerCase().includes('admin');
+                  const rn = roleName.toLowerCase();
+                  const isOfficer = rn.includes('officer');
+                  const isEditor  = rn.includes('editor');
+                  const isTourist = rn.includes('authenticated') || rn.includes('tourist');
+                  const roleColor = isOfficer ? { bg: 'bg-[#0F1F3C] text-white', avatar: '#0F1F3C' }
+                    : isEditor  ? { bg: 'bg-purple-50 text-purple-700', avatar: '#8B5CF6' }
+                    : isTourist ? { bg: 'bg-teal-50 text-teal-700',    avatar: '#00BFB3' }
+                    : { bg: 'bg-gray-100 text-gray-700', avatar: '#6B7280' };
+                  const RoleIcon = isOfficer ? Shield : isEditor ? Edit : UserCheck;
                   return (
                     <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: isAdm ? '#0F1F3C' : '#00BFB3' }}>
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: roleColor.avatar }}>
                             {(u.username || u.email || '?')[0].toUpperCase()}
                           </div>
                           <p className="font-semibold text-gray-900">{u.username || '—'}</p>
@@ -332,8 +340,8 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-5 py-4 text-gray-600"><Mail className="w-3 h-3 inline mr-1 shrink-0" />{u.email}</td>
                       <td className="px-5 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${isAdm ? 'bg-gray-100 text-gray-800' : 'bg-teal-50 text-teal-700'}`}>
-                          {isAdm ? <Shield className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}{roleName}
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${roleColor.bg}`}>
+                          <RoleIcon className="w-3 h-3" />{roleName}
                         </span>
                       </td>
                       <td className="px-5 py-4">
