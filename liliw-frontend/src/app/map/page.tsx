@@ -138,7 +138,7 @@ export default function MapPage() {
       setLoading(false);
       return;
     }
-    fetch('/api/strapi/attractions').then(r => r.json()).then((json) => { const data = json.data ?? []; return data; }).then((data) => {
+    fetch('/api/strapi/attractions').then(r => r.json()).then((json) => { const data: any[] = json.data ?? []; return data; }).then((data: any[]) => {
       const mapped: MapAttraction[] = data
         .filter((a) => {
           const c = a.attributes.coordinates;
