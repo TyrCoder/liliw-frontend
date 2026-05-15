@@ -23,7 +23,7 @@ function mediaUrl(url: string | undefined): string {
 }
 
 const HEADING_SIZES: Record<number, string> = { 1: 'text-3xl', 2: 'text-2xl', 3: 'text-xl', 4: 'text-lg' };
-const HEADING_TAGS: Record<number, keyof React.JSX.IntrinsicElements> = { 1: 'h1', 2: 'h2', 3: 'h3', 4: 'h4' };
+const HEADING_TAGS: Record<number, React.ElementType> = { 1: 'h1', 2: 'h2', 3: 'h3', 4: 'h4' };
 
 function blockText(children: any[]): string {
   return (children ?? []).map((c: any) => c?.text ?? '').join('');
