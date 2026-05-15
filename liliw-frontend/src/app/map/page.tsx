@@ -525,6 +525,7 @@ export default function MapPage() {
 
       {/* Map area */}
       <div className="flex-1 relative">
+        <style>{`.mapboxgl-popup { z-index: 10 !important; }`}</style>
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
@@ -605,7 +606,7 @@ export default function MapPage() {
                   longitude={a.lng}
                   latitude={a.lat}
                   anchor="bottom"
-                  style={{ zIndex: isSelected ? 3 : selected ? 1 : 2 }}
+                  style={{ zIndex: isSelected ? 5 : selected ? 0 : 2 }}
                   onClick={(e) => {
                     e.originalEvent.stopPropagation();
                     handleMarkerClick(a);
