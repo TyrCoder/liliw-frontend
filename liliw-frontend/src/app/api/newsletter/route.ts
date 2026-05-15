@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseServer } from '@/lib/supabase-server';
 
 export async function POST(request: NextRequest) {
   const { email } = await request.json();
@@ -9,10 +9,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
   }
 
-  const { error } = await supabase
+  const { error } = await supabaseServer
     .from('newsletter_subscribers')
     .upsert({ email }, { onConflict: 'email', ignoreDuplicates: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[newsletter POST]', error.code, error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json({ success: true, message: 'Subscribed successfully' }, { status: 201 });
 }
