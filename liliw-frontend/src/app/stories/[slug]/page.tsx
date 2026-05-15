@@ -6,13 +6,17 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, User, Calendar, BookOpen } from 'lucide-react';
 
+const HL = 'var(--font-heading), Outfit, sans-serif';
+const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
+const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
+
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
 const CATEGORY_COLORS: Record<string, string> = {
-  history:  '#00BFB3',
+  history:  '#0B3D91',
   culture:  '#8B5CF6',
-  people:   '#F59E0B',
-  nature:   '#10B981',
+  people:   '#F5C518',
+  nature:   '#2E7D32',
   food:     '#EF4444',
   festival: '#EC4899',
 };
@@ -30,19 +34,19 @@ function RichTextBlock({ block }: { block: any }) {
   if (block?.type === 'heading') {
     const text = blockText(block.children);
     const cls = `${['text-3xl','text-2xl','text-xl','text-lg'][((block.level ?? 2) - 1)] ?? 'text-xl'} font-bold mt-8 mb-3`;
-    const s = { color: '#0F1F3C' };
+    const s = { color: '#1A1A2E', fontFamily: HL };
     if (block.level === 1) return <h1 className={cls} style={s}>{text}</h1>;
     if (block.level === 3) return <h3 className={cls} style={s}>{text}</h3>;
     if (block.level === 4) return <h4 className={cls} style={s}>{text}</h4>;
     return <h2 className={cls} style={s}>{text}</h2>;
   }
   if (block?.type === 'paragraph') {
-    return <p className="text-gray-700 leading-relaxed mb-4">{blockText(block.children)}</p>;
+    return <p className="text-gray-700 leading-relaxed mb-4" style={{ fontFamily: BL }}>{blockText(block.children)}</p>;
   }
   if (block?.type === 'list') {
     const items: any[] = block?.children ?? [];
     const listItems = items.map((item: any, i: number) => (
-      <li key={i}>{blockText(item?.children)}</li>
+      <li key={i} style={{ fontFamily: BL }}>{blockText(item?.children)}</li>
     ));
     return block.format === 'ordered'
       ? <ol className="list-decimal pl-6 mb-4 space-y-1 text-gray-700">{listItems}</ol>
@@ -53,15 +57,19 @@ function RichTextBlock({ block }: { block: any }) {
     return src ? <img src={src} alt={block?.image?.alternativeText ?? ''} className="w-full rounded-xl my-6 object-cover" /> : null;
   }
   if (block?.type === 'quote') {
-    return <blockquote className="border-l-4 pl-5 py-1 my-6 italic text-gray-600" style={{ borderColor: '#00BFB3' }}>{blockText(block.children)}</blockquote>;
+    return (
+      <blockquote className="border-l-4 pl-5 py-1 my-6 italic text-gray-600" style={{ borderColor: '#F5C518', fontFamily: BL }}>
+        {blockText(block.children)}
+      </blockquote>
+    );
   }
   const fallback = blockText(block?.children ?? []);
-  return fallback ? <p className="text-gray-700 leading-relaxed mb-4">{fallback}</p> : null;
+  return fallback ? <p className="text-gray-700 leading-relaxed mb-4" style={{ fontFamily: BL }}>{fallback}</p> : null;
 }
 
 export default function StoryDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [story, setStory] = useState<any>(null);
+  const [story, setStory]   = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -96,7 +104,7 @@ export default function StoryDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-12">
+      <div className="max-w-3xl mx-auto px-4 py-12" style={{ fontFamily: BL }}>
         <div className="animate-pulse space-y-4">
           <div className="h-6 bg-gray-200 rounded w-24" />
           <div className="h-80 bg-gray-200 rounded-2xl" />
@@ -111,15 +119,19 @@ export default function StoryDetailPage() {
   if (!story) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-24 text-center">
-        <BookOpen className="w-12 h-12 mx-auto mb-4" style={{ color: '#00BFB3', opacity: 0.4 }} />
-        <p className="text-xl font-semibold text-gray-600">Story not found</p>
-        <Link href="/stories" className="mt-4 inline-block text-sm font-semibold" style={{ color: '#00BFB3' }}>← Back to Stories</Link>
+        <BookOpen className="w-12 h-12 mx-auto mb-4" style={{ color: '#0B3D91', opacity: 0.4 }} />
+        <p className="text-xl font-semibold text-gray-600" style={{ fontFamily: HL }}>Story not found</p>
+        <Link href="/stories" className="mt-4 inline-block text-sm font-semibold"
+          style={{ color: '#0B3D91', fontFamily: BL }}>
+          ← Back to Stories
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+
       {/* Cover image */}
       {story.coverUrl && (
         <div className="w-full h-64 sm:h-96 overflow-hidden relative">
@@ -133,48 +145,53 @@ export default function StoryDetailPage() {
 
           {/* Back link */}
           <Link href="/stories" className="inline-flex items-center gap-1 text-sm font-semibold mb-6 group"
-            style={{ color: '#00BFB3' }}>
+            style={{ color: '#0B3D91', fontFamily: BL }}>
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition" /> Back to Stories
           </Link>
 
           {/* Category + meta */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <span className="text-xs font-bold px-3 py-1 rounded-full text-white capitalize"
-              style={{ backgroundColor: CATEGORY_COLORS[story.category] ?? '#00BFB3' }}>
+              style={{ backgroundColor: CATEGORY_COLORS[story.category] ?? '#0B3D91', fontFamily: HL }}>
               {story.category}
             </span>
             {story.featured && (
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-700">Featured</span>
+              <span className="text-xs font-bold px-3 py-1 rounded-full"
+                style={{ backgroundColor: 'rgba(245,197,24,0.15)', color: '#0B3D91', fontFamily: HL }}>
+                Featured
+              </span>
             )}
           </div>
 
           {/* Title */}
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: '#0F1F3C' }}>{story.title}</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: '#1A1A2E', fontFamily: DL }}>{story.title}</h1>
 
           {/* Author + date */}
-          <div className="flex items-center gap-4 text-sm text-gray-400 mb-8 pb-8 border-b border-gray-100">
+          <div className="flex items-center gap-4 text-sm text-gray-400 mb-8 pb-8 border-b border-gray-200"
+            style={{ fontFamily: BL }}>
             <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5" />{story.author}</span>
             {story.date && <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />{story.date}</span>}
           </div>
 
           {/* Excerpt */}
           {story.excerpt && (
-            <p className="text-lg text-gray-600 leading-relaxed mb-8 font-medium italic">{story.excerpt}</p>
+            <p className="text-lg text-gray-600 leading-relaxed mb-8 font-medium italic"
+              style={{ fontFamily: DL }}>{story.excerpt}</p>
           )}
 
           {/* Rich text content */}
           <div className="prose-custom">
             {Array.isArray(story.content) && story.content.length > 0
               ? story.content.map((block: any, i: number) => <RichTextBlock key={i} block={block} />)
-              : <p className="text-gray-400 italic">No content yet.</p>
+              : <p className="text-gray-400 italic" style={{ fontFamily: BL }}>No content yet.</p>
             }
           </div>
 
           {/* Footer */}
-          <div className="mt-16 pt-8 border-t border-gray-100">
+          <div className="mt-16 pt-8 border-t border-gray-200">
             <Link href="/stories"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white transition hover:opacity-90"
-              style={{ backgroundColor: '#00BFB3' }}>
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition hover:opacity-90"
+              style={{ backgroundColor: '#0B3D91', color: '#F5C518', fontFamily: BL }}>
               <BookOpen className="w-4 h-4" /> More Stories
             </Link>
           </div>
