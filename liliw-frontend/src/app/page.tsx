@@ -7,7 +7,6 @@ import { ArrowRight, MapPin, History, Leaf, HelpCircle, Calendar, Star, Bell } f
 import HeroCarousel from '@/components/HeroCarousel';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import FeaturedCarousel from '@/components/FeaturedCarousel';
-import { getAllAttractions } from '@/lib/strapi';
 
 const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.2, delayChildren: 0.3 } } };
 const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 0.5 } } };
@@ -44,7 +43,10 @@ export default function Home() {
   const [featured, setFeatured] = useState<any[]>([]);
 
   useEffect(() => {
-    getAllAttractions().then(all => setFeatured(getDailyFeatured(all))).catch(() => {});
+    fetch('/api/strapi/attractions')
+      .then(r => r.json())
+      .then(d => setFeatured(getDailyFeatured(d.data || [])))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {

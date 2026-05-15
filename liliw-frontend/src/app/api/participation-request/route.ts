@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase-server';
 import { logger } from '@/lib/logger';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
@@ -12,22 +13,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Name and email are required' }, { status: 400 });
     }
 
-    const res = await fetch(`${STRAPI}/api/participation-requests`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${TOKEN}`,
-      },
-      body: JSON.stringify({
-        data: { full_name, email, phone: phone || '', type: type || null, message: message || '' },
-      }),
-    });
+    // Primary: save to Supabase (always reliable)
+    const { error: sbError } = await supabaseServer
+      .from('participation_requests')
+      .insert({
+        full_name,
+        email,
+        phone: phone || '',
+        type: type || 'feedback',
+        message: message || '',
+      });
 
-    if (!res.ok) {
-      const err = await res.text();
-      logger.error('Strapi participation-request error:', err);
-      return NextResponse.json({ error: 'Failed to save request' }, { status: 500 });
+    if (sbError) {
+      console.error('[participation-request] Supabase error:', sbError.code, sbError.message);
     }
+
+    // Secondary: also save to Strapi (fire-and-forget — Render may be sleeping)
+    fetch(`${STRAPI}/api/participation-requests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
+      body: JSON.stringify({ data: { full_name, email, type: type || null, message: message || '' } }),
+    }).catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback, useRef, type ChangeEvent } from 'reac
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ChevronLeft, Layers, PenLine, Lock, X, Eye, EyeOff, Camera, Trash2, Upload } from 'lucide-react';
-import { getAllAttractions } from '@/lib/strapi';
 import { logger } from '@/lib/logger';
 import { COLORS } from '@/lib/constants';
 import ImmersiveViewer from '@/components/ImmersiveViewer';
@@ -64,21 +63,16 @@ export default function ImmersivePage() {
   }, [isAdmin]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await getAllAttractions();
-        const virtualTourAttractions = data.filter((attraction) => attraction.attributes.has_virtual_tour === true);
+    fetch('/api/strapi/attractions')
+      .then(r => r.json())
+      .then(json => {
+        const all: Attraction[] = json.data || [];
+        const virtualTourAttractions = all.filter(a => a.attributes.has_virtual_tour === true);
         setAttractions(virtualTourAttractions);
-        if (virtualTourAttractions.length > 0) {
-          setSelectedAttractionId(virtualTourAttractions[0].id);
-        }
-      } catch (error) {
-        logger.error('Error fetching attractions:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+        if (virtualTourAttractions.length > 0) setSelectedAttractionId(virtualTourAttractions[0].id);
+      })
+      .catch(err => logger.error('Error fetching attractions:', err))
+      .finally(() => setLoading(false));
   }, []);
 
   const selectedAttraction = attractions.find((a) => a.id === selectedAttractionId);
