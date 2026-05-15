@@ -35,6 +35,8 @@ export default function Navbar() {
     { href: '/culture',  label: 'Culture & Traditions' },
     { href: '/arts',     label: 'Arts & Creatives' },
     { href: '/dining',   label: 'Dining' },
+    { href: '/gallery',  label: 'Media Gallery' },
+    { href: '/stories',  label: 'Stories' },
   ];
 
   const navLinks = [
