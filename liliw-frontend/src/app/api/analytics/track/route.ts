@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase-server';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
@@ -43,6 +44,17 @@ export async function POST(request: NextRequest) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
       body: JSON.stringify({ data: { path } }),
     }).catch(() => {});
+
+    // Upsert live session into Supabase (fire-and-forget)
+    if (sessionId) {
+      const d: Device = ['desktop', 'mobile', 'tablet'].includes(device) ? device : 'desktop';
+      supabaseServer.from('active_sessions').upsert({
+        session_id: sessionId,
+        page: path,
+        device: d,
+        last_seen: new Date().toISOString(),
+      }, { onConflict: 'session_id' }).then(() => {}).catch(() => {});
+    }
 
     return NextResponse.json({ success: true });
   } catch {
