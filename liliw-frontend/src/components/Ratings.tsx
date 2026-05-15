@@ -29,17 +29,17 @@ export default function Ratings({ itemId, itemName, ratings = [] }: RatingsProps
   const [submitted, setSubmitted]     = useState(false);
   const [submitting, setSubmitting]   = useState(false);
   const [validationMsg, setValidationMsg] = useState('');
-  const [dbRatings, setDbRatings]     = useState<Rating[]>(ratings);
+  const [dbRatings, setDbRatings]     = useState<Rating[]>([]);
   const [loading, setLoading]         = useState(false);
 
   const authorName = user ? user.username : guestName;
 
-  useEffect(() => {
+  const fetchReviews = () => {
     setLoading(true);
     fetch(`/api/strapi/reviews?itemId=${encodeURIComponent(itemId)}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (!data?.data?.length) return;
+        if (!data?.data) return;
         setDbRatings(data.data.map((review: any) => {
           const a = review.attributes || review;
           return {
@@ -54,9 +54,11 @@ export default function Ratings({ itemId, itemName, ratings = [] }: RatingsProps
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [itemId]);
+  };
 
-  const displayRatings = dbRatings.length > 0 ? dbRatings : ratings;
+  useEffect(() => { fetchReviews(); }, [itemId]);
+
+  const displayRatings = dbRatings;
   const avgRating = displayRatings.length > 0
     ? (displayRatings.reduce((sum, r) => sum + r.rating, 0) / displayRatings.length).toFixed(1)
     : 0;
@@ -70,15 +72,21 @@ export default function Ratings({ itemId, itemName, ratings = [] }: RatingsProps
 
     setSubmitting(true);
     try {
-      await fetch('/api/ratings', {
+      const res = await fetch('/api/ratings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId, itemName, author: authorName.trim(), rating: userRating, comment: userComment.trim() }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setValidationMsg(err.error || 'Failed to submit. Please try again.');
+        return;
+      }
       setSubmitted(true);
       setUserRating(0);
       setUserComment('');
       setGuestName('');
+      fetchReviews();
       setTimeout(() => setSubmitted(false), 4000);
     } catch {
       setValidationMsg('Failed to submit. Please try again.');
