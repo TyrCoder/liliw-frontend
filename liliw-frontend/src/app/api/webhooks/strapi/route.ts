@@ -23,16 +23,17 @@ export async function POST(req: NextRequest) {
 
   const { event, model, uid, entry } = body;
 
-  // Save audit log to Supabase (fire-and-forget, don't block response)
-  if (event && model) {
-    void supabaseServer.from('audit_logs').insert({
+  // Save audit log — use 'system' as model fallback for test pings
+  if (event) {
+    const { error } = await supabaseServer.from('audit_logs').insert({
       event,
-      model,
+      model: model || 'system',
       uid: uid || null,
       entry_id: String(entry?.documentId || entry?.id || ''),
       entry_title: titleFromEntry(entry),
       changes: entry || null,
     });
+    if (error) console.error('[webhook] audit log insert failed:', error.code, error.message);
   }
 
   // Sync Algolia index — respond immediately so Strapi doesn't time out
