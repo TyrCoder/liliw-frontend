@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { logger } from '@/lib/logger';
 
+const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+
 export async function POST(request: NextRequest) {
   try {
     const { name, email, phone, message, type } = await request.json();
@@ -14,14 +17,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
+    // Primary: Supabase
     const { error } = await supabaseServer
       .from('community_submissions')
-      .insert({ name, email, phone: phone || '', message, type: type || 'feedback' });
+      .insert({ name, email, phone: phone || '', message, type: type || 'feedback', status: 'new' });
 
     if (error) {
       console.error('[submissions POST]', error.code, error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Secondary: Strapi (fire-and-forget)
+    fetch(`${STRAPI}/api/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
+      body: JSON.stringify({ data: { name, email, phone: phone || '', message, type: type || 'feedback' } }),
+    }).catch(() => {});
+
     return NextResponse.json({ success: true, message: 'Thank you for your submission! We will be in touch shortly.' });
   } catch (err) {
     logger.error('Submission error:', err);
