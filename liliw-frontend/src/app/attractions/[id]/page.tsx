@@ -370,24 +370,6 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           <Ratings
             itemId={String(attraction.id)}
             itemName={attraction.attributes.name}
-            ratings={[
-              {
-                id: '1',
-                author: 'Maria Santos',
-                rating: 5,
-                date: 'March 2024',
-                comment: 'Absolutely stunning place! Worth the visit. Friendly locals and amazing views.',
-                verified: true
-              },
-              {
-                id: '2',
-                author: 'John Dela Cruz',
-                rating: 4,
-                date: 'February 2024',
-                comment: 'Beautiful location with good facilities. Recommended for families.',
-                verified: true
-              },
-            ]}
           />
         </motion.div>
 
