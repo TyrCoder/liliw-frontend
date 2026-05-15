@@ -1,7 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Share2, MessageCircle, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Share2, MessageCircle, Send, Download, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const containerVariants = {
@@ -38,9 +39,33 @@ const SOCIAL = [
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [installing, setInstalling] = useState(false);
+  const [installed, setInstalled] = useState(false);
 
-  const openChat = () => {
-    window.dispatchEvent(new CustomEvent('open-lilio-chat'));
+  useEffect(() => {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setInstalled(true);
+      return;
+    }
+    const handler = (e: Event) => { e.preventDefault(); setDeferredPrompt(e); };
+    const installedHandler = () => { setInstalled(true); setDeferredPrompt(null); };
+    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', installedHandler);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', installedHandler);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    setInstalling(true);
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    setInstalling(false);
+    if (outcome === 'accepted') setInstalled(true);
+    setDeferredPrompt(null);
   };
 
   return (
@@ -170,18 +195,30 @@ export default function Footer() {
             &copy; {year} Liliw Tourism. All rights reserved.
           </motion.p>
 
-          {/* Lilio Chat — centered CTA */}
-          <motion.button
-            variants={itemVariants}
-            onClick={openChat}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm transition-opacity hover:opacity-90 shadow-lg"
-            style={{ backgroundColor: '#00BFB3', color: '#0F1F3C', boxShadow: '0 0 20px rgba(0,191,179,0.25)' }}
-          >
-            <MessageCircle size={16} />
-            Chat with Lilio
-          </motion.button>
+          {/* PWA Install — centered CTA (only on browsers that support it) */}
+          {(deferredPrompt || installed) && (
+            <motion.button
+              variants={itemVariants}
+              onClick={handleInstall}
+              disabled={installing || installed || !deferredPrompt}
+              whileHover={!installed ? { scale: 1.04 } : {}}
+              whileTap={!installed ? { scale: 0.97 } : {}}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm shadow-lg transition-opacity disabled:cursor-default"
+              style={{
+                backgroundColor: installed ? 'rgba(0,191,179,0.15)' : '#00BFB3',
+                color: installed ? '#00BFB3' : '#0F1F3C',
+                border: installed ? '1px solid rgba(0,191,179,0.3)' : 'none',
+                boxShadow: installed ? 'none' : '0 0 20px rgba(0,191,179,0.25)',
+              }}
+            >
+              {installed
+                ? <><CheckCircle size={15} /> App Installed</>
+                : installing
+                  ? <><span className="w-3.5 h-3.5 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(15,31,60,0.3)', borderTopColor: '#0F1F3C' }} /> Installing…</>
+                  : <><Download size={15} /> Install App</>
+              }
+            </motion.button>
+          )}
 
           {/* Social + Legal */}
           <motion.div variants={itemVariants} className="flex items-center gap-5">
