@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { syncAlgolia } from '@/lib/syncAlgolia';
 import { supabaseServer } from '@/lib/supabase-server';
 
-const WEBHOOK_SECRET = process.env.STRAPI_WEBHOOK_SECRET || '';
-
 function titleFromEntry(entry: any): string {
   return (
     entry?.name ||
@@ -16,21 +14,11 @@ function titleFromEntry(entry: any): string {
 }
 
 export async function POST(req: NextRequest) {
-  // Support both header styles
-  const secret =
-    req.headers.get('Authorization')?.replace('Bearer ', '') ||
-    req.headers.get('x-webhook-secret') ||
-    '';
-
-  if (WEBHOOK_SECRET && secret !== WEBHOOK_SECRET) {
-    return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
-  }
-
   let body: any = {};
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    return NextResponse.json({ ok: true }); // ignore empty test pings
   }
 
   const { event, model, uid, entry } = body;
