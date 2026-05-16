@@ -10,6 +10,35 @@ const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
+const PENNANT = ['#EF4444','#F97316','#EAB308','#22C55E','#0D9488','#3B82F6','#8B5CF6'];
+function Bunting({ flip = false }: { flip?: boolean }) {
+  const r = 14, panels = 8, arc = Math.PI * 2 / panels, spacing = 30;
+  const W = r + (PENNANT.length - 1) * spacing + r;
+  const cy = r;
+  return (
+    <svg width={W} height={r * 2} viewBox={`0 0 ${W} ${r * 2}`} style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }}>
+      <line x1="0" y1={cy} x2={W} y2={cy} stroke="#9CA3AF" strokeWidth="1.2" />
+      {PENNANT.map((color, idx) => {
+        const cx = r + idx * spacing;
+        return (
+          <g key={idx}>
+            {Array.from({ length: panels }).map((_, i) => {
+              const a1 = -Math.PI / 2 + i * arc;
+              const a2 = -Math.PI / 2 + (i + 1) * arc;
+              const x1 = (cx + r * Math.cos(a1)).toFixed(2);
+              const y1 = (cy + r * Math.sin(a1)).toFixed(2);
+              const x2 = (cx + r * Math.cos(a2)).toFixed(2);
+              const y2 = (cy + r * Math.sin(a2)).toFixed(2);
+              return <path key={i} d={`M ${cx},${cy} L ${x1},${y1} A ${r},${r} 0 0,1 ${x2},${y2} Z`}
+                fill={i % 2 === 0 ? color : color + 'bb'} />;
+            })}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 const ICON_MAP: Record<string, React.ReactNode> = {
   volunteer:   <Users className="w-5 h-5" />,
   partnership: <Briefcase className="w-5 h-5" />,
@@ -80,9 +109,11 @@ export default function CommunityPage() {
             <Link href="/" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>
               <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to Home
             </Link>
-            <p className="section-label mb-3" style={{ color: 'rgba(245,197,24,0.9)' }}>Community</p>
-            <h1 className="text-4xl sm:text-6xl font-bold text-white mb-4" style={{ fontFamily: DL }}>Community Engagement</h1>
-            <div className="w-12 h-0.5 mb-4 rounded-full" style={{ backgroundColor: '#F5C518' }} />
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <Bunting />
+              <h1 className="text-4xl sm:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>Community Engagement</h1>
+              <Bunting flip />
+            </div>
             <p className="text-white/70 text-lg" style={{ fontFamily: BL }}>
               Be part of Liliw&apos;s tourism story — volunteer, partner, or share your feedback.
             </p>
