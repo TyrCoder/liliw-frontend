@@ -33,21 +33,43 @@ const AuthContext = createContext<AuthCtx | null>(null);
 
 const TOKEN_KEY = 'liliw-jwt';
 const USER_KEY  = 'liliw-user';
+const STRAPI    = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, token: null, loading: true });
 
+  // On mount: always re-fetch the user's current role from Strapi so role
+  // changes (e.g. Admin → CHATO Officer) are reflected without re-logging in.
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
-    const raw   = localStorage.getItem(USER_KEY);
-    if (token && raw) {
-      try {
-        const user: StrapiUser = JSON.parse(raw);
-        setState({ user, token, loading: false });
-        return;
-      } catch {}
+    if (!token) {
+      setState(s => ({ ...s, loading: false }));
+      return;
     }
-    setState(s => ({ ...s, loading: false }));
+    fetch(`${STRAPI}/api/users/me?populate=role`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => (r.ok ? r.json() : null))
+      .then(user => {
+        if (user?.id) {
+          localStorage.setItem(USER_KEY, JSON.stringify(user));
+          setState({ user, token, loading: false });
+        } else {
+          // Token expired or invalid — clear session
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(USER_KEY);
+          setState({ user: null, token: null, loading: false });
+        }
+      })
+      .catch(() => {
+        // Network error — fall back to cached data so offline still works
+        const raw = localStorage.getItem(USER_KEY);
+        try {
+          setState({ user: raw ? JSON.parse(raw) : null, token, loading: false });
+        } catch {
+          setState({ user: null, token: null, loading: false });
+        }
+      });
   }, []);
 
   const persist = (token: string, user: StrapiUser) => {
