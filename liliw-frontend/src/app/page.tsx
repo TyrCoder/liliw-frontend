@@ -380,7 +380,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════
           HERO — full-screen video
           ══════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden w-full" style={{ height: 'calc(100svh - 56px)', minHeight: 300 }}>
+      <section className="relative overflow-hidden w-full hero-full">
         <div className="absolute inset-0" style={{ background: '#0B3D91' }}>
           {process.env.NEXT_PUBLIC_HERO_VIDEO_URL ? (
             <video autoPlay muted loop playsInline className="w-full h-full object-cover">
