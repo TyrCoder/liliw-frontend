@@ -11,8 +11,8 @@ const FIELDS = [
   { id: 'phone',           label: 'Contact Number',          type: 'tel',      required: true,  placeholder: '+63 9XX XXX XXXX' },
   { id: 'address',         label: 'Business Address',        type: 'textarea', required: true,  placeholder: 'Complete address in Liliw, Laguna' },
   { id: 'attraction_name', label: 'Attraction / Listing Name', type: 'text',   required: true,  placeholder: 'Name as it appears on the site' },
-  { id: 'business_type',   label: 'Business Type',           type: 'text',     required: false, placeholder: 'e.g. Restaurant, Resort, Craft Shop' },
-  { id: 'permit_number',   label: "Mayor's Permit / DTI No.", type: 'text',    required: false, placeholder: 'Business permit number' },
+  { id: 'business_type',   label: 'Business Type',           type: 'text',     required: true,  placeholder: 'e.g. Restaurant, Resort, Craft Shop' },
+  { id: 'permit_number',   label: "Mayor's Permit / DTI No.", type: 'text',    required: true,  placeholder: 'Business permit number' },
 ];
 
 export default function LBOApplyPage() {
@@ -35,6 +35,11 @@ export default function LBOApplyPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (files.length === 0) {
+      setErrorMsg('Please upload at least one supporting document (Mayor\'s Permit, DTI registration, or valid ID).');
+      setStatus('error');
+      return;
+    }
     setSubmitting(true);
     setStatus('idle');
 
@@ -145,8 +150,8 @@ export default function LBOApplyPage() {
 
         {/* Documents section */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-          <h2 className="font-bold text-gray-900 text-base mb-1">Supporting Documents</h2>
-          <p className="text-xs text-gray-400 mb-4">Upload your Mayor's Permit, DTI/SEC registration, valid ID, or any relevant documents (PDF, JPG, PNG)</p>
+          <h2 className="font-bold text-gray-900 text-base mb-1">Supporting Documents <span className="text-red-500">*</span></h2>
+          <p className="text-xs text-gray-400 mb-4">Upload your Mayor's Permit, DTI/SEC registration, or valid ID (PDF, JPG, PNG). At least one document is required.</p>
 
           {/* Drop zone */}
           <div
