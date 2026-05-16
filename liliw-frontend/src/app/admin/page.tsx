@@ -23,7 +23,7 @@ interface AuditLog { id: string; event: string; model: string; uid?: string; ent
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[] }; }
 
-type Tab = 'overview' | 'users' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit';
+type Tab = 'overview' | 'users' | 'roles' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit';
 
 /* ─── helpers ─────────────────────────────────────────────── */
 const STATUS_BADGE: Record<string, string> = { new: 'bg-blue-50 text-blue-700', reviewed: 'bg-yellow-50 text-yellow-700', resolved: 'bg-green-50 text-green-700' };
@@ -116,6 +116,12 @@ export default function AdminDashboard() {
   const [loadingAttr,   setLoadingAttr]   = useState(true);
   const [loadingAudit,  setLoadingAudit]  = useState(true);
 
+  const [roleUsers,     setRoleUsers]     = useState<any[]>([]);
+  const [availRoles,    setAvailRoles]    = useState<any[]>([]);
+  const [loadingRoles,  setLoadingRoles]  = useState(true);
+  const [savingRole,    setSavingRole]    = useState<number | null>(null);
+  const [roleMsg,       setRoleMsg]       = useState<{ id: number; ok: boolean; text: string } | null>(null);
+
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
   const [syncCount, setSyncCount] = useState<number | null>(null);
@@ -136,6 +142,11 @@ export default function AdminDashboard() {
     fetch('/api/admin/users',          { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
     fetch('/api/strapi/attractions').then(r => r.json()).then(d => setAttractions(d.data || [])).catch(() => {}).finally(() => setLoadingAttr(false));
     fetch('/api/admin/audit-logs',     { headers: h }).then(r => r.json()).then(d => setAuditLogs(d.data || [])).catch(() => {}).finally(() => setLoadingAudit(false));
+
+    fetch('/api/admin/assign-role', { headers: h }).then(r => r.json()).then(d => {
+      setRoleUsers(d.users || []);
+      setAvailRoles(d.roles || []);
+    }).catch(() => {}).finally(() => setLoadingRoles(false));
   }, [isAdmin, token]);
 
   // Live visitors polling — every 10 seconds
@@ -152,6 +163,29 @@ export default function AdminDashboard() {
     const id = setInterval(poll, 10_000);
     return () => clearInterval(id);
   }, [isAdmin, token]);
+
+  const handleAssignRole = async (userId: number, roleId: number) => {
+    setSavingRole(userId);
+    setRoleMsg(null);
+    try {
+      const res = await fetch('/api/admin/assign-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId, roleId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRoleUsers(prev => prev.map(u => u.id === userId ? { ...u, roleId, role: availRoles.find(r => r.id === roleId)?.name } : u));
+        setRoleMsg({ id: userId, ok: true, text: 'Role updated' });
+      } else {
+        setRoleMsg({ id: userId, ok: false, text: data.error || 'Failed' });
+      }
+    } catch {
+      setRoleMsg({ id: userId, ok: false, text: 'Network error' });
+    }
+    setSavingRole(null);
+    setTimeout(() => setRoleMsg(null), 3000);
+  };
 
   const handleSyncSearch = async () => {
     setSyncStatus('syncing');
@@ -173,6 +207,7 @@ export default function AdminDashboard() {
   const TABS: { key: Tab; label: string; badge?: number }[] = [
     { key: 'overview',      label: 'Overview' },
     { key: 'users',         label: 'Users',         badge: users.length },
+    { key: 'roles',         label: 'Role Management', badge: roleUsers.length },
     { key: 'submissions',   label: 'Submissions',   badge: newCount },
     { key: 'participation', label: 'Participation', badge: participation.length },
     { key: 'signups',       label: 'Event Sign-ups',badge: signups.length },
@@ -451,6 +486,78 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </TableWrap>
+        )}
+
+        {/* ── ROLE MANAGEMENT ───────────────────────────────── */}
+        {activeTab === 'roles' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+              <h2 className="font-bold text-gray-900 mb-1">Assign User Roles</h2>
+              <p className="text-xs text-gray-400">Changes are saved immediately to Strapi. Roles come from Users &amp; Permissions.</p>
+            </div>
+
+            {loadingRoles ? (
+              <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        <th className="px-5 py-3 text-left">User</th>
+                        <th className="px-5 py-3 text-left">Email</th>
+                        <th className="px-5 py-3 text-left">Current Role</th>
+                        <th className="px-5 py-3 text-left">Assign Role</th>
+                        <th className="px-5 py-3 text-left">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {roleUsers.map((u: any) => (
+                        <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#00BFB3' }}>
+                                {(u.username || u.email || '?')[0].toUpperCase()}
+                              </div>
+                              <span className="font-semibold text-gray-900">{u.username || '—'}</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 text-gray-600">{u.email}</td>
+                          <td className="px-5 py-4">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                              {u.role || 'Authenticated'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <select
+                              defaultValue={u.roleId || ''}
+                              onChange={e => handleAssignRole(u.id, Number(e.target.value))}
+                              disabled={savingRole === u.id}
+                              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50">
+                              <option value="" disabled>Select role…</option>
+                              {availRoles.map((r: any) => (
+                                <option key={r.id} value={r.id}>{r.name}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-5 py-4">
+                            {savingRole === u.id ? (
+                              <span className="flex items-center gap-1.5 text-xs text-gray-400"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</span>
+                            ) : roleMsg?.id === u.id ? (
+                              <span className={`flex items-center gap-1.5 text-xs font-semibold ${roleMsg!.ok ? 'text-green-600' : 'text-red-500'}`}>
+                                {roleMsg!.ok ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                                {roleMsg!.text}
+                              </span>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* ── SUBMISSIONS ────────────────────────────────────── */}
