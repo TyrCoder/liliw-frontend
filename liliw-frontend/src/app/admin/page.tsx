@@ -759,7 +759,7 @@ export default function AdminDashboard() {
                           </div>
                           <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize shrink-0 ${statusColor}`}>{status}</span>
                           <span className="text-xs text-gray-400 shrink-0 hidden sm:block">
-                            {a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                            {(a.created_at || a.createdAt) ? new Date(a.created_at || a.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                           </span>
                           {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
                         </div>

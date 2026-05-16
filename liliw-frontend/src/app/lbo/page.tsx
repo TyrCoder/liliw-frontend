@@ -427,7 +427,7 @@ export default function LboDashboard() {
                               </div>
                             )}
                           </div>
-                          <span className="text-xs text-gray-400 shrink-0">{a.createdAt ? fmt(a.createdAt) : '—'}</span>
+                          <span className="text-xs text-gray-400 shrink-0">{(a.created_at || a.createdAt) ? fmt(a.created_at || a.createdAt) : '—'}</span>
                         </div>
                       </div>
                     );
