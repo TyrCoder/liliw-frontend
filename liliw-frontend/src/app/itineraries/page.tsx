@@ -224,9 +224,69 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [allAttractions, setAllAttractions] = useState<any[]>([]);
 
+  // Delete confirm + suggestions
+  const [deleteTarget, setDeleteTarget] = useState<{ dayIdx: number; stopIdx: number; place: string } | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  // Map
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<any>(null);
+  const [showMap, setShowMap] = useState(false);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'pending' | 'granted' | 'denied'>('idle');
+
   useEffect(() => {
     fetch('/api/strapi/attractions').then(r => r.json()).then(json => setAllAttractions(json.data ?? [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!showMap || !mapContainer.current || mapInstance.current) return;
+    let cancelled = false;
+    const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
+    import('mapbox-gl').then(async ({ default: mapboxgl }) => {
+      if (cancelled || !mapContainer.current) return;
+      // @ts-ignore
+      mapboxgl.accessToken = MAPBOX_TOKEN;
+      const map = new mapboxgl.Map({ container: mapContainer.current, style: 'mapbox://styles/mapbox/streets-v12', center: [121.4359, 14.1297], zoom: 13 });
+      mapInstance.current = map;
+      map.on('load', async () => {
+        if (cancelled) return;
+        const coords: [number, number][] = [];
+        if (userLocation) {
+          coords.push(userLocation);
+          new mapboxgl.Marker({ color: '#1565C0' }).setLngLat(userLocation).setPopup(new mapboxgl.Popup({ offset: 25 }).setText('Your Location')).addTo(map);
+        }
+        const allStops = localPlan.days.flatMap((d: any) => d.stops.map((s: Stop) => s.place)).filter(Boolean);
+        for (const place of allStops) {
+          try {
+            const q = encodeURIComponent(`${place}, Liliw, Laguna, Philippines`);
+            const r = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${MAPBOX_TOKEN}&limit=1&country=ph`);
+            const d = await r.json();
+            const coord = d?.features?.[0]?.center as [number, number] | undefined;
+            if (coord) {
+              coords.push(coord);
+              new mapboxgl.Marker({ color: '#EF4444' }).setLngLat(coord).setPopup(new mapboxgl.Popup({ offset: 25 }).setText(place)).addTo(map);
+            }
+          } catch {}
+        }
+        if (coords.length >= 2) {
+          try {
+            const r = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${coords.map(c => c.join(',')).join(';')}?geometries=geojson&access_token=${MAPBOX_TOKEN}`);
+            const d = await r.json();
+            const geometry = d?.routes?.[0]?.geometry;
+            if (geometry) {
+              map.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry } });
+              map.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#1565C0', 'line-width': 4, 'line-opacity': 0.85 } });
+            }
+          } catch {}
+          const bounds = coords.reduce((b, c) => b.extend(c as any), new mapboxgl.LngLatBounds(coords[0], coords[0]));
+          map.fitBounds(bounds, { padding: 60 });
+        }
+      });
+    });
+    return () => { cancelled = true; mapInstance.current?.remove(); mapInstance.current = null; };
+  }, [showMap, userLocation, localPlan]);
 
   const allowedTypes = Array.from(
     new Set(
@@ -244,6 +304,52 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
       next.days[dayIdx].stops[stopIdx][field] = value;
       return next;
     });
+  };
+
+  const openDeleteDialog = async (dayIdx: number, stopIdx: number, place: string) => {
+    setDeleteTarget({ dayIdx, stopIdx, place });
+    setLoadingSuggestions(true);
+    setSuggestions([]);
+    try {
+      const inPlan = new Set(localPlan.days.flatMap((d: any) => d.stops.map((s: Stop) => s.place.toLowerCase())));
+      const filtered = filteredAttractions
+        .filter(a => !inPlan.has((a.attributes?.name || '').toLowerCase()))
+        .slice(0, 4)
+        .map(a => ({ id: a.id, name: a.attributes?.name || '', category: a.attributes?.category || a.type || '', location: a.attributes?.location || '' }));
+      setSuggestions(filtered);
+    } catch { setSuggestions([]); }
+    finally { setLoadingSuggestions(false); }
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    setLocalPlan(prev => {
+      const next: GeneratedPlan = JSON.parse(JSON.stringify(prev));
+      next.days[deleteTarget.dayIdx].stops = next.days[deleteTarget.dayIdx].stops.filter((_: Stop, i: number) => i !== deleteTarget.stopIdx);
+      return next;
+    });
+    setDeleteTarget(null); setSuggestions([]);
+  };
+
+  const swapWithSuggestion = (name: string) => {
+    if (!deleteTarget) return;
+    setLocalPlan(prev => {
+      const next: GeneratedPlan = JSON.parse(JSON.stringify(prev));
+      next.days[deleteTarget.dayIdx].stops[deleteTarget.stopIdx].place = name;
+      next.days[deleteTarget.dayIdx].stops[deleteTarget.stopIdx].activity = '';
+      next.days[deleteTarget.dayIdx].stops[deleteTarget.stopIdx].tip = '';
+      return next;
+    });
+    setDeleteTarget(null); setSuggestions([]);
+  };
+
+  const requestLocation = () => {
+    if (!navigator.geolocation) { setLocationStatus('denied'); return; }
+    setLocationStatus('pending');
+    navigator.geolocation.getCurrentPosition(
+      pos => { setUserLocation([pos.coords.longitude, pos.coords.latitude]); setLocationStatus('granted'); },
+      () => setLocationStatus('denied'),
+    );
   };
 
   const deleteStop = (dayIdx: number, stopIdx: number) => {
@@ -416,7 +522,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
                   )}
                 </div>
                 {isEditing && (
-                  <button onClick={() => deleteStop(dayIdx, stopIdx)}
+                  <button onClick={() => openDeleteDialog(dayIdx, stopIdx, stop.place)}
                     className="shrink-0 p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition self-start mt-1">
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -465,9 +571,103 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
         </motion.button>
       </div>
 
+      {/* Location banner */}
+      {showMap && locationStatus === 'idle' && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-blue-50 border border-blue-100">
+          <p className="text-sm text-blue-800 flex items-center gap-2" style={{ fontFamily: BL }}>
+            <Navigation className="w-4 h-4 shrink-0" /> Allow location to show your starting point on the map
+          </p>
+          <button onClick={requestLocation}
+            className="shrink-0 px-4 py-1.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition"
+            style={{ backgroundColor: '#1565C0', fontFamily: HL }}>Allow</button>
+        </motion.div>
+      )}
+
+      {/* Route map */}
+      <AnimatePresence>
+        {showMap && (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="w-4 h-4" style={{ color: '#1565C0' }} />
+              <p className="font-bold text-sm text-gray-900" style={{ fontFamily: HL }}>Your Route</p>
+              {locationStatus === 'granted' && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold" style={{ fontFamily: BL }}>Starting from your location</span>
+              )}
+            </div>
+            <div ref={mapContainer} className="rounded-2xl overflow-hidden shadow-md" style={{ height: 360 }} />
+            <p className="text-xs text-gray-400 mt-2 text-center" style={{ fontFamily: BL }}>Red pins = stops · Blue line = driving route</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {selectedPlace && (
           <AttractionQuickModal placeName={selectedPlace} onClose={() => setSelectedPlace(null)} />
+        )}
+      </AnimatePresence>
+
+      {/* Delete confirm dialog */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4"
+            onClick={() => { setDeleteTarget(null); setSuggestions([]); }}>
+            <motion.div initial={{ y: 40, scale: 0.96 }} animate={{ y: 0, scale: 1 }} exit={{ y: 40, scale: 0.96 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+              onClick={e => e.stopPropagation()}>
+              <div className="px-6 py-5 border-b border-gray-100 flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-bold text-gray-900" style={{ fontFamily: HL }}>Remove this stop?</p>
+                  <p className="text-sm text-gray-500 mt-0.5" style={{ fontFamily: BL }}>"{deleteTarget.place}"</p>
+                </div>
+                <button onClick={() => { setDeleteTarget(null); setSuggestions([]); }}
+                  className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="px-6 py-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-4 h-4" style={{ color: '#F5C518' }} />
+                  <p className="text-sm font-semibold text-gray-700" style={{ fontFamily: HL }}>Or swap with a suggestion based on your interests</p>
+                </div>
+                {loadingSuggestions ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-400 py-3" style={{ fontFamily: BL }}>
+                    <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" /> Finding suggestions…
+                  </div>
+                ) : suggestions.length > 0 ? (
+                  <div className="space-y-2">
+                    {suggestions.map(s => (
+                      <button key={s.id} onClick={() => swapWithSuggestion(s.name)}
+                        className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition group">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-sm text-gray-800 group-hover:text-blue-700" style={{ fontFamily: HL }}>{s.name}</p>
+                            {s.location && <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5" style={{ fontFamily: BL }}><MapPin className="w-3 h-3" />{s.location}</p>}
+                          </div>
+                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold capitalize"
+                            style={{ backgroundColor: 'rgba(21,101,192,0.08)', color: '#1565C0', fontFamily: BL }}>{s.category}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 py-2" style={{ fontFamily: BL }}>No suggestions available.</p>
+                )}
+              </div>
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+                <button onClick={() => { setDeleteTarget(null); setSuggestions([]); }}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-100 transition"
+                  style={{ fontFamily: BL }}>Keep it</button>
+                <button onClick={confirmDelete}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition flex items-center justify-center gap-1.5"
+                  style={{ fontFamily: HL }}>
+                  <Trash2 className="w-3.5 h-3.5" /> Yes, Remove
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </motion.div>
