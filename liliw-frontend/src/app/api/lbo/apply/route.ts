@@ -8,20 +8,27 @@ export async function POST(request: NextRequest) {
     // Upload documents to Supabase Storage
     const files = formData.getAll('documents') as File[];
     const docUrls: { name: string; url: string }[] = [];
+    const uploadErrors: string[] = [];
 
     for (const file of files) {
       if (!file || file.size === 0) continue;
-      const buffer   = Buffer.from(await file.arrayBuffer());
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const path     = `${Date.now()}-${safeName}`;
+      try {
+        const buffer   = Buffer.from(await file.arrayBuffer());
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path     = `${Date.now()}-${safeName}`;
 
-      const { data: uploaded, error } = await supabaseServer.storage
-        .from('lbo-documents')
-        .upload(path, buffer, { contentType: file.type, upsert: false });
+        const { data: uploaded, error: uploadErr } = await supabaseServer.storage
+          .from('lbo-documents')
+          .upload(path, buffer, { contentType: file.type, upsert: false });
 
-      if (!error && uploaded) {
-        const { data: urlData } = supabaseServer.storage.from('lbo-documents').getPublicUrl(path);
-        if (urlData?.publicUrl) docUrls.push({ name: file.name, url: urlData.publicUrl });
+        if (uploadErr) {
+          uploadErrors.push(`${file.name}: ${uploadErr.message}`);
+        } else if (uploaded) {
+          const { data: urlData } = supabaseServer.storage.from('lbo-documents').getPublicUrl(path);
+          if (urlData?.publicUrl) docUrls.push({ name: file.name, url: urlData.publicUrl });
+        }
+      } catch (fileErr: any) {
+        uploadErrors.push(`${file.name}: ${fileErr.message}`);
       }
     }
 
@@ -42,11 +49,17 @@ export async function POST(request: NextRequest) {
       });
 
     if (insertError) {
-      return NextResponse.json({ error: 'Failed to submit application', detail: insertError.message }, { status: 500 });
+      console.error('[LBO Apply] insert error:', insertError);
+      return NextResponse.json({
+        error: `Database error: ${insertError.message}`,
+        hint: insertError.hint || null,
+        uploadErrors: uploadErrors.length ? uploadErrors : undefined,
+      }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, uploadErrors: uploadErrors.length ? uploadErrors : undefined });
   } catch (e: any) {
+    console.error('[LBO Apply] unexpected error:', e);
     return NextResponse.json({ error: e.message || 'Unexpected error' }, { status: 500 });
   }
 }
