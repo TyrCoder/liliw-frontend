@@ -232,7 +232,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
   // Map
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
-  const [showMap, setShowMap] = useState(false);
+  const [showMap, setShowMap] = useState(true);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'pending' | 'granted' | 'denied'>('idle');
 
