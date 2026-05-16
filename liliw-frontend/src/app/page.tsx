@@ -381,7 +381,7 @@ export default function Home() {
           HERO — responsive video/image with overlay
           ══════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden flex items-center"
-        style={{ minHeight: 'min(100svh, 100vh)', minHeight: 'calc(100svh - 56px)' }}>
+        style={{ minHeight: 'calc(100svh - 56px)' }}>
 
         {/* Background media */}
         <div className="absolute inset-0" style={{ background: '#0B3D91' }}>
