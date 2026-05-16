@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -12,9 +12,9 @@ const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 const PENNANT = ['#EF4444','#F97316','#EAB308','#22C55E','#0D9488','#3B82F6','#8B5CF6'];
 function Bunting({ flip = false }: { flip?: boolean }) {
   return (
-    <svg width="120" height="32" viewBox="0 0 120 32" style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }}>
-      <line x1="0" y1="6" x2="120" y2="6" stroke="#9CA3AF" strokeWidth="1" />
-      {PENNANT.map((c, i) => { const cx = 10 + i * 15; return <polygon key={i} points={`${cx-6},6 ${cx+6},6 ${cx},20`} fill={c} />; })}
+    <svg width="126" height="36" viewBox="0 0 126 36" style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }}>
+      <line x1="0" y1="5" x2="126" y2="5" stroke="#6B7280" strokeWidth="1.5" />
+      {PENNANT.map((c, i) => { const cx = 9 + i * 18; return <g key={i}><path d={`M ${cx-9},5 A 9,16 0 0,1 ${cx+9},5 Z`} fill={c} /><line x1={cx} y1="5" x2={cx} y2="21" stroke="rgba(0,0,0,0.15)" strokeWidth="0.75" /></g>; })}
     </svg>
   );
 }

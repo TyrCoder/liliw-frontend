@@ -64,14 +64,18 @@ function photoUrl(photos: any[] = []): string | null {
 function Bunting({ flip = false }: { flip?: boolean }) {
   const colors = ['#EF4444', '#F97316', '#EAB308', '#22C55E', '#0D9488', '#3B82F6', '#8B5CF6'];
   return (
-    <svg viewBox="0 0 300 44" className="h-8 w-28 sm:w-36 shrink-0" aria-hidden="true"
+    <svg viewBox="0 0 300 44" className="h-9 w-28 sm:w-36 shrink-0" aria-hidden="true"
       style={{ transform: flip ? 'scaleX(-1)' : undefined }}>
-      <line x1="0" y1="8" x2="300" y2="8" stroke="#CBD5E1" strokeWidth="1.2" />
-      {colors.map((color, i) => (
-        <polygon key={i}
-          points={`${10 + i * 42},2 ${10 + i * 42 + 26},2 ${10 + i * 42 + 13},42`}
-          fill={color} />
-      ))}
+      <line x1="0" y1="8" x2="300" y2="8" stroke="#6B7280" strokeWidth="1.5" />
+      {colors.map((color, i) => {
+        const cx = 16 + i * 40;
+        return (
+          <g key={i}>
+            <path d={`M ${cx-14},8 A 14,22 0 0,1 ${cx+14},8 Z`} fill={color} />
+            <line x1={cx} y1="8" x2={cx} y2="30" stroke="rgba(0,0,0,0.12)" strokeWidth="1" />
+          </g>
+        );
+      })}
     </svg>
   );
 }

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback, useRef, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -449,7 +449,7 @@ export default function ImmersivePage() {
                       >
                         <div className="font-semibold text-sm">{attraction.attributes.name}</div>
                         <div className="text-xs opacity-70 mt-1">
-                          {attraction.type === 'heritage' ? '🏛️ Heritage' : '🏞️ Tourist Spot'}
+                          {attraction.type === 'heritage' ? 'Heritage' : 'Tourist Spot'}
                         </div>
                       </motion.button>
                     ))}
@@ -541,7 +541,7 @@ export default function ImmersivePage() {
                     className="rounded-xl p-4 border-2"
                     style={{ backgroundColor: 'rgba(245,197,24,0.06)', borderColor: 'rgba(245,197,24,0.4)' }}
                   >
-                    <h3 className="text-white font-semibold mb-2">💡 How It Works</h3>
+                    <h3 className="text-white font-semibold mb-2">How It Works</h3>
                     <ul className="text-gray-300 text-sm space-y-2">
                       <li>✓ Drag to look around</li>
                       <li>✓ Mobile: Touch & move</li>

@@ -146,7 +146,7 @@ export default function SmartSearchModal({ onClose }: SmartSearchProps) {
                               </span>
                               {result.location && (
                                 <span className="text-xs text-gray-500">
-                                  📍 {result.location}
+                                  {result.location}
                                 </span>
                               )}
                               {result.rating && (
