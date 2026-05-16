@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/ratelimit';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
@@ -37,6 +38,18 @@ export async function POST(request: NextRequest) {
       headers: { Authorization: `Bearer ${data.jwt}` },
     });
     const user = await meRes.json();
+
+    // users/me?populate=role sometimes doesn't return the role field —
+    // fall back to fetching the user by ID with the full-access API token
+    if (!user.role && user.id) {
+      const byIdRes = await fetch(`${STRAPI}/api/users/${user.id}?populate=role`, {
+        headers: { Authorization: `Bearer ${TOKEN}` },
+      });
+      if (byIdRes.ok) {
+        const full = await byIdRes.json();
+        user.role = full.role ?? null;
+      }
+    }
 
     return NextResponse.json({ jwt: data.jwt, user });
   } catch {
