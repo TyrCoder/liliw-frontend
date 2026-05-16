@@ -231,10 +231,9 @@ const QUICK_LINKS = [
    ═══════════════════════════════════════════════════════════ */
 /* ─── Featured videos ────────────────────────────────────── */
 const FEATURED_VIDEOS = [
-  { id: 'your-video-id-1', title: 'Liliw, Laguna — A Hidden Gem', views: '' },
-  { id: 'your-video-id-2', title: 'Heritage of Liliw', views: '' },
-  { id: 'your-video-id-3', title: 'Liliw Footwear Capital', views: '' },
-  { id: 'your-video-id-4', title: 'Explore Liliw Laguna', views: '' },
+  { id: 'blPBoHVC0aw', title: 'Liliw, Laguna', views: '' },
+  { id: '5VejBh1lK7o', title: 'Liliw Laguna Tour', views: '' },
+  { id: 'FO_xho6dbbM', title: 'Explore Liliw', views: '' },
 ];
 
 function FeaturedVideos() {
