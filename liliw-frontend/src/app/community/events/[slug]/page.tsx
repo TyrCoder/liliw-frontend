@@ -117,7 +117,7 @@ export default function EventDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F6F0' }}>
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#F5C518' }} />
       </div>
     );
@@ -137,13 +137,13 @@ export default function EventDetailPage() {
   const fmtTime = (d: Date) => d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+    <div className="min-h-screen bg-white" suppressHydrationWarning>
 
       {/* Hero */}
       <div className="relative h-64 sm:h-80 bg-gray-900 overflow-hidden">
         {coverUrl
           ? <img src={coverUrl} alt={a.title} className="absolute inset-0 w-full h-full object-cover opacity-60" />
-          : <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }} />
+          : <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg,#1E3A8A,#1565C0)' }} />
         }
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6 max-w-3xl mx-auto">
@@ -167,7 +167,7 @@ export default function EventDetailPage() {
         <div className="flex flex-wrap gap-3">
           {dateStart && (
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
-              <Calendar className="w-4 h-4 shrink-0" style={{ color: '#0B3D91' }} />
+              <Calendar className="w-4 h-4 shrink-0" style={{ color: '#1565C0' }} />
               <div>
                 <p className="text-xs text-gray-400" style={{ fontFamily: BL }}>Date</p>
                 <p className="text-sm font-semibold text-gray-900" style={{ fontFamily: HL }}>{fmt(dateStart)}</p>
@@ -179,7 +179,7 @@ export default function EventDetailPage() {
           )}
           {dateStart && (
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
-              <Clock className="w-4 h-4 shrink-0" style={{ color: '#0B3D91' }} />
+              <Clock className="w-4 h-4 shrink-0" style={{ color: '#1565C0' }} />
               <div>
                 <p className="text-xs text-gray-400" style={{ fontFamily: BL }}>Time</p>
                 <p className="text-sm font-semibold text-gray-900" style={{ fontFamily: HL }}>{fmtTime(dateStart)}{dateEnd ? ` – ${fmtTime(dateEnd)}` : ''}</p>
@@ -188,7 +188,7 @@ export default function EventDetailPage() {
           )}
           {a.venue && (
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
-              <MapPin className="w-4 h-4 shrink-0" style={{ color: '#0B3D91' }} />
+              <MapPin className="w-4 h-4 shrink-0" style={{ color: '#1565C0' }} />
               <div>
                 <p className="text-xs text-gray-400" style={{ fontFamily: BL }}>Venue</p>
                 <p className="text-sm font-semibold text-gray-900" style={{ fontFamily: HL }}>{a.venue}</p>
@@ -197,7 +197,7 @@ export default function EventDetailPage() {
           )}
           {a.max_participants && (
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
-              <Users className="w-4 h-4 shrink-0" style={{ color: '#0B3D91' }} />
+              <Users className="w-4 h-4 shrink-0" style={{ color: '#1565C0' }} />
               <div>
                 <p className="text-xs text-gray-400" style={{ fontFamily: BL }}>Slots</p>
                 <p className="text-sm font-semibold text-gray-900" style={{ fontFamily: HL }}>Max {a.max_participants} participants</p>
@@ -225,7 +225,7 @@ export default function EventDetailPage() {
         {/* Sign-up form */}
         {a.is_joinable && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: '#F5C518' }}>
+            className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: '#1565C0' }}>
 
             <div className="px-6 py-4 border-b border-gray-100"
               style={{ background: 'linear-gradient(135deg,rgba(245,197,24,0.06),rgba(245,197,24,0.02))' }}>
@@ -238,7 +238,7 @@ export default function EventDetailPage() {
                 <div className="flex flex-col items-center text-center py-6 gap-3">
                   <div className="w-14 h-14 rounded-full flex items-center justify-center"
                     style={{ backgroundColor: 'rgba(245,197,24,0.15)' }}>
-                    <CheckCircle className="w-7 h-7" style={{ color: '#0B3D91' }} />
+                    <CheckCircle className="w-7 h-7" style={{ color: '#1565C0' }} />
                   </div>
                   <p className="text-lg font-bold text-gray-900" style={{ fontFamily: HL }}>You&apos;re signed up!</p>
                   <p className="text-sm text-gray-500" style={{ fontFamily: BL }}>We&apos;ll be in touch with more details closer to the event.</p>
@@ -247,7 +247,7 @@ export default function EventDetailPage() {
                 <div className="flex flex-col items-center text-center py-6 gap-3">
                   <div className="w-14 h-14 rounded-full flex items-center justify-center"
                     style={{ backgroundColor: 'rgba(11,61,145,0.08)' }}>
-                    <LogIn className="w-7 h-7" style={{ color: '#0B3D91' }} />
+                    <LogIn className="w-7 h-7" style={{ color: '#1565C0' }} />
                   </div>
                   <p className="font-bold text-gray-900" style={{ fontFamily: HL }}>Login to Sign Up</p>
                   <p className="text-sm text-gray-500 max-w-xs" style={{ fontFamily: BL }}>You need a Liliw account to join events.</p>

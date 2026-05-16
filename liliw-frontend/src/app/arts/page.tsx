@@ -3,12 +3,30 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Star, MapPin, Phone, ExternalLink, Search } from 'lucide-react';
+import { Star, MapPin, Phone, ExternalLink, Search } from 'lucide-react';
 
 const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || '';
 const HL = 'var(--font-heading), Outfit, sans-serif';
-const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
+
+const PENNANT = ['#EF4444','#F97316','#EAB308','#22C55E','#0D9488','#3B82F6','#8B5CF6'];
+function Bunting({ flip = false }: { flip?: boolean }) {
+  return (
+    <svg width="120" height="32" viewBox="0 0 120 32" style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }}>
+      <line x1="0" y1="6" x2="120" y2="6" stroke="#9CA3AF" strokeWidth="1" />
+      {PENNANT.map((c, i) => { const cx = 10 + i * 15; return <polygon key={i} points={`${cx-6},6 ${cx+6},6 ${cx},20`} fill={c} />; })}
+    </svg>
+  );
+}
+function WaveDown({ from, to }: { from: string; to: string }) {
+  return (
+    <div style={{ lineHeight: 0, backgroundColor: from }}>
+      <svg viewBox="0 0 1440 60" preserveAspectRatio="none" style={{ width:'100%', height:60, display:'block' }}>
+        <path d="M0,0 C480,60 960,0 1440,60 L1440,60 L0,60 Z" fill={to} />
+      </svg>
+    </div>
+  );
+}
 
 const CATEGORIES = ['All', 'Footwear', 'Textile', 'Culinary', 'Visual', 'Music', 'Woodcarving'];
 
@@ -47,30 +65,34 @@ export default function ArtsPage() {
   });
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }}>
+    <div className="min-h-screen bg-white">
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
-        <div className="max-w-6xl mx-auto px-4 py-14">
+      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+        <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-            <Link href="/" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>
-              <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to Home
-            </Link>
-            <p className="section-label mb-3" style={{ color: 'rgba(245,197,24,0.9)' }}>Craft & Creativity</p>
-            <h1 className="text-4xl sm:text-6xl font-bold text-white mb-4" style={{ fontFamily: DL }}>Arts & Creatives</h1>
-            <div className="w-12 h-0.5 mb-4 rounded-full" style={{ backgroundColor: '#F5C518' }} />
-            <p className="text-white/70 text-lg" style={{ fontFamily: BL }}>From tsinelas craftsmanship to contemporary Filipino art — Liliw&apos;s creative soul</p>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <Bunting />
+              <h1 className="text-4xl sm:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>
+                Arts &amp; Creatives
+              </h1>
+              <Bunting flip />
+            </div>
+            <p className="text-center text-white/70 text-base mt-2" style={{ fontFamily: BL }}>From tsinelas craftsmanship to contemporary Filipino art — Liliw&apos;s creative soul</p>
           </motion.div>
         </div>
       </div>
+      <WaveDown from="#1565C0" to="#ffffff" />
 
       {/* Art Forms */}
-      <div className="max-w-6xl mx-auto px-4 py-16">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-10">
-          <p className="section-label mb-2" style={{ color: '#1565C0' }}>Traditions</p>
-          <h2 className="text-3xl font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>Art Forms & Traditions</h2>
-          <div className="w-8 h-0.5 rounded-full mb-3" style={{ backgroundColor: '#F5C518' }} />
-          <p className="text-gray-500 text-sm max-w-2xl" style={{ fontFamily: BL }}>Living traditions passed down through generations of Liliw&apos;s creative community.</p>
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-10 text-center">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <Bunting />
+            <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide" style={{ color: '#1E3A8A', fontFamily: HL }}>Art Forms &amp; Traditions</h2>
+            <Bunting flip />
+          </div>
+          <p className="text-gray-500 text-sm max-w-2xl mx-auto mt-2" style={{ fontFamily: BL }}>Living traditions passed down through generations of Liliw&apos;s creative community.</p>
         </motion.div>
 
         {loading && (
@@ -110,12 +132,14 @@ export default function ArtsPage() {
       <div className="h-px mx-auto max-w-6xl" style={{ background: 'linear-gradient(to right, transparent, #e2e8f0, transparent)' }} />
 
       {/* Artisans */}
-      <div className="max-w-6xl mx-auto px-4 py-16">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8">
-          <p className="section-label mb-2" style={{ color: '#1565C0' }}>People</p>
-          <h2 className="text-3xl font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>Meet Our Artisans</h2>
-          <div className="w-8 h-0.5 rounded-full mb-3" style={{ backgroundColor: '#F5C518' }} />
-          <p className="text-gray-500 text-sm max-w-2xl" style={{ fontFamily: BL }}>The creative souls behind Liliw&apos;s thriving arts scene.</p>
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8 text-center">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <Bunting />
+            <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide" style={{ color: '#1E3A8A', fontFamily: HL }}>Meet Our Artisans</h2>
+            <Bunting flip />
+          </div>
+          <p className="text-gray-500 text-sm max-w-2xl mx-auto mt-2" style={{ fontFamily: BL }}>The creative souls behind Liliw&apos;s thriving arts scene.</p>
         </motion.div>
 
         {/* Search & Filter */}
@@ -131,9 +155,9 @@ export default function ArtsPage() {
               <button key={cat} onClick={() => setActiveCategory(cat)}
                 className="shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all"
                 style={{
-                  backgroundColor: activeCategory === cat ? '#0B3D91' : '#fff',
-                  color: activeCategory === cat ? '#F5C518' : '#0B3D91',
-                  border: `1px solid ${activeCategory === cat ? '#0B3D91' : 'rgba(11,61,145,0.2)'}`,
+                  backgroundColor: activeCategory === cat ? '#1565C0' : '#fff',
+                  color: activeCategory === cat ? '#ffffff' : '#1565C0',
+                  border: `1px solid ${activeCategory === cat ? '#1565C0' : 'rgba(21,101,192,0.25)'}`,
                   fontFamily: HL,
                 }}>
                 {cat}
@@ -272,8 +296,8 @@ export default function ArtsPage() {
       <div className="max-w-6xl mx-auto px-4 pb-16">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="relative rounded-3xl overflow-hidden p-10 text-center"
-          style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)' }}>
-          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, #F5C518, transparent 60%), radial-gradient(circle at 70% 30%, #ffffff, transparent 50%)' }} />
+          style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, #EAB308, transparent 60%), radial-gradient(circle at 70% 30%, #ffffff, transparent 50%)' }} />
           <div className="relative">
             <h2 className="text-3xl font-bold text-white mb-3" style={{ fontFamily: HL }}>Support Local Creatives</h2>
             <p className="text-white/70 mb-8 max-w-xl mx-auto text-sm" style={{ fontFamily: BL }}>

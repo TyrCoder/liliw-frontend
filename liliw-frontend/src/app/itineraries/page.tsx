@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
@@ -17,7 +17,7 @@ const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
-/* ─────────────────────── shared helpers ──────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
@@ -36,9 +36,9 @@ function blocksToText(blocks: any): string {
     .join(' ').trim();
 }
 
-/* ══════════════════════════════════════════════════════════
-   PART 1 — AI ITINERARY BUILDER WIZARD
-   ══════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   PART 1 â€” AI ITINERARY BUILDER WIZARD
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 const DURATIONS = [
   { value: 'half-day', label: 'Half Day',  sub: '4 hours' },
@@ -49,9 +49,9 @@ const DURATIONS = [
 ];
 
 const BUDGETS = [
-  { value: 'budget-friendly (under ₱1,000/day)', label: 'Budget',    sub: 'Under ₱1,000/day' },
-  { value: 'mid-range (₱1,000–₱3,000/day)',      label: 'Mid-range', sub: '₱1,000 – ₱3,000/day' },
-  { value: 'premium (₱3,000+/day)',               label: 'Premium',   sub: '₱3,000+/day' },
+  { value: 'budget-friendly (under â‚±1,000/day)', label: 'Budget',    sub: 'Under â‚±1,000/day' },
+  { value: 'mid-range (â‚±1,000â€“â‚±3,000/day)',      label: 'Mid-range', sub: 'â‚±1,000 â€“ â‚±3,000/day' },
+  { value: 'premium (â‚±3,000+/day)',               label: 'Premium',   sub: 'â‚±3,000+/day' },
   { value: 'custom',                              label: 'Custom',    sub: 'Set your own' },
 ];
 
@@ -91,12 +91,12 @@ function WizardCard({ value, label, sub, selected, onClick }: {
         selected ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'
       }`}>
       <div>
-        <p className={`font-semibold text-sm`} style={{ color: selected ? '#0B3D91' : '#1A1A2E', fontFamily: HL }}>{label}</p>
+        <p className={`font-semibold text-sm`} style={{ color: selected ? '#1565C0' : '#1A1A2E', fontFamily: HL }}>{label}</p>
         <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: BL }}>{sub}</p>
       </div>
       {selected && (
         <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-          style={{ backgroundColor: '#0B3D91' }}>
+          style={{ backgroundColor: '#1565C0' }}>
           <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
@@ -111,9 +111,9 @@ function InterestChip({ value, selected, onClick }: { value: string; selected: b
     <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={onClick}
       className={`px-4 py-2 rounded-full border text-sm font-medium transition-all`}
       style={{
-        borderColor: selected ? '#0B3D91' : '#E5E7EB',
+        borderColor: selected ? '#1565C0' : '#E5E7EB',
         backgroundColor: selected ? 'rgba(11,61,145,0.07)' : 'white',
-        color: selected ? '#0B3D91' : '#4B5563',
+        color: selected ? '#1565C0' : '#4B5563',
         fontFamily: BL,
       }}>
       {value}
@@ -169,7 +169,7 @@ function AttractionQuickModal({ placeName, onClose }: { placeName: string; onClo
           </div>
         ) : !attraction ? (
           <div className="p-8 text-center">
-            <MapPin className="w-12 h-12 mx-auto mb-3 opacity-20" style={{ color: '#0B3D91' }} />
+            <MapPin className="w-12 h-12 mx-auto mb-3 opacity-20" style={{ color: '#1565C0' }} />
             <h3 className="font-bold text-gray-700 mb-1" style={{ fontFamily: HL }}>{placeName}</h3>
             <p className="text-sm text-gray-400" style={{ fontFamily: BL }}>No details found for this place.</p>
           </div>
@@ -189,7 +189,7 @@ function AttractionQuickModal({ placeName, onClose }: { placeName: string; onClo
               <div className="flex flex-wrap gap-2">
                 {!!attr.rating && (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full border"
-                    style={{ backgroundColor: 'rgba(245,197,24,0.12)', color: '#0B3D91', borderColor: 'rgba(245,197,24,0.3)', fontFamily: HL }}>
+                    style={{ backgroundColor: 'rgba(245,197,24,0.12)', color: '#1565C0', borderColor: 'rgba(245,197,24,0.3)', fontFamily: HL }}>
                     <Star className="w-3 h-3 fill-current" style={{ color: '#F5C518' }} />{attr.rating}/5
                   </span>
                 )}
@@ -205,7 +205,7 @@ function AttractionQuickModal({ placeName, onClose }: { placeName: string; onClo
               )}
               <Link href={`/attractions/${attraction.id}`}
                 className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl font-bold text-sm hover:opacity-90 transition"
-                style={{ backgroundColor: '#0B3D91', color: '#F5C518', fontFamily: BL }}>
+                style={{ backgroundColor: '#1565C0', color: '#F5C518', fontFamily: BL }}>
                 View Full Page <ExternalLink className="w-4 h-4" />
               </Link>
             </div>
@@ -273,7 +273,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
   return (
     <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
       {/* Header */}
-      <div className="rounded-3xl p-6 text-white" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
+      <div className="rounded-3xl p-6 text-white" style={{ background: 'linear-gradient(135deg,#1E3A8A,#1565C0)' }}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#F5C518', fontFamily: HL }}>Your AI Itinerary</p>
@@ -288,7 +288,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
               className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition ${
                 isEditing ? 'bg-white' : 'bg-white/20 hover:bg-white/30 text-white'
               }`}
-              style={{ color: isEditing ? '#0B3D91' : undefined, fontFamily: HL }}>
+              style={{ color: isEditing ? '#1565C0' : undefined, fontFamily: HL }}>
               {isEditing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
               {isEditing ? 'Done' : 'Edit'}
             </motion.button>
@@ -309,7 +309,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
           className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
-              style={{ backgroundColor: '#0B3D91', fontFamily: HL }}>{day.day}</div>
+              style={{ backgroundColor: '#1565C0', fontFamily: HL }}>{day.day}</div>
             <div className="flex-1 min-w-0">
               <p className="text-xs text-gray-400 font-medium" style={{ fontFamily: BL }}>Day {day.day}</p>
               {isEditing ? (
@@ -329,7 +329,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
             {day.stops?.map((stop, stopIdx) => (
               <div key={stopIdx} className="px-5 py-4 flex gap-4">
                 <div className="shrink-0 flex flex-col items-center gap-1 pt-0.5">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#0B3D91' }} />
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#1565C0' }} />
                   {stopIdx < (day.stops.length - 1) && (
                     <div className="w-px flex-1 min-h-6" style={{ backgroundColor: 'rgba(11,61,145,0.12)' }} />
                   )}
@@ -340,7 +340,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
                       <div className="flex gap-2">
                         <input value={stop.time} onChange={e => updateStop(dayIdx, stopIdx, 'time', e.target.value)}
                           className="w-24 text-xs font-bold px-2 py-0.5 rounded-full border focus:outline-none focus:border-blue-400"
-                          style={{ backgroundColor: 'rgba(245,197,24,0.12)', color: '#0B3D91', borderColor: 'rgba(245,197,24,0.3)', fontFamily: HL }}
+                          style={{ backgroundColor: 'rgba(245,197,24,0.12)', color: '#1565C0', borderColor: 'rgba(245,197,24,0.3)', fontFamily: HL }}
                           placeholder="Time" />
                         <input value={stop.duration} onChange={e => updateStop(dayIdx, stopIdx, 'duration', e.target.value)}
                           className="flex-1 text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200 focus:outline-none"
@@ -353,7 +353,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
                           onChange={e => updateStop(dayIdx, stopIdx, 'place', e.target.value)}
                           className="w-full font-bold text-gray-900 text-sm border-b border-blue-200 focus:outline-none focus:border-blue-400 bg-white pb-0.5 appearance-none pr-5 cursor-pointer"
                           style={{ fontFamily: HL }}>
-                          <option value="">Pick a place…</option>
+                          <option value="">Pick a placeâ€¦</option>
                           {(['heritage', 'spot', 'dining'] as const)
                             .filter(type => filteredAttractions.some(a => a.type === type))
                             .map(type => {
@@ -387,7 +387,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
                     <>
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: 'rgba(245,197,24,0.15)', color: '#0B3D91', fontFamily: HL }}>
+                          style={{ backgroundColor: 'rgba(245,197,24,0.15)', color: '#1565C0', fontFamily: HL }}>
                           {stop.time}
                         </span>
                         {stop.duration && (
@@ -397,7 +397,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
                         )}
                       </div>
                       <p className="font-bold text-gray-900 text-sm mb-0.5 flex items-center gap-1.5" style={{ fontFamily: HL }}>
-                        <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: '#0B3D91' }} />
+                        <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: '#1565C0' }} />
                         <button
                           onClick={() => setSelectedPlace(stop.place)}
                           className="text-left hover:underline underline-offset-2"
@@ -428,7 +428,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
             <div className="px-5 py-3 border-t border-dashed border-gray-200">
               <button onClick={() => addStop(dayIdx)}
                 className="flex items-center gap-2 text-sm font-semibold transition hover:opacity-70"
-                style={{ color: '#0B3D91', fontFamily: BL }}>
+                style={{ color: '#1565C0', fontFamily: BL }}>
                 <Plus className="w-4 h-4" /> Add Stop
               </button>
             </div>
@@ -438,7 +438,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
 
       {localPlan.tips?.length > 0 && (
         <div className="rounded-2xl p-5" style={{ backgroundColor: 'rgba(11,61,145,0.05)', border: '1px solid rgba(11,61,145,0.12)' }}>
-          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#0B3D91', fontFamily: HL }}>Travel Tips</p>
+          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#1565C0', fontFamily: HL }}>Travel Tips</p>
           <ul className="space-y-2">
             {localPlan.tips.map((tip, i) => (
               <li key={i} className="flex items-start gap-2 text-sm" style={{ color: '#1A1A2E', fontFamily: BL }}>
@@ -453,8 +453,8 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => onSave(localPlan)}
           className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold transition"
           style={saved
-            ? { backgroundColor: 'rgba(11,61,145,0.07)', border: '2px solid #0B3D91', color: '#0B3D91', fontFamily: BL }
-            : { backgroundColor: '#0B3D91', color: '#F5C518', fontFamily: BL, boxShadow: '0 6px 20px rgba(11,61,145,0.25)' }
+            ? { backgroundColor: 'rgba(11,61,145,0.07)', border: '2px solid #1565C0', color: '#1565C0', fontFamily: BL }
+            : { backgroundColor: '#1565C0', color: '#F5C518', fontFamily: BL, boxShadow: '0 6px 20px rgba(11,61,145,0.25)' }
           }>
           {isLoggedIn ? <BookmarkCheck className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
           {saved ? 'Saved to My Trips' : isLoggedIn ? 'Save This Itinerary' : 'Log In to Save'}
@@ -568,8 +568,8 @@ function ItineraryWizard() {
         </div>
         <div className="flex flex-col items-center py-14 px-8 text-center">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-            style={{ backgroundColor: 'rgba(11,61,145,0.08)' }}>
-            <LogIn className="w-5 h-5" style={{ color: '#0B3D91' }} />
+            style={{ backgroundColor: 'rgba(21,101,192,0.06)' }}>
+            <LogIn className="w-5 h-5" style={{ color: '#1565C0' }} />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-1" style={{ fontFamily: HL }}>Log in to Make Itinerary</h3>
           <p className="text-sm text-gray-400 mb-6 max-w-xs" style={{ fontFamily: BL }}>
@@ -577,7 +577,7 @@ function ItineraryWizard() {
           </p>
           <button onClick={() => setShowLoginModal(true)}
             className="px-6 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90"
-            style={{ backgroundColor: '#0B3D91', color: '#F5C518', fontFamily: BL }}>
+            style={{ backgroundColor: '#1565C0', color: '#F5C518', fontFamily: BL }}>
             Log In / Register
           </button>
         </div>
@@ -594,7 +594,7 @@ function ItineraryWizard() {
           <Sparkles className="w-5 h-5" style={{ color: '#F5C518' }} />
           <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: HL }}>AI Itinerary Builder</h2>
         </div>
-        <p className="text-sm text-gray-500 ml-8" style={{ fontFamily: BL }}>Tell us your preferences — we&apos;ll build your perfect Liliw trip</p>
+        <p className="text-sm text-gray-500 ml-8" style={{ fontFamily: BL }}>Tell us your preferences â€” we&apos;ll build your perfect Liliw trip</p>
       </div>
 
       {/* Progress */}
@@ -605,7 +605,7 @@ function ItineraryWizard() {
               <div key={n} className="flex items-center gap-2 flex-1">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all ${
                   n <= stepNumber ? 'text-white' : 'bg-gray-200 text-gray-400'
-                }`} style={n <= stepNumber ? { backgroundColor: '#0B3D91', fontFamily: HL } : { fontFamily: HL }}>
+                }`} style={n <= stepNumber ? { backgroundColor: '#1565C0', fontFamily: HL } : { fontFamily: HL }}>
                   {n < stepNumber ? <Check className="w-3 h-3" /> : n}
                 </div>
                 <p className={`text-xs font-medium truncate ${n === stepNumber ? 'text-gray-900' : 'text-gray-400'}`}
@@ -622,11 +622,11 @@ function ItineraryWizard() {
       <div className="p-6">
         <AnimatePresence mode="wait">
 
-          {/* Step 1 — Duration */}
+          {/* Step 1 â€” Duration */}
           {step === 'duration' && (
             <motion.div key="duration" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <div className="flex items-center gap-2 mb-4">
-                <Clock className="w-4 h-4" style={{ color: '#0B3D91' }} />
+                <Clock className="w-4 h-4" style={{ color: '#1565C0' }} />
                 <p className="font-semibold text-gray-700 text-sm" style={{ fontFamily: HL }}>How long is your trip?</p>
               </div>
               <div className="space-y-2">
@@ -638,11 +638,11 @@ function ItineraryWizard() {
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
                   <input
                     type="text"
-                    placeholder="e.g. 5 hours, 4 days, long weekend…"
+                    placeholder="e.g. 5 hours, 4 days, long weekendâ€¦"
                     value={customDuration}
                     onChange={e => setCustomDuration(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border-2 text-sm focus:outline-none"
-                    style={{ borderColor: '#0B3D91', fontFamily: BL }}
+                    style={{ borderColor: '#1565C0', fontFamily: BL }}
                   />
                 </motion.div>
               )}
@@ -651,7 +651,7 @@ function ItineraryWizard() {
                 onClick={() => setStep('budget')}
                 className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
                 style={{
-                  backgroundColor: effectiveDuration ? '#0B3D91' : '#9CA3AF',
+                  backgroundColor: effectiveDuration ? '#1565C0' : '#9CA3AF',
                   color: effectiveDuration ? '#F5C518' : 'white',
                   fontFamily: BL,
                   boxShadow: effectiveDuration ? '0 6px 20px rgba(11,61,145,0.25)' : 'none',
@@ -661,11 +661,11 @@ function ItineraryWizard() {
             </motion.div>
           )}
 
-          {/* Step 2 — Budget */}
+          {/* Step 2 â€” Budget */}
           {step === 'budget' && (
             <motion.div key="budget" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <div className="flex items-center gap-2 mb-4">
-                <Wallet className="w-4 h-4" style={{ color: '#0B3D91' }} />
+                <Wallet className="w-4 h-4" style={{ color: '#1565C0' }} />
                 <p className="font-semibold text-gray-700 text-sm" style={{ fontFamily: HL }}>What&apos;s your budget per person/day?</p>
               </div>
               <div className="space-y-2">
@@ -677,11 +677,11 @@ function ItineraryWizard() {
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
                   <input
                     type="text"
-                    placeholder="e.g. ₱2,500/day, around ₱500…"
+                    placeholder="e.g. â‚±2,500/day, around â‚±500â€¦"
                     value={customBudget}
                     onChange={e => setCustomBudget(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border-2 text-sm focus:outline-none"
-                    style={{ borderColor: '#0B3D91', fontFamily: BL }}
+                    style={{ borderColor: '#1565C0', fontFamily: BL }}
                   />
                 </motion.div>
               )}
@@ -695,7 +695,7 @@ function ItineraryWizard() {
                   onClick={() => setStep('interests')}
                   className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
                   style={{
-                    backgroundColor: effectiveBudget ? '#0B3D91' : '#9CA3AF',
+                    backgroundColor: effectiveBudget ? '#1565C0' : '#9CA3AF',
                     color: effectiveBudget ? '#F5C518' : 'white',
                     fontFamily: BL,
                     boxShadow: effectiveBudget ? '0 6px 20px rgba(11,61,145,0.25)' : 'none',
@@ -706,11 +706,11 @@ function ItineraryWizard() {
             </motion.div>
           )}
 
-          {/* Step 3 — Interests */}
+          {/* Step 3 â€” Interests */}
           {step === 'interests' && (
             <motion.div key="interests" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <div className="flex items-center gap-2 mb-4">
-                <Heart className="w-4 h-4" style={{ color: '#0B3D91' }} />
+                <Heart className="w-4 h-4" style={{ color: '#1565C0' }} />
                 <p className="font-semibold text-gray-700 text-sm" style={{ fontFamily: HL }}>What are you into? (pick as many as you like)</p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -732,7 +732,7 @@ function ItineraryWizard() {
                   onClick={afterInterests}
                   className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
                   style={{
-                    backgroundColor: interests.length > 0 ? '#0B3D91' : '#9CA3AF',
+                    backgroundColor: interests.length > 0 ? '#1565C0' : '#9CA3AF',
                     color: interests.length > 0 ? '#F5C518' : 'white',
                     fontFamily: BL,
                     boxShadow: interests.length > 0 ? '0 6px 20px rgba(11,61,145,0.25)' : 'none',
@@ -745,7 +745,7 @@ function ItineraryWizard() {
             </motion.div>
           )}
 
-          {/* Step 4 — Favorites */}
+          {/* Step 4 â€” Favorites */}
           {step === 'favorites' && (
             <motion.div key="favorites" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <div className="flex items-center gap-2 mb-1">
@@ -789,7 +789,7 @@ function ItineraryWizard() {
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   onClick={generate}
                   className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm transition"
-                  style={{ backgroundColor: '#0B3D91', color: '#F5C518', fontFamily: BL, boxShadow: '0 6px 20px rgba(11,61,145,0.25)' }}>
+                  style={{ backgroundColor: '#1565C0', color: '#F5C518', fontFamily: BL, boxShadow: '0 6px 20px rgba(11,61,145,0.25)' }}>
                   <Sparkles className="w-4 h-4" />
                   {selectedFavs.length > 0 ? `Generate with ${selectedFavs.length} favorite${selectedFavs.length > 1 ? 's' : ''}` : 'Generate My Itinerary'}
                 </motion.button>
@@ -804,7 +804,7 @@ function ItineraryWizard() {
               <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
                 className="w-12 h-12 rounded-full border-4 mb-5"
                 style={{ borderColor: '#F5C518', borderTopColor: 'transparent' }} />
-              <h3 className="text-lg font-bold text-gray-900 mb-2" style={{ fontFamily: HL }}>Building your itinerary…</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2" style={{ fontFamily: HL }}>Building your itineraryâ€¦</h3>
               <p className="text-sm text-gray-500 max-w-xs" style={{ fontFamily: BL }}>Crafting a personalized plan using real Liliw attractions. Just a moment!</p>
             </motion.div>
           )}
@@ -830,9 +830,9 @@ function ItineraryWizard() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════
-   PART 2 — STRAPI ITINERARIES FROM DATABASE
-   ══════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   PART 2 â€” STRAPI ITINERARIES FROM DATABASE
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 const DURATION_LABEL: Record<string, string> = {
   'half-day': '4 hours', 'one-day': '8 hours', 'two-day': '2 days',
@@ -890,13 +890,13 @@ function StrapiBlocks({ blocks }: { blocks: any }) {
               ? <ol key={i} className="list-none space-y-2">{(block.children || []).map((item: any, j: number) => (
                   <li key={j} className="flex gap-3 text-sm text-gray-700" style={{ fontFamily: BL }}>
                     <span className="shrink-0 w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center mt-0.5"
-                      style={{ backgroundColor: '#0B3D91', fontFamily: HL }}>{j + 1}</span>
+                      style={{ backgroundColor: '#1565C0', fontFamily: HL }}>{j + 1}</span>
                     <span className="pt-0.5">{children(item.children)}</span>
                   </li>
                 ))}</ol>
               : <ul key={i} className="space-y-1.5">{(block.children || []).map((item: any, j: number) => (
                   <li key={j} className="flex items-start gap-2 text-sm text-gray-700" style={{ fontFamily: BL }}>
-                    <span className="shrink-0 font-bold mt-0.5" style={{ color: '#F5C518' }}>→</span>
+                    <span className="shrink-0 font-bold mt-0.5" style={{ color: '#F5C518' }}>â†’</span>
                     <span>{children(item.children)}</span>
                   </li>
                 ))}</ul>;
@@ -992,7 +992,7 @@ function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }
             )}
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1 rounded-full border"
-                style={{ backgroundColor: 'rgba(11,61,145,0.07)', color: '#0B3D91', borderColor: 'rgba(11,61,145,0.2)', fontFamily: BL }}>
+                style={{ backgroundColor: 'rgba(11,61,145,0.07)', color: '#1565C0', borderColor: 'rgba(11,61,145,0.2)', fontFamily: BL }}>
                 <Clock className="w-3.5 h-3.5" />{DURATION_LABEL[itin.duration] || itin.duration}
               </span>
               <span className={`inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full ${diff.badge}`}
@@ -1007,7 +1007,7 @@ function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }
               )}
               {itin.meeting_point && (
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border"
-                  style={{ backgroundColor: 'rgba(245,197,24,0.1)', color: '#0B3D91', borderColor: 'rgba(245,197,24,0.3)', fontFamily: BL }}>
+                  style={{ backgroundColor: 'rgba(245,197,24,0.1)', color: '#1565C0', borderColor: 'rgba(245,197,24,0.3)', fontFamily: BL }}>
                   <MapPin className="w-3.5 h-3.5" />{itin.meeting_point}
                 </span>
               )}
@@ -1027,7 +1027,7 @@ function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }
             {Array.isArray(itin.stopsBlocks) && itin.stopsBlocks.length > 0 && (
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2" style={{ fontFamily: HL }}>
-                  <Navigation className="w-4 h-4" style={{ color: '#0B3D91' }} /> Itinerary Schedule
+                  <Navigation className="w-4 h-4" style={{ color: '#1565C0' }} /> Itinerary Schedule
                 </p>
                 <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
                   <StrapiBlocks blocks={itin.stopsBlocks} />
@@ -1042,7 +1042,7 @@ function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-700" style={{ fontFamily: BL }}>
                       <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center"
                         style={{ backgroundColor: 'rgba(11,61,145,0.1)' }}>
-                        <ArrowRight className="w-3 h-3" style={{ color: '#0B3D91' }} />
+                        <ArrowRight className="w-3 h-3" style={{ color: '#1565C0' }} />
                       </span>{h}
                     </li>
                   ))}
@@ -1084,7 +1084,7 @@ function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }
             style={{ boxShadow: '0 -4px 24px rgba(0,0,0,.07)' }}>
             <Calendar className="w-4 h-4 text-gray-400" />
             <div>
-              <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: DL }}>₱{Number(itin.price).toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: DL }}>â‚±{Number(itin.price).toLocaleString()}</p>
               <p className="text-xs text-gray-400" style={{ fontFamily: BL }}>per person</p>
             </div>
           </div>
@@ -1147,7 +1147,7 @@ function DatabaseItineraries() {
           <button key={key} onClick={() => setFilter(key)}
             className="shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
             style={filter === key
-              ? { backgroundColor: '#0B3D91', color: '#F5C518', fontFamily: HL }
+              ? { backgroundColor: '#1565C0', color: '#F5C518', fontFamily: HL }
               : { backgroundColor: '#F3F4F6', color: '#6B7280', fontFamily: HL }}>
             {label}
           </button>
@@ -1161,7 +1161,7 @@ function DatabaseItineraries() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center py-16 text-center">
-          <MapPin className="w-12 h-12 mb-4 opacity-20" style={{ color: '#0B3D91' }} />
+          <MapPin className="w-12 h-12 mb-4 opacity-20" style={{ color: '#1565C0' }} />
           <h3 className="text-lg font-bold text-gray-400 mb-1" style={{ fontFamily: HL }}>
             {itineraries.length === 0 ? 'No itineraries yet' : 'No matches for this filter'}
           </h3>
@@ -1183,19 +1183,19 @@ function DatabaseItineraries() {
                 className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-shadow overflow-hidden flex flex-col cursor-pointer"
                 onClick={() => setDetail(itin)}>
                 <div className="relative h-44 shrink-0"
-                  style={{ background: 'linear-gradient(135deg,rgba(11,61,145,0.08),rgba(21,101,192,0.05))' }}>
+                  style={{ background: 'linear-gradient(135deg,rgba(21,101,192,0.06),rgba(21,101,192,0.05))' }}>
                   {itin.cover_photo
                     ? <img src={itin.cover_photo} alt={itin.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     : <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                        <MapPin className="w-16 h-16" style={{ color: '#0B3D91' }} />
+                        <MapPin className="w-16 h-16" style={{ color: '#1565C0' }} />
                       </div>
                   }
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                   {itin.price && (
                     <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-1.5 shadow">
                       <p className="text-xs text-gray-400 leading-none" style={{ fontFamily: BL }}>from</p>
-                      <p className="text-base font-bold leading-tight" style={{ color: '#0B3D91', fontFamily: HL }}>
-                        ₱{Number(itin.price).toLocaleString()}
+                      <p className="text-base font-bold leading-tight" style={{ color: '#1565C0', fontFamily: HL }}>
+                        â‚±{Number(itin.price).toLocaleString()}
                       </p>
                     </div>
                   )}
@@ -1205,7 +1205,7 @@ function DatabaseItineraries() {
                     style={{ fontFamily: HL }}>{itin.title}</h3>
                   <div className="flex flex-wrap gap-2 mb-3">
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500" style={{ fontFamily: BL }}>
-                      <Clock className="w-3.5 h-3.5" style={{ color: '#0B3D91' }} />{DURATION_LABEL[itin.duration] || itin.duration}
+                      <Clock className="w-3.5 h-3.5" style={{ color: '#1565C0' }} />{DURATION_LABEL[itin.duration] || itin.duration}
                     </span>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${diff.badge}`}
                       style={{ fontFamily: HL }}>{diff.label}</span>
@@ -1219,7 +1219,7 @@ function DatabaseItineraries() {
                     <span className="text-xs text-gray-400 font-medium" style={{ fontFamily: BL }}>
                       {itin.max_participants ? `Max ${itin.max_participants} pax` : 'Open group'}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold" style={{ color: '#0B3D91', fontFamily: HL }}>
+                    <span className="inline-flex items-center gap-1 text-xs font-bold" style={{ color: '#1565C0', fontFamily: HL }}>
                       View details <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
@@ -1237,9 +1237,9 @@ function DatabaseItineraries() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MAIN PAGE
-   ══════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 function SavedTripsSection() {
   const { user, token } = useAuth();
@@ -1283,10 +1283,10 @@ function SavedTripsSection() {
       <motion.button onClick={() => setOpen(v => !v)}
         className="w-full flex items-center justify-between px-5 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition">
         <span className="flex items-center gap-3">
-          <BookmarkCheck className="w-5 h-5" style={{ color: '#0B3D91' }} />
+          <BookmarkCheck className="w-5 h-5" style={{ color: '#1565C0' }} />
           <span className="font-bold text-gray-900" style={{ fontFamily: HL }}>My Saved Trips</span>
           <span className="text-xs font-bold px-2.5 py-0.5 rounded-full"
-            style={{ backgroundColor: '#0B3D91', color: '#F5C518', fontFamily: HL }}>{trips.length}</span>
+            style={{ backgroundColor: '#1565C0', color: '#F5C518', fontFamily: HL }}>{trips.length}</span>
         </span>
         <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </motion.button>
@@ -1304,7 +1304,7 @@ function SavedTripsSection() {
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-gray-900 text-sm truncate" style={{ fontFamily: HL }}>{trip.title}</p>
                       <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: BL }}>
-                        {trip.duration} · {new Date(trip.savedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {trip.duration} Â· {new Date(trip.savedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
                     </div>
                     <button onClick={(e) => { e.stopPropagation(); deleteTrip(trip.id); }}
@@ -1323,13 +1323,13 @@ function SavedTripsSection() {
                           {trip.plan.days?.map(day => (
                             <div key={day.day}>
                               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2" style={{ fontFamily: HL }}>
-                                Day {day.day} — {day.theme}
+                                Day {day.day} â€” {day.theme}
                               </p>
                               <div className="space-y-2">
                                 {day.stops?.map((stop, i) => (
                                   <div key={i} className="flex gap-3 text-sm">
                                     <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0 h-fit"
-                                      style={{ backgroundColor: 'rgba(245,197,24,0.15)', color: '#0B3D91', fontFamily: HL }}>
+                                      style={{ backgroundColor: 'rgba(245,197,24,0.15)', color: '#1565C0', fontFamily: HL }}>
                                       {stop.time}
                                     </span>
                                     <div>
@@ -1357,10 +1357,10 @@ function SavedTripsSection() {
 
 export default function ItinerariesPage() {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+    <div className="min-h-screen" style={{ backgroundColor: '#FFFFFF' }} suppressHydrationWarning>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)', borderBottom: '2px solid #F5C518' }}
+      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}
         className="py-14">
         <div className="max-w-5xl mx-auto px-4">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
@@ -1402,3 +1402,6 @@ export default function ItinerariesPage() {
     </div>
   );
 }
+
+
+

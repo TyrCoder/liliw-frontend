@@ -13,11 +13,11 @@ const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
 const CATEGORY_COLORS: Record<string, string> = {
-  history:  '#0B3D91',
+  history:  '#EF4444',
   culture:  '#8B5CF6',
-  people:   '#F5C518',
-  nature:   '#2E7D32',
-  food:     '#EF4444',
+  people:   '#EAB308',
+  nature:   '#22C55E',
+  food:     '#F97316',
   festival: '#EC4899',
 };
 
@@ -130,7 +130,7 @@ export default function StoryDetailPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+    <div className="min-h-screen bg-white" suppressHydrationWarning>
 
       {/* Cover image */}
       {story.coverUrl && (
@@ -191,7 +191,7 @@ export default function StoryDetailPage() {
           <div className="mt-16 pt-8 border-t border-gray-200">
             <Link href="/stories"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition hover:opacity-90"
-              style={{ backgroundColor: '#0B3D91', color: '#F5C518', fontFamily: BL }}>
+              style={{ backgroundColor: '#1565C0', color: '#ffffff', fontFamily: BL }}>
               <BookOpen className="w-4 h-4" /> More Stories
             </Link>
           </div>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -69,10 +69,10 @@ export default function ProfilePage() {
   const initials = user.username.charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }}>
+    <div className="min-h-screen bg-white">
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
+      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
         <div className="max-w-3xl mx-auto px-4 py-14">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
             <Link href="/" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>
@@ -81,7 +81,7 @@ export default function ProfilePage() {
 
             <div className="flex items-center gap-5">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shrink-0"
-                style={{ backgroundColor: '#F5C518', color: '#0B3D91' }}>
+                style={{ backgroundColor: '#F5C518', color: '#1565C0' }}>
                 {initials}
               </div>
               <div>
@@ -117,14 +117,14 @@ export default function ProfilePage() {
               <button key={key} id={key === 'trips' ? 'saved' : undefined}
                 onClick={() => setActiveTab(key)}
                 className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold transition border-b-2 ${
-                  activeTab === key ? 'border-[#0B3D91]' : 'border-transparent text-gray-400 hover:text-gray-600'
+                  activeTab === key ? 'border-[#1565C0]' : 'border-transparent text-gray-400 hover:text-gray-600'
                 }`}
-                style={{ color: activeTab === key ? '#0B3D91' : undefined, fontFamily: BL }}>
+                style={{ color: activeTab === key ? '#1565C0' : undefined, fontFamily: BL }}>
                 <Icon className="w-4 h-4" />
                 {label}
                 {count > 0 && (
                   <span className="text-xs font-bold px-1.5 py-0.5 rounded-full"
-                    style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}>{count}</span>
+                    style={{ backgroundColor: '#F5C518', color: '#1565C0', fontFamily: HL }}>{count}</span>
                 )}
               </button>
             ))}
@@ -141,7 +141,7 @@ export default function ProfilePage() {
                 <p className="text-sm text-gray-400 mt-1 mb-5" style={{ fontFamily: BL }}>Generate a trip with the AI builder and save it here.</p>
                 <Link href="/itineraries"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold"
-                  style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: BL }}>
+                  style={{ backgroundColor: '#F5C518', color: '#1565C0', fontFamily: BL }}>
                   Plan a Trip
                 </Link>
               </div>
@@ -151,12 +151,12 @@ export default function ProfilePage() {
                   onClick={() => setExpandedId(prev => prev === trip.id ? null : trip.id)}>
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                     style={{ backgroundColor: 'rgba(245,197,24,0.15)' }}>
-                    <Calendar className="w-4 h-4" style={{ color: '#0B3D91' }} />
+                    <Calendar className="w-4 h-4" style={{ color: '#1565C0' }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-900 text-sm truncate" style={{ fontFamily: HL }}>{trip.title}</p>
                     <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: BL }}>
-                      {trip.duration} · {trip.budget} · {new Date(trip.savedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {trip.duration} Â· {trip.budget} Â· {new Date(trip.savedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
                   <button onClick={e => { e.stopPropagation(); deleteTrip(trip.id); }}
@@ -176,19 +176,19 @@ export default function ProfilePage() {
                           {trip.plan.days?.map(day => (
                             <div key={day.day}>
                               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2" style={{ fontFamily: HL }}>
-                                Day {day.day} — {day.theme}
+                                Day {day.day} â€” {day.theme}
                               </p>
                               <div className="space-y-2">
                                 {day.stops?.map((stop, i) => (
                                   <div key={i} className="flex gap-3 text-sm">
                                     <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0 h-fit"
-                                      style={{ backgroundColor: 'rgba(245,197,24,0.15)', color: '#0B3D91', fontFamily: HL }}>
+                                      style={{ backgroundColor: 'rgba(245,197,24,0.15)', color: '#1565C0', fontFamily: HL }}>
                                       {stop.time}
                                     </span>
                                     <div>
                                       <p className="font-semibold text-gray-800" style={{ fontFamily: HL }}>{stop.place}</p>
                                       <p className="text-gray-500 text-xs" style={{ fontFamily: BL }}>{stop.activity}</p>
-                                      {stop.tip && <p className="text-xs text-amber-600 mt-0.5" style={{ fontFamily: BL }}>💡 {stop.tip}</p>}
+                                      {stop.tip && <p className="text-xs text-amber-600 mt-0.5" style={{ fontFamily: BL }}>ðŸ’¡ {stop.tip}</p>}
                                     </div>
                                   </div>
                                 ))}
@@ -220,7 +220,7 @@ export default function ProfilePage() {
                 <p className="text-sm text-gray-400 mt-1 mb-5" style={{ fontFamily: BL }}>Tap the heart icon on any attraction to save it here.</p>
                 <Link href="/attractions"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold"
-                  style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: BL }}>
+                  style={{ backgroundColor: '#F5C518', color: '#1565C0', fontFamily: BL }}>
                   Browse Attractions
                 </Link>
               </div>
@@ -235,7 +235,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-bold text-gray-900 text-sm truncate" style={{ fontFamily: HL }}>{fav.name}</p>
-                      <p className="text-xs text-gray-400 capitalize" style={{ fontFamily: BL }}>{fav.type}{fav.category ? ` · ${fav.category}` : ''}</p>
+                      <p className="text-xs text-gray-400 capitalize" style={{ fontFamily: BL }}>{fav.type}{fav.category ? ` Â· ${fav.category}` : ''}</p>
                     </div>
                     <MapPin className="w-3.5 h-3.5 text-gray-300 shrink-0 ml-auto" />
                   </Link>
@@ -248,3 +248,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+

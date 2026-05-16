@@ -3,12 +3,30 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Heart, Play, AlertCircle } from 'lucide-react';
+import { Heart, Play, AlertCircle } from 'lucide-react';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
-const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
+
+const PENNANT = ['#EF4444','#F97316','#EAB308','#22C55E','#0D9488','#3B82F6','#8B5CF6'];
+function Bunting({ flip = false }: { flip?: boolean }) {
+  return (
+    <svg width="120" height="32" viewBox="0 0 120 32" style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }}>
+      <line x1="0" y1="6" x2="120" y2="6" stroke="#9CA3AF" strokeWidth="1" />
+      {PENNANT.map((c, i) => { const cx = 10 + i * 15; return <polygon key={i} points={`${cx-6},6 ${cx+6},6 ${cx},20`} fill={c} />; })}
+    </svg>
+  );
+}
+function WaveDown({ from, to }: { from: string; to: string }) {
+  return (
+    <div style={{ lineHeight: 0, backgroundColor: from }}>
+      <svg viewBox="0 0 1440 60" preserveAspectRatio="none" style={{ width:'100%', height:60, display:'block' }}>
+        <path d="M0,0 C480,60 960,0 1440,60 L1440,60 L0,60 Z" fill={to} />
+      </svg>
+    </div>
+  );
+}
 
 function extractText(richText: any): string {
   if (!richText) return '';
@@ -37,24 +55,26 @@ export default function CulturePage() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+    <div className="min-h-screen bg-white" suppressHydrationWarning>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
-        <div className="max-w-6xl mx-auto px-4 py-14">
+      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+        <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-            <Link href="/about" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>
-              <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to About
-            </Link>
-            <p className="section-label mb-3" style={{ color: 'rgba(245,197,24,0.9)' }}>Living Traditions</p>
-            <h1 className="text-4xl sm:text-6xl font-bold text-white mb-4" style={{ fontFamily: DL }}>Culture & Heritage</h1>
-            <div className="w-12 h-0.5 mb-4 rounded-full" style={{ backgroundColor: '#F5C518' }} />
-            <p className="text-white/70 text-lg" style={{ fontFamily: BL }}>Living traditions and stories that define Liliw</p>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <Bunting />
+              <h1 className="text-4xl sm:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>
+                Culture &amp; Heritage
+              </h1>
+              <Bunting flip />
+            </div>
+            <p className="text-center text-white/70 text-base mt-2" style={{ fontFamily: BL }}>Living traditions and stories that define Liliw</p>
           </motion.div>
         </div>
       </div>
+      <WaveDown from="#1565C0" to="#ffffff" />
 
-      <div className="max-w-6xl mx-auto px-4 py-12 pb-20">
+      <div className="max-w-6xl mx-auto px-4 py-8 pb-20">
 
         {/* Skeleton */}
         {loading && (
@@ -83,8 +103,8 @@ export default function CulturePage() {
 
         {/* Empty */}
         {!loading && !error && cultureItems.length === 0 && (
-          <div className="text-center py-20 rounded-2xl border-2 border-dashed" style={{ borderColor: 'rgba(11,61,145,0.2)' }}>
-            <Heart className="w-10 h-10 mx-auto mb-3 opacity-30" style={{ color: '#0B3D91' }} />
+          <div className="text-center py-20 rounded-2xl border-2 border-dashed border-gray-200">
+            <Heart className="w-10 h-10 mx-auto mb-3 text-blue-300" />
             <p className="font-semibold text-lg" style={{ color: '#1A1A2E', fontFamily: HL }}>No culture & heritage content yet</p>
             <p className="text-sm mt-1 text-gray-500" style={{ fontFamily: BL }}>Add and publish items in Strapi under Culture &amp; Heritage.</p>
           </div>
@@ -159,7 +179,7 @@ export default function CulturePage() {
         {!loading && (
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
             className="mt-16 rounded-2xl p-8 text-white text-center"
-            style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)' }}>
+            style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
             <h3 className="text-2xl font-bold mb-3" style={{ fontFamily: HL }}>Support Local Culture</h3>
             <p className="mb-6 text-white/70 text-sm" style={{ fontFamily: BL }}>
               Help preserve and celebrate Liliw&apos;s heritage through direct support of artisans and cultural initiatives

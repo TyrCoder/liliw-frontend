@@ -3,19 +3,44 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, MapPin, Layers, Star } from 'lucide-react';
+import { MapPin, Mountain, Star } from 'lucide-react';
 import FavoriteButton from '@/components/FavoriteButton';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
-const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
+
+const PENNANT = ['#EF4444','#F97316','#EAB308','#22C55E','#0D9488','#3B82F6','#8B5CF6'];
+
+function Bunting({ flip = false }: { flip?: boolean }) {
+  return (
+    <svg width="120" height="32" viewBox="0 0 120 32" style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }}>
+      <line x1="0" y1="6" x2="120" y2="6" stroke="#9CA3AF" strokeWidth="1" />
+      {PENNANT.map((c, i) => { const cx = 10 + i * 15; return <polygon key={i} points={`${cx-6},6 ${cx+6},6 ${cx},20`} fill={c} />; })}
+    </svg>
+  );
+}
+
+function WaveDown({ from, to }: { from: string; to: string }) {
+  return (
+    <div style={{ lineHeight: 0, backgroundColor: from }}>
+      <svg viewBox="0 0 1440 60" preserveAspectRatio="none" style={{ width:'100%', height:60, display:'block' }}>
+        <path d="M0,0 C480,60 960,0 1440,60 L1440,60 L0,60 Z" fill={to} />
+      </svg>
+    </div>
+  );
+}
 
 interface Attraction {
   id: string | number;
   attributes: { name: string; description?: string; location?: string; category?: string; is_featured?: boolean; rating?: number; photos?: Array<{ url: string; formats?: any }>; };
   type: 'heritage' | 'spot';
 }
+
+const CAT_COLORS: Record<string, string> = {
+  natural: '#22C55E', scenic: '#0D9488', cultural: '#8B5CF6',
+  historical: '#EF4444', religious: '#F97316',
+};
 
 export default function TouristSpotsPage() {
   const [spots, setSpots] = useState<Attraction[]>([]);
@@ -31,27 +56,31 @@ export default function TouristSpotsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+    <div className="min-h-screen bg-white" suppressHydrationWarning>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
-        <div className="max-w-6xl mx-auto px-4 py-14">
+      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+        <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-            <Link href="/" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>
-              <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to Home
-            </Link>
-            <p className="section-label mb-3" style={{ color: 'rgba(245,197,24,0.9)' }}>Explore</p>
-            <h1 className="text-4xl sm:text-6xl font-bold text-white mb-4" style={{ fontFamily: DL }}>Tourist Spots</h1>
-            <div className="w-12 h-0.5 mb-4 rounded-full" style={{ backgroundColor: '#F5C518' }} />
-            <p className="text-white/70 text-lg" style={{ fontFamily: BL }}>Explore the natural beauty and scenic destinations in Liliw</p>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <Bunting />
+              <h1 className="text-4xl sm:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>
+                Tourist Spots
+              </h1>
+              <Bunting flip />
+            </div>
+            <p className="text-center text-white/70 text-base mt-2" style={{ fontFamily: BL }}>
+              Explore the natural beauty and scenic destinations in Liliw
+            </p>
           </motion.div>
         </div>
       </div>
+      <WaveDown from="#1565C0" to="#ffffff" />
 
-      <div className="max-w-6xl mx-auto px-4 py-12 pb-20">
+      <div className="max-w-6xl mx-auto px-4 py-8 pb-20">
         {loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1,2,3,4,5,6].map(i => <div key={i} className="rounded-2xl bg-white animate-pulse h-72 border border-gray-100" />)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1,2,3,4,5,6].map(i => <div key={i} className="rounded-2xl bg-gray-100 animate-pulse" style={{ aspectRatio:'3/4' }} />)}
           </div>
         )}
 
@@ -65,48 +94,44 @@ export default function TouristSpotsPage() {
         {!loading && !error && spots.length > 0 && (
           <motion.div initial="hidden" animate="visible"
             variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.07 } } }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {spots.map((spot, idx) => {
               const photos = spot.attributes?.photos ?? [];
               const rawUrl = photos[0]?.formats?.medium?.url || photos[0]?.formats?.small?.url || photos[0]?.url;
-              const coverUrl = rawUrl ? (rawUrl.startsWith('http') ? rawUrl : `${STRAPI_BASE}${rawUrl}`) : null;
+              const imgUrl = rawUrl ? (rawUrl.startsWith('http') ? rawUrl : `${STRAPI_BASE}${rawUrl}`) : null;
               const rating = spot.attributes?.rating ?? 0;
+              const catColor = CAT_COLORS[spot.attributes?.category ?? ''] ?? '#22C55E';
               return (
                 <motion.div key={`${spot.id}-${idx}`}
                   variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 0.4 } } }}
-                  whileHover={{ y: -6, transition: { duration: 0.2 } }} className="group h-full">
-                  <Link href={`/attractions/${spot.id}`}>
-                    <div className="rounded-2xl bg-white border border-gray-100 hover:shadow-xl transition-all duration-300 h-full flex flex-col overflow-hidden cursor-pointer editorial-card">
-                      <div className="relative overflow-hidden" style={{ aspectRatio: '16/9', background: 'linear-gradient(135deg, #1B4D2E, #0A2A17)' }}>
-                        {coverUrl
-                          ? <img src={coverUrl} alt={spot.attributes?.name} className="w-full h-full object-cover card-img" />
-                          : <div className="absolute inset-0 flex items-center justify-center opacity-20"><Layers className="w-16 h-16 text-white" /></div>
-                        }
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                        <div className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
-                          style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}>
-                          <Layers className="w-3 h-3" /> Tourist Spot
-                        </div>
-                        <FavoriteButton attractionId={String(spot.id)} attractionName={spot.attributes?.name || ''} attractionType="spot" attractionCategory={spot.attributes?.category} className="absolute top-3 right-3 z-20" />
-                      </div>
-                      <div className="p-4 flex-1 flex flex-col">
-                        <p className="section-label mb-1" style={{ color: '#1565C0', fontSize: 11 }}>Tourist Spot</p>
-                        <h2 className="font-bold mb-1.5 line-clamp-2 leading-snug text-base" style={{ color: '#1A1A2E', fontFamily: HL }}>{spot.attributes?.name || 'Unnamed Spot'}</h2>
+                  whileHover={{ y: -5 }} transition={{ duration: 0.2 }}>
+                  <Link href={`/attractions/${spot.id}`} className="block">
+                    <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 group"
+                      style={{ aspectRatio:'3/4', background:'linear-gradient(135deg,#1B4D2E,#0A2A17)' }}>
+                      {imgUrl
+                        ? <img src={imgUrl} alt={spot.attributes?.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        : <div className="absolute inset-0 flex items-center justify-center opacity-20"><Mountain className="w-20 h-20 text-white" /></div>
+                      }
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <FavoriteButton attractionId={String(spot.id)} attractionName={spot.attributes?.name || ''} attractionType="spot" attractionCategory={spot.attributes?.category} className="absolute top-3 right-3 z-20" />
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <span className="inline-block text-xs font-bold px-2.5 py-1 rounded-full text-white mb-2"
+                          style={{ backgroundColor: catColor, fontFamily: HL }}>
+                          {spot.attributes?.category ?? 'Tourist Spot'}
+                        </span>
+                        <h3 className="text-white font-bold text-base leading-snug line-clamp-2 mb-1" style={{ fontFamily: HL }}>
+                          {spot.attributes?.name || 'Unnamed Spot'}
+                        </h3>
                         {spot.attributes?.location && (
-                          <div className="flex items-center gap-1.5 text-gray-400 mb-2">
-                            <MapPin className="w-3.5 h-3.5 shrink-0" />
-                            <span className="text-xs truncate" style={{ fontFamily: BL }}>{spot.attributes.location}</span>
+                          <div className="flex items-center gap-1 text-white/70 text-xs" style={{ fontFamily: BL }}>
+                            <MapPin className="w-3 h-3 shrink-0" />{spot.attributes.location}
                           </div>
                         )}
                         {rating > 0 && (
-                          <div className="flex items-center gap-0.5 mb-2">
-                            {[...Array(5)].map((_, i) => <Star key={i} className="w-3.5 h-3.5" fill={i < Math.round(rating) ? '#F5C518' : 'none'} stroke={i < Math.round(rating) ? '#F5C518' : '#d1d5db'} />)}
+                          <div className="flex items-center gap-0.5 mt-1">
+                            {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3" fill={i < Math.round(rating) ? '#EAB308' : 'none'} stroke={i < Math.round(rating) ? '#EAB308' : 'rgba(255,255,255,0.4)'} />)}
                           </div>
                         )}
-                        {spot.attributes?.description && <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 flex-1 mb-4" style={{ fontFamily: BL }}>{spot.attributes.description}</p>}
-                        <div className="inline-flex items-center font-semibold text-sm gap-1" style={{ color: '#1565C0', fontFamily: BL }}>
-                          View Details <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
-                        </div>
                       </div>
                     </div>
                   </Link>
@@ -118,11 +143,11 @@ export default function TouristSpotsPage() {
 
         {!loading && !error && spots.length === 0 && (
           <div className="text-center py-20">
-            <div className="inline-block p-4 rounded-full mb-6" style={{ backgroundColor: 'rgba(11,61,145,0.08)' }}>
-              <MapPin className="w-12 h-12" style={{ color: '#0B3D91' }} />
+            <div className="inline-block p-4 rounded-full mb-6 bg-green-50">
+              <Mountain className="w-12 h-12 text-green-600" />
             </div>
-            <p className="text-xl font-semibold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>No tourist spots found yet</p>
-            <p className="text-gray-500 text-sm" style={{ fontFamily: BL }}>Check back soon — scenic spots and natural destinations will be added.</p>
+            <p className="text-xl font-semibold mb-2 text-gray-800" style={{ fontFamily: HL }}>No tourist spots found yet</p>
+            <p className="text-gray-500 text-sm" style={{ fontFamily: BL }}>Scenic spots and natural destinations will be added soon.</p>
           </div>
         )}
       </div>
