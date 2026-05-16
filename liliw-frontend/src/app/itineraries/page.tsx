@@ -276,7 +276,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
       <div className="rounded-3xl p-6 text-white" style={{ background: 'linear-gradient(135deg,#1E3A8A,#1565C0)' }}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#F5C518', fontFamily: HL }}>Your AI Itinerary</p>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#F5C518', fontFamily: HL }}>Your Itinerary</p>
             <h2 className="text-2xl font-bold leading-tight mb-2" style={{ fontFamily: DL }}>{localPlan.title}</h2>
             <p className="text-blue-100 text-sm leading-relaxed" style={{ fontFamily: BL }}>{localPlan.summary}</p>
           </div>
@@ -564,7 +564,7 @@ function ItineraryWizard() {
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
         <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-3">
           <Sparkles className="w-5 h-5" style={{ color: '#F5C518' }} />
-          <h2 className="text-lg font-semibold text-gray-900" style={{ fontFamily: HL }}>AI Itinerary Builder</h2>
+          <h2 className="text-lg font-semibold text-gray-900" style={{ fontFamily: HL }}>Itinerary Builder</h2>
         </div>
         <div className="flex flex-col items-center py-14 px-8 text-center">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
@@ -592,7 +592,7 @@ function ItineraryWizard() {
       <div className="px-6 pt-6 pb-4 border-b border-gray-100">
         <div className="flex items-center gap-3 mb-1">
           <Sparkles className="w-5 h-5" style={{ color: '#F5C518' }} />
-          <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: HL }}>AI Itinerary Builder</h2>
+          <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: HL }}>Itinerary Builder</h2>
         </div>
         <p className="text-sm text-gray-500 ml-8" style={{ fontFamily: BL }}>Tell us your preferences â€” we&apos;ll build your perfect Liliw trip</p>
       </div>
