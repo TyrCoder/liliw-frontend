@@ -241,11 +241,27 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
   }, []);
 
   useEffect(() => {
-    if (!showMap || !mapContainer.current || mapInstance.current) return;
+    if (!showMap || !mapContainer.current) return;
     let cancelled = false;
     const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
+
+    // Build name → [lng, lat] lookup from Strapi attractions
+    const strapiCoords = new Map<string, [number, number]>();
+    for (const a of allAttractions) {
+      const name = (a.attributes?.name || '').toLowerCase();
+      const c = a.attributes?.coordinates;
+      if (name && c) {
+        const lng = c.lng ?? c.longitude ?? c.lon;
+        const lat = c.lat ?? c.latitude;
+        if (typeof lng === 'number' && typeof lat === 'number') {
+          strapiCoords.set(name, [lng, lat]);
+        }
+      }
+    }
+
     import('mapbox-gl').then(async ({ default: mapboxgl }) => {
       if (cancelled || !mapContainer.current) return;
+      if (mapInstance.current) { mapInstance.current.remove(); mapInstance.current = null; }
       // @ts-ignore
       mapboxgl.accessToken = MAPBOX_TOKEN;
       const map = new mapboxgl.Map({ container: mapContainer.current, style: 'mapbox://styles/mapbox/streets-v12', center: [121.4359, 14.1297], zoom: 13 });
@@ -259,16 +275,22 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
         }
         const allStops = localPlan.days.flatMap((d: any) => d.stops.map((s: Stop) => s.place)).filter(Boolean);
         for (const place of allStops) {
-          try {
-            const q = encodeURIComponent(`${place}, Liliw, Laguna, Philippines`);
-            const r = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${MAPBOX_TOKEN}&limit=1&country=ph`);
-            const d = await r.json();
-            const coord = d?.features?.[0]?.center as [number, number] | undefined;
-            if (coord) {
-              coords.push(coord);
-              new mapboxgl.Marker({ color: '#EF4444' }).setLngLat(coord).setPopup(new mapboxgl.Popup({ offset: 25 }).setText(place)).addTo(map);
-            }
-          } catch {}
+          const strapiCoord = strapiCoords.get(place.toLowerCase());
+          if (strapiCoord) {
+            coords.push(strapiCoord);
+            new mapboxgl.Marker({ color: '#EF4444' }).setLngLat(strapiCoord).setPopup(new mapboxgl.Popup({ offset: 25 }).setText(place)).addTo(map);
+          } else {
+            try {
+              const q = encodeURIComponent(`${place}, Liliw, Laguna, Philippines`);
+              const r = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${MAPBOX_TOKEN}&limit=1&country=ph`);
+              const d = await r.json();
+              const coord = d?.features?.[0]?.center as [number, number] | undefined;
+              if (coord) {
+                coords.push(coord);
+                new mapboxgl.Marker({ color: '#EF4444' }).setLngLat(coord).setPopup(new mapboxgl.Popup({ offset: 25 }).setText(place)).addTo(map);
+              }
+            } catch {}
+          }
         }
         if (coords.length >= 2) {
           try {
@@ -282,11 +304,13 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
           } catch {}
           const bounds = coords.reduce((b, c) => b.extend(c as any), new mapboxgl.LngLatBounds(coords[0], coords[0]));
           map.fitBounds(bounds, { padding: 60 });
+        } else if (coords.length === 1) {
+          map.setCenter(coords[0]); map.setZoom(14);
         }
       });
     });
     return () => { cancelled = true; mapInstance.current?.remove(); mapInstance.current = null; };
-  }, [showMap, userLocation, localPlan]);
+  }, [showMap, userLocation, localPlan, allAttractions]);
 
   const allowedTypes = Array.from(
     new Set(
@@ -315,7 +339,11 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
       const filtered = filteredAttractions
         .filter(a => !inPlan.has((a.attributes?.name || '').toLowerCase()))
         .slice(0, 4)
-        .map(a => ({ id: a.id, name: a.attributes?.name || '', category: a.attributes?.category || a.type || '', location: a.attributes?.location || '' }));
+        .map(a => {
+          const rawUrl = a.attributes?.photos?.[0]?.url;
+          const photo = rawUrl ? (rawUrl.startsWith('/') ? `${STRAPI_BASE}${rawUrl}` : rawUrl) : null;
+          return { id: a.id, name: a.attributes?.name || '', category: a.attributes?.category || a.type || '', location: a.attributes?.location || '', photo };
+        });
       setSuggestions(filtered);
     } catch { setSuggestions([]); }
     finally { setLoadingSuggestions(false); }
@@ -640,13 +668,18 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
                   <div className="space-y-2">
                     {suggestions.map(s => (
                       <button key={s.id} onClick={() => swapWithSuggestion(s.name)}
-                        className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition group">
-                        <div className="flex items-center justify-between">
+                        className="w-full text-left rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition group overflow-hidden">
+                        {s.photo && (
+                          <div className="h-28 overflow-hidden">
+                            <img src={s.photo} alt={s.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          </div>
+                        )}
+                        <div className="px-4 py-3 flex items-center justify-between">
                           <div>
                             <p className="font-semibold text-sm text-gray-800 group-hover:text-blue-700" style={{ fontFamily: HL }}>{s.name}</p>
                             {s.location && <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5" style={{ fontFamily: BL }}><MapPin className="w-3 h-3" />{s.location}</p>}
                           </div>
-                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold capitalize"
+                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold capitalize shrink-0 ml-2"
                             style={{ backgroundColor: 'rgba(21,101,192,0.08)', color: '#1565C0', fontFamily: BL }}>{s.category}</span>
                         </div>
                       </button>
