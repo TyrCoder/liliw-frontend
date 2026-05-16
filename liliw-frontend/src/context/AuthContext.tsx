@@ -82,14 +82,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user: null, token: null, loading: false });
   }, []);
 
-  const userRole      = state.user?.role?.type ?? 'public';
+  const userRole       = state.user?.role?.type ?? 'public';
   const adminPanelRole = state.user?.adminPanelRole ?? null;
-  const isAdmin  = !!state.user && (
+
+  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
+    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+
+  const isAdmin = !!state.user && (
+    adminEmails.includes(state.user.email.toLowerCase()) ||
     !!adminPanelRole ||
     userRole === 'admin' ||
     state.user?.role?.name?.toLowerCase() === 'admin'
   );
-  const isLocal  = !!state.user && !adminPanelRole && userRole === 'authenticated';
+  const isLocal = !!state.user && !isAdmin && userRole === 'authenticated';
 
   return (
     <AuthContext.Provider value={{ ...state, login, register, logout, isAdmin, isLocal, userRole, adminPanelRole }}>
