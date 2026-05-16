@@ -177,7 +177,7 @@ export default function AdminDashboard() {
     // Admin only — user management + LBO applications
     if (isAdmin) {
       fetch('/api/admin/users',           { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
-      fetch('/api/admin/lbo-applications',{ headers: h }).then(r => r.json()).then(d => setLboApps(d.data || [])).catch(() => {}).finally(() => setLoadingLbo(false));
+      fetch('/api/admin/lbo-applications',{ headers: h }).then(r => r.json()).then(d => { if (d._error) console.error('[LBO] Strapi error:', d._error, 'status:', d._status); setLboApps(d.data || []); }).catch(() => {}).finally(() => setLoadingLbo(false));
     }
 
     // Role management — admin and CHATO Officer
