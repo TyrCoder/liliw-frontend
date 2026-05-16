@@ -17,7 +17,36 @@ const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const PENNANT = ['#EF4444','#F97316','#EAB308','#22C55E','#0D9488','#3B82F6','#8B5CF6'];
+function Bunting({ flip = false }: { flip?: boolean }) {
+  const r = 14, panels = 8, arc = Math.PI * 2 / panels, spacing = 30;
+  const W = r + (PENNANT.length - 1) * spacing + r;
+  const cy = r;
+  return (
+    <svg width={W} height={r * 2} viewBox={`0 0 ${W} ${r * 2}`} style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }}>
+      <line x1="0" y1={cy} x2={W} y2={cy} stroke="#9CA3AF" strokeWidth="1.2" />
+      {PENNANT.map((color, idx) => {
+        const cx = r + idx * spacing;
+        return (
+          <g key={idx}>
+            {Array.from({ length: panels }).map((_, i) => {
+              const a1 = -Math.PI / 2 + i * arc;
+              const a2 = -Math.PI / 2 + (i + 1) * arc;
+              const x1 = (cx + r * Math.cos(a1)).toFixed(2);
+              const y1 = (cy + r * Math.sin(a1)).toFixed(2);
+              const x2 = (cx + r * Math.cos(a2)).toFixed(2);
+              const y2 = (cy + r * Math.sin(a2)).toFixed(2);
+              return <path key={i} d={`M ${cx},${cy} L ${x1},${y1} A ${r},${r} 0 0,1 ${x2},${y2} Z`}
+                fill={i % 2 === 0 ? color : color + 'bb'} />;
+            })}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/* â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ shared helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
@@ -37,7 +66,7 @@ function blocksToText(blocks: any): string {
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   PART 1 â€” AI ITINERARY BUILDER WIZARD
+   PART 1 â€" AI ITINERARY BUILDER WIZARD
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 const DURATIONS = [
@@ -50,7 +79,7 @@ const DURATIONS = [
 
 const BUDGETS = [
   { value: 'budget-friendly (under â‚±1,000/day)', label: 'Budget',    sub: 'Under â‚±1,000/day' },
-  { value: 'mid-range (â‚±1,000â€“â‚±3,000/day)',      label: 'Mid-range', sub: 'â‚±1,000 â€“ â‚±3,000/day' },
+  { value: 'mid-range (â‚±1,000â€"â‚±3,000/day)',      label: 'Mid-range', sub: 'â‚±1,000 â€" â‚±3,000/day' },
   { value: 'premium (â‚±3,000+/day)',               label: 'Premium',   sub: 'â‚±3,000+/day' },
   { value: 'custom',                              label: 'Custom',    sub: 'Set your own' },
 ];
@@ -827,7 +856,7 @@ function ItineraryWizard() {
           <Sparkles className="w-5 h-5" style={{ color: '#F5C518' }} />
           <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: HL }}>Itinerary Builder</h2>
         </div>
-        <p className="text-sm text-gray-500 ml-8" style={{ fontFamily: BL }}>Tell us your preferences â€” we&apos;ll build your perfect Liliw trip</p>
+        <p className="text-sm text-gray-500 ml-8" style={{ fontFamily: BL }}>Tell us your preferences â€" we&apos;ll build your perfect Liliw trip</p>
       </div>
 
       {/* Progress */}
@@ -855,7 +884,7 @@ function ItineraryWizard() {
       <div className="p-6">
         <AnimatePresence mode="wait">
 
-          {/* Step 1 â€” Duration */}
+          {/* Step 1 â€" Duration */}
           {step === 'duration' && (
             <motion.div key="duration" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <div className="flex items-center gap-2 mb-4">
@@ -894,7 +923,7 @@ function ItineraryWizard() {
             </motion.div>
           )}
 
-          {/* Step 2 â€” Budget */}
+          {/* Step 2 â€" Budget */}
           {step === 'budget' && (
             <motion.div key="budget" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <div className="flex items-center gap-2 mb-4">
@@ -939,7 +968,7 @@ function ItineraryWizard() {
             </motion.div>
           )}
 
-          {/* Step 3 â€” Interests */}
+          {/* Step 3 â€" Interests */}
           {step === 'interests' && (
             <motion.div key="interests" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <div className="flex items-center gap-2 mb-4">
@@ -978,7 +1007,7 @@ function ItineraryWizard() {
             </motion.div>
           )}
 
-          {/* Step 4 â€” Favorites */}
+          {/* Step 4 â€" Favorites */}
           {step === 'favorites' && (
             <motion.div key="favorites" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <div className="flex items-center gap-2 mb-1">
@@ -1064,7 +1093,7 @@ function ItineraryWizard() {
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   PART 2 â€” STRAPI ITINERARIES FROM DATABASE
+   PART 2 â€" STRAPI ITINERARIES FROM DATABASE
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 const DURATION_LABEL: Record<string, string> = {
@@ -1556,7 +1585,7 @@ function SavedTripsSection() {
                           {trip.plan.days?.map(day => (
                             <div key={day.day}>
                               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2" style={{ fontFamily: HL }}>
-                                Day {day.day} â€” {day.theme}
+                                Day {day.day} â€" {day.theme}
                               </p>
                               <div className="space-y-2">
                                 {day.stops?.map((stop, i) => (
@@ -1601,9 +1630,11 @@ export default function ItinerariesPage() {
               style={{ color: '#F5C518', fontFamily: BL }}>
               <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to Home
             </Link>
-            <p className="section-label mb-1" style={{ color: '#F5C518', fontSize: 11 }}>PLAN YOUR VISIT</p>
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-3" style={{ fontFamily: DL }}>Itineraries</h1>
-            <div className="w-12 h-0.5 mb-3" style={{ backgroundColor: '#F5C518' }} />
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <Bunting />
+              <h1 className="text-4xl sm:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>Itineraries</h1>
+              <Bunting flip />
+            </div>
             <p className="text-blue-100 text-base" style={{ fontFamily: BL }}>Plan your own trip with AI or browse our curated tours</p>
           </motion.div>
         </div>
