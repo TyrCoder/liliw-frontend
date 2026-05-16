@@ -331,9 +331,20 @@ export default function Home() {
 
         {/* Background */}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 55%, #0a3580 100%)' }}>
-          {heroSlide?.image && (
+          {process.env.NEXT_PUBLIC_HERO_VIDEO_URL ? (
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-full object-cover"
+              style={{ opacity: 0.65 }}
+            >
+              <source src={process.env.NEXT_PUBLIC_HERO_VIDEO_URL} type="video/mp4" />
+            </video>
+          ) : heroSlide?.image ? (
             <img src={heroSlide.image} alt="Liliw hero" className="w-full h-full object-cover opacity-50" />
-          )}
+          ) : null}
         </div>
 
         {/* Gradient overlay */}
