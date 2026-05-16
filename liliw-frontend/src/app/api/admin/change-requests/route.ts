@@ -1,0 +1,36 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase-server';
+
+// GET — list all LBO change requests
+export async function GET() {
+  const { data, error } = await supabaseServer
+    .from('lbo_change_requests')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) return NextResponse.json({ data: [], _error: error.message });
+  return NextResponse.json({ data });
+}
+
+// PATCH — update status + editor_notes { id, status, editor_notes }
+export async function PATCH(request: NextRequest) {
+  const { id, status, editor_notes } = await request.json();
+  if (!id || !status) return NextResponse.json({ error: 'id and status required' }, { status: 400 });
+
+  // Try with editor_notes first; fall back to status-only if column doesn't exist yet
+  const { error } = await supabaseServer
+    .from('lbo_change_requests')
+    .update({ status, editor_notes: editor_notes || null })
+    .eq('id', id);
+
+  if (error) {
+    // Column may not exist — retry with status only
+    const { error: error2 } = await supabaseServer
+      .from('lbo_change_requests')
+      .update({ status })
+      .eq('id', id);
+    if (error2) return NextResponse.json({ error: 'Failed to update', detail: error2.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}

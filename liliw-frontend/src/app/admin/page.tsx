@@ -10,7 +10,7 @@ import {
   ChevronLeft, Mail, Phone, Calendar, MessageSquare, Star,
   RefreshCw, UserCheck, Shield, Activity, MapPin, Edit, Layers,
   Monitor, Smartphone, Tablet, Wifi, Search,
-  Building2, X, ChevronDown, ChevronUp, Key,
+  Building2, X, ChevronDown, ChevronUp, Key, Inbox,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -24,7 +24,7 @@ interface AuditLog { id: string; event: string; model: string; uid?: string; ent
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[] }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit';
+type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit';
 
 /* ─── helpers ─────────────────────────────────────────────── */
 const STATUS_BADGE: Record<string, string> = { new: 'bg-blue-50 text-blue-700', reviewed: 'bg-yellow-50 text-yellow-700', resolved: 'bg-green-50 text-green-700' };
@@ -138,6 +138,12 @@ export default function AdminDashboard() {
   const [rejectNotes,   setRejectNotes]   = useState('');
   const [savingReject,  setSavingReject]  = useState(false);
 
+  const [changeRequests,  setChangeRequests]  = useState<any[]>([]);
+  const [loadingCR,       setLoadingCR]       = useState(false);
+  const [crActionModal,   setCrActionModal]   = useState<{ cr: any; action: 'done' | 'rejected' } | null>(null);
+  const [crNotes,         setCrNotes]         = useState('');
+  const [savingCR,        setSavingCR]        = useState(false);
+
   const [attrSearch, setAttrSearch] = useState('');
   const [attrType,   setAttrType]   = useState<string>('all');
 
@@ -152,7 +158,7 @@ export default function AdminDashboard() {
   // Set default tab based on role
   useEffect(() => {
     if (!loading && isStaff) {
-      if (isChatoEditor) setActiveTab('attractions');
+      if (isChatoEditor) setActiveTab('changerequests');
       else if (isChatoOfficer) setActiveTab('overview');
     }
   }, [loading, isStaff, isChatoEditor, isChatoOfficer]);
@@ -178,6 +184,12 @@ export default function AdminDashboard() {
     if (isAdmin) {
       fetch('/api/admin/users',           { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
       fetch('/api/admin/lbo-applications',{ headers: h }).then(r => r.json()).then(d => { if (d._error) console.error('[LBO] Strapi error:', d._error, 'status:', d._status); setLboApps(d.data || []); }).catch(() => {}).finally(() => setLoadingLbo(false));
+    }
+
+    // Admin and Editor — change requests
+    if (isAdmin || isChatoEditor) {
+      setLoadingCR(true);
+      fetch('/api/admin/change-requests', { headers: h }).then(r => r.json()).then(d => setChangeRequests(d.data || [])).catch(() => {}).finally(() => setLoadingCR(false));
     }
 
     // Role management — admin and CHATO Officer
@@ -321,6 +333,27 @@ export default function AdminDashboard() {
     setSavingReject(false);
   };
 
+  const handleCRUpdate = async () => {
+    if (!crActionModal) return;
+    setSavingCR(true);
+    try {
+      const res = await fetch('/api/admin/change-requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: crActionModal.cr.id, status: crActionModal.action, editor_notes: crNotes }),
+      });
+      if (res.ok) {
+        setChangeRequests(prev => prev.map(cr => cr.id === crActionModal.cr.id
+          ? { ...cr, status: crActionModal.action, editor_notes: crNotes }
+          : cr
+        ));
+        setCrActionModal(null);
+        setCrNotes('');
+      }
+    } catch {}
+    setSavingCR(false);
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} /></div>;
   if (!user || !isStaff) return null;
 
@@ -343,6 +376,7 @@ export default function AdminDashboard() {
     { key: 'users',         label: 'Users',              badge: users.length,                                                                   roles: ['admin'] },
     { key: 'roles',         label: 'Role Management',    badge: roleUsers.length,                                                               roles: ['admin', 'officer'] },
     { key: 'lbo',           label: 'LBO Applications',   badge: lboApps.filter(a => (a.attributes?.status || a.status) === 'pending').length,   roles: ['admin'] },
+    { key: 'changerequests',label: 'Change Requests',    badge: changeRequests.filter(cr => cr.status === 'pending').length,                    roles: ['admin', 'editor'] },
     { key: 'submissions',   label: 'Submissions',        badge: newCount,                                                                       roles: ['admin'] },
     { key: 'participation', label: 'Participation',      badge: participation.length,                                                           roles: ['admin', 'officer'] },
     { key: 'signups',       label: 'Event Sign-ups',     badge: signups.length,                                                                 roles: ['admin'] },
@@ -1107,6 +1141,105 @@ export default function AdminDashboard() {
           );
         })()}
 
+        {/* ── CHANGE REQUESTS ────────────────────────────────── */}
+        {activeTab === 'changerequests' && (
+          <div className="space-y-4">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4">
+              <StatCard icon={<Clock className="w-5 h-5" />}       label="Pending"  value={changeRequests.filter(cr => cr.status === 'pending').length}  color="#F59E0B" />
+              <StatCard icon={<CheckCircle className="w-5 h-5" />} label="Done"     value={changeRequests.filter(cr => cr.status === 'done').length}     color="#10B981" />
+              <StatCard icon={<AlertCircle className="w-5 h-5" />} label="Rejected" value={changeRequests.filter(cr => cr.status === 'rejected').length} color="#EF4444" />
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="font-bold text-gray-900">LBO Change Requests</h2>
+                <span className="text-sm text-gray-400">{changeRequests.length} total</span>
+              </div>
+
+              {loadingCR ? (
+                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+              ) : changeRequests.length === 0 ? (
+                <div className="flex flex-col items-center py-16 text-center text-gray-400">
+                  <Inbox className="w-12 h-12 opacity-20 mb-3" />
+                  <p className="font-semibold">No change requests yet</p>
+                  <p className="text-xs mt-1">Requests submitted by LBO owners appear here</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      <th className="px-5 py-3 text-left">LBO</th>
+                      <th className="px-5 py-3 text-left">Attraction</th>
+                      <th className="px-5 py-3 text-left">Field</th>
+                      <th className="px-5 py-3 text-left">Current → Requested</th>
+                      <th className="px-5 py-3 text-left">Reason</th>
+                      <th className="px-5 py-3 text-left">Status</th>
+                      <th className="px-5 py-3 text-left">Date</th>
+                      <th className="px-5 py-3 text-left">Actions</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {changeRequests.map(cr => {
+                        const crStatus = cr.status || 'pending';
+                        const statusColor = crStatus === 'done' ? 'bg-green-50 text-green-700'
+                          : crStatus === 'rejected' ? 'bg-red-50 text-red-600'
+                          : 'bg-yellow-50 text-yellow-700';
+                        return (
+                          <tr key={cr.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-5 py-4">
+                              <p className="font-semibold text-gray-900">{cr.lbo_name || '—'}</p>
+                              <p className="text-xs text-gray-400">{cr.lbo_email}</p>
+                            </td>
+                            <td className="px-5 py-4 font-medium text-gray-800">{cr.attraction_name || '—'}</td>
+                            <td className="px-5 py-4">
+                              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 capitalize">{cr.field_to_change || '—'}</span>
+                            </td>
+                            <td className="px-5 py-4 max-w-[220px]">
+                              {cr.current_value && (
+                                <p className="text-xs text-gray-400 line-clamp-1 mb-0.5"><span className="font-semibold">From:</span> {cr.current_value}</p>
+                              )}
+                              <p className="text-xs text-gray-800 line-clamp-2"><span className="font-semibold">To:</span> {cr.requested_value}</p>
+                            </td>
+                            <td className="px-5 py-4 max-w-[180px]">
+                              <p className="text-xs text-gray-500 line-clamp-2">{cr.reason || '—'}</p>
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${statusColor}`}>{crStatus}</span>
+                              {cr.editor_notes && (
+                                <p className="text-xs text-gray-400 mt-1 italic line-clamp-1">{cr.editor_notes}</p>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
+                              {cr.created_at ? new Date(cr.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                            </td>
+                            <td className="px-5 py-4">
+                              {crStatus === 'pending' && (
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => { setCrActionModal({ cr, action: 'done' }); setCrNotes(''); }}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition hover:opacity-90"
+                                    style={{ backgroundColor: '#10B981' }}>
+                                    Mark Done
+                                  </button>
+                                  <button
+                                    onClick={() => { setCrActionModal({ cr, action: 'rejected' }); setCrNotes(''); }}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 text-red-600 hover:bg-red-50 transition">
+                                    Reject
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── AUDIT LOGS ─────────────────────────────────────── */}
         {activeTab === 'audit' && (
           <TableWrap title="CMS Audit Logs" count={auditLogs.length} loading={loadingAudit} empty={auditLogs.length === 0} emptyIcon={<Activity className="w-12 h-12" />}>
@@ -1252,6 +1385,54 @@ export default function AdminDashboard() {
           </div>
         );
       })()}
+
+      {/* ── CHANGE REQUEST ACTION MODAL ─────────────────── */}
+      {crActionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setCrActionModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${crActionModal.action === 'done' ? 'bg-green-50' : 'bg-red-50'}`}>
+                {crActionModal.action === 'done'
+                  ? <CheckCircle className="w-5 h-5 text-green-600" />
+                  : <X className="w-5 h-5 text-red-600" />
+                }
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">
+                  {crActionModal.action === 'done' ? 'Mark as Done' : 'Reject Request'}
+                </h2>
+                <p className="text-xs text-gray-400">{crActionModal.cr.attraction_name} · {crActionModal.cr.field_to_change}</p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-2 text-sm">
+              <div><span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Requested by</span><p className="text-gray-800 mt-0.5">{crActionModal.cr.lbo_name} ({crActionModal.cr.lbo_email})</p></div>
+              <div><span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Change</span><p className="text-gray-800 mt-0.5">{crActionModal.cr.field_to_change}: <span className="line-through text-gray-400">{crActionModal.cr.current_value || '—'}</span> → {crActionModal.cr.requested_value}</p></div>
+              {crActionModal.cr.reason && <div><span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Reason</span><p className="text-gray-600 mt-0.5">{crActionModal.cr.reason}</p></div>}
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Editor Notes (optional)</label>
+              <textarea value={crNotes} onChange={e => setCrNotes(e.target.value)} rows={3}
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                placeholder={crActionModal.action === 'done' ? 'e.g. Updated in Strapi CMS' : 'e.g. Insufficient information provided'} />
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={() => setCrActionModal(null)}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+                Cancel
+              </button>
+              <button onClick={handleCRUpdate} disabled={savingCR}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ backgroundColor: crActionModal.action === 'done' ? '#10B981' : '#EF4444' }}>
+                {savingCR ? <Loader2 className="w-4 h-4 animate-spin" /> : crActionModal.action === 'done' ? <><CheckCircle className="w-4 h-4" /> Mark Done</> : 'Confirm Reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── RESET PASSWORD MODAL ──────────────────────────── */}
       {pwdModal && (
