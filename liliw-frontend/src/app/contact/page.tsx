@@ -16,7 +16,7 @@ function Bunting({ flip = false }: { flip?: boolean }) {
   const W = r + (PENNANT.length - 1) * spacing + r;
   const cy = r;
   return (
-    <svg width={W} height={r * 2} viewBox={`0 0 ${W} ${r * 2}`} style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }}>
+    <svg width={W} height={r * 2} viewBox={`0 0 ${W} ${r * 2}`} className="hidden sm:inline-block" style={{ transform: flip ? 'scaleX(-1)' : undefined, verticalAlign:'middle' }}>
       <line x1="0" y1={cy} x2={W} y2={cy} stroke="#9CA3AF" strokeWidth="1.2" />
       {PENNANT.map((color, idx) => {
         const cx = r + idx * spacing;
@@ -83,12 +83,12 @@ export default function ContactPage() {
             <Link href="/" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>
               <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to Home
             </Link>
-            <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
               <Bunting />
-              <h1 className="text-4xl sm:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>Get in Touch</h1>
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>Get in Touch</h1>
               <Bunting flip />
             </div>
-            <p className="text-white/70 text-lg" style={{ fontFamily: BL }}>Have questions? We&apos;d love to hear from you.</p>
+            <p className="text-white/70 text-sm sm:text-base text-center" style={{ fontFamily: BL }}>Have questions? We&apos;d love to hear from you.</p>
           </motion.div>
         </div>
       </div>

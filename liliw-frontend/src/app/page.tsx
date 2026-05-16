@@ -65,7 +65,7 @@ function Bunting({ flip = false }: { flip?: boolean }) {
   const W = r + (PENNANT.length - 1) * spacing + r;
   const cy = r;
   return (
-    <svg width={W} height={r * 2} viewBox={`0 0 ${W} ${r * 2}`} style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }} aria-hidden="true">
+    <svg width={W} height={r * 2} viewBox={`0 0 ${W} ${r * 2}`} className="hidden sm:inline-block" style={{ transform: flip ? 'scaleX(-1)' : undefined, verticalAlign:'middle' }} aria-hidden="true">
       <line x1="0" y1={cy} x2={W} y2={cy} stroke="#9CA3AF" strokeWidth="1.2" />
       {PENNANT.map((color, idx) => {
         const cx = r + idx * spacing;
@@ -113,7 +113,7 @@ function WaveUp({ from, to }: { from: string; to: string }) {
 function FestiveHeading({ title, sub, light = false }: { title: string; sub?: string; light?: boolean }) {
   return (
     <div className="text-center mb-10">
-      <div className="flex items-center justify-center gap-3 mb-2">
+      <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
         <Bunting />
         <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black uppercase tracking-wide leading-tight"
           style={{ fontFamily: HL, color: light ? '#ffffff' : '#1E3A8A' }}>
@@ -177,7 +177,7 @@ function ActivityCard({ item }: { item: any }) {
   return (
     <Link href={`/attractions/${item.id}`}
       className="shrink-0 relative rounded-2xl overflow-hidden group shadow-md"
-      style={{ width: 200, aspectRatio: '2/3', background: `linear-gradient(160deg, ${grads[0]}, ${grads[1]})` }}>
+      style={{ width: 'clamp(140px, 40vw, 200px)', aspectRatio: '2/3', background: `linear-gradient(160deg, ${grads[0]}, ${grads[1]})` }}>
       {cover && <img src={cover} alt={a.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-4">
@@ -497,7 +497,7 @@ export default function Home() {
           </div>
 
           {/* Quick links row */}
-          <div className="grid grid-cols-3 gap-4 mt-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-10">
             {[
               { href: '/map',         label: 'Interactive Map',  icon: <MapPin className="w-5 h-5" />,   sub: 'Navigate with ease' },
               { href: '/itineraries', label: 'Curated Tours',    icon: <Compass className="w-5 h-5" />,  sub: 'Hand-picked itineraries' },

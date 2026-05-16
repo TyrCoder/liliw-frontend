@@ -15,7 +15,7 @@ function Bunting({ flip = false }: { flip?: boolean }) {
   const W = r + (PENNANT.length - 1) * spacing + r;
   const cy = r;
   return (
-    <svg width={W} height={r * 2} viewBox={`0 0 ${W} ${r * 2}`} style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }}>
+    <svg width={W} height={r * 2} viewBox={`0 0 ${W} ${r * 2}`} className="hidden sm:inline-block" style={{ transform: flip ? 'scaleX(-1)' : undefined, verticalAlign:'middle' }}>
       <line x1="0" y1={cy} x2={W} y2={cy} stroke="#9CA3AF" strokeWidth="1.2" />
       {PENNANT.map((color, idx) => {
         const cx = r + idx * spacing;
@@ -90,9 +90,9 @@ export default function ArtsPage() {
       <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
         <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-            <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
               <Bunting />
-              <h1 className="text-4xl sm:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>
                 Arts &amp; Creatives
               </h1>
               <Bunting flip />
@@ -106,7 +106,7 @@ export default function ArtsPage() {
       {/* Art Forms */}
       <div className="max-w-6xl mx-auto px-4 py-12">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-10 text-center">
-          <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
             <Bunting />
             <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide" style={{ color: '#1E3A8A', fontFamily: HL }}>Art Forms &amp; Traditions</h2>
             <Bunting flip />
@@ -153,7 +153,7 @@ export default function ArtsPage() {
       {/* Artisans */}
       <div className="max-w-6xl mx-auto px-4 py-12">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8 text-center">
-          <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
             <Bunting />
             <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide" style={{ color: '#1E3A8A', fontFamily: HL }}>Meet Our Artisans</h2>
             <Bunting flip />
