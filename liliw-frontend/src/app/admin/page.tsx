@@ -737,7 +737,7 @@ export default function AdminDashboard() {
                     const appId = app.id;
                     const status = a.status || 'pending';
                     const isExpanded = expandedLbo === appId;
-                    const docs = a.documents?.data || [];
+                    const docs: { name: string; url: string }[] = Array.isArray(a.documents) ? a.documents : [];
                     const statusColor = status === 'approved'
                       ? 'bg-green-50 text-green-700'
                       : status === 'rejected'
@@ -788,20 +788,35 @@ export default function AdminDashboard() {
                             {/* Documents */}
                             {docs.length > 0 && (
                               <div className="mt-5">
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Supporting Documents</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {docs.map((doc: any) => {
-                                    const dAttr = doc.attributes || doc;
-                                    const url = dAttr.url
-                                      ? (dAttr.url.startsWith('http') ? dAttr.url : `${STRAPI_URL}${dAttr.url}`)
-                                      : null;
-                                    return url ? (
-                                      <a key={doc.id} href={url} target="_blank" rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:border-blue-300 hover:text-blue-600 transition">
-                                        <FileText className="w-3.5 h-3.5" />
-                                        {dAttr.name || dAttr.alternativeText || 'Document'}
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                                  Supporting Documents <span className="text-gray-300 font-normal">({docs.length})</span>
+                                </p>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                  {docs.map((doc, i) => {
+                                    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(doc.name || doc.url);
+                                    const isPdf   = /\.pdf$/i.test(doc.name || doc.url);
+                                    return (
+                                      <a key={i} href={doc.url} target="_blank" rel="noopener noreferrer"
+                                        className="group rounded-xl border border-gray-200 overflow-hidden bg-white hover:border-blue-300 hover:shadow-md transition-all">
+                                        {isImage ? (
+                                          <div className="relative w-full aspect-video bg-gray-100 overflow-hidden">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={doc.url} alt={doc.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+                                          </div>
+                                        ) : (
+                                          <div className="w-full aspect-video bg-red-50 flex items-center justify-center">
+                                            <div className="text-center">
+                                              <FileText className="w-8 h-8 text-red-400 mx-auto mb-1" />
+                                              <span className="text-xs font-bold text-red-500 uppercase">{isPdf ? 'PDF' : 'File'}</span>
+                                            </div>
+                                          </div>
+                                        )}
+                                        <div className="px-3 py-2 border-t border-gray-100 flex items-center gap-2">
+                                          <FileText className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                          <span className="text-xs text-gray-600 truncate">{doc.name || 'Document'}</span>
+                                        </div>
                                       </a>
-                                    ) : null;
+                                    );
                                   })}
                                 </div>
                               </div>
