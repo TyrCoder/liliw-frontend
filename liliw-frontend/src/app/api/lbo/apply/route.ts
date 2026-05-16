@@ -1,62 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+import { supabaseServer } from '@/lib/supabase-server';
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
-    // Upload documents to Strapi media library first
-    const fileIds: number[] = [];
+    // Upload documents to Supabase Storage
     const files = formData.getAll('documents') as File[];
+    const docUrls: { name: string; url: string }[] = [];
 
     for (const file of files) {
       if (!file || file.size === 0) continue;
-      const fd = new FormData();
-      fd.append('files', file, file.name);
-      const uploadRes = await fetch(`${STRAPI}/api/upload`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${TOKEN}` },
-        body: fd,
-      });
-      if (uploadRes.ok) {
-        const uploaded = await uploadRes.json();
-        if (uploaded[0]?.id) fileIds.push(uploaded[0].id);
+      const buffer   = Buffer.from(await file.arrayBuffer());
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path     = `${Date.now()}-${safeName}`;
+
+      const { data: uploaded, error } = await supabaseServer.storage
+        .from('lbo-documents')
+        .upload(path, buffer, { contentType: file.type, upsert: false });
+
+      if (!error && uploaded) {
+        const { data: urlData } = supabaseServer.storage.from('lbo-documents').getPublicUrl(path);
+        if (urlData?.publicUrl) docUrls.push({ name: file.name, url: urlData.publicUrl });
       }
     }
 
-    // Create the application entry
-    const body: any = {
-      data: {
-        business_name:  formData.get('business_name'),
-        owner_name:     formData.get('owner_name'),
-        email:          formData.get('email'),
-        phone:          formData.get('phone'),
-        address:        formData.get('address'),
-        business_type:  formData.get('business_type'),
-        permit_number:  formData.get('permit_number'),
-        attraction_name:formData.get('attraction_name'),
-        status:         'pending',
-      },
-    };
+    // Insert application row
+    const { error: insertError } = await supabaseServer
+      .from('lbo_applications')
+      .insert({
+        business_name:   formData.get('business_name')   as string,
+        owner_name:      formData.get('owner_name')       as string,
+        email:           formData.get('email')            as string,
+        phone:           formData.get('phone')            as string,
+        address:         formData.get('address')          as string,
+        business_type:   formData.get('business_type')    as string | null,
+        permit_number:   formData.get('permit_number')    as string | null,
+        attraction_name: formData.get('attraction_name')  as string | null,
+        status:          'pending',
+        documents:       docUrls,
+      });
 
-    if (fileIds.length > 0) {
-      body.data.documents = fileIds;
-    }
-
-    const res = await fetch(`${STRAPI}/api/lbo-applications`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${TOKEN}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      return NextResponse.json({ error: 'Failed to submit application', detail: err }, { status: 500 });
+    if (insertError) {
+      return NextResponse.json({ error: 'Failed to submit application', detail: insertError.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
