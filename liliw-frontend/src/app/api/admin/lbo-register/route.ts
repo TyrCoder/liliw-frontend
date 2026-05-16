@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { sendApprovalEmail } from '@/lib/email';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
@@ -32,6 +33,21 @@ export async function POST(request: NextRequest) {
       .update({ status: 'approved' })
       .eq('id', applicationId);
   }
+
+  // Fetch business name for the email
+  const { data: appData } = await supabaseServer
+    .from('lbo_applications')
+    .select('business_name, owner_name')
+    .eq('id', applicationId)
+    .single();
+
+  sendApprovalEmail({
+    owner_name:    appData?.owner_name || username,
+    email,
+    business_name: appData?.business_name || '',
+    username,
+    password,
+  }).catch(err => console.error('[Email] approval:', err));
 
   return NextResponse.json({ success: true, user: { id: user.id, email: user.email, username: user.username } });
 }

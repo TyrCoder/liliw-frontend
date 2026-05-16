@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { sendNewApplicationNotification } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,6 +57,18 @@ export async function POST(request: NextRequest) {
         uploadErrors: uploadErrors.length ? uploadErrors : undefined,
       }, { status: 500 });
     }
+
+    // Send admin notification (fire-and-forget)
+    sendNewApplicationNotification({
+      business_name:   formData.get('business_name')   as string,
+      owner_name:      formData.get('owner_name')       as string,
+      email:           formData.get('email')            as string,
+      phone:           formData.get('phone')            as string,
+      address:         formData.get('address')          as string,
+      business_type:   formData.get('business_type')    as string | undefined,
+      permit_number:   formData.get('permit_number')    as string | undefined,
+      attraction_name: formData.get('attraction_name')  as string | undefined,
+    }).catch(err => console.error('[Email] new application:', err));
 
     return NextResponse.json({ success: true, uploadErrors: uploadErrors.length ? uploadErrors : undefined });
   } catch (e: any) {

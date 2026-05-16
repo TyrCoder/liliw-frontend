@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { sendRejectionEmail } from '@/lib/email';
 
 // GET — list all LBO applications
 export async function GET() {
@@ -23,5 +24,19 @@ export async function PATCH(request: NextRequest) {
     .eq('id', id);
 
   if (error) return NextResponse.json({ error: 'Failed to update', detail: error.message }, { status: 500 });
+
+  // Send rejection email if status is rejected
+  if (status === 'rejected') {
+    const { data: app } = await supabaseServer
+      .from('lbo_applications')
+      .select('owner_name, email, business_name')
+      .eq('id', id)
+      .single();
+    if (app) {
+      sendRejectionEmail({ owner_name: app.owner_name, email: app.email, business_name: app.business_name, notes: notes || '' })
+        .catch(err => console.error('[Email] rejection:', err));
+    }
+  }
+
   return NextResponse.json({ success: true });
 }
