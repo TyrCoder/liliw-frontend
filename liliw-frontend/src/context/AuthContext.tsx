@@ -7,7 +7,7 @@ export interface StrapiUser {
   username: string;
   email: string;
   role?: { id: number; name: string; type: string };
-  adminPanelRole?: string; // e.g. "Super Admin", "CHATO Officer", "CHATO Editor"
+  adminPanelRole?: string;
 }
 
 interface AuthState {
@@ -21,6 +21,9 @@ interface AuthCtx extends AuthState {
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   isAdmin: boolean;
+  isChatoOfficer: boolean;
+  isChatoEditor: boolean;
+  isStaff: boolean;
   isLocal: boolean;
   userRole: string;
   adminPanelRole: string | null;
@@ -34,7 +37,6 @@ const USER_KEY  = 'liliw-user';
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, token: null, loading: true });
 
-  // Rehydrate from localStorage on mount
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
     const raw   = localStorage.getItem(USER_KEY);
@@ -83,18 +85,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const userRole       = state.user?.role?.type ?? 'public';
+  const roleName       = state.user?.role?.name?.toLowerCase() ?? '';
   const adminPanelRole = state.user?.adminPanelRole ?? null;
 
   const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
+
   const isAdmin = !!state.user && (
     userRole === 'admin' ||
-    state.user?.role?.name?.toLowerCase() === 'admin' ||
+    roleName === 'admin' ||
     (!!state.user.email && adminEmails.includes(state.user.email))
   );
-  const isLocal = !!state.user && !isAdmin && userRole === 'authenticated';
+
+  const isChatoOfficer = !isAdmin && !!state.user && (
+    roleName.includes('chato officer') || roleName.includes('chato_officer')
+  );
+
+  const isChatoEditor = !isAdmin && !isChatoOfficer && !!state.user && (
+    roleName.includes('chato editor') || roleName.includes('chato_editor')
+  );
+
+  const isStaff = isAdmin || isChatoOfficer || isChatoEditor;
+  const isLocal = !!state.user && !isStaff && userRole === 'authenticated';
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, isAdmin, isLocal, userRole, adminPanelRole }}>
+    <AuthContext.Provider value={{
+      ...state, login, register, logout,
+      isAdmin, isChatoOfficer, isChatoEditor, isStaff, isLocal,
+      userRole, adminPanelRole,
+    }}>
       {children}
     </AuthContext.Provider>
   );

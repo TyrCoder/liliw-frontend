@@ -9,7 +9,7 @@ import {
   FileText, Clock, CheckCircle, AlertCircle, Loader2,
   ChevronLeft, Mail, Phone, Calendar, MessageSquare, Star,
   RefreshCw, UserCheck, Shield, Activity, MapPin, Edit, Layers,
-  Monitor, Smartphone, Tablet, Wifi,
+  Monitor, Smartphone, Tablet, Wifi, Search,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -94,7 +94,7 @@ function TableWrap({ title, count, loading, empty, emptyIcon, children }: { titl
 
 /* ─── page ───────────────────────────────────────────────── */
 export default function AdminDashboard() {
-  const { user, loading, isAdmin, token } = useAuth();
+  const { user, loading, isAdmin, isChatoOfficer, isChatoEditor, isStaff, token } = useAuth();
   const router = useRouter();
 
   const [submissions,   setSubmissions]   = useState<Submission[]>([]);
@@ -122,32 +122,55 @@ export default function AdminDashboard() {
   const [savingRole,    setSavingRole]    = useState<number | null>(null);
   const [roleMsg,       setRoleMsg]       = useState<{ id: number; ok: boolean; text: string } | null>(null);
 
+  const [attrSearch, setAttrSearch] = useState('');
+  const [attrType,   setAttrType]   = useState<string>('all');
+
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
   const [syncCount, setSyncCount] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!loading && (!user || !isAdmin)) router.replace('/');
-  }, [user, loading, isAdmin, router]);
+    if (!loading && (!user || !isStaff)) router.replace('/');
+  }, [user, loading, isStaff, router]);
+
+  // Set default tab based on role
+  useEffect(() => {
+    if (!loading && isStaff) {
+      if (isChatoEditor) setActiveTab('attractions');
+      else if (isChatoOfficer) setActiveTab('overview');
+    }
+  }, [loading, isStaff, isChatoEditor, isChatoOfficer]);
 
   useEffect(() => {
-    if (!isAdmin || !token) return;
+    if (!isStaff || !token) return;
     const h = { Authorization: `Bearer ${token}` };
 
-    fetch('/api/admin/submissions',   { headers: h }).then(r => r.json()).then(d => setSubmissions(d.data || [])).catch(() => {}).finally(() => setLoadingSubs(false));
-    fetch('/api/admin/participation',  { headers: h }).then(r => r.json()).then(d => setParticipation(d.data || [])).catch(() => {}).finally(() => setLoadingPart(false));
-    fetch('/api/event-signup',         { headers: h }).then(r => r.json()).then(d => setSignups(d.data || [])).catch(() => {}).finally(() => setLoadingSignups(false));
-    fetch('/api/analytics/track').then(r => r.json()).then(d => setAnalytics(d)).catch(() => {}).finally(() => setLoadingStats(false));
-    fetch('/api/strapi/reviews').then(r => r.json()).then(d => setReviews(d.data || [])).catch(() => {}).finally(() => setLoadingReviews(false));
-    fetch('/api/admin/users',          { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
+    // All staff need attractions + reviews
     fetch('/api/strapi/attractions').then(r => r.json()).then(d => setAttractions(d.data || [])).catch(() => {}).finally(() => setLoadingAttr(false));
-    fetch('/api/admin/audit-logs',     { headers: h }).then(r => r.json()).then(d => setAuditLogs(d.data || [])).catch(() => {}).finally(() => setLoadingAudit(false));
+    fetch('/api/strapi/reviews').then(r => r.json()).then(d => setReviews(d.data || [])).catch(() => {}).finally(() => setLoadingReviews(false));
 
-    fetch('/api/admin/assign-role', { headers: h }).then(r => r.json()).then(d => {
-      setRoleUsers(d.users || []);
-      setAvailRoles(d.roles || []);
-    }).catch(() => {}).finally(() => setLoadingRoles(false));
-  }, [isAdmin, token]);
+    // Admin and CHATO Officer get everything else
+    if (isAdmin || isChatoOfficer) {
+      fetch('/api/admin/submissions',   { headers: h }).then(r => r.json()).then(d => setSubmissions(d.data || [])).catch(() => {}).finally(() => setLoadingSubs(false));
+      fetch('/api/admin/participation',  { headers: h }).then(r => r.json()).then(d => setParticipation(d.data || [])).catch(() => {}).finally(() => setLoadingPart(false));
+      fetch('/api/event-signup',         { headers: h }).then(r => r.json()).then(d => setSignups(d.data || [])).catch(() => {}).finally(() => setLoadingSignups(false));
+      fetch('/api/analytics/track').then(r => r.json()).then(d => setAnalytics(d)).catch(() => {}).finally(() => setLoadingStats(false));
+      fetch('/api/admin/audit-logs',     { headers: h }).then(r => r.json()).then(d => setAuditLogs(d.data || [])).catch(() => {}).finally(() => setLoadingAudit(false));
+    }
+
+    // Admin only — user management
+    if (isAdmin) {
+      fetch('/api/admin/users',          { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
+    }
+
+    // Role management — admin only
+    if (isAdmin) {
+      fetch('/api/admin/assign-role', { headers: h }).then(r => r.json()).then(d => {
+        setRoleUsers(d.users || []);
+        setAvailRoles(d.roles || []);
+      }).catch(() => {}).finally(() => setLoadingRoles(false));
+    }
+  }, [isAdmin, isChatoOfficer, isChatoEditor, isStaff, token]);
 
   // Live visitors polling — every 10 seconds
   useEffect(() => {
@@ -198,23 +221,36 @@ export default function AdminDashboard() {
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} /></div>;
-  if (!user || !isAdmin) return null;
+  if (!user || !isStaff) return null;
 
   const newCount      = submissions.filter(s => s.attributes?.status === 'new').length;
   const feedbackCount = submissions.filter(s => s.attributes?.type === 'feedback').length;
   const volunteerCount= submissions.filter(s => s.attributes?.type === 'volunteer').length;
 
-  const TABS: { key: Tab; label: string; badge?: number }[] = [
-    { key: 'overview',      label: 'Overview' },
-    { key: 'users',         label: 'Users',         badge: users.length },
-    { key: 'roles',         label: 'Role Management', badge: roleUsers.length },
-    { key: 'submissions',   label: 'Submissions',   badge: newCount },
-    { key: 'participation', label: 'Participation', badge: participation.length },
-    { key: 'signups',       label: 'Event Sign-ups',badge: signups.length },
-    { key: 'attractions',   label: 'Attractions',   badge: attractions.length },
-    { key: 'ratings',       label: 'Ratings',       badge: reviews.length },
-    { key: 'audit',         label: 'Audit Logs',    badge: auditLogs.length },
+  const filteredAttractions = attractions.filter(a => {
+    const matchType = attrType === 'all' || a.type === attrType;
+    const matchSearch = !attrSearch || a.attributes.name.toLowerCase().includes(attrSearch.toLowerCase());
+    return matchType && matchSearch;
+  });
+
+  const dashboardTitle = isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'CHATO Officer Dashboard' : 'CHATO Editor Dashboard';
+  const dashboardSub   = isAdmin ? 'Full admin access' : isChatoOfficer ? 'Operations & analytics' : 'Content management';
+
+  // Tab visibility per role
+  const ALL_TABS: { key: Tab; label: string; badge?: number; roles: string[] }[] = [
+    { key: 'overview',      label: 'Analytics',       badge: undefined,              roles: ['admin', 'officer'] },
+    { key: 'users',         label: 'Users',            badge: users.length,           roles: ['admin'] },
+    { key: 'roles',         label: 'Role Management',  badge: roleUsers.length,       roles: ['admin', 'officer'] },
+    { key: 'submissions',   label: 'Submissions',      badge: newCount,               roles: ['admin'] },
+    { key: 'participation', label: 'Participation',    badge: participation.length,   roles: ['admin', 'officer'] },
+    { key: 'signups',       label: 'Event Sign-ups',   badge: signups.length,         roles: ['admin'] },
+    { key: 'attractions',   label: 'Attractions',      badge: attractions.length,     roles: ['admin', 'officer', 'editor'] },
+    { key: 'ratings',       label: 'Ratings',          badge: reviews.length,         roles: ['admin', 'officer', 'editor'] },
+    { key: 'audit',         label: 'Audit Logs',       badge: auditLogs.length,       roles: ['admin', 'officer'] },
   ];
+
+  const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
+  const TABS = ALL_TABS.filter(t => t.roles.includes(myRole));
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -226,8 +262,8 @@ export default function AdminDashboard() {
           </Link>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
-              <p className="text-gray-400 text-sm mt-1">Welcome back, {user.username}</p>
+              <h1 className="text-3xl font-bold text-white">{dashboardTitle}</h1>
+              <p className="text-gray-400 text-sm mt-1">Welcome back, {user.username} · {dashboardSub}</p>
             </div>
             <a href={`${STRAPI_URL}/admin`} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90"
@@ -676,56 +712,97 @@ export default function AdminDashboard() {
 
         {/* ── ATTRACTIONS ────────────────────────────────────── */}
         {activeTab === 'attractions' && (
-          <TableWrap title="Attractions" count={attractions.length} loading={loadingAttr} empty={attractions.length === 0} emptyIcon={<MapPin className="w-12 h-12" />}>
-            <table className="w-full text-sm">
-              <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                <th className="px-5 py-3 text-left">Name</th>
-                <th className="px-5 py-3 text-left">Type</th>
-                <th className="px-5 py-3 text-left">Category</th>
-                <th className="px-5 py-3 text-left">Location</th>
-                <th className="px-5 py-3 text-left">Rating</th>
-                <th className="px-5 py-3 text-left">Actions</th>
-              </tr></thead>
-              <tbody className="divide-y divide-gray-50">
-                {attractions.map(a => (
-                  <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-4">
-                      <Link href={`/attractions/${a.id}`} target="_blank" className="font-semibold text-gray-900 hover:text-teal-600 transition flex items-center gap-1">
-                        {a.attributes.name}
-                        <ExternalLink className="w-3 h-3 opacity-40" />
-                      </Link>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: TYPE_COLORS[a.type] }}>
-                        <Layers className="w-3 h-3" />{TYPE_LABELS[a.type]}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-gray-600 capitalize">{a.attributes.category || '—'}</td>
-                    <td className="px-5 py-4">
-                      {a.attributes.location && (
-                        <span className="flex items-center gap-1 text-gray-500 text-xs"><MapPin className="w-3 h-3 shrink-0" />{a.attributes.location}</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4">
-                      {(a.attributes.rating ?? 0) > 0 ? (
-                        <div className="flex items-center gap-1">
-                          <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
-                          <span className="text-sm font-semibold text-gray-700">{Number(a.attributes.rating).toFixed(1)}</span>
-                        </div>
-                      ) : <span className="text-gray-300 text-xs">No rating</span>}
-                    </td>
-                    <td className="px-5 py-4">
-                      <a href={strapiEditUrl(a.type, a.strapiId)} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:opacity-90 text-white"
-                        style={{ backgroundColor: '#00BFB3' }}>
-                        <Edit className="w-3 h-3" /> Edit in Strapi
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableWrap>
+          <div className="space-y-4">
+            {/* CHATO Editor — prominent Strapi button */}
+            {isChatoEditor && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="font-bold text-gray-900">Content Management</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Use Strapi to create, update, or delete attraction entries</p>
+                </div>
+                <a href={`${STRAPI_URL}/admin`} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90"
+                  style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)', boxShadow: '0 4px 16px rgba(0,191,179,.35)' }}>
+                  <ExternalLink className="w-4 h-4" /> Open Strapi CMS
+                </a>
+              </div>
+            )}
+
+            {/* Search + Filter bar */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex flex-wrap gap-3 items-center">
+              <div className="relative flex-1 min-w-[180px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search attractions…"
+                  value={attrSearch}
+                  onChange={e => setAttrSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                />
+              </div>
+              <select
+                value={attrType}
+                onChange={e => setAttrType(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400">
+                <option value="all">All Types</option>
+                <option value="heritage">Heritage Sites</option>
+                <option value="spot">Tourist Spots</option>
+                <option value="dining">Dining</option>
+              </select>
+              <span className="text-xs text-gray-400 shrink-0">{filteredAttractions.length} of {attractions.length}</span>
+            </div>
+
+            <TableWrap title="Attractions" count={filteredAttractions.length} loading={loadingAttr} empty={filteredAttractions.length === 0} emptyIcon={<MapPin className="w-12 h-12" />}>
+              <table className="w-full text-sm">
+                <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                  <th className="px-5 py-3 text-left">Name</th>
+                  <th className="px-5 py-3 text-left">Type</th>
+                  <th className="px-5 py-3 text-left">Category</th>
+                  <th className="px-5 py-3 text-left">Location</th>
+                  <th className="px-5 py-3 text-left">Rating</th>
+                  <th className="px-5 py-3 text-left">Actions</th>
+                </tr></thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filteredAttractions.map(a => (
+                    <tr key={a.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-5 py-4">
+                        <Link href={`/attractions/${a.id}`} target="_blank" className="font-semibold text-gray-900 hover:text-teal-600 transition flex items-center gap-1">
+                          {a.attributes.name}
+                          <ExternalLink className="w-3 h-3 opacity-40" />
+                        </Link>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: TYPE_COLORS[a.type] }}>
+                          <Layers className="w-3 h-3" />{TYPE_LABELS[a.type]}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-gray-600 capitalize">{a.attributes.category || '—'}</td>
+                      <td className="px-5 py-4">
+                        {a.attributes.location && (
+                          <span className="flex items-center gap-1 text-gray-500 text-xs"><MapPin className="w-3 h-3 shrink-0" />{a.attributes.location}</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        {(a.attributes.rating ?? 0) > 0 ? (
+                          <div className="flex items-center gap-1">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
+                            <span className="text-sm font-semibold text-gray-700">{Number(a.attributes.rating).toFixed(1)}</span>
+                          </div>
+                        ) : <span className="text-gray-300 text-xs">No rating</span>}
+                      </td>
+                      <td className="px-5 py-4">
+                        <a href={strapiEditUrl(a.type, a.strapiId)} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:opacity-90 text-white"
+                          style={{ backgroundColor: '#00BFB3' }}>
+                          <Edit className="w-3 h-3" /> Edit in Strapi
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableWrap>
+          </div>
         )}
 
         {/* ── RATINGS ────────────────────────────────────────── */}
