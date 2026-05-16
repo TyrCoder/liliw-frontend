@@ -29,7 +29,7 @@ export default function Navbar() {
   const [exploreOpen, setExploreOpen]   = useState(false);
   const [searchOpen, setSearchOpen]     = useState(false);
   const [scrolled, setScrolled]         = useState(false);
-  const { user, logout, isAdmin, adminPanelRole } = useAuth();
+  const { user, logout, isAdmin, isChatoOfficer, isChatoEditor, isStaff, adminPanelRole } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -177,10 +177,14 @@ export default function Navbar() {
                       style={{ fontFamily: BL, color: '#374151' }}>
                       {user.username}
                     </span>
-                    {isAdmin && (
-                      <span className="hidden sm:inline text-xs font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700"
-                        style={{ fontSize: '10px', fontFamily: HL }}>
-                        {adminPanelRole ?? 'Admin'}
+                    {isStaff && (
+                      <span className="hidden sm:inline text-xs font-bold px-1.5 py-0.5 rounded-full"
+                        style={{
+                          fontSize: '10px', fontFamily: HL,
+                          backgroundColor: isAdmin ? '#DBEAFE' : isChatoOfficer ? '#EDE9FE' : '#D1FAE5',
+                          color: isAdmin ? '#1D4ED8' : isChatoOfficer ? '#6D28D9' : '#065F46',
+                        }}>
+                        {isAdmin ? (adminPanelRole ?? 'Admin') : isChatoOfficer ? 'CHATO Officer' : 'CHATO Editor'}
                       </span>
                     )}
                   </button>
@@ -198,9 +202,15 @@ export default function Navbar() {
                           <div className="px-4 py-3 border-b border-gray-100">
                             <p className="text-sm font-bold text-gray-900" style={{ fontFamily: HL }}>{user.username}</p>
                             <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                            {adminPanelRole && (
-                              <span className="inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"
-                                style={{ fontFamily: HL }}>{adminPanelRole}</span>
+                            {isStaff && (
+                              <span className="inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                                style={{
+                                  fontFamily: HL,
+                                  backgroundColor: isAdmin ? '#DBEAFE' : isChatoOfficer ? '#EDE9FE' : '#D1FAE5',
+                                  color: isAdmin ? '#1D4ED8' : isChatoOfficer ? '#6D28D9' : '#065F46',
+                                }}>
+                                {isAdmin ? (adminPanelRole ?? 'Admin') : isChatoOfficer ? 'CHATO Officer' : 'CHATO Editor'}
+                              </span>
                             )}
                           </div>
                           {[
@@ -213,11 +223,12 @@ export default function Navbar() {
                               <span className="text-blue-600">{item.icon}</span> {item.label}
                             </Link>
                           ))}
-                          {isAdmin && (
+                          {isStaff && (
                             <Link href="/admin" onClick={() => setUserMenuOpen(false)}
                               className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 transition border-t border-gray-100"
                               style={{ color: '#374151', fontFamily: BL }}>
-                              <LayoutDashboard className="w-4 h-4 text-blue-600" /> Admin Dashboard
+                              <LayoutDashboard className="w-4 h-4 text-blue-600" />
+                              {isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'Officer Dashboard' : 'Editor Dashboard'}
                             </Link>
                           )}
                           <button onClick={() => { logout(); setUserMenuOpen(false); }}
@@ -274,7 +285,7 @@ export default function Navbar() {
                       <NavLink href="/profile#saved" label="Saved Itineraries" onClick={closeMenu} />
                     </>
                   )}
-                  {isAdmin && <NavLink href="/admin" label="Admin Dashboard" onClick={closeMenu} />}
+                  {isStaff && <NavLink href="/admin" label={isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'Officer Dashboard' : 'Editor Dashboard'} onClick={closeMenu} />}
 
                   <button onClick={() => { setSearchOpen(true); closeMenu(); }}
                     className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition border border-gray-200 w-full hover:bg-blue-50 hover:text-blue-700"
