@@ -24,7 +24,7 @@ interface AuditLog { id: string; event: string; model: string; uid?: string; ent
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[] }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit';
+type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit';
 
 /* ─── helpers ─────────────────────────────────────────────── */
 const STATUS_BADGE: Record<string, string> = { new: 'bg-blue-50 text-blue-700', reviewed: 'bg-yellow-50 text-yellow-700', resolved: 'bg-green-50 text-green-700' };
@@ -140,6 +140,10 @@ export default function AdminDashboard() {
 
   const [changeRequests,  setChangeRequests]  = useState<any[]>([]);
   const [loadingCR,       setLoadingCR]       = useState(false);
+  const [visitorRecords,  setVisitorRecords]  = useState<any[]>([]);
+  const [loadingVR,       setLoadingVR]       = useState(false);
+  const [vrYear,          setVrYear]          = useState<string>('all');
+  const [vrSearch,        setVrSearch]        = useState('');
   const [crActionModal,   setCrActionModal]   = useState<{ cr: any; action: 'done' | 'rejected' } | null>(null);
   const [crNotes,         setCrNotes]         = useState('');
   const [savingCR,        setSavingCR]        = useState(false);
@@ -190,6 +194,12 @@ export default function AdminDashboard() {
     if (isAdmin || isChatoEditor) {
       setLoadingCR(true);
       fetch('/api/admin/change-requests', { headers: h }).then(r => r.json()).then(d => setChangeRequests(d.data || [])).catch(() => {}).finally(() => setLoadingCR(false));
+    }
+
+    // Admin and Officer — visitor records
+    if (isAdmin || isChatoOfficer) {
+      setLoadingVR(true);
+      fetch('/api/admin/visitor-records', { headers: h }).then(r => r.json()).then(d => setVisitorRecords(d.data || [])).catch(() => {}).finally(() => setLoadingVR(false));
     }
 
     // Role management — admin and CHATO Officer
@@ -376,8 +386,9 @@ export default function AdminDashboard() {
     { key: 'users',         label: 'Users',              badge: users.length,                                                                   roles: ['admin'] },
     { key: 'roles',         label: 'Role Management',    badge: roleUsers.length,                                                               roles: ['admin', 'officer'] },
     { key: 'lbo',           label: 'LBO Applications',   badge: lboApps.filter(a => (a.attributes?.status || a.status) === 'pending').length,   roles: ['admin'] },
-    { key: 'changerequests',label: 'Change Requests',    badge: changeRequests.filter(cr => cr.status === 'pending').length,                    roles: ['admin', 'editor'] },
-    { key: 'submissions',   label: 'Submissions',        badge: newCount,                                                                       roles: ['admin'] },
+    { key: 'changerequests', label: 'Change Requests',   badge: changeRequests.filter(cr => cr.status === 'pending').length,                    roles: ['admin', 'editor'] },
+    { key: 'visitorrecords', label: 'Visitor Records',  badge: undefined,                                                                        roles: ['admin', 'officer'] },
+    { key: 'submissions',    label: 'Submissions',       badge: newCount,                                                                        roles: ['admin'] },
     { key: 'participation', label: 'Participation',      badge: participation.length,                                                           roles: ['admin', 'officer'] },
     { key: 'signups',       label: 'Event Sign-ups',     badge: signups.length,                                                                 roles: ['admin'] },
     { key: 'attractions',   label: 'Attractions',        badge: attractions.length,                                                             roles: ['admin', 'officer', 'editor'] },
@@ -1239,6 +1250,129 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+
+        {/* ── VISITOR RECORDS ────────────────────────────────── */}
+        {activeTab === 'visitorrecords' && (() => {
+          const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const years = [...new Set(visitorRecords.map(r => String(r.year)))].sort((a,b) => Number(b)-Number(a));
+          const filtered = visitorRecords.filter(r => {
+            const matchYear   = vrYear === 'all' || String(r.year) === vrYear;
+            const matchSearch = !vrSearch || (r.attraction_name || '').toLowerCase().includes(vrSearch.toLowerCase()) || (r.lbo_email || '').toLowerCase().includes(vrSearch.toLowerCase());
+            return matchYear && matchSearch;
+          });
+          const totalVisitors = (r: any) =>
+            (r.local_male||0)+(r.local_female||0)+(r.other_city_male||0)+(r.other_city_female||0)+
+            (r.other_province_male||0)+(r.other_province_female||0)+(r.foreign_male||0)+(r.foreign_female||0);
+          const grandTotal = filtered.reduce((s, r) => s + totalVisitors(r), 0);
+          return (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <StatCard icon={<Users className="w-5 h-5" />}       label="Total Visitors"  value={grandTotal.toLocaleString()} color="#00BFB3" />
+                <StatCard icon={<FileText className="w-5 h-5" />}    label="Records"          value={filtered.length}             color="#3B82F6" />
+                <StatCard icon={<Building2 className="w-5 h-5" />}   label="Attractions"      value={new Set(filtered.map(r => r.attraction_name)).size} color="#F59E0B" />
+                <StatCard icon={<MapPin className="w-5 h-5" />}      label="LBOs Reporting"   value={new Set(filtered.map(r => r.lbo_email)).size}       color="#8B5CF6" />
+              </div>
+
+              {/* Filters */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex flex-wrap gap-3 items-center">
+                <div className="relative flex-1 min-w-[180px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input type="text" placeholder="Search attraction or LBO…" value={vrSearch} onChange={e => setVrSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+                </div>
+                <select value={vrYear} onChange={e => setVrYear(e.target.value)}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400">
+                  <option value="all">All Years</option>
+                  {years.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+                <span className="text-xs text-gray-400 shrink-0">{filtered.length} records</span>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                  <h2 className="font-bold text-gray-900">Visitor Records</h2>
+                  <span className="text-sm text-gray-400">{grandTotal.toLocaleString()} total visitors</span>
+                </div>
+                {loadingVR ? (
+                  <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+                ) : filtered.length === 0 ? (
+                  <div className="flex flex-col items-center py-16 text-center text-gray-400">
+                    <Users className="w-12 h-12 opacity-20 mb-3" />
+                    <p className="font-semibold">No visitor records yet</p>
+                    <p className="text-xs mt-1">Records submitted by LBOs appear here</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        <th className="px-4 py-3 text-left">LBO / Attraction</th>
+                        <th className="px-4 py-3 text-left">Period</th>
+                        <th className="px-4 py-3 text-right">Local</th>
+                        <th className="px-4 py-3 text-right">Other City</th>
+                        <th className="px-4 py-3 text-right">Other Province</th>
+                        <th className="px-4 py-3 text-right">Foreign</th>
+                        <th className="px-4 py-3 text-right font-bold text-gray-600">Total</th>
+                      </tr></thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {filtered.map(r => {
+                          const local    = (r.local_male||0)+(r.local_female||0);
+                          const city     = (r.other_city_male||0)+(r.other_city_female||0);
+                          const province = (r.other_province_male||0)+(r.other_province_female||0);
+                          const foreign  = (r.foreign_male||0)+(r.foreign_female||0);
+                          const total    = local+city+province+foreign;
+                          return (
+                            <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-4">
+                                <p className="font-semibold text-gray-900">{r.attraction_name || '—'}</p>
+                                <p className="text-xs text-gray-400">{r.lbo_email}</p>
+                              </td>
+                              <td className="px-4 py-4">
+                                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
+                                  {MONTHS[(r.month||1)-1]} {r.year}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 text-right">
+                                <p className="font-semibold text-gray-800">{local.toLocaleString()}</p>
+                                <p className="text-xs text-gray-400">{r.local_male||0}M / {r.local_female||0}F</p>
+                              </td>
+                              <td className="px-4 py-4 text-right">
+                                <p className="font-semibold text-gray-800">{city.toLocaleString()}</p>
+                                <p className="text-xs text-gray-400">{r.other_city_male||0}M / {r.other_city_female||0}F</p>
+                              </td>
+                              <td className="px-4 py-4 text-right">
+                                <p className="font-semibold text-gray-800">{province.toLocaleString()}</p>
+                                <p className="text-xs text-gray-400">{r.other_province_male||0}M / {r.other_province_female||0}F</p>
+                              </td>
+                              <td className="px-4 py-4 text-right">
+                                <p className="font-semibold text-gray-800">{foreign.toLocaleString()}</p>
+                                <p className="text-xs text-gray-400">{r.foreign_male||0}M / {r.foreign_female||0}F</p>
+                              </td>
+                              <td className="px-4 py-4 text-right">
+                                <span className="text-base font-bold text-gray-900">{total.toLocaleString()}</span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      {filtered.length > 1 && (
+                        <tfoot>
+                          <tr className="bg-gray-50 border-t-2 border-gray-200">
+                            <td className="px-4 py-3 font-bold text-gray-700" colSpan={2}>Total</td>
+                            {(['local','other_city','other_province','foreign'] as const).map(key => {
+                              const t = filtered.reduce((s,r) => s+(r[`${key}_male`]||0)+(r[`${key}_female`]||0),0);
+                              return <td key={key} className="px-4 py-3 text-right font-bold text-gray-700">{t.toLocaleString()}</td>;
+                            })}
+                            <td className="px-4 py-3 text-right font-bold text-teal-600 text-base">{grandTotal.toLocaleString()}</td>
+                          </tr>
+                        </tfoot>
+                      )}
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── AUDIT LOGS ─────────────────────────────────────── */}
         {activeTab === 'audit' && (

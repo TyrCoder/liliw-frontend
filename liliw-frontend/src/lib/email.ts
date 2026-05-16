@@ -120,6 +120,38 @@ export async function sendRejectionEmail(app: {
   });
 }
 
+export async function sendChangeRequestUpdate(data: {
+  lbo_name: string; lbo_email: string; attraction_name: string;
+  field_to_change: string; requested_value: string;
+  status: 'done' | 'rejected'; editor_notes?: string;
+}) {
+  const isDone = data.status === 'done';
+  await transporter.sendMail({
+    from: FROM,
+    to: data.lbo_email,
+    subject: `Change Request ${isDone ? 'Approved' : 'Update'} — ${data.attraction_name}`,
+    html: base(
+      isDone ? '✅ Change Request Approved' : 'Change Request Update',
+      `<p style="color:#475569;margin:0 0 20px">Dear <strong>${data.lbo_name}</strong>,</p>
+      <p style="color:#475569;margin:0 0 20px">Your change request for <strong>${data.attraction_name}</strong> has been <strong>${isDone ? 'approved' : 'reviewed'}</strong>.</p>
+      <div style="background:#f8fafc;border-radius:12px;padding:20px;margin-bottom:20px">
+        ${field('Attraction', data.attraction_name)}
+        ${field('Field Requested', data.field_to_change)}
+        ${field('Requested Value', data.requested_value)}
+        ${field('Status', isDone ? '✅ Approved' : '❌ Rejected')}
+      </div>
+      ${data.editor_notes ? `<div style="background:${isDone ? '#f0fdf4' : '#fff7ed'};border:1px solid ${isDone ? '#bbf7d0' : '#fed7aa'};border-radius:12px;padding:20px;margin-bottom:20px">
+        <p style="margin:0;font-size:12px;font-weight:700;color:${isDone ? '#166534' : '#9a3412'};text-transform:uppercase;letter-spacing:.06em">Editor Notes</p>
+        <p style="margin:8px 0 0;color:${isDone ? '#14532d' : '#7c2d12'};font-size:15px">${data.editor_notes}</p>
+      </div>` : ''}
+      ${isDone
+        ? `<p style="color:#475569;margin:0 0 20px">The change will be reflected on the website shortly.</p>${btn('View Your Dashboard', `${process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app'}/lbo`, '#10B981')}`
+        : `<p style="color:#475569;margin:0 0 20px">If you have questions, please contact us through the website or submit a new request.</p>${btn('Visit Liliw Tourism', `${process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app'}`, '#64748B')}`
+      }`,
+    ),
+  });
+}
+
 export async function sendContactNotification(data: {
   name: string; email: string; phone?: string; type: string; message: string;
 }) {
