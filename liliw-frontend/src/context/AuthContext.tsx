@@ -46,9 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setState(s => ({ ...s, loading: false }));
       return;
     }
-    fetch(`${STRAPI}/api/users/me?populate=role`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch(`/api/auth/me?token=${encodeURIComponent(token)}`)
       .then(r => (r.ok ? r.json() : null))
       .then(user => {
         if (user?.id) {
