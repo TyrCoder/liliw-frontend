@@ -63,12 +63,14 @@ function photoUrl(photos: any[] = []): string | null {
 /* ─── Bunting decoration ─────────────────────────────────── */
 const PENNANT = ['#EF4444','#F97316','#EAB308','#22C55E','#0D9488','#3B82F6','#8B5CF6'];
 function Bunting({ flip = false }: { flip?: boolean }) {
-  const r = 9, cy = 15, W = 126, panels = 8, arc = Math.PI * 2 / panels;
+  const r = 14, panels = 8, arc = Math.PI * 2 / panels, spacing = 30;
+  const W = r + (PENNANT.length - 1) * spacing + r;
+  const cy = r;
   return (
-    <svg width={W} height="36" viewBox={`0 0 ${W} 36`} style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }} aria-hidden="true">
-      <line x1="0" y1="6" x2={W} y2="6" stroke="#9CA3AF" strokeWidth="1" />
+    <svg width={W} height={r * 2} viewBox={`0 0 ${W} ${r * 2}`} style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }} aria-hidden="true">
+      <line x1="0" y1={cy} x2={W} y2={cy} stroke="#9CA3AF" strokeWidth="1.2" />
       {PENNANT.map((color, idx) => {
-        const cx = 9 + idx * 18;
+        const cx = r + idx * spacing;
         return (
           <g key={idx}>
             {Array.from({ length: panels }).map((_, i) => {
@@ -79,9 +81,8 @@ function Bunting({ flip = false }: { flip?: boolean }) {
               const x2 = (cx + r * Math.cos(a2)).toFixed(2);
               const y2 = (cy + r * Math.sin(a2)).toFixed(2);
               return <path key={i} d={`M ${cx},${cy} L ${x1},${y1} A ${r},${r} 0 0,1 ${x2},${y2} Z`}
-                fill={i % 2 === 0 ? color : color + 'bb'} stroke="rgba(255,255,255,0.9)" strokeWidth="0.7" />;
+                fill={i % 2 === 0 ? color : color + 'bb'} />;
             })}
-            <circle cx={cx} cy={cy} r="1.8" fill="#1F2937" />
           </g>
         );
       })}
