@@ -85,12 +85,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const userRole       = state.user?.role?.type ?? 'public';
   const adminPanelRole = state.user?.adminPanelRole ?? null;
 
-  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
-    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-
+  // Admin is determined purely by the role set in Strapi Users & Permissions
   const isAdmin = !!state.user && (
-    adminEmails.includes(state.user.email.toLowerCase()) ||
-    !!adminPanelRole ||
     userRole === 'admin' ||
     state.user?.role?.name?.toLowerCase() === 'admin'
   );
