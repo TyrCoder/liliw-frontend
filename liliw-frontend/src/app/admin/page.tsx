@@ -167,8 +167,8 @@ export default function AdminDashboard() {
       fetch('/api/admin/users',          { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
     }
 
-    // Role management — admin only
-    if (isAdmin) {
+    // Role management — admin and CHATO Officer
+    if (isAdmin || isChatoOfficer) {
       fetch('/api/admin/assign-role', { headers: h }).then(r => r.json()).then(d => {
         setRoleUsers(d.users || []);
         setAvailRoles(d.roles || []);
@@ -325,16 +325,16 @@ export default function AdminDashboard() {
         {activeTab === 'overview' && (
           <div className="space-y-8">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={<Eye className="w-5 h-5" />}       label="Page Views"        value={loadingStats ? '—' : (analytics?.pageViews ?? 0).toLocaleString()} color="#00BFB3" />
-              <StatCard icon={<Users className="w-5 h-5" />}     label="Unique Visitors"   value={loadingStats ? '—' : (analytics?.uniqueVisitors ?? 0).toLocaleString()} color="#3B82F6" />
-              <StatCard icon={<UserCheck className="w-5 h-5" />} label="Registered Users"  value={loadingUsers ? '—' : users.length} sub="tourist accounts" color="#10B981" />
-              <StatCard icon={<MapPin className="w-5 h-5" />}    label="Attractions"        value={loadingAttr ? '—' : attractions.length} sub="in Strapi" color="#F59E0B" />
+              <StatCard icon={<Eye className="w-5 h-5" />}       label="Page Views"       value={loadingStats ? '—' : (analytics?.pageViews ?? 0).toLocaleString()} color="#00BFB3" />
+              <StatCard icon={<Users className="w-5 h-5" />}     label="Unique Visitors"  value={loadingStats ? '—' : (analytics?.uniqueVisitors ?? 0).toLocaleString()} color="#3B82F6" />
+              <StatCard icon={<MapPin className="w-5 h-5" />}    label="Attractions"       value={loadingAttr ? '—' : attractions.length} sub="in Strapi" color="#F59E0B" />
+              <StatCard icon={<Activity className="w-5 h-5" />}  label="CMS Changes"       value={loadingAudit ? '—' : auditLogs.length} sub="audit log entries" color="#6366F1" />
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={<FileText className="w-5 h-5" />}    label="Submissions"       value={loadingSubs ? '—' : submissions.length}   sub={`${newCount} new`} color="#8B5CF6" />
-              <StatCard icon={<MessageSquare className="w-5 h-5" />} label="Participations"  value={loadingPart ? '—' : participation.length} sub="requests" color="#EC4899" />
-              <StatCard icon={<Calendar className="w-5 h-5" />}    label="Event Sign-ups"   value={loadingSignups ? '—' : signups.length} sub="total" color="#F59E0B" />
-              <StatCard icon={<Activity className="w-5 h-5" />}    label="CMS Changes"       value={loadingAudit ? '—' : auditLogs.length} sub="audit log entries" color="#6366F1" />
+            <div className={`grid grid-cols-2 lg:grid-cols-${isAdmin ? 4 : 2} gap-4`}>
+              <StatCard icon={<FileText className="w-5 h-5" />}    label="Submissions"     value={loadingSubs ? '—' : submissions.length} sub={`${newCount} new`} color="#8B5CF6" />
+              <StatCard icon={<MessageSquare className="w-5 h-5" />} label="Participations" value={loadingPart ? '—' : participation.length} sub="requests" color="#EC4899" />
+              {isAdmin && <StatCard icon={<UserCheck className="w-5 h-5" />} label="Registered Users" value={loadingUsers ? '—' : users.length} sub="tourist accounts" color="#10B981" />}
+              {isAdmin && <StatCard icon={<Calendar className="w-5 h-5" />}  label="Event Sign-ups"   value={loadingSignups ? '—' : signups.length} sub="total" color="#F59E0B" />}
             </div>
 
             {/* Sync search */}
