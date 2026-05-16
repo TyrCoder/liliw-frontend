@@ -55,6 +55,7 @@ export default function LBOApplyPage() {
       } else {
         setErrorMsg(data.error || 'Submission failed. Please try again.');
         setStatus('error');
+        console.error('[Apply]', data);
       }
     } catch {
       setErrorMsg('Network error. Please check your connection.');
