@@ -249,7 +249,7 @@ function HotspotMarker({
                   textOverflow: 'ellipsis',
                 }}
               >
-                {isRepositioning ? '📍 Click to place' : displayLabel}
+                {isRepositioning ? '+ Click to place' : displayLabel}
               </motion.span>
             )}
           </AnimatePresence>

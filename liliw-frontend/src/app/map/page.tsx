@@ -1,4 +1,4 @@
-﻿'use client';
+﻿﻿﻿'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Map, { Marker, Popup, NavigationControl, GeolocateControl, Source, Layer } from 'react-map-gl/mapbox';
@@ -16,9 +16,9 @@ const LILIW_BOUNDARY_URL =
   'https://nominatim.openstreetmap.org/search?q=Liliw%2CLaguna%2CPhilippines&format=geojson&limit=1&polygon_geojson=1';
 
 const TYPE_CONFIG = {
-  heritage: { color: '#F5C518', label: 'ðŸ›ï¸ Heritage' },
-  spot:     { color: '#2E7D32', label: 'ðŸžï¸ Spots'   },
-  dining:   { color: '#EF4444', label: 'ðŸ½ï¸ Dining'  },
+  heritage: { color: '#EF4444', label: 'Heritage' },
+  spot:     { color: '#22C55E', label: 'Spots'    },
+  dining:   { color: '#F97316', label: 'Dining'   },
 };
 
 interface MapAttraction {
@@ -831,4 +831,5 @@ export default function MapPage() {
     </div>
   );
 }
+
 
