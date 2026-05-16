@@ -112,10 +112,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
 
+  const hasChatoRole = roleName.includes('chato');
   const isAdmin = !!state.user && (
     userRole === 'admin' ||
     roleName === 'admin' ||
-    (!!state.user.email && adminEmails.includes(state.user.email))
+    // Email whitelist only applies when no specific CHATO role is assigned
+    (!!state.user.email && adminEmails.includes(state.user.email) && !hasChatoRole)
   );
 
   const isChatoOfficer = !isAdmin && !!state.user && (
