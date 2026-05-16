@@ -29,7 +29,7 @@ export default function Navbar() {
   const [exploreOpen, setExploreOpen]   = useState(false);
   const [searchOpen, setSearchOpen]     = useState(false);
   const [scrolled, setScrolled]         = useState(false);
-  const { user, logout, isAdmin }       = useAuth();
+  const { user, logout, isAdmin, adminPanelRole } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -180,7 +180,7 @@ export default function Navbar() {
                     {isAdmin && (
                       <span className="hidden sm:inline text-xs font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700"
                         style={{ fontSize: '10px', fontFamily: HL }}>
-                        Admin
+                        {adminPanelRole ?? 'Admin'}
                       </span>
                     )}
                   </button>
@@ -198,6 +198,10 @@ export default function Navbar() {
                           <div className="px-4 py-3 border-b border-gray-100">
                             <p className="text-sm font-bold text-gray-900" style={{ fontFamily: HL }}>{user.username}</p>
                             <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                            {adminPanelRole && (
+                              <span className="inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"
+                                style={{ fontFamily: HL }}>{adminPanelRole}</span>
+                            )}
                           </div>
                           {[
                             { href: '/profile',       icon: <User className="w-4 h-4" />,          label: 'View Profile' },
