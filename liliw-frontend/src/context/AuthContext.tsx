@@ -107,25 +107,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const userRole       = state.user?.role?.type ?? 'public';
+  // Normalize: lowercase + strip spaces/hyphens/underscores for flexible matching
   const roleName       = state.user?.role?.name?.toLowerCase() ?? '';
+  const roleNorm       = roleName.replace(/[\s_-]/g, '');
+  const roleType       = userRole.replace(/[\s_-]/g, '');
   const adminPanelRole = state.user?.adminPanelRole ?? null;
+
+  if (state.user?.role) {
+    console.log('[Auth] role:', state.user.role);
+  }
 
   const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
 
-  const hasChatoRole = roleName.includes('chato');
+  const hasChatoRole = roleNorm.includes('chato');
   const isAdmin = !!state.user && (
     userRole === 'admin' ||
     roleName === 'admin' ||
-    // Email whitelist only applies when no specific CHATO role is assigned
     (!!state.user.email && adminEmails.includes(state.user.email) && !hasChatoRole)
   );
 
   const isChatoOfficer = !isAdmin && !!state.user && (
-    roleName.includes('chato officer') || roleName.includes('chato_officer')
+    roleNorm.includes('chatoofficer') || roleType.includes('chatoofficer')
   );
 
   const isChatoEditor = !isAdmin && !isChatoOfficer && !!state.user && (
-    roleName.includes('chato editor') || roleName.includes('chato_editor')
+    roleNorm.includes('chatoeditor') || roleType.includes('chatoeditor')
   );
 
   const isStaff = isAdmin || isChatoOfficer || isChatoEditor;
