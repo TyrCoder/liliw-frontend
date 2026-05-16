@@ -7,6 +7,7 @@ export interface StrapiUser {
   username: string;
   email: string;
   role?: { id: number; name: string; type: string };
+  adminPanelRole?: string; // e.g. "Super Admin", "CHATO Officer", "CHATO Editor"
 }
 
 interface AuthState {
@@ -22,6 +23,7 @@ interface AuthCtx extends AuthState {
   isAdmin: boolean;
   isLocal: boolean;
   userRole: string;
+  adminPanelRole: string | null;
 }
 
 const AuthContext = createContext<AuthCtx | null>(null);
@@ -80,15 +82,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user: null, token: null, loading: false });
   }, []);
 
-  const userRole = state.user?.role?.type ?? 'public';
+  const userRole      = state.user?.role?.type ?? 'public';
+  const adminPanelRole = state.user?.adminPanelRole ?? null;
   const isAdmin  = !!state.user && (
+    !!adminPanelRole ||
     userRole === 'admin' ||
     state.user?.role?.name?.toLowerCase() === 'admin'
   );
-  const isLocal  = !!state.user && userRole === 'authenticated';
+  const isLocal  = !!state.user && !adminPanelRole && userRole === 'authenticated';
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, isAdmin, isLocal, userRole }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, isAdmin, isLocal, userRole, adminPanelRole }}>
       {children}
     </AuthContext.Provider>
   );
