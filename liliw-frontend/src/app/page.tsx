@@ -229,6 +229,79 @@ const QUICK_LINKS = [
 /* ═══════════════════════════════════════════════════════════
    MAIN PAGE
    ═══════════════════════════════════════════════════════════ */
+/* ─── Featured videos ────────────────────────────────────── */
+const FEATURED_VIDEOS = [
+  { id: 'your-video-id-1', title: 'Liliw, Laguna — A Hidden Gem', views: '' },
+  { id: 'your-video-id-2', title: 'Heritage of Liliw', views: '' },
+  { id: 'your-video-id-3', title: 'Liliw Footwear Capital', views: '' },
+  { id: 'your-video-id-4', title: 'Explore Liliw Laguna', views: '' },
+];
+
+function FeaturedVideos() {
+  const [activeId, setActiveId] = useState(FEATURED_VIDEOS[0].id);
+  const others = FEATURED_VIDEOS.filter(v => v.id !== activeId);
+  return (
+    <section className="py-14 bg-white">
+      <div className="max-w-7xl mx-auto px-4">
+        <FestiveHeading title="Featured Videos" sub="Watch and experience the beauty of Liliw" />
+        <div className="flex flex-col lg:flex-row gap-5">
+          {/* Main player */}
+          <div className="flex-1 min-w-0">
+            <div className="rounded-2xl overflow-hidden shadow-lg" style={{ aspectRatio: '16/9' }}>
+              <iframe
+                key={activeId}
+                src={`https://www.youtube.com/embed/${activeId}?autoplay=1&rel=0`}
+                title="Featured Video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+                style={{ border: 'none' }}
+              />
+            </div>
+            <p className="mt-3 font-bold text-gray-900 text-base" style={{ fontFamily: HL }}>
+              {FEATURED_VIDEOS.find(v => v.id === activeId)?.title}
+            </p>
+          </div>
+
+          {/* Sidebar thumbnails */}
+          <div className="lg:w-72 shrink-0">
+            <p className="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider" style={{ fontFamily: HL }}>
+              Other Videos
+            </p>
+            <div className="space-y-3">
+              {others.map(v => (
+                <button key={v.id} onClick={() => setActiveId(v.id)}
+                  className="w-full text-left flex gap-3 group rounded-xl overflow-hidden hover:bg-gray-50 transition p-1">
+                  <div className="relative shrink-0 rounded-lg overflow-hidden" style={{ width: 120, aspectRatio: '16/9' }}>
+                    <img
+                      src={`https://img.youtube.com/vi/${v.id}/mqdefault.jpg`}
+                      alt={v.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition">
+                      <div className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-gray-800 ml-0.5">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0 py-1">
+                    <p className="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug" style={{ fontFamily: HL }}>
+                      {v.title}
+                    </p>
+                    {v.views && <p className="text-xs text-gray-400 mt-1" style={{ fontFamily: BL }}>{v.views}</p>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const [heroSlide,      setHeroSlide]      = useState<any>(null);
   const [featured,       setFeatured]       = useState<any[]>([]);
@@ -585,6 +658,11 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* ══════════════════════════════════════════════════════
+          FEATURED VIDEOS
+          ══════════════════════════════════════════════════════ */}
+      <FeaturedVideos />
 
     </div>
   );
