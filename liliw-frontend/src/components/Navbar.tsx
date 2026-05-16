@@ -29,7 +29,7 @@ export default function Navbar() {
   const [exploreOpen, setExploreOpen]   = useState(false);
   const [searchOpen, setSearchOpen]     = useState(false);
   const [scrolled, setScrolled]         = useState(false);
-  const { user, logout, isAdmin, isChatoOfficer, isChatoEditor, isStaff, adminPanelRole } = useAuth();
+  const { user, logout, isAdmin, isChatoOfficer, isChatoEditor, isStaff, isLocal, adminPanelRole } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -231,6 +231,14 @@ export default function Navbar() {
                               {isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'Officer Dashboard' : 'Editor Dashboard'}
                             </Link>
                           )}
+                          {isLocal && (
+                            <Link href="/lbo" onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 transition border-t border-gray-100"
+                              style={{ color: '#374151', fontFamily: BL }}>
+                              <LayoutDashboard className="w-4 h-4 text-blue-500" />
+                              Business Dashboard
+                            </Link>
+                          )}
                           <button onClick={() => { logout(); setUserMenuOpen(false); }}
                             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 transition border-t border-gray-100"
                             style={{ fontFamily: BL }}>
@@ -286,6 +294,7 @@ export default function Navbar() {
                     </>
                   )}
                   {isStaff && <NavLink href="/admin" label={isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'Officer Dashboard' : 'Editor Dashboard'} onClick={closeMenu} />}
+                  {isLocal && <NavLink href="/lbo" label="Business Dashboard" onClick={closeMenu} />}
 
                   <button onClick={() => { setSearchOpen(true); closeMenu(); }}
                     className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition border border-gray-200 w-full hover:bg-blue-50 hover:text-blue-700"
