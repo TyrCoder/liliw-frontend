@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Map, { Marker, Popup, NavigationControl, GeolocateControl, Source, Layer } from 'react-map-gl/mapbox';
@@ -16,9 +16,9 @@ const LILIW_BOUNDARY_URL =
   'https://nominatim.openstreetmap.org/search?q=Liliw%2CLaguna%2CPhilippines&format=geojson&limit=1&polygon_geojson=1';
 
 const TYPE_CONFIG = {
-  heritage: { color: '#F5C518', label: '🏛️ Heritage' },
-  spot:     { color: '#2E7D32', label: '🏞️ Spots'   },
-  dining:   { color: '#EF4444', label: '🍽️ Dining'  },
+  heritage: { color: '#F5C518', label: 'ðŸ›ï¸ Heritage' },
+  spot:     { color: '#2E7D32', label: 'ðŸžï¸ Spots'   },
+  dining:   { color: '#EF4444', label: 'ðŸ½ï¸ Dining'  },
 };
 
 interface MapAttraction {
@@ -62,7 +62,7 @@ const WalkIcon = () => (
   </svg>
 );
 
-/* ─── Photo Slideshow ─────────────────────────────────────────────────── */
+/* â”€â”€â”€ Photo Slideshow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function PhotoSlideshow({ photos, name }: { photos: string[]; name: string }) {
   const [index, setIndex] = useState(0);
   const [fade, setFade] = useState(true);
@@ -110,7 +110,7 @@ function PhotoSlideshow({ photos, name }: { photos: string[]; name: string }) {
   );
 }
 
-/* ─── Star Rating ─────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Star Rating â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -131,7 +131,7 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-/* ─── Route Overlay ───────────────────────────────────────────────────── */
+/* â”€â”€â”€ Route Overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function RouteOverlay({
   routeInfo,
   routeLoading,
@@ -175,14 +175,14 @@ function RouteOverlay({
                   className="w-4 h-4 border-2 rounded-full animate-spin flex-shrink-0"
                   style={{ borderColor: 'rgba(245,197,24,0.3)', borderTopColor: '#F5C518' }}
                 />
-                <span className="text-white/60 text-sm">Calculating shortest route…</span>
+                <span className="text-white/60 text-sm">Calculating shortest routeâ€¦</span>
               </div>
             )}
 
             {/* Route info */}
             {!routeLoading && routeInfo && (
               <>
-                {/* Origin → Destination visual */}
+                {/* Origin â†’ Destination visual */}
                 <div className="px-4 pt-4 pb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                   <div className="flex items-start gap-3">
                     {/* Dot-line-dot */}
@@ -224,7 +224,7 @@ function RouteOverlay({
                   <Navigation className="w-4 h-4 flex-shrink-0" style={{ color: '#F5C518' }} />
                   <div className="flex-1">
                     <span className="text-white font-bold">{routeInfo.distance} km</span>
-                    <span className="text-white/30 mx-2">·</span>
+                    <span className="text-white/30 mx-2">Â·</span>
                     <span className="text-white/70 text-sm">{routeInfo.duration} min</span>
                   </div>
                   {/* Driving / walking toggle */}
@@ -240,7 +240,7 @@ function RouteOverlay({
                         title={m === 'driving' ? 'Driving' : m === 'motorcycle' ? 'Motorcycle' : 'Walking'}
                         style={{
                           backgroundColor: travelMode === m ? '#F5C518' : 'transparent',
-                          color: travelMode === m ? '#0B3D91' : 'rgba(255,255,255,0.5)',
+                          color: travelMode === m ? '#1565C0' : 'rgba(255,255,255,0.5)',
                         }}
                       >
                         {m === 'driving' ? <CarIcon /> : m === 'motorcycle' ? <MotorcycleIcon /> : <WalkIcon />}
@@ -260,7 +260,7 @@ function RouteOverlay({
                         borderBottom: stepsOpen ? '1px solid rgba(255,255,255,0.08)' : 'none',
                       }}
                     >
-                      <span>Turn-by-turn · {routeInfo.steps.length - 1} steps</span>
+                      <span>Turn-by-turn Â· {routeInfo.steps.length - 1} steps</span>
                       <ChevronDown
                         className={`w-3.5 h-3.5 transition-transform duration-200 ${stepsOpen ? 'rotate-180' : ''}`}
                       />
@@ -307,7 +307,7 @@ function RouteOverlay({
   );
 }
 
-/* ─── Map Page ────────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Map Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function MapPage() {
   const mapRef = useRef<MapRef>(null);
   const [attractions, setAttractions] = useState<MapAttraction[]>([]);
@@ -474,7 +474,7 @@ export default function MapPage() {
 
   if (noToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0B3D91' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#1565C0' }}>
         <div className="text-center text-white p-8">
           <MapPin className="w-16 h-16 mx-auto mb-4 opacity-40" style={{ color: '#F5C518' }} />
           <h2 className="text-2xl font-bold mb-2">Mapbox Token Required</h2>
@@ -487,7 +487,7 @@ export default function MapPage() {
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition"
-            style={{ backgroundColor: '#F5C518', color: '#0B3D91' }}
+            style={{ backgroundColor: '#F5C518', color: '#1565C0' }}
           >
             Get a free token at mapbox.com
           </a>
@@ -497,7 +497,7 @@ export default function MapPage() {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 65px)', backgroundColor: '#0B3D91' }}>
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 65px)', backgroundColor: '#1565C0' }}>
 
       {/* Top bar */}
       <div
@@ -533,7 +533,7 @@ export default function MapPage() {
               className="px-3 py-1.5 rounded-full text-xs font-bold transition"
               style={{
                 backgroundColor: filter === f ? '#F5C518' : 'rgba(255,255,255,0.08)',
-                color: filter === f ? '#0B3D91' : 'rgba(255,255,255,0.7)',
+                color: filter === f ? '#1565C0' : 'rgba(255,255,255,0.7)',
               }}
             >
               {f === 'all' ? 'All' : TYPE_CONFIG[f].label}
@@ -552,7 +552,7 @@ export default function MapPage() {
                 className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto mb-3"
                 style={{ borderColor: '#F5C518' }}
               />
-              <p className="text-white/60 text-sm">Loading attractions…</p>
+              <p className="text-white/60 text-sm">Loading attractionsâ€¦</p>
             </div>
           </div>
         ) : (
@@ -697,7 +697,7 @@ export default function MapPage() {
                   exit={{ opacity: 0, y: 10, scale: 0.9 }}
                   transition={{ type: 'spring', stiffness: 420, damping: 22 }}
                   className="rounded-2xl overflow-hidden shadow-2xl"
-                  style={{ backgroundColor: '#0B3D91', border: '1px solid rgba(245,197,24,0.3)', minWidth: 240 }}
+                  style={{ backgroundColor: '#1565C0', border: '1px solid rgba(245,197,24,0.3)', minWidth: 240 }}
                 >
                   {selected.photos.length > 0 && (
                     <div className="relative">
@@ -750,7 +750,7 @@ export default function MapPage() {
                       <Link
                         href={`/attractions/${selected.id}`}
                         className="flex-1 py-2 rounded-xl text-xs font-bold text-center transition hover:opacity-90 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: '#F5C518', color: '#0B3D91' }}
+                        style={{ backgroundColor: '#F5C518', color: '#1565C0' }}
                       >
                         <Eye className="w-3.5 h-3.5" /> View
                       </Link>
@@ -771,9 +771,9 @@ export default function MapPage() {
                       <Link
                         href="/immersive"
                         className="w-full py-2 rounded-xl text-xs font-bold text-center transition hover:opacity-90 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: '#F5C518', color: '#0B3D91' }}
+                        style={{ backgroundColor: '#F5C518', color: '#1565C0' }}
                       >
-                        🥽 Virtual Tour
+                        ðŸ¥½ Virtual Tour
                       </Link>
                     )}
                   </div>
@@ -783,7 +783,7 @@ export default function MapPage() {
           </Map>
         )}
 
-        {/* Route overlay — floats bottom-center on the map */}
+        {/* Route overlay â€” floats bottom-center on the map */}
         <RouteOverlay
           routeInfo={routeInfo}
           routeLoading={routeLoading}
@@ -793,7 +793,7 @@ export default function MapPage() {
           onModeChange={handleModeChange}
         />
 
-        {/* Legend — hidden when route is active to avoid overlap */}
+        {/* Legend â€” hidden when route is active to avoid overlap */}
         {!routeInfo && !routeLoading && (
           <motion.div
             initial={{ opacity: 0, x: -10 }}
@@ -831,3 +831,4 @@ export default function MapPage() {
     </div>
   );
 }
+

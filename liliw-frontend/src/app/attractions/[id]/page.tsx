@@ -63,7 +63,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
 
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+      <div className="min-h-screen bg-white" suppressHydrationWarning>
         <div className="max-w-4xl mx-auto px-4 py-12 animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-32 mb-8" />
           <div className="h-64 bg-gray-200 rounded-2xl mb-8" />
@@ -77,7 +77,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
 
   if (error || !attraction) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+      <div className="min-h-screen bg-white" suppressHydrationWarning>
         <div className="max-w-4xl mx-auto px-4 py-12">
           <Link href="/attractions" className="inline-flex items-center font-semibold text-sm" style={{ color: '#1565C0', fontFamily: BL }}>
             <ChevronLeft className="w-4 h-4 mr-2" /> Back to Attractions
@@ -96,7 +96,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
     <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
+      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
         <div className="max-w-4xl mx-auto px-4 py-14">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
             <Link href="/attractions" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>
@@ -105,7 +105,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
             <div className="flex items-start gap-3 mb-3">
               <div>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mb-3"
-                  style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}>
+                  style={{ backgroundColor: '#22C55E', color: '#fff', fontFamily: HL }}>
                   {typeIcon} {TYPE_LABELS[attraction.type] || attraction.type}
                   {attraction.attributes.category && ` · ${attraction.attributes.category}`}
                 </div>
@@ -139,7 +139,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         {attraction.attributes.description && (
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }}
             className="mb-8 sm:mb-12 text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed p-5 sm:p-6 rounded-2xl border-l-4 bg-white"
-            style={{ borderLeftColor: '#0B3D91' }}>
+            style={{ borderLeftColor: '#1565C0' }}>
             {attraction.attributes.description}
           </motion.div>
         )}
@@ -150,7 +150,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           {attraction.attributes.phone && (
             <div className="p-5 rounded-2xl border border-gray-100 bg-white">
               <div className="flex items-center gap-2 mb-2">
-                <Phone className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: '#0B3D91' }} />
+                <Phone className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: '#1565C0' }} />
                 <h3 className="font-semibold text-sm sm:text-base" style={{ color: '#1A1A2E', fontFamily: HL }}>Phone</h3>
               </div>
               <p className="text-sm sm:text-base text-gray-700" style={{ fontFamily: BL }}>{attraction.attributes.phone}</p>
@@ -159,7 +159,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           {attraction.attributes.hours && (
             <div className="p-5 rounded-2xl border border-gray-100 bg-white">
               <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: '#0B3D91' }} />
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: '#1565C0' }} />
                 <h3 className="font-semibold text-sm sm:text-base" style={{ color: '#1A1A2E', fontFamily: HL }}>Hours</h3>
               </div>
               <p className="text-sm sm:text-base text-gray-700" style={{ fontFamily: BL }}>{attraction.attributes.hours}</p>
@@ -168,7 +168,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           {attraction.attributes.website && (
             <div className="p-5 rounded-2xl border border-gray-100 bg-white">
               <div className="flex items-center gap-2 mb-2">
-                <Globe className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: '#0B3D91' }} />
+                <Globe className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: '#1565C0' }} />
                 <h3 className="font-semibold text-sm sm:text-base" style={{ color: '#1A1A2E', fontFamily: HL }}>Website</h3>
               </div>
               <a href={attraction.attributes.website} target="_blank" rel="noopener noreferrer"
@@ -180,7 +180,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           {attraction.attributes.best_for && (
             <div className="p-5 rounded-2xl border border-gray-100 bg-white">
               <div className="flex items-center gap-2 mb-2">
-                <Users className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: '#0B3D91' }} />
+                <Users className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: '#1565C0' }} />
                 <h3 className="font-semibold text-sm sm:text-base" style={{ color: '#1A1A2E', fontFamily: HL }}>Best For</h3>
               </div>
               <p className="text-sm sm:text-base text-gray-700" style={{ fontFamily: BL }}>{attraction.attributes.best_for}</p>
@@ -241,7 +241,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           className="mb-8 sm:mb-12">
           <div className="rounded-2xl overflow-hidden flex flex-col sm:flex-row items-center gap-5 px-6 py-5"
             style={{ background: 'linear-gradient(135deg, rgba(11,61,145,0.06), rgba(21,101,192,0.08))', border: '1px solid rgba(11,61,145,0.15)' }}>
-            <MapPin className="w-7 h-7 shrink-0" style={{ color: '#0B3D91' }} />
+            <MapPin className="w-7 h-7 shrink-0" style={{ color: '#1565C0' }} />
             <div className="flex-1 text-center sm:text-left">
               <p className="font-bold text-gray-800 text-base" style={{ fontFamily: HL }}>Want to include this in an itinerary?</p>
               <p className="text-sm text-gray-500 mt-0.5" style={{ fontFamily: BL }}>Use our AI trip planner to build a full Liliw tour around {attraction.attributes.name}.</p>
