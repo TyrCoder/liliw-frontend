@@ -9,7 +9,6 @@ import {
   Compass, UtensilsCrossed, Mountain, Camera, Users, Globe,
   Layers,
 } from 'lucide-react';
-import AnnouncementBar from '@/components/AnnouncementBar';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -305,9 +304,6 @@ export default function Home() {
      ───────────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
-
-      {/* ── Announcement Bar ────────────────────────────────── */}
-      <AnnouncementBar defaultOpen={true} />
 
       {/* ══════════════════════════════════════════════════════
           HERO — full-screen video
