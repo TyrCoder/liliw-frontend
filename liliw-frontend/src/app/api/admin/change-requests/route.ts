@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { requireStaffAuth } from '@/lib/auth';
 
 // GET — list all LBO change requests
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!await requireStaffAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { data, error } = await supabaseServer
     .from('lbo_change_requests')
     .select('*')
@@ -14,6 +17,8 @@ export async function GET() {
 
 // PATCH — update status + editor_notes { id, status, editor_notes }
 export async function PATCH(request: NextRequest) {
+  if (!await requireStaffAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { id, status, editor_notes } = await request.json();
   if (!id || !status) return NextResponse.json({ error: 'id and status required' }, { status: 400 });
 

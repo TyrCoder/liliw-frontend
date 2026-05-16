@@ -29,6 +29,15 @@ export async function POST(request: NextRequest) {
   const user = await getUser(request.headers.get('Authorization') || '');
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const { data: lboApp } = await supabaseServer
+    .from('lbo_applications')
+    .select('id')
+    .eq('email', user.email)
+    .eq('status', 'approved')
+    .limit(1)
+    .single();
+  if (!lboApp) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
   const b = await request.json();
   if (!b.attraction_name || !b.month || !b.year) {
     return NextResponse.json({ error: 'attraction_name, month and year are required' }, { status: 400 });

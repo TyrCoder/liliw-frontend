@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { sendApprovalEmail } from '@/lib/email';
+import { requireAdminAuth } from '@/lib/auth';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
 // POST — create LBO user account after approval { applicationId, username, email, password }
 export async function POST(request: NextRequest) {
+  if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { applicationId, username, email, password } = await request.json();
   if (!username || !email || !password) {
     return NextResponse.json({ error: 'username, email and password are required' }, { status: 400 });

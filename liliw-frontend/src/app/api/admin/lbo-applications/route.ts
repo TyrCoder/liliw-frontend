@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { sendRejectionEmail } from '@/lib/email';
+import { requireAdminAuth } from '@/lib/auth';
 
 // GET — list all LBO applications
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { data, error } = await supabaseServer
     .from('lbo_applications')
     .select('*')
@@ -15,6 +18,8 @@ export async function GET() {
 
 // PATCH — update application status { id, status, notes }
 export async function PATCH(request: NextRequest) {
+  if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { id, status, notes } = await request.json();
   if (!id || !status) return NextResponse.json({ error: 'id and status required' }, { status: 400 });
 
