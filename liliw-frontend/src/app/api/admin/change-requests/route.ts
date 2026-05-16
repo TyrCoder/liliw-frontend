@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { requireStaffAuth } from '@/lib/auth';
+import { sendChangeRequestUpdate } from '@/lib/email';
 
 // GET — list all LBO change requests
 export async function GET(request: NextRequest) {
@@ -35,6 +36,26 @@ export async function PATCH(request: NextRequest) {
       .update({ status })
       .eq('id', id);
     if (error2) return NextResponse.json({ error: 'Failed to update', detail: error2.message }, { status: 500 });
+  }
+
+  // Fetch full record to send LBO notification
+  if (status === 'done' || status === 'rejected') {
+    const { data: cr } = await supabaseServer
+      .from('lbo_change_requests')
+      .select('lbo_name, lbo_email, attraction_name, field_to_change, requested_value')
+      .eq('id', id)
+      .single();
+    if (cr) {
+      sendChangeRequestUpdate({
+        lbo_name:        cr.lbo_name,
+        lbo_email:       cr.lbo_email,
+        attraction_name: cr.attraction_name,
+        field_to_change: cr.field_to_change,
+        requested_value: cr.requested_value,
+        status,
+        editor_notes:    editor_notes || '',
+      }).catch(err => console.error('[Email] change request update:', err));
+    }
   }
 
   return NextResponse.json({ success: true });

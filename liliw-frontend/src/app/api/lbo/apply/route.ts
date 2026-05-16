@@ -11,8 +11,14 @@ export async function POST(request: NextRequest) {
     const docUrls: { name: string; url: string }[] = [];
     const uploadErrors: string[] = [];
 
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+
     for (const file of files) {
       if (!file || file.size === 0) continue;
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        uploadErrors.push(`${file.name}: Only JPG, PNG, WEBP, and PDF files are allowed`);
+        continue;
+      }
       try {
         const buffer   = Buffer.from(await file.arrayBuffer());
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
