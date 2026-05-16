@@ -7,7 +7,7 @@ import {
   ArrowRight, MapPin, History, Leaf, HelpCircle,
   Calendar, ChevronLeft, ChevronRight, Star,
   Compass, UtensilsCrossed, Mountain, Camera, Users, Globe,
-  Layers, Play,
+  Layers,
 } from 'lucide-react';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
@@ -378,80 +378,17 @@ export default function Home() {
     <div className="min-h-screen bg-white" suppressHydrationWarning>
 
       {/* ══════════════════════════════════════════════════════
-          HERO — responsive video/image with overlay
+          HERO — full-screen video
           ══════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden flex items-center"
-        style={{ minHeight: 'calc(100svh - 56px)' }}>
-
-        {/* Background media */}
+      <section className="relative overflow-hidden w-full" style={{ height: 'calc(100svh - 56px)', minHeight: 300 }}>
         <div className="absolute inset-0" style={{ background: '#0B3D91' }}>
           {process.env.NEXT_PUBLIC_HERO_VIDEO_URL ? (
             <video autoPlay muted loop playsInline className="w-full h-full object-cover">
               <source src={process.env.NEXT_PUBLIC_HERO_VIDEO_URL} type="video/mp4" />
             </video>
           ) : heroSlide?.image ? (
-            <img src={heroSlide.image} alt="Liliw" className="w-full h-full object-cover" />
+            <img src={heroSlide.image} alt="Liliw hero" className="w-full h-full object-cover" />
           ) : null}
-        </div>
-
-        {/* Gradient overlay — stronger at bottom for text readability */}
-        <div className="absolute inset-0"
-          style={{ background: 'linear-gradient(to top, rgba(5,20,60,0.92) 0%, rgba(5,20,60,0.55) 45%, rgba(5,20,60,0.15) 100%)' }} />
-
-        {/* Content */}
-        <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-8 py-16 sm:py-24 flex flex-col items-center text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}>
-
-            {/* Eyebrow label */}
-            <span className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold uppercase tracking-widest mb-4 sm:mb-5 px-4 py-1.5 rounded-full"
-              style={{ color: '#F5C518', border: '1px solid rgba(245,197,24,0.4)', fontFamily: HL }}>
-              <MapPin className="w-3.5 h-3.5" /> Liliw, Laguna · Philippines
-            </span>
-
-            {/* Main title */}
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-black text-white leading-none tracking-tight mb-4 sm:mb-6"
-              style={{ fontFamily: DL }}>
-              Discover the
-              <span className="block" style={{ color: '#F5C518' }}>Soul of Liliw</span>
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-sm sm:text-lg lg:text-xl text-white/75 max-w-xs sm:max-w-lg lg:max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed"
-              style={{ fontFamily: BL }}>
-              Heritage sites, local cuisine, vibrant festivals, and natural wonders — all waiting in one extraordinary Laguna town.
-            </p>
-
-            {/* CTA buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-              <Link href="/attractions"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 sm:py-4 rounded-full font-bold text-sm sm:text-base transition hover:opacity-90 hover:scale-105 active:scale-95"
-                style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL,
-                  boxShadow: '0 8px 32px rgba(245,197,24,0.35)' }}>
-                Explore Attractions <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link href="/itineraries"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 sm:py-4 rounded-full font-bold text-sm sm:text-base transition hover:bg-white/20 border-2 border-white/50"
-                style={{ color: 'white', fontFamily: HL }}>
-                <Play className="w-4 h-4 fill-white" /> Plan Your Trip
-              </Link>
-            </div>
-          </motion.div>
-
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2, duration: 0.6 }}
-            className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
-            <p className="text-white/40 text-xs uppercase tracking-widest" style={{ fontFamily: HL }}>Scroll</p>
-            <motion.div
-              animate={{ y: [0, 6, 0] }}
-              transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
-              className="w-0.5 h-6 rounded-full bg-white/30" />
-          </motion.div>
         </div>
       </section>
 
