@@ -2,10 +2,9 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, ArrowRight, MapPin, History, Leaf, HelpCircle,
+  ArrowRight, MapPin, History, Leaf, HelpCircle,
   Calendar, ChevronLeft, ChevronRight, Star,
   Compass, UtensilsCrossed, Mountain, Camera, Users, Globe,
   Layers,
@@ -232,14 +231,10 @@ const QUICK_LINKS = [
    MAIN PAGE
    ═══════════════════════════════════════════════════════════ */
 export default function Home() {
-  const router = useRouter();
-
   const [heroSlide,      setHeroSlide]      = useState<any>(null);
   const [featured,       setFeatured]       = useState<any[]>([]);
   const [allAttractions, setAllAttractions] = useState<any[]>([]);
   const [announcements,  setAnnouncements]  = useState<any[]>([]);
-  const [searchQuery,    setSearchQuery]    = useState('');
-  const [searchType,     setSearchType]     = useState('all');
   const [actIdx,         setActIdx]         = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -299,15 +294,6 @@ export default function Home() {
       });
   }, []);
 
-  /* ── search ─────────────────────────────────────────────── */
-  const handleSearch = () => {
-    const q = searchQuery.trim();
-    const url = q
-      ? `/attractions?q=${encodeURIComponent(q)}&type=${searchType}`
-      : searchType !== 'all' ? `/attractions?type=${searchType}` : '/attractions';
-    router.push(url);
-  };
-
   /* ── activities scroll ──────────────────────────────────── */
   const activities = allAttractions.slice(0, 12);
   const scrollActivities = (dir: 1 | -1) => {
@@ -324,13 +310,10 @@ export default function Home() {
       <AnnouncementBar defaultOpen={true} />
 
       {/* ══════════════════════════════════════════════════════
-          HERO — full-screen photo with wave bottom
+          HERO — full-screen video
           ══════════════════════════════════════════════════════ */}
-      <section className="relative flex flex-col justify-end overflow-hidden"
-        style={{ minHeight: 'calc(100vh - 56px)' }}>
-
-        {/* Background */}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 55%, #0a3580 100%)' }}>
+      <section className="relative overflow-hidden" style={{ minHeight: 'calc(100vh - 56px)' }}>
+        <div className="absolute inset-0" style={{ background: '#0B3D91' }}>
           {process.env.NEXT_PUBLIC_HERO_VIDEO_URL ? (
             <video
               autoPlay
@@ -338,128 +321,12 @@ export default function Home() {
               loop
               playsInline
               className="w-full h-full object-cover"
-              style={{ opacity: 0.65 }}
             >
               <source src={process.env.NEXT_PUBLIC_HERO_VIDEO_URL} type="video/mp4" />
             </video>
           ) : heroSlide?.image ? (
-            <img src={heroSlide.image} alt="Liliw hero" className="w-full h-full object-cover opacity-50" />
+            <img src={heroSlide.image} alt="Liliw hero" className="w-full h-full object-cover" />
           ) : null}
-        </div>
-
-        {/* Gradient overlay */}
-        <div className="absolute inset-0"
-          style={{ background: 'linear-gradient(to top, rgba(11,61,145,0.97) 0%, rgba(11,61,145,0.55) 50%, rgba(11,61,145,0.15) 100%)' }} />
-
-        {/* Decorative orbs */}
-        <motion.div className="absolute top-20 right-20 w-96 h-96 rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #F5C518, transparent)' }}
-          animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 8, repeat: Infinity }} />
-
-        {/* Hero content */}
-        <div className="relative z-10 max-w-7xl mx-auto px-6 pb-20 w-full">
-          <motion.p className="text-xs font-bold uppercase tracking-widest mb-4"
-            style={{ color: '#F5C518', fontFamily: HL }}
-            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            Liliw, Laguna · Philippines
-          </motion.p>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-            style={{
-              fontFamily: DL,
-              fontSize: 'clamp(44px, 7.5vw, 80px)',
-              fontWeight: 700, lineHeight: 1.05, color: '#fff',
-              marginBottom: 20, maxWidth: 720,
-            }}>
-            {heroSlide?.title || <>Where Heritage<br />Meets Paradise</>}
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
-            style={{
-              fontFamily: BL,
-              fontSize: 18, color: 'rgba(255,255,255,0.78)', maxWidth: 520,
-              lineHeight: 1.65, marginBottom: 32,
-            }}>
-            {heroSlide?.subtitle || 'Discover century-old churches, pristine waterfalls, and vibrant local traditions in the heart of Laguna.'}
-          </motion.p>
-
-          <motion.div className="flex flex-wrap gap-3 mb-10"
-            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
-            <Link href="/attractions"
-              className="inline-flex items-center gap-2 font-bold transition-all hover:opacity-90 hover:shadow-lg"
-              style={{
-                backgroundColor: '#F5C518', color: '#0B3D91',
-                padding: '13px 30px', borderRadius: 50,
-                fontFamily: BL, fontSize: 15,
-                boxShadow: '0 4px 20px rgba(245,197,24,0.4)',
-              }}>
-              Start Exploring <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link href="/itineraries"
-              className="inline-flex items-center gap-2 font-semibold transition-all hover:bg-white/20"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.12)',
-                backdropFilter: 'blur(8px)',
-                color: 'white', padding: '13px 30px', borderRadius: 50,
-                border: '1px solid rgba(255,255,255,0.25)',
-                fontFamily: BL, fontSize: 15,
-              }}>
-              View Itineraries
-            </Link>
-          </motion.div>
-
-          {/* Search bar */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}
-            className="flex gap-2 items-center flex-wrap sm:flex-nowrap"
-            style={{
-              background: 'rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(20px)',
-              borderRadius: 14,
-              border: '1px solid rgba(255,255,255,0.22)',
-              padding: '10px 14px',
-              maxWidth: 680,
-            }}>
-            <Search className="w-4 h-4 shrink-0" style={{ color: 'rgba(255,255,255,0.5)' }} />
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="Search destinations, activities…"
-              style={{
-                flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none',
-                color: 'white', fontFamily: BL, fontSize: 14,
-              }} />
-            <select value={searchType} onChange={e => setSearchType(e.target.value)}
-              style={{
-                background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: 8, color: 'white', padding: '6px 10px', fontSize: 13,
-                fontFamily: BL, outline: 'none',
-              }}>
-              <option value="all"      style={{ background: '#0B3D91' }}>All Types</option>
-              <option value="heritage" style={{ background: '#0B3D91' }}>Heritage</option>
-              <option value="spot"     style={{ background: '#0B3D91' }}>Nature</option>
-              <option value="dining"   style={{ background: '#0B3D91' }}>Dining</option>
-            </select>
-            <button onClick={handleSearch}
-              className="shrink-0 font-bold transition-all hover:opacity-90"
-              style={{
-                background: '#F5C518', color: '#0B3D91', border: 'none',
-                borderRadius: 9, padding: '9px 22px',
-                fontFamily: BL, fontSize: 13, cursor: 'pointer',
-              }}>
-              Search
-            </button>
-          </motion.div>
-        </div>
-
-        {/* Wave bottom — hero navy → white */}
-        <div className="absolute bottom-0 left-0 right-0 z-10" style={{ lineHeight: 0 }}>
-          <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style={{ width: '100%', height: 80, display: 'block' }}>
-            <path d="M0,0 C360,80 1080,0 1440,80 L1440,80 L0,80 Z" fill="#ffffff" />
-          </svg>
         </div>
       </section>
 
