@@ -72,7 +72,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0B3D91" />
       </head>
-      <body className="min-h-full flex flex-col" style={{ backgroundColor: '#F9F6F0', color: '#1A1A2E' }}>
+      <body className="min-h-full flex flex-col overflow-x-hidden" style={{ backgroundColor: '#F9F6F0', color: '#1A1A2E' }}>
         <AuthProvider>
           <FavoritesProvider>
             <PWAHandler />
