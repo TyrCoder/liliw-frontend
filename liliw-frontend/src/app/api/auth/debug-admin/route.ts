@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   // Step 2: Can we authenticate to the admin panel using env credentials?
   try {
-    const adminAuth = await fetch(`${STRAPI}/admin/auth/local`, {
+    const adminAuth = await fetch(`${STRAPI}/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
