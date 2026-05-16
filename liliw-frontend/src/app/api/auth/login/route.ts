@@ -14,7 +14,7 @@ function derivedPassword(email: string): string {
 
 async function getAdminPanelUser(email: string): Promise<{ role: string | null; firstname: string } | null> {
   try {
-    const authRes = await fetch(`${STRAPI}/admin/auth/local`, {
+    const authRes = await fetch(`${STRAPI}/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -24,8 +24,9 @@ async function getAdminPanelUser(email: string): Promise<{ role: string | null; 
     });
     if (!authRes.ok) return null;
 
-    const { data: authData } = await authRes.json();
-    const adminJWT = authData?.token;
+    const authJson = await authRes.json();
+    // Strapi v5: { data: { token, user } }  |  v4: { data: { token, user } }
+    const adminJWT = authJson?.data?.token ?? authJson?.token;
     if (!adminJWT) return null;
 
     const usersRes = await fetch(
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
     const identifier = body.identifier as string;
     const password   = body.password  as string;
 
-    const adminAuthRes = await fetch(`${STRAPI}/admin/auth/local`, {
+    const adminAuthRes = await fetch(`${STRAPI}/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: identifier, password }),
@@ -139,9 +140,9 @@ export async function POST(request: NextRequest) {
     }
 
     const adminAuth     = await adminAuthRes.json();
-    const adminUserInfo = adminAuth.data?.user;
+    const adminUserInfo = adminAuth.data?.user ?? adminAuth.user;
     const adminRole     = adminUserInfo?.roles?.[0]?.name ?? null;
-    const username      = adminUserInfo?.firstname || identifier.split('@')[0];
+    const username      = adminUserInfo?.firstname || adminUserInfo?.username || identifier.split('@')[0];
 
     // Auto-create (or reuse) a frontend account for this admin
     const synced = await syncAdminFrontendAccount(identifier, username);
