@@ -10,6 +10,7 @@ import {
   ChevronLeft, Mail, Phone, Calendar, MessageSquare, Star,
   RefreshCw, UserCheck, Shield, Activity, MapPin, Edit, Layers,
   Monitor, Smartphone, Tablet, Wifi, Search,
+  Building2, X, ChevronDown, ChevronUp, Key,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -23,7 +24,7 @@ interface AuditLog { id: string; event: string; model: string; uid?: string; ent
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[] }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit';
+type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit';
 
 /* ─── helpers ─────────────────────────────────────────────── */
 const STATUS_BADGE: Record<string, string> = { new: 'bg-blue-50 text-blue-700', reviewed: 'bg-yellow-50 text-yellow-700', resolved: 'bg-green-50 text-green-700' };
@@ -126,6 +127,17 @@ export default function AdminDashboard() {
   const [savingPwd,     setSavingPwd]     = useState(false);
   const [pwdMsg,        setPwdMsg]        = useState<{ ok: boolean; text: string } | null>(null);
 
+  const [lboApps,       setLboApps]       = useState<any[]>([]);
+  const [loadingLbo,    setLoadingLbo]    = useState(true);
+  const [expandedLbo,   setExpandedLbo]   = useState<number | null>(null);
+  const [lboRegModal,   setLboRegModal]   = useState<any | null>(null);
+  const [lboRegForm,    setLboRegForm]    = useState({ username: '', password: '' });
+  const [savingLboReg,  setSavingLboReg]  = useState(false);
+  const [lboRegMsg,     setLboRegMsg]     = useState<{ ok: boolean; text: string } | null>(null);
+  const [rejectModal,   setRejectModal]   = useState<any | null>(null);
+  const [rejectNotes,   setRejectNotes]   = useState('');
+  const [savingReject,  setSavingReject]  = useState(false);
+
   const [attrSearch, setAttrSearch] = useState('');
   const [attrType,   setAttrType]   = useState<string>('all');
 
@@ -162,9 +174,10 @@ export default function AdminDashboard() {
       fetch('/api/admin/audit-logs',     { headers: h }).then(r => r.json()).then(d => setAuditLogs(d.data || [])).catch(() => {}).finally(() => setLoadingAudit(false));
     }
 
-    // Admin only — user management
+    // Admin only — user management + LBO applications
     if (isAdmin) {
-      fetch('/api/admin/users',          { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
+      fetch('/api/admin/users',           { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
+      fetch('/api/admin/lbo-applications',{ headers: h }).then(r => r.json()).then(d => setLboApps(d.data || [])).catch(() => {}).finally(() => setLoadingLbo(false));
     }
 
     // Role management — admin and CHATO Officer
@@ -247,6 +260,67 @@ export default function AdminDashboard() {
     setTimeout(() => setSyncStatus('idle'), 4000);
   };
 
+  const handleLboApprove = (app: any) => {
+    const a = app.attributes || app;
+    setLboRegModal(app);
+    setLboRegForm({ username: (a.email || '').split('@')[0], password: '' });
+    setLboRegMsg(null);
+  };
+
+  const handleLboReject = (app: any) => {
+    setRejectModal(app);
+    setRejectNotes('');
+  };
+
+  const handleLboRegister = async () => {
+    if (!lboRegModal) return;
+    setSavingLboReg(true);
+    setLboRegMsg(null);
+    const a = lboRegModal.attributes || lboRegModal;
+    try {
+      const res = await fetch('/api/admin/lbo-register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ applicationId: lboRegModal.id, username: lboRegForm.username, email: a.email, password: lboRegForm.password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLboRegMsg({ ok: true, text: 'Account created successfully!' });
+        setLboApps(prev => prev.map(ap => ap.id === lboRegModal.id
+          ? { ...ap, attributes: { ...(ap.attributes || ap), status: 'approved' } }
+          : ap
+        ));
+        setTimeout(() => { setLboRegModal(null); setLboRegForm({ username: '', password: '' }); setLboRegMsg(null); }, 2000);
+      } else {
+        setLboRegMsg({ ok: false, text: data.error || 'Failed to create account' });
+      }
+    } catch {
+      setLboRegMsg({ ok: false, text: 'Network error' });
+    }
+    setSavingLboReg(false);
+  };
+
+  const handleLboRejectConfirm = async () => {
+    if (!rejectModal) return;
+    setSavingReject(true);
+    try {
+      const res = await fetch('/api/admin/lbo-applications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: rejectModal.id, status: 'rejected', notes: rejectNotes }),
+      });
+      if (res.ok) {
+        setLboApps(prev => prev.map(ap => ap.id === rejectModal.id
+          ? { ...ap, attributes: { ...(ap.attributes || ap), status: 'rejected', notes: rejectNotes } }
+          : ap
+        ));
+        setRejectModal(null);
+        setRejectNotes('');
+      }
+    } catch {}
+    setSavingReject(false);
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} /></div>;
   if (!user || !isStaff) return null;
 
@@ -265,15 +339,16 @@ export default function AdminDashboard() {
 
   // Tab visibility per role
   const ALL_TABS: { key: Tab; label: string; badge?: number; roles: string[] }[] = [
-    { key: 'overview',      label: 'Analytics',       badge: undefined,              roles: ['admin', 'officer'] },
-    { key: 'users',         label: 'Users',            badge: users.length,           roles: ['admin'] },
-    { key: 'roles',         label: 'Role Management',  badge: roleUsers.length,       roles: ['admin', 'officer'] },
-    { key: 'submissions',   label: 'Submissions',      badge: newCount,               roles: ['admin'] },
-    { key: 'participation', label: 'Participation',    badge: participation.length,   roles: ['admin', 'officer'] },
-    { key: 'signups',       label: 'Event Sign-ups',   badge: signups.length,         roles: ['admin'] },
-    { key: 'attractions',   label: 'Attractions',      badge: attractions.length,     roles: ['admin', 'officer', 'editor'] },
-    { key: 'ratings',       label: 'Ratings',          badge: reviews.length,         roles: ['admin', 'officer', 'editor'] },
-    { key: 'audit',         label: 'Audit Logs',       badge: auditLogs.length,       roles: ['admin', 'officer'] },
+    { key: 'overview',      label: 'Analytics',         badge: undefined,                                                                     roles: ['admin', 'officer'] },
+    { key: 'users',         label: 'Users',              badge: users.length,                                                                   roles: ['admin'] },
+    { key: 'roles',         label: 'Role Management',    badge: roleUsers.length,                                                               roles: ['admin', 'officer'] },
+    { key: 'lbo',           label: 'LBO Applications',   badge: lboApps.filter(a => (a.attributes?.status || a.status) === 'pending').length,   roles: ['admin'] },
+    { key: 'submissions',   label: 'Submissions',        badge: newCount,                                                                       roles: ['admin'] },
+    { key: 'participation', label: 'Participation',      badge: participation.length,                                                           roles: ['admin', 'officer'] },
+    { key: 'signups',       label: 'Event Sign-ups',     badge: signups.length,                                                                 roles: ['admin'] },
+    { key: 'attractions',   label: 'Attractions',        badge: attractions.length,                                                             roles: ['admin', 'officer', 'editor'] },
+    { key: 'ratings',       label: 'Ratings',            badge: reviews.length,                                                                 roles: ['admin', 'officer', 'editor'] },
+    { key: 'audit',         label: 'Audit Logs',         badge: auditLogs.length,                                                               roles: ['admin', 'officer'] },
   ];
 
   const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
@@ -631,6 +706,140 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* ── LBO APPLICATIONS ──────────────────────────────── */}
+        {activeTab === 'lbo' && (
+          <div className="space-y-4">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4">
+              <StatCard icon={<Clock className="w-5 h-5" />}         label="Pending"  value={lboApps.filter(a => (a.attributes?.status || a.status) === 'pending').length}  color="#F59E0B" />
+              <StatCard icon={<CheckCircle className="w-5 h-5" />}   label="Approved" value={lboApps.filter(a => (a.attributes?.status || a.status) === 'approved').length} color="#10B981" />
+              <StatCard icon={<AlertCircle className="w-5 h-5" />}   label="Rejected" value={lboApps.filter(a => (a.attributes?.status || a.status) === 'rejected').length} color="#EF4444" />
+            </div>
+
+            {/* Application list */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="font-bold text-gray-900">LBO Applications</h2>
+                <span className="text-sm text-gray-400">{lboApps.length} total</span>
+              </div>
+              {loadingLbo ? (
+                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+              ) : lboApps.length === 0 ? (
+                <div className="flex flex-col items-center py-16 text-center text-gray-400">
+                  <Building2 className="w-12 h-12 opacity-20 mb-3" />
+                  <p className="font-semibold">No applications yet</p>
+                  <p className="text-xs mt-1">Applications submitted at /business/apply appear here</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {lboApps.map(app => {
+                    const a = app.attributes || app;
+                    const appId = app.id;
+                    const status = a.status || 'pending';
+                    const isExpanded = expandedLbo === appId;
+                    const docs = a.documents?.data || [];
+                    const statusColor = status === 'approved'
+                      ? 'bg-green-50 text-green-700'
+                      : status === 'rejected'
+                      ? 'bg-red-50 text-red-600'
+                      : 'bg-yellow-50 text-yellow-700';
+                    return (
+                      <div key={appId}>
+                        {/* Collapsed row */}
+                        <div
+                          className="px-6 py-4 flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                          onClick={() => setExpandedLbo(isExpanded ? null : appId)}
+                        >
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-50">
+                            <Building2 className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 truncate">{a.business_name || '—'}</p>
+                            <p className="text-xs text-gray-400 truncate">{a.owner_name} · {a.email}</p>
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize shrink-0 ${statusColor}`}>{status}</span>
+                          <span className="text-xs text-gray-400 shrink-0 hidden sm:block">
+                            {a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                          </span>
+                          {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
+                        </div>
+
+                        {/* Expanded detail */}
+                        {isExpanded && (
+                          <div className="px-6 pb-6 bg-gray-50 border-t border-gray-100">
+                            <div className="pt-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                              {[
+                                { label: 'Business Name',              value: a.business_name },
+                                { label: 'Attraction / Listing Name',  value: a.attraction_name },
+                                { label: 'Owner / Representative',     value: a.owner_name },
+                                { label: 'Email',                      value: a.email },
+                                { label: 'Contact Number',             value: a.phone },
+                                { label: 'Business Address',           value: a.address },
+                                { label: 'Business Type',              value: a.business_type },
+                                { label: "Mayor's Permit / DTI No.",   value: a.permit_number },
+                              ].map(({ label, value }) => (
+                                <div key={label}>
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
+                                  <p className="text-sm text-gray-800">{value || '—'}</p>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Documents */}
+                            {docs.length > 0 && (
+                              <div className="mt-5">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Supporting Documents</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {docs.map((doc: any) => {
+                                    const dAttr = doc.attributes || doc;
+                                    const url = dAttr.url
+                                      ? (dAttr.url.startsWith('http') ? dAttr.url : `${STRAPI_URL}${dAttr.url}`)
+                                      : null;
+                                    return url ? (
+                                      <a key={doc.id} href={url} target="_blank" rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:border-blue-300 hover:text-blue-600 transition">
+                                        <FileText className="w-3.5 h-3.5" />
+                                        {dAttr.name || dAttr.alternativeText || 'Document'}
+                                      </a>
+                                    ) : null;
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Notes */}
+                            {a.notes && (
+                              <div className="mt-5 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                                <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">Notes</p>
+                                <p className="text-sm text-amber-800">{a.notes}</p>
+                              </div>
+                            )}
+
+                            {/* Action buttons — only for pending */}
+                            {status === 'pending' && (
+                              <div className="mt-5 flex flex-wrap gap-3">
+                                <button onClick={() => handleLboApprove(app)}
+                                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90"
+                                  style={{ backgroundColor: '#10B981' }}>
+                                  <CheckCircle className="w-4 h-4" /> Approve &amp; Register Account
+                                </button>
+                                <button onClick={() => handleLboReject(app)}
+                                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-red-200 text-red-600 hover:bg-red-50 transition">
+                                  <X className="w-4 h-4" /> Reject
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── SUBMISSIONS ────────────────────────────────────── */}
         {activeTab === 'submissions' && (
           <TableWrap title="Contact / Feedback Submissions" count={submissions.length} loading={loadingSubs} empty={submissions.length === 0} emptyIcon={<FileText className="w-12 h-12" />}>
@@ -932,6 +1141,102 @@ export default function AdminDashboard() {
         )}
 
       </div>
+
+      {/* ── LBO REGISTER MODAL ───────────────────────────── */}
+      {lboRegModal && (() => {
+        const a = lboRegModal.attributes || lboRegModal;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setLboRegModal(null)} />
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
+                  <Key className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Register LBO Account</h2>
+                  <p className="text-xs text-gray-400">{a.business_name} · {a.email}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 mb-5">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Email (pre-filled from application)</label>
+                  <input type="text" value={a.email || ''} readOnly
+                    className="w-full border border-gray-100 rounded-lg px-4 py-2.5 text-sm bg-gray-50 text-gray-400 cursor-not-allowed" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Username</label>
+                  <input type="text" value={lboRegForm.username}
+                    onChange={e => setLboRegForm(f => ({ ...f, username: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    placeholder="Username for login" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Password</label>
+                  <input type="password" value={lboRegForm.password}
+                    onChange={e => setLboRegForm(f => ({ ...f, password: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    placeholder="Minimum 6 characters" />
+                </div>
+              </div>
+
+              {lboRegMsg && (
+                <p className={`text-xs font-semibold mb-4 flex items-center gap-1.5 ${lboRegMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                  {lboRegMsg.ok ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                  {lboRegMsg.text}
+                </p>
+              )}
+
+              <div className="flex gap-2">
+                <button onClick={() => setLboRegModal(null)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+                  Cancel
+                </button>
+                <button onClick={handleLboRegister}
+                  disabled={savingLboReg || !lboRegForm.username || lboRegForm.password.length < 6}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ backgroundColor: '#10B981' }}>
+                  {savingLboReg ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Key className="w-4 h-4" /> Create Account</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── LBO REJECT MODAL ─────────────────────────────── */}
+      {rejectModal && (() => {
+        const a = rejectModal.attributes || rejectModal;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setRejectModal(null)} />
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-1">Reject Application</h2>
+              <p className="text-xs text-gray-400 mb-5">{a.business_name} · {a.email}</p>
+
+              <div className="mb-5">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Reason / Notes (optional)</label>
+                <textarea value={rejectNotes} onChange={e => setRejectNotes(e.target.value)} rows={3}
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+                  placeholder="Reason for rejection…" />
+              </div>
+
+              <div className="flex gap-2">
+                <button onClick={() => setRejectModal(null)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+                  Cancel
+                </button>
+                <button onClick={handleLboRejectConfirm} disabled={savingReject}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-50 flex items-center justify-center"
+                  style={{ backgroundColor: '#EF4444' }}>
+                  {savingReject ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Reject'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── RESET PASSWORD MODAL ──────────────────────────── */}
       {pwdModal && (
