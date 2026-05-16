@@ -20,6 +20,8 @@ interface AuthCtx extends AuthState {
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   isAdmin: boolean;
+  isLocal: boolean;
+  userRole: string;
 }
 
 const AuthContext = createContext<AuthCtx | null>(null);
@@ -78,15 +80,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user: null, token: null, loading: false });
   }, []);
 
-  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-  const isAdmin = !!state.user && (
-    adminEmails.includes(state.user.email.toLowerCase()) ||
-    state.user?.role?.type === 'admin' ||
+  const userRole = state.user?.role?.type ?? 'public';
+  const isAdmin  = !!state.user && (
+    userRole === 'admin' ||
     state.user?.role?.name?.toLowerCase() === 'admin'
   );
+  const isLocal  = !!state.user && userRole === 'authenticated';
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, isAdmin }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, isAdmin, isLocal, userRole }}>
       {children}
     </AuthContext.Provider>
   );
