@@ -16,12 +16,27 @@ const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 const PENNANT = ['#EF4444','#F97316','#EAB308','#22C55E','#0D9488','#3B82F6','#8B5CF6'];
 
 function Bunting({ flip = false }: { flip?: boolean }) {
+  const r = 9, cy = 15, W = 126, panels = 8, arc = Math.PI * 2 / panels;
   return (
-    <svg width="126" height="36" viewBox="0 0 126 36" style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }}>
-      <line x1="0" y1="5" x2="126" y2="5" stroke="#6B7280" strokeWidth="1.5" />
-      {PENNANT.map((c, i) => {
-        const cx = 10 + i * 15;
-        return <polygon key={i} points={`${cx-6},6 ${cx+6},6 ${cx},20`} fill={c} />;
+    <svg width={W} height="36" viewBox={`0 0 ${W} 36`} style={{ transform: flip ? 'scaleX(-1)' : undefined, display:'inline-block', verticalAlign:'middle' }}>
+      <line x1="0" y1="6" x2={W} y2="6" stroke="#9CA3AF" strokeWidth="1" />
+      {PENNANT.map((color, idx) => {
+        const cx = 9 + idx * 18;
+        return (
+          <g key={idx}>
+            {Array.from({ length: panels }).map((_, i) => {
+              const a1 = -Math.PI / 2 + i * arc;
+              const a2 = -Math.PI / 2 + (i + 1) * arc;
+              const x1 = (cx + r * Math.cos(a1)).toFixed(2);
+              const y1 = (cy + r * Math.sin(a1)).toFixed(2);
+              const x2 = (cx + r * Math.cos(a2)).toFixed(2);
+              const y2 = (cy + r * Math.sin(a2)).toFixed(2);
+              return <path key={i} d={`M ${cx},${cy} L ${x1},${y1} A ${r},${r} 0 0,1 ${x2},${y2} Z`}
+                fill={i % 2 === 0 ? color : color + 'bb'} stroke="rgba(255,255,255,0.9)" strokeWidth="0.7" />;
+            })}
+            <circle cx={cx} cy={cy} r="1.8" fill="#1F2937" />
+          </g>
+        );
       })}
     </svg>
   );
