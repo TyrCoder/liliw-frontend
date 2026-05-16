@@ -90,8 +90,7 @@ body {
 
 /* ── Hero full-viewport height with mobile fallbacks ── */
 .hero-full {
-  height: calc(100vh - 56px);   /* universal fallback */
-  height: calc(100svh - 56px);  /* small viewport (browser chrome visible) */
+  height: calc(var(--vh, 1vh) * 100 - 56px);
   min-height: 300px;
 }
 

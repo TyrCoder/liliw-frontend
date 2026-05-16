@@ -309,6 +309,15 @@ export default function Home() {
   const [actIdx,         setActIdx]         = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  /* ── real viewport height for mobile (fixes iOS 100vh bug) ── */
+  useEffect(() => {
+    const setVH = () =>
+      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+    setVH();
+    window.addEventListener('resize', setVH, { passive: true });
+    return () => window.removeEventListener('resize', setVH);
+  }, []);
+
   /* ── data fetching ──────────────────────────────────────── */
   useEffect(() => {
     fetch('/api/strapi/hero-slides')
