@@ -121,6 +121,10 @@ export default function AdminDashboard() {
   const [loadingRoles,  setLoadingRoles]  = useState(true);
   const [savingRole,    setSavingRole]    = useState<number | null>(null);
   const [roleMsg,       setRoleMsg]       = useState<{ id: number; ok: boolean; text: string } | null>(null);
+  const [pwdModal,      setPwdModal]      = useState<{ id: number; email: string } | null>(null);
+  const [pwdInput,      setPwdInput]      = useState('');
+  const [savingPwd,     setSavingPwd]     = useState(false);
+  const [pwdMsg,        setPwdMsg]        = useState<{ ok: boolean; text: string } | null>(null);
 
   const [attrSearch, setAttrSearch] = useState('');
   const [attrType,   setAttrType]   = useState<string>('all');
@@ -208,6 +212,29 @@ export default function AdminDashboard() {
     }
     setSavingRole(null);
     setTimeout(() => setRoleMsg(null), 3000);
+  };
+
+  const handleResetPassword = async () => {
+    if (!pwdModal) return;
+    setSavingPwd(true);
+    setPwdMsg(null);
+    try {
+      const res = await fetch('/api/admin/assign-role', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId: pwdModal.id, password: pwdInput }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPwdMsg({ ok: true, text: 'Password updated successfully' });
+        setTimeout(() => { setPwdModal(null); setPwdInput(''); setPwdMsg(null); }, 1500);
+      } else {
+        setPwdMsg({ ok: false, text: data.error || 'Failed to reset password' });
+      }
+    } catch {
+      setPwdMsg({ ok: false, text: 'Network error' });
+    }
+    setSavingPwd(false);
   };
 
   const handleSyncSearch = async () => {
@@ -545,6 +572,7 @@ export default function AdminDashboard() {
                         <th className="px-5 py-3 text-left">Current Role</th>
                         <th className="px-5 py-3 text-left">Assign Role</th>
                         <th className="px-5 py-3 text-left">Status</th>
+                        <th className="px-5 py-3 text-left">Password</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -585,6 +613,13 @@ export default function AdminDashboard() {
                                 {roleMsg!.text}
                               </span>
                             ) : null}
+                          </td>
+                          <td className="px-5 py-4">
+                            <button
+                              onClick={() => { setPwdModal({ id: u.id, email: u.email }); setPwdInput(''); setPwdMsg(null); }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-600 transition">
+                              Reset Password
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -897,6 +932,45 @@ export default function AdminDashboard() {
         )}
 
       </div>
+
+      {/* ── RESET PASSWORD MODAL ──────────────────────────── */}
+      {pwdModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPwdModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-1">Reset Password</h2>
+            <p className="text-xs text-gray-400 mb-5">{pwdModal.email}</p>
+
+            <input
+              type="password"
+              placeholder="New password (min 6 characters)"
+              value={pwdInput}
+              onChange={e => setPwdInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleResetPassword()}
+              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 mb-3"
+            />
+
+            {pwdMsg && (
+              <p className={`text-xs font-semibold mb-3 flex items-center gap-1.5 ${pwdMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                {pwdMsg.ok ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                {pwdMsg.text}
+              </p>
+            )}
+
+            <div className="flex gap-2">
+              <button onClick={() => setPwdModal(null)}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+                Cancel
+              </button>
+              <button onClick={handleResetPassword} disabled={savingPwd || pwdInput.length < 6}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-50"
+                style={{ backgroundColor: '#00BFB3' }}>
+                {savingPwd ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Save Password'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

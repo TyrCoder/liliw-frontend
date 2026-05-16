@@ -58,3 +58,24 @@ export async function POST(request: NextRequest) {
     user: { id: updated.id, email: updated.email, username: updated.username },
   });
 }
+
+// PATCH /api/admin/assign-role — { userId, password }
+export async function PATCH(request: NextRequest) {
+  const { userId, password } = await request.json();
+  if (!userId || !password || password.length < 6) {
+    return NextResponse.json({ error: 'userId and password (min 6 chars) are required' }, { status: 400 });
+  }
+
+  const res = await fetch(`${STRAPI}/api/users/${userId}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({ password }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    return NextResponse.json({ error: 'Failed to reset password', detail: err }, { status: res.status });
+  }
+
+  return NextResponse.json({ success: true });
+}
