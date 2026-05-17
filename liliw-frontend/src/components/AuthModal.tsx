@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Eye, EyeOff, Loader2, ArrowLeft, Mail, CheckCircle,
-  ShieldCheck, RefreshCw,
+  ShieldCheck, RefreshCw, MapPin,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -16,11 +16,96 @@ interface Props {
 
 type View = 'login' | 'register' | 'forgot' | 'otp' | 'newpass' | 'done' | 'reg-otp';
 
-function newCaptcha() {
-  const a = Math.floor(Math.random() * 10) + 3;
-  const b = Math.floor(Math.random() * 9)  + 1;
-  return { a, b, answer: a + b };
+const CAPTCHA_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const CAPTCHA_COLORS = ['#1565C0', '#0B3D91', '#00695C', '#6A1B9A', '#1B5E20', '#B71C1C'];
+
+function generateCode(): string {
+  return Array.from({ length: 5 }, () =>
+    CAPTCHA_CHARS[Math.floor(Math.random() * CAPTCHA_CHARS.length)]
+  ).join('');
 }
+
+function CaptchaCanvas({ code }: { code: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // Background gradient
+    const grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, '#EFF6FF');
+    grad.addColorStop(1, '#DBEAFE');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Noise dots
+    for (let i = 0; i < 60; i++) {
+      ctx.beginPath();
+      ctx.arc(Math.random() * W, Math.random() * H, Math.random() * 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${Math.floor(Math.random() * 100 + 80)},${Math.floor(Math.random() * 100 + 80)},${Math.floor(Math.random() * 200 + 55)},0.35)`;
+      ctx.fill();
+    }
+
+    // Noise bezier lines
+    for (let i = 0; i < 5; i++) {
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * W, Math.random() * H);
+      ctx.bezierCurveTo(
+        Math.random() * W, Math.random() * H,
+        Math.random() * W, Math.random() * H,
+        Math.random() * W, Math.random() * H
+      );
+      ctx.strokeStyle = `rgba(${Math.floor(Math.random() * 80 + 60)},${Math.floor(Math.random() * 80 + 60)},${Math.floor(Math.random() * 200 + 55)},0.18)`;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+
+    // Draw characters
+    const charW = W / code.length;
+    code.split('').forEach((char, i) => {
+      const x = charW * i + charW / 2;
+      const y = H / 2 + Math.random() * 6 - 3;
+      const rotation = (Math.random() - 0.5) * 0.5;
+      const fontSize = Math.floor(23 + Math.random() * 7);
+      const color = CAPTCHA_COLORS[Math.floor(Math.random() * CAPTCHA_COLORS.length)];
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+      ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
+      ctx.fillStyle = color;
+      ctx.shadowColor = 'rgba(0,0,0,0.15)';
+      ctx.shadowBlur = 3;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(char, 0, 0);
+      ctx.restore();
+    });
+  }, [code]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={180}
+      height={52}
+      className="rounded-lg border border-blue-200 select-none"
+      style={{ userSelect: 'none', pointerEvents: 'none' }}
+    />
+  );
+}
+
+const USER_TYPE_OPTIONS = [
+  { value: 'liliw_local',    label: 'Liliw Resident' },
+  { value: 'laguna',         label: 'From Laguna Province' },
+  { value: 'provincial',     label: 'From Another Province' },
+  { value: 'international',  label: 'International / Tourist' },
+];
 
 export default function AuthModal({ defaultTab = 'login', onClose, message }: Props) {
   const { login, loginWithJwt } = useAuth();
@@ -38,9 +123,10 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
   const [username, setUsername] = useState('');
   const [email,    setEmail]    = useState('');
   const [regPw,    setRegPw]    = useState('');
+  const [userType, setUserType] = useState('');
 
   /* ── CAPTCHA ── */
-  const [captcha,      setCaptcha]      = useState(newCaptcha);
+  const [captchaCode,  setCaptchaCode]  = useState(generateCode);
   const [captchaInput, setCaptchaInput] = useState('');
   const [captchaOk,    setCaptchaOk]    = useState(false);
   const [captchaWrong, setCaptchaWrong] = useState(false);
@@ -58,22 +144,25 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
 
   /* ── CAPTCHA helpers ── */
   const handleCaptchaInput = useCallback((val: string) => {
-    setCaptchaInput(val);
-    const num = parseInt(val, 10);
-    if (!isNaN(num) && num === captcha.answer) {
+    const cleaned = val.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    setCaptchaInput(cleaned);
+    if (cleaned.length === 0) {
+      setCaptchaOk(false);
+      setCaptchaWrong(false);
+    } else if (cleaned === captchaCode) {
       setCaptchaOk(true);
       setCaptchaWrong(false);
-    } else if (val !== '') {
+    } else if (cleaned.length >= captchaCode.length) {
       setCaptchaOk(false);
-      setCaptchaWrong(!isNaN(num) && String(Math.abs(num)).length >= String(captcha.answer).length);
+      setCaptchaWrong(true);
     } else {
       setCaptchaOk(false);
       setCaptchaWrong(false);
     }
-  }, [captcha.answer]);
+  }, [captchaCode]);
 
   const refreshCaptcha = () => {
-    setCaptcha(newCaptcha());
+    setCaptchaCode(generateCode());
     setCaptchaInput('');
     setCaptchaOk(false);
     setCaptchaWrong(false);
@@ -98,6 +187,7 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
     e.preventDefault();
     setError('');
     if (!captchaOk) { setError('Please complete the security check first'); return; }
+    if (!userType)  { setError('Please select your location'); return; }
     if (regPw.length < 6) { setError('Password must be at least 6 characters'); return; }
     setLoading(true);
     try {
@@ -126,7 +216,7 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
       const res = await fetch('/api/auth/verify-reg-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp: regOtp, username, password: regPw }),
+        body: JSON.stringify({ email, otp: regOtp, username, password: regPw, userType }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Verification failed'); return; }
@@ -224,6 +314,8 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
     boxShadow: '0 6px 20px rgba(0,191,179,.35)',
   };
 
+  const canSubmitRegister = captchaOk && !!userType;
+
   return (
     <AnimatePresence>
       <motion.div
@@ -237,7 +329,7 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 16 }}
           transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-          className="relative z-10 bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
+          className="relative z-10 bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden max-h-[95vh] overflow-y-auto"
         >
           {/* Header */}
           <div style={{ background: 'linear-gradient(135deg,#0F1F3C,#1a3a5c)' }} className="px-6 pt-6 pb-5">
@@ -382,46 +474,68 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                   )}
                 </div>
 
+                {/* Location */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                    <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Where are you from?</span>
+                  </label>
+                  <select
+                    required
+                    value={userType}
+                    onChange={e => setUserType(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-teal-400 transition bg-white appearance-none"
+                  >
+                    <option value="">Select your location…</option>
+                    {USER_TYPE_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* CAPTCHA */}
                 <div className="rounded-xl border border-gray-200 bg-gray-50 p-3.5">
                   <div className="flex items-center gap-1.5 mb-2.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-gray-400" />
                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Human Verification</span>
                   </div>
+                  <p className="text-xs text-gray-500 mb-2">Type the characters shown in the image below</p>
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <CaptchaCanvas code={captchaCode} />
+                    <button type="button" onClick={refreshCaptcha}
+                      className="p-2 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-gray-100 transition"
+                      title="Generate new code">
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-gray-700 select-none">
-                      {captcha.a} + {captcha.b} = ?
-                    </div>
                     <input
-                      type="number"
+                      type="text"
                       value={captchaInput}
                       onChange={e => handleCaptchaInput(e.target.value)}
-                      className={`w-16 text-center rounded-lg border px-2 py-2 text-sm font-bold focus:outline-none transition ${
+                      maxLength={5}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="characters"
+                      spellCheck={false}
+                      className={`flex-1 text-center rounded-lg border px-3 py-2 text-sm font-bold tracking-[0.2em] focus:outline-none transition uppercase ${
                         captchaOk
                           ? 'border-green-400 bg-green-50 text-green-700'
                           : captchaWrong
                           ? 'border-red-300 bg-red-50 text-red-600'
                           : 'border-gray-200 bg-white focus:border-teal-400'
                       }`}
-                      placeholder="?"
-                      max={99}
-                      min={0}
+                      placeholder="Enter code"
                     />
-                    <button type="button" onClick={refreshCaptcha}
-                      className="p-2 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-gray-100 transition"
-                      title="New question">
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    </button>
                     {captchaOk && <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />}
                   </div>
                   {captchaWrong && !captchaOk && (
-                    <p className="text-xs text-red-500 mt-1.5 pl-0.5">Incorrect — try again or click ↺ for a new question</p>
+                    <p className="text-xs text-red-500 mt-1.5">Incorrect — try again or click ↺ for a new code</p>
                   )}
                 </div>
 
-                <button type="submit" disabled={loading || !captchaOk} style={captchaOk ? btnStyle : undefined}
+                <button type="submit" disabled={loading || !canSubmitRegister} style={canSubmitRegister ? btnStyle : undefined}
                   className={`w-full py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition ${
-                    !captchaOk ? 'bg-gray-300 cursor-not-allowed opacity-60' : 'disabled:opacity-60'
+                    !canSubmitRegister ? 'bg-gray-300 cursor-not-allowed opacity-60' : 'disabled:opacity-60'
                   }`}>
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Mail className="w-4 h-4" /> Send Verification Code</>}
                 </button>
