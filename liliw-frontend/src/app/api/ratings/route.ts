@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { verifyToken } from '@/lib/verifyToken';
 
 export async function POST(request: NextRequest) {
+  const authUser = await verifyToken(request);
+  if (!authUser) {
+    return NextResponse.json({ error: 'You must be logged in to submit a review.' }, { status: 401 });
+  }
+
   try {
     const { itemId, itemName, author, rating, comment } = await request.json();
 

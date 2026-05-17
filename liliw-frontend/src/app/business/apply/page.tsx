@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, Building2, Upload, X, CheckCircle, AlertCircle, Loader2, FileText, MapPin, Navigation } from 'lucide-react';
 import Map, { Marker, NavigationControl } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import AuthModal from '@/components/AuthModal';
 
 const MAPBOX_TOKEN  = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 const LILIW_LNG     = 121.43605859033404;
@@ -36,6 +37,7 @@ export default function LBOApplyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus]     = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [showAuth, setShowAuth] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [markerPos,   setMarkerPos]   = useState<{ lat: number; lng: number } | null>(null);
@@ -395,11 +397,12 @@ export default function LBOApplyPage() {
 
         <p className="text-center text-xs text-gray-400 pb-8">
           Already have an account?{' '}
-          <Link href="/login" className="font-semibold underline" style={{ color: '#1565C0' }}>
+          <button onClick={() => setShowAuth(true)} className="font-semibold underline" style={{ color: '#1565C0' }}>
             Log in here
-          </Link>
+          </button>
         </p>
       </form>
+      {showAuth && <AuthModal defaultTab="login" onClose={() => setShowAuth(false)} />}
     </div>
   );
 }

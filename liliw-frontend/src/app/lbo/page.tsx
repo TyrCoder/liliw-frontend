@@ -8,6 +8,7 @@ import {
   Edit, TrendingUp, MapPin, Star, Send, Layers,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import AuthModal from '@/components/AuthModal';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -109,7 +110,8 @@ export default function LboDashboard() {
 
   const [checking, setChecking] = useState(true);
   const [appInfo,  setAppInfo]  = useState<AppInfo | null>(null);
-  const [notLbo,   setNotLbo]   = useState(false);
+  const [notLbo,     setNotLbo]     = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
@@ -332,13 +334,14 @@ export default function LboDashboard() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">LBO Dashboard</h1>
           <p className="text-gray-500 mb-6">Please log in with your Local Business Owner account to access your dashboard.</p>
-          <Link href="/login"
+          <button onClick={() => setShowAuthModal(true)}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold transition hover:opacity-90"
             style={{ backgroundColor: '#1565C0' }}>
             Log In <ArrowRight className="w-4 h-4" />
-          </Link>
+          </button>
         </div>
       </div>
+      {showAuthModal && <AuthModal defaultTab="login" onClose={() => setShowAuthModal(false)} />}
     );
   }
 
