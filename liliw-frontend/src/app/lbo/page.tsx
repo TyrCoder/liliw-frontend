@@ -22,7 +22,7 @@ const FIELDS_TO_CHANGE = [
   'Other',
 ];
 
-type Tab = 'overview' | 'requests' | 'visitors';
+type Tab = 'overview' | 'requests' | 'visitors' | 'ratings';
 
 const CATEGORIES = ['heritage', 'spot', 'dining', 'other'];
 const CATEGORY_LABELS: Record<string, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food', other: 'Other' };
@@ -133,6 +133,10 @@ export default function LboDashboard() {
   const [submittingCr,  setSubmittingCr]= useState(false);
   const [crMsg,         setCrMsg]       = useState<{ ok: boolean; text: string } | null>(null);
 
+  /* ── Ratings ── */
+  const [ratings,        setRatings]        = useState<any[]>([]);
+  const [loadingRatings, setLoadingRatings] = useState(false);
+
   /* ── Visitor Records ── */
   const [records,      setRecords]     = useState<any[]>([]);
   const [loadingRecs,  setLoadingRecs] = useState(true);
@@ -188,6 +192,17 @@ export default function LboDashboard() {
       .catch(() => {})
       .finally(() => setLoadingReqs(false));
   }, [appInfo, token]);
+
+  /* ── Fetch ratings ── */
+  useEffect(() => {
+    if (!attrData?.linked || !attrData.strapiId || !token) return;
+    setLoadingRatings(true);
+    fetch(`/api/strapi/reviews?itemId=${attrData.strapiId}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setRatings(d.data || []))
+      .catch(() => {})
+      .finally(() => setLoadingRatings(false));
+  }, [attrData, token]);
 
   /* ── Fetch visitor records ── */
   useEffect(() => {
@@ -407,6 +422,7 @@ export default function LboDashboard() {
             { key: 'overview',  label: 'Overview',        icon: <MapPin className="w-4 h-4" />,     badge: 0 },
             { key: 'requests',  label: 'Change Requests',  icon: <Edit className="w-4 h-4" />,       badge: pendingCrCount },
             { key: 'visitors',  label: 'Visitor Records',  icon: <TrendingUp className="w-4 h-4" />, badge: 0 },
+            ...(attrData?.linked ? [{ key: 'ratings' as Tab, label: 'Ratings & Reviews', icon: <Star className="w-4 h-4" />, badge: 0 }] : []),
           ] as { key: Tab; label: string; icon: React.ReactNode; badge: number }[]).map(({ key, label, icon, badge }) => (
             <button key={key} onClick={() => setActiveTab(key)}
               className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold border-b-2 transition-colors ${activeTab === key ? 'border-teal-400 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
@@ -736,6 +752,123 @@ export default function LboDashboard() {
                 </div>
               )}
             </div>
+          </>
+        )}
+
+        {/* ── RATINGS & REVIEWS ── */}
+        {activeTab === 'ratings' && (
+          <>
+            {!attrData?.linked ? (
+              <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-10 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
+                  <Star className="w-8 h-8 text-amber-400" />
+                </div>
+                <h2 className="font-bold text-gray-900 mb-1">Ratings Not Available Yet</h2>
+                <p className="text-sm text-gray-400 max-w-md mx-auto">
+                  This tab will show ratings and reviews once your attraction has been registered in the tourism directory by an Editor.
+                </p>
+              </div>
+            ) : loadingRatings ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} />
+              </div>
+            ) : (() => {
+              const avgRating = ratings.length > 0
+                ? ratings.reduce((sum, r) => sum + (r.attributes?.rating || r.rating || 0), 0) / ratings.length
+                : 0;
+              return (
+                <>
+                  {/* Summary cards */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 text-center">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Average Rating</p>
+                      <div className="flex items-center justify-center gap-2">
+                        <Star className="w-6 h-6 fill-amber-400 stroke-amber-400" />
+                        <span className="text-3xl font-black text-gray-900">{ratings.length > 0 ? avgRating.toFixed(1) : '—'}</span>
+                      </div>
+                      <div className="flex justify-center gap-0.5 mt-2">
+                        {[1,2,3,4,5].map(s => (
+                          <Star key={s} className={`w-4 h-4 ${s <= Math.round(avgRating) ? 'fill-amber-400 stroke-amber-400' : 'fill-gray-200 stroke-gray-200'}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 text-center">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Total Reviews</p>
+                      <p className="text-3xl font-black text-gray-900">{ratings.length}</p>
+                      <p className="text-xs text-gray-400 mt-1">from visitors</p>
+                    </div>
+                  </div>
+
+                  {/* Rating distribution */}
+                  {ratings.length > 0 && (
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+                      <h3 className="font-bold text-gray-900 text-sm mb-4">Rating Breakdown</h3>
+                      {[5,4,3,2,1].map(star => {
+                        const count = ratings.filter(r => (r.attributes?.rating || r.rating) === star).length;
+                        const pct = ratings.length > 0 ? (count / ratings.length) * 100 : 0;
+                        return (
+                          <div key={star} className="flex items-center gap-3 mb-2">
+                            <div className="flex items-center gap-1 w-16 shrink-0">
+                              <span className="text-sm font-semibold text-gray-700">{star}</span>
+                              <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
+                            </div>
+                            <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                              <div className="h-2 rounded-full bg-amber-400 transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="text-xs text-gray-400 w-8 text-right shrink-0">{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Individual reviews */}
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                      <h2 className="font-bold text-gray-900">All Reviews</h2>
+                      <span className="text-sm text-gray-400">{ratings.length} total</span>
+                    </div>
+                    {ratings.length === 0 ? (
+                      <div className="flex flex-col items-center py-16 text-center text-gray-400">
+                        <Star className="w-10 h-10 opacity-20 mb-3" />
+                        <p className="font-semibold">No reviews yet</p>
+                        <p className="text-xs mt-1">Reviews from visitors will appear here</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-50">
+                        {ratings.map((rev, i) => {
+                          const a = rev.attributes || rev;
+                          const stars = a.rating || 0;
+                          return (
+                            <div key={rev.id ?? i} className="px-6 py-5">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                    <span className="font-semibold text-gray-900 text-sm">{a.author || 'Anonymous'}</span>
+                                    {a.verified && (
+                                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-600">
+                                        <CheckCircle className="w-3 h-3" /> Verified
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-0.5 mb-2">
+                                    {[1,2,3,4,5].map(s => (
+                                      <Star key={s} className={`w-3.5 h-3.5 ${s <= stars ? 'fill-amber-400 stroke-amber-400' : 'fill-gray-200 stroke-gray-200'}`} />
+                                    ))}
+                                  </div>
+                                  {a.comment && <p className="text-sm text-gray-600 leading-relaxed">{a.comment}</p>}
+                                </div>
+                                <span className="text-xs text-gray-400 shrink-0">{(a.createdAt || a.created_at) ? fmt(a.createdAt || a.created_at) : '—'}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </>
         )}
 
