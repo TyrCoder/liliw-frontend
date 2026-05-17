@@ -10,6 +10,19 @@ const MAPBOX_TOKEN  = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 const LILIW_LNG     = 121.43605859033404;
 const LILIW_LAT     = 14.130301377593792;
 
+// Bounding box for Liliw, Laguna — [west, south, east, north]
+const LILIW_BOUNDS: [[number, number], [number, number]] = [
+  [121.38, 14.08],  // SW
+  [121.50, 14.18],  // NE
+];
+
+function withinLiliw(lat: number, lng: number): boolean {
+  return (
+    lat >= LILIW_BOUNDS[0][1] && lat <= LILIW_BOUNDS[1][1] &&
+    lng >= LILIW_BOUNDS[0][0] && lng <= LILIW_BOUNDS[1][0]
+  );
+}
+
 const CATEGORY_OPTIONS = [
   { value: 'heritage', label: 'Heritage Site' },
   { value: 'spot',     label: 'Tourist Spot' },
@@ -25,13 +38,19 @@ export default function LBOApplyPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [markerPos,  setMarkerPos]  = useState<{ lat: number; lng: number } | null>(null);
-  const [viewState,  setViewState]  = useState({ longitude: LILIW_LNG, latitude: LILIW_LAT, zoom: 14 });
-  const [geoLoading, setGeoLoading] = useState(false);
+  const [markerPos,   setMarkerPos]   = useState<{ lat: number; lng: number } | null>(null);
+  const [viewState,   setViewState]   = useState({ longitude: LILIW_LNG, latitude: LILIW_LAT, zoom: 14 });
+  const [geoLoading,  setGeoLoading]  = useState(false);
+  const [boundsError, setBoundsError] = useState('');
 
   const set = (id: string, val: string) => setForm(f => ({ ...f, [id]: val }));
 
   const applyMarker = (lat: number, lng: number) => {
+    if (!withinLiliw(lat, lng)) {
+      setBoundsError('That location is outside Liliw, Laguna. Please pin a location within the municipality.');
+      return;
+    }
+    setBoundsError('');
     setMarkerPos({ lat, lng });
     setForm(f => ({ ...f, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
   };
@@ -43,9 +62,15 @@ export default function LBOApplyPage() {
 
   const handleCoordChange = (field: 'latitude' | 'longitude', val: string) => {
     set(field, val);
-    const lat = field === 'latitude'  ? parseFloat(val)              : parseFloat(form.latitude  || '');
-    const lng = field === 'longitude' ? parseFloat(val)              : parseFloat(form.longitude || '');
+    const lat = field === 'latitude'  ? parseFloat(val) : parseFloat(form.latitude  || '');
+    const lng = field === 'longitude' ? parseFloat(val) : parseFloat(form.longitude || '');
     if (!isNaN(lat) && !isNaN(lng)) {
+      if (!withinLiliw(lat, lng)) {
+        setBoundsError('Those coordinates are outside Liliw, Laguna.');
+        setMarkerPos(null);
+        return;
+      }
+      setBoundsError('');
       setMarkerPos({ lat, lng });
       setViewState(v => ({ ...v, latitude: lat, longitude: lng }));
     }
@@ -58,9 +83,14 @@ export default function LBOApplyPage() {
       pos => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
+        setGeoLoading(false);
+        if (!withinLiliw(lat, lng)) {
+          setBoundsError('Your current location is outside Liliw, Laguna. Please pin your attraction manually.');
+          return;
+        }
+        setBoundsError('');
         applyMarker(lat, lng);
         setViewState({ latitude: lat, longitude: lng, zoom: 17 });
-        setGeoLoading(false);
       },
       () => setGeoLoading(false),
     );
@@ -264,7 +294,9 @@ export default function LBOApplyPage() {
               mapboxAccessToken={MAPBOX_TOKEN}
               mapStyle="mapbox://styles/mapbox/streets-v12"
               style={{ width: '100%', height: '100%' }}
-              cursor="crosshair">
+              cursor="crosshair"
+              maxBounds={LILIW_BOUNDS}
+              minZoom={12}>
               <NavigationControl position="top-right" />
               {markerPos && (
                 <Marker
@@ -284,7 +316,12 @@ export default function LBOApplyPage() {
             </Map>
           </div>
 
-          {!markerPos && (
+          {boundsError ? (
+            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              {boundsError}
+            </div>
+          ) : !markerPos && (
             <p className="text-xs text-center text-gray-400">👆 Click anywhere on the map above to place your pin</p>
           )}
 
