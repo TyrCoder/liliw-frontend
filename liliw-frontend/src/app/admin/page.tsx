@@ -23,6 +23,7 @@ interface Submission { id: any; attributes: { name: string; email: string; phone
 interface EventSignup { id: any; attributes: { full_name: string; email: string; phone: string; notes: string; username: string; status: string; createdAt: string; event: { data: { id: number; attributes: { title: string; date_start: string } } } }; }
 interface Analytics { pageViews: number; uniqueVisitors: number; avgSessionTime: string; bounceRate: string; topPages: { path: string; views: number }[]; devices?: { desktop: { count: number; pct: number }; mobile: { count: number; pct: number }; tablet: { count: number; pct: number } }; }
 interface AuditLog { id: string; event: string; model: string; uid?: string; entry_id: string; entry_title: string; performed_by?: string; changes?: any; created_at: string; }
+interface StrapiActivity { id: string; contentType: string; entryName: string; action: string; at: string; performer: { name: string; email: string; role: string } | null; }
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
@@ -142,17 +143,19 @@ export default function AdminDashboard() {
   const [reviews,       setReviews]       = useState<any[]>([]);
   const [users,         setUsers]         = useState<any[]>([]);
   const [attractions,   setAttractions]   = useState<Attraction[]>([]);
-  const [auditLogs,     setAuditLogs]     = useState<AuditLog[]>([]);
-  const [liveVisitors,  setLiveVisitors]  = useState<{ session_id: string; page: string; device: string; last_seen: string }[]>([]);
+  const [auditLogs,       setAuditLogs]       = useState<AuditLog[]>([]);
+  const [strapiActivity,  setStrapiActivity]  = useState<StrapiActivity[]>([]);
+  const [liveVisitors,    setLiveVisitors]    = useState<{ session_id: string; page: string; device: string; last_seen: string }[]>([]);
 
-  const [loadingSubs,   setLoadingSubs]   = useState(true);
-  const [loadingPart,   setLoadingPart]   = useState(true);
-  const [loadingSignups,setLoadingSignups]= useState(true);
-  const [loadingStats,  setLoadingStats]  = useState(true);
-  const [loadingReviews,setLoadingReviews]= useState(true);
-  const [loadingUsers,  setLoadingUsers]  = useState(true);
-  const [loadingAttr,   setLoadingAttr]   = useState(true);
-  const [loadingAudit,  setLoadingAudit]  = useState(true);
+  const [loadingSubs,      setLoadingSubs]      = useState(true);
+  const [loadingPart,      setLoadingPart]      = useState(true);
+  const [loadingSignups,   setLoadingSignups]   = useState(true);
+  const [loadingStats,     setLoadingStats]     = useState(true);
+  const [loadingReviews,   setLoadingReviews]   = useState(true);
+  const [loadingUsers,     setLoadingUsers]     = useState(true);
+  const [loadingAttr,      setLoadingAttr]      = useState(true);
+  const [loadingAudit,     setLoadingAudit]     = useState(true);
+  const [loadingActivity,  setLoadingActivity]  = useState(true);
 
   const [roleUsers,     setRoleUsers]     = useState<any[]>([]);
   const [availRoles,    setAvailRoles]    = useState<any[]>([]);
@@ -241,7 +244,8 @@ export default function AdminDashboard() {
       fetch('/api/admin/participation',  { headers: h }).then(r => r.json()).then(d => setParticipation(d.data || [])).catch(() => {}).finally(() => setLoadingPart(false));
       fetch('/api/event-signup',         { headers: h }).then(r => r.json()).then(d => setSignups(d.data || [])).catch(() => {}).finally(() => setLoadingSignups(false));
       fetch('/api/analytics/track').then(r => r.json()).then(d => setAnalytics(d)).catch(() => {}).finally(() => setLoadingStats(false));
-      fetch('/api/admin/audit-logs',     { headers: h }).then(r => r.json()).then(d => setAuditLogs(d.data || [])).catch(() => {}).finally(() => setLoadingAudit(false));
+      fetch('/api/admin/audit-logs',      { headers: h }).then(r => r.json()).then(d => setAuditLogs(d.data || [])).catch(() => {}).finally(() => setLoadingAudit(false));
+      fetch('/api/admin/strapi-activity', { headers: h }).then(r => r.json()).then(d => setStrapiActivity(d.data || [])).catch(() => {}).finally(() => setLoadingActivity(false));
     }
 
     // Admin only — user management + LBO applications
@@ -498,7 +502,7 @@ export default function AdminDashboard() {
     { key: 'signups',       label: 'Event Sign-ups',     badge: signups.length,                                                                 roles: ['admin'] },
     { key: 'attractions',   label: 'Attractions',        badge: attractions.length,                                                             roles: ['admin', 'officer', 'editor'] },
     { key: 'ratings',       label: 'Ratings',            badge: reviews.length,                                                                 roles: ['admin', 'officer', 'editor'] },
-    { key: 'audit',           label: 'Audit Logs',         badge: auditLogs.length,   roles: ['admin', 'officer'] },
+    { key: 'audit',           label: 'Audit Logs',         badge: strapiActivity.length, roles: ['admin', 'officer'] },
     { key: 'reports',         label: 'Reports',            badge: undefined,           roles: ['admin', 'officer'] },
     { key: 'externalreviews', label: 'Online Reviews',     badge: undefined,           roles: ['admin', 'officer'] },
   ];
@@ -555,7 +559,7 @@ export default function AdminDashboard() {
               <StatCard icon={<Eye className="w-5 h-5" />}       label="Page Views"       value={loadingStats ? '—' : (analytics?.pageViews ?? 0).toLocaleString()} color="#00BFB3" />
               <StatCard icon={<Users className="w-5 h-5" />}     label="Unique Visitors"  value={loadingStats ? '—' : (analytics?.uniqueVisitors ?? 0).toLocaleString()} color="#3B82F6" />
               <StatCard icon={<MapPin className="w-5 h-5" />}    label="Attractions"       value={loadingAttr ? '—' : attractions.length} sub="in Strapi" color="#F59E0B" />
-              <StatCard icon={<Activity className="w-5 h-5" />}  label="CMS Changes"       value={loadingAudit ? '—' : auditLogs.length} sub="audit log entries" color="#6366F1" />
+              <StatCard icon={<Activity className="w-5 h-5" />}  label="CMS Changes"       value={loadingActivity ? '—' : strapiActivity.length} sub="content edits tracked" color="#6366F1" />
             </div>
             <div className={`grid grid-cols-2 lg:grid-cols-${isAdmin ? 4 : 2} gap-4`}>
               <StatCard icon={<FileText className="w-5 h-5" />}    label="Submissions"     value={loadingSubs ? '—' : submissions.length} sub={`${newCount} new`} color="#8B5CF6" />
@@ -672,22 +676,25 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Recent audit logs preview */}
-            {auditLogs.length > 0 && (
+            {/* Recent CMS activity preview */}
+            {strapiActivity.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-base font-bold text-gray-900">Recent CMS Activity</h2>
                   <button onClick={() => setActiveTab('audit')} className="text-xs font-semibold" style={{ color: '#00BFB3' }}>View all →</button>
                 </div>
                 <div className="space-y-3">
-                  {auditLogs.slice(0, 5).map(log => (
-                    <div key={log.id} className="flex items-center gap-3 text-sm">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${EVENT_COLOR[log.event] || 'bg-gray-100 text-gray-600'}`}>
-                        {log.event.replace('entry.', '')}
+                  {strapiActivity.slice(0, 5).map(act => (
+                    <div key={act.id} className="flex items-center gap-3 text-sm">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${act.action === 'created' ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700'}`}>
+                        {act.action}
                       </span>
-                      <span className="font-medium text-gray-800 truncate">{log.entry_title}</span>
-                      <span className="text-gray-400 text-xs shrink-0">{log.model}</span>
-                      <span className="text-gray-300 text-xs ml-auto shrink-0">{new Date(log.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</span>
+                      <span className="font-medium text-gray-800 truncate">{act.entryName}</span>
+                      <span className="text-gray-400 text-xs shrink-0">{act.contentType}</span>
+                      {act.performer && (
+                        <span className="text-gray-500 text-xs shrink-0 truncate max-w-[120px]">{act.performer.email}</span>
+                      )}
+                      <span className="text-gray-300 text-xs ml-auto shrink-0">{new Date(act.at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</span>
                     </div>
                   ))}
                 </div>
@@ -1788,52 +1795,112 @@ export default function AdminDashboard() {
         )}
 
         {/* ── AUDIT LOGS ─────────────────────────────────────── */}
-        {activeTab === 'audit' && (
-          <TableWrap title="CMS Audit Logs" count={auditLogs.length} loading={loadingAudit} empty={auditLogs.length === 0} emptyIcon={<Activity className="w-12 h-12" />}>
-            <table className="w-full text-sm">
-              <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                <th className="px-5 py-3 text-left">Event</th>
-                <th className="px-5 py-3 text-left">Entry</th>
-                <th className="px-5 py-3 text-left">Model</th>
-                <th className="px-5 py-3 text-left">Performed By</th>
-                <th className="px-5 py-3 text-left">When</th>
-              </tr></thead>
-              <tbody className="divide-y divide-gray-50">
-                {auditLogs.map(log => (
-                  <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${EVENT_COLOR[log.event] || 'bg-gray-100 text-gray-600'}`}>
-                        {log.event}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <p className="font-medium text-gray-900 truncate max-w-[180px]">{log.entry_title}</p>
-                      <p className="text-xs text-gray-400 font-mono">{log.model}</p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">{log.model}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      {log.performed_by ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#00BFB3' }}>
-                            {log.performed_by[0].toUpperCase()}
-                          </div>
-                          <span className="text-sm text-gray-700 truncate max-w-[140px]">{log.performed_by}</span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-300 text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
-                      <Clock className="w-3 h-3 inline mr-1" />{fmt(log.created_at)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableWrap>
-        )}
+        {activeTab === 'audit' && (() => {
+          const ROLE_STYLE: Record<string, string> = {
+            'Super Admin':   'bg-red-50 text-red-700',
+            'CHATO Officer': 'bg-teal-50 text-teal-700',
+            'CHATO Editor':  'bg-yellow-50 text-yellow-700',
+          };
+          return (
+            <div className="space-y-6">
+              <TableWrap title="Strapi Content Changes" count={strapiActivity.length} loading={loadingActivity} empty={strapiActivity.length === 0} emptyIcon={<Activity className="w-12 h-12" />}>
+                <table className="w-full text-sm">
+                  <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                    <th className="px-5 py-3 text-left">Action</th>
+                    <th className="px-5 py-3 text-left">Entry</th>
+                    <th className="px-5 py-3 text-left">Type</th>
+                    <th className="px-5 py-3 text-left">Edited By</th>
+                    <th className="px-5 py-3 text-left">Role</th>
+                    <th className="px-5 py-3 text-left">When</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {strapiActivity.map(act => (
+                      <tr key={act.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-5 py-4">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${act.action === 'created' ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700'}`}>
+                            {act.action}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <p className="font-medium text-gray-900 truncate max-w-[200px]">{act.entryName}</p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">{act.contentType}</span>
+                        </td>
+                        <td className="px-5 py-4">
+                          {act.performer ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#0B3D91' }}>
+                                {act.performer.name[0]?.toUpperCase() ?? '?'}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium text-gray-900 truncate max-w-[160px]">{act.performer.name}</p>
+                                <p className="text-xs text-gray-400 truncate max-w-[160px]">{act.performer.email}</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-300 text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          {act.performer ? (
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${ROLE_STYLE[act.performer.role] ?? 'bg-gray-100 text-gray-600'}`}>
+                              {act.performer.role}
+                            </span>
+                          ) : <span className="text-gray-300 text-xs">—</span>}
+                        </td>
+                        <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
+                          <Clock className="w-3 h-3 inline mr-1" />{fmt(act.at)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableWrap>
+
+              {auditLogs.length > 0 && (
+                <TableWrap title="Raw Audit Trail" count={auditLogs.length} loading={loadingAudit} empty={false} emptyIcon={<Activity className="w-12 h-12" />}>
+                  <table className="w-full text-sm">
+                    <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      <th className="px-5 py-3 text-left">Event</th>
+                      <th className="px-5 py-3 text-left">Entry</th>
+                      <th className="px-5 py-3 text-left">Performed By</th>
+                      <th className="px-5 py-3 text-left">When</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {auditLogs.map(log => (
+                        <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-5 py-4">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${EVENT_COLOR[log.event] || 'bg-gray-100 text-gray-600'}`}>
+                              {log.event}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <p className="font-medium text-gray-900 truncate max-w-[200px]">{log.entry_title}</p>
+                            <p className="text-xs text-gray-400">{log.model}</p>
+                          </td>
+                          <td className="px-5 py-4">
+                            {log.performed_by ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#00BFB3' }}>
+                                  {log.performed_by[0].toUpperCase()}
+                                </div>
+                                <span className="text-sm text-gray-700 truncate max-w-[140px]">{log.performed_by}</span>
+                              </div>
+                            ) : <span className="text-gray-300 text-xs">—</span>}
+                          </td>
+                          <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
+                            <Clock className="w-3 h-3 inline mr-1" />{fmt(log.created_at)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </TableWrap>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ── REPORTS ──────────────────────────────────────── */}
         {activeTab === 'reports' && (() => {
