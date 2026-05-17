@@ -24,7 +24,7 @@ interface AuditLog { id: string; event: string; model: string; uid?: string; ent
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[] }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit';
+type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit';
 
 /* ─── helpers ─────────────────────────────────────────────── */
 const STATUS_BADGE: Record<string, string> = { new: 'bg-blue-50 text-blue-700', reviewed: 'bg-yellow-50 text-yellow-700', resolved: 'bg-green-50 text-green-700' };
@@ -151,6 +151,12 @@ export default function AdminDashboard() {
   const [crNotes,         setCrNotes]         = useState('');
   const [savingCR,        setSavingCR]        = useState(false);
 
+  const [attractionReqs,  setAttractionReqs]  = useState<any[]>([]);
+  const [loadingAR,       setLoadingAR]       = useState(false);
+  const [arActionModal,   setArActionModal]   = useState<{ req: any; action: string } | null>(null);
+  const [arNotes,         setArNotes]         = useState('');
+  const [savingAR,        setSavingAR]        = useState(false);
+
   const [attrSearch, setAttrSearch] = useState('');
   const [attrType,   setAttrType]   = useState<string>('all');
 
@@ -204,6 +210,10 @@ export default function AdminDashboard() {
       setLoadingVR(true);
       fetch('/api/admin/visitor-records', { headers: h }).then(r => r.json()).then(d => setVisitorRecords(d.data || [])).catch(() => {}).finally(() => setLoadingVR(false));
     }
+
+    // All staff — attraction requests
+    setLoadingAR(true);
+    fetch('/api/admin/attraction-requests', { headers: h }).then(r => r.json()).then(d => setAttractionReqs(d.data || [])).catch(() => {}).finally(() => setLoadingAR(false));
 
     // Role management — admin and CHATO Officer
     if (isAdmin || isChatoOfficer) {
@@ -382,6 +392,31 @@ export default function AdminDashboard() {
     setSavingCR(false);
   };
 
+  const handleARUpdate = async () => {
+    if (!arActionModal) return;
+    setSavingAR(true);
+    try {
+      const isEditorAction = arActionModal.action === 'editor_reviewed';
+      const body: Record<string, unknown> = { id: arActionModal.req.id, status: arActionModal.action };
+      if (isEditorAction || isAdmin) body.editor_notes  = arNotes;
+      else                           body.officer_notes = arNotes;
+      const res = await fetch('/api/admin/attraction-requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        setAttractionReqs(prev => prev.map(r => r.id === arActionModal.req.id
+          ? { ...r, status: arActionModal.action, ...(isEditorAction || isAdmin ? { editor_notes: arNotes } : { officer_notes: arNotes }) }
+          : r
+        ));
+        setArActionModal(null);
+        setArNotes('');
+      }
+    } catch {}
+    setSavingAR(false);
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} /></div>;
   if (!user || !isStaff) return null;
 
@@ -404,8 +439,9 @@ export default function AdminDashboard() {
     { key: 'users',         label: 'Users',              badge: users.length,                                                                   roles: ['admin'] },
     { key: 'roles',         label: 'Role Management',    badge: roleUsers.length,                                                               roles: ['admin', 'officer'] },
     { key: 'lbo',           label: 'LBO Applications',   badge: lboApps.filter(a => (a.attributes?.status || a.status) === 'pending').length,   roles: ['admin'] },
-    { key: 'changerequests', label: 'Change Requests',   badge: changeRequests.filter(cr => cr.status === 'pending').length,                    roles: ['admin', 'editor'] },
-    { key: 'visitorrecords', label: 'Visitor Records',  badge: undefined,                                                                        roles: ['admin', 'officer'] },
+    { key: 'changerequests',    label: 'Change Requests',    badge: changeRequests.filter(cr => cr.status === 'pending').length,                     roles: ['admin', 'editor'] },
+    { key: 'attractionrequests', label: 'Attraction Requests', badge: attractionReqs.filter(r => r.status === 'pending' || r.status === 'editor_reviewed').length, roles: ['admin', 'officer', 'editor'] },
+    { key: 'visitorrecords',  label: 'Visitor Records',   badge: undefined,                                                                         roles: ['admin', 'officer'] },
     { key: 'submissions',    label: 'Submissions',       badge: newCount,                                                                        roles: ['admin'] },
     { key: 'participation', label: 'Participation',      badge: participation.length,                                                           roles: ['admin', 'officer'] },
     { key: 'signups',       label: 'Event Sign-ups',     badge: signups.length,                                                                 roles: ['admin'] },
@@ -1395,6 +1431,120 @@ export default function AdminDashboard() {
           );
         })()}
 
+        {/* ── ATTRACTION REQUESTS ────────────────────────────── */}
+        {activeTab === 'attractionrequests' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <StatCard icon={<Clock className="w-5 h-5" />}       label="Pending"         value={attractionReqs.filter(r => r.status === 'pending').length}         color="#F59E0B" />
+              <StatCard icon={<Eye className="w-5 h-5" />}         label="Under Review"    value={attractionReqs.filter(r => r.status === 'editor_reviewed').length}  color="#3B82F6" />
+              <StatCard icon={<CheckCircle className="w-5 h-5" />} label="Approved"        value={attractionReqs.filter(r => r.status === 'approved').length}         color="#10B981" />
+              <StatCard icon={<AlertCircle className="w-5 h-5" />} label="Rejected"        value={attractionReqs.filter(r => r.status === 'rejected').length}         color="#EF4444" />
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="font-bold text-gray-900">New Attraction Listing Requests</h2>
+                <span className="text-sm text-gray-400">{attractionReqs.length} total</span>
+              </div>
+              {loadingAR ? (
+                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+              ) : attractionReqs.length === 0 ? (
+                <div className="flex flex-col items-center py-16 text-center text-gray-400">
+                  <MapPin className="w-12 h-12 opacity-20 mb-3" />
+                  <p className="font-semibold">No attraction requests yet</p>
+                  <p className="text-xs mt-1">Requests submitted by LBO owners appear here</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      <th className="px-5 py-3 text-left">LBO</th>
+                      <th className="px-5 py-3 text-left">Attraction Name</th>
+                      <th className="px-5 py-3 text-left">Category</th>
+                      <th className="px-5 py-3 text-left">Description</th>
+                      <th className="px-5 py-3 text-left">Status</th>
+                      <th className="px-5 py-3 text-left">Date</th>
+                      <th className="px-5 py-3 text-left">Actions</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {attractionReqs.map(req => {
+                        const status = req.status || 'pending';
+                        const statusColor = status === 'approved' ? 'bg-green-50 text-green-700'
+                          : status === 'rejected'        ? 'bg-red-50 text-red-600'
+                          : status === 'editor_reviewed' ? 'bg-blue-50 text-blue-700'
+                          : 'bg-yellow-50 text-yellow-700';
+                        const statusLabel = status === 'editor_reviewed' ? 'Under Review'
+                          : status.charAt(0).toUpperCase() + status.slice(1);
+                        return (
+                          <tr key={req.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-5 py-4">
+                              <p className="font-semibold text-gray-900">{req.lbo_name || '—'}</p>
+                              <p className="text-xs text-gray-400">{req.lbo_email}</p>
+                              <p className="text-xs text-gray-300">{req.business_name}</p>
+                            </td>
+                            <td className="px-5 py-4 font-medium text-gray-800">{req.attraction_name}</td>
+                            <td className="px-5 py-4">
+                              {req.category && (
+                                <span className="px-2.5 py-1 rounded-full text-xs font-semibold capitalize"
+                                  style={{ backgroundColor: `${TYPE_COLORS[req.category] || '#94a3b8'}22`, color: TYPE_COLORS[req.category] || '#64748b' }}>
+                                  {TYPE_LABELS[req.category] || req.category}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 max-w-[200px]">
+                              <p className="text-xs text-gray-500 line-clamp-2">{req.description || '—'}</p>
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusColor}`}>{statusLabel}</span>
+                              {req.editor_notes  && <p className="text-xs text-gray-400 mt-1 italic line-clamp-1">Editor: {req.editor_notes}</p>}
+                              {req.officer_notes && <p className="text-xs text-gray-400 mt-1 italic line-clamp-1">Officer: {req.officer_notes}</p>}
+                            </td>
+                            <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
+                              {req.created_at ? new Date(req.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className="flex gap-2 flex-wrap">
+                                {/* Editor: pending → editor_reviewed or rejected */}
+                                {(isAdmin || isChatoEditor) && status === 'pending' && (
+                                  <>
+                                    <button onClick={() => { setArActionModal({ req, action: 'editor_reviewed' }); setArNotes(''); }}
+                                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition hover:opacity-90"
+                                      style={{ backgroundColor: '#3B82F6' }}>
+                                      Mark Reviewed
+                                    </button>
+                                    <button onClick={() => { setArActionModal({ req, action: 'rejected' }); setArNotes(''); }}
+                                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 text-red-600 hover:bg-red-50 transition">
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+                                {/* Officer: editor_reviewed → approved or rejected */}
+                                {(isAdmin || isChatoOfficer) && status === 'editor_reviewed' && (
+                                  <>
+                                    <button onClick={() => { setArActionModal({ req, action: 'approved' }); setArNotes(''); }}
+                                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition hover:opacity-90"
+                                      style={{ backgroundColor: '#10B981' }}>
+                                      Approve
+                                    </button>
+                                    <button onClick={() => { setArActionModal({ req, action: 'rejected' }); setArNotes(''); }}
+                                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 text-red-600 hover:bg-red-50 transition">
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── AUDIT LOGS ─────────────────────────────────────── */}
         {activeTab === 'audit' && (
           <TableWrap title="CMS Audit Logs" count={auditLogs.length} loading={loadingAudit} empty={auditLogs.length === 0} emptyIcon={<Activity className="w-12 h-12" />}>
@@ -1636,6 +1786,61 @@ export default function AdminDashboard() {
                 className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-50 flex items-center justify-center gap-2"
                 style={{ backgroundColor: crActionModal.action === 'done' ? '#10B981' : '#EF4444' }}>
                 {savingCR ? <Loader2 className="w-4 h-4 animate-spin" /> : crActionModal.action === 'done' ? <><CheckCircle className="w-4 h-4" /> Mark Done</> : 'Confirm Reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── ATTRACTION REQUEST ACTION MODAL ─────────────── */}
+      {arActionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setArActionModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${arActionModal.action === 'approved' ? 'bg-green-50' : arActionModal.action === 'editor_reviewed' ? 'bg-blue-50' : 'bg-red-50'}`}>
+                {arActionModal.action === 'approved'        ? <CheckCircle className="w-5 h-5 text-green-600" />
+                 : arActionModal.action === 'editor_reviewed' ? <Eye className="w-5 h-5 text-blue-600" />
+                 : <X className="w-5 h-5 text-red-600" />}
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">
+                  {arActionModal.action === 'approved' ? 'Approve Request'
+                   : arActionModal.action === 'editor_reviewed' ? 'Mark as Reviewed'
+                   : 'Reject Request'}
+                </h2>
+                <p className="text-xs text-gray-400">{arActionModal.req.attraction_name} · {arActionModal.req.lbo_name}</p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-2 text-sm">
+              <div><span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">LBO</span><p className="text-gray-800 mt-0.5">{arActionModal.req.lbo_name} ({arActionModal.req.lbo_email})</p></div>
+              <div><span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Attraction</span><p className="text-gray-800 mt-0.5">{arActionModal.req.attraction_name}</p></div>
+              {arActionModal.req.category && <div><span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Category</span><p className="text-gray-800 mt-0.5 capitalize">{arActionModal.req.category}</p></div>}
+              {arActionModal.req.description && <div><span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Description</span><p className="text-gray-600 mt-0.5">{arActionModal.req.description}</p></div>}
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                {arActionModal.action === 'editor_reviewed' || (!isChatoOfficer && isAdmin) ? 'Editor Notes' : 'Officer Notes'} (optional)
+              </label>
+              <textarea value={arNotes} onChange={e => setArNotes(e.target.value)} rows={3}
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                placeholder={arActionModal.action === 'approved' ? 'e.g. Will create the listing in Strapi shortly' : arActionModal.action === 'editor_reviewed' ? 'e.g. Verified business registration' : 'e.g. Insufficient documentation'} />
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={() => setArActionModal(null)}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+                Cancel
+              </button>
+              <button onClick={handleARUpdate} disabled={savingAR}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ backgroundColor: arActionModal.action === 'approved' ? '#10B981' : arActionModal.action === 'editor_reviewed' ? '#3B82F6' : '#EF4444' }}>
+                {savingAR ? <Loader2 className="w-4 h-4 animate-spin" />
+                 : arActionModal.action === 'approved'        ? <><CheckCircle className="w-4 h-4" /> Approve</>
+                 : arActionModal.action === 'editor_reviewed' ? <><Eye className="w-4 h-4" /> Mark Reviewed</>
+                 : 'Confirm Reject'}
               </button>
             </div>
           </div>
