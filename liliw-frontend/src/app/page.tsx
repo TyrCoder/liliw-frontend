@@ -231,8 +231,8 @@ const QUICK_LINKS = [
    ═══════════════════════════════════════════════════════════ */
 /* ─── Featured videos ────────────────────────────────────── */
 const FEATURED_VIDEOS = [
-  { id: 'blPBoHVC0aw', title: 'Liliw, Laguna', views: '' },
   { id: '5VejBh1lK7o', title: 'Liliw Laguna Tour', views: '' },
+  { id: 'blPBoHVC0aw', title: 'Liliw, Laguna', views: '' },
   { id: 'FO_xho6dbbM', title: 'Explore Liliw', views: '' },
 ];
 
