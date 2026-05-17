@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Eye, EyeOff, Loader2, ArrowLeft, Mail, CheckCircle,
-  ShieldCheck, RefreshCw, MapPin, User, Lock,
+  ShieldCheck, RefreshCw, User, Lock,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -78,14 +78,6 @@ function CaptchaCanvas({ code }: { code: string }) {
   );
 }
 
-/* ── Options ── */
-const USER_TYPE_OPTIONS = [
-  { value: 'liliw_local',   label: 'Liliw Resident' },
-  { value: 'laguna',        label: 'From Laguna Province' },
-  { value: 'provincial',    label: 'From Another Province' },
-  { value: 'international', label: 'International / Tourist' },
-];
-
 /* ── Password strength ── */
 function pwStrength(pw: string) {
   if (pw.length >= 10 && /[A-Z]/.test(pw) && /[0-9]/.test(pw)) return 3;
@@ -118,7 +110,6 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
   const [fullName, setFullName] = useState('');
   const [email,    setEmail]    = useState('');
   const [regPw,    setRegPw]    = useState('');
-  const [userType, setUserType] = useState('');
 
   const [captchaCode,  setCaptchaCode]  = useState(generateCode);
   const [captchaInput, setCaptchaInput] = useState('');
@@ -174,7 +165,6 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault(); setError('');
     if (!captchaOk)       { setError('Please complete the security check'); return; }
-    if (!userType)        { setError('Please select where you are from'); return; }
     if (regPw.length < 6) { setError('Password must be at least 6 characters'); return; }
     setLoading(true);
     try {
@@ -196,7 +186,7 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
     try {
       const res = await fetch('/api/auth/verify-reg-otp', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp: regOtp, fullName, password: regPw, userType }),
+        body: JSON.stringify({ email, otp: regOtp, fullName, password: regPw }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Verification failed'); return; }
@@ -260,7 +250,7 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
     background: 'linear-gradient(135deg,#1565C0,#0B3D91)',
     boxShadow: '0 6px 24px rgba(21,101,192,.35)',
   };
-  const canSubmit = captchaOk && !!userType;
+  const canSubmit = captchaOk;
   const strength  = pwStrength(regPw);
 
   const isSubView = view === 'forgot' || view === 'otp' || view === 'newpass' || view === 'reg-otp';
@@ -441,20 +431,6 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                     </div>
                   )}
                 </div>
-                <div>
-                  <label className={LABEL_CLS}>Where are you from?</label>
-                  <div className="relative">
-                    <InputIcon icon={MapPin} />
-                    <select required value={userType} onChange={e => setUserType(e.target.value)}
-                      className={`${INPUT_CLS} appearance-none cursor-pointer`}>
-                      <option value="">Select your location…</option>
-                      {USER_TYPE_OPTIONS.map(o => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
                 {/* CAPTCHA */}
                 <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                   <div className="flex items-center gap-2 mb-1.5">
