@@ -40,6 +40,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert application row
+    const rawLat = formData.get('latitude')  as string | null;
+    const rawLng = formData.get('longitude') as string | null;
+
     const { error: insertError } = await supabaseServer
       .from('lbo_applications')
       .insert({
@@ -51,6 +54,9 @@ export async function POST(request: NextRequest) {
         business_type:   formData.get('business_type')    as string | null,
         permit_number:   formData.get('permit_number')    as string | null,
         attraction_name: formData.get('attraction_name')  as string | null,
+        category:        formData.get('category')         as string | null,
+        latitude:        rawLat  ? parseFloat(rawLat)  : null,
+        longitude:       rawLng  ? parseFloat(rawLng)  : null,
         status:          'pending',
         documents:       docUrls,
       });

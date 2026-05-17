@@ -2,17 +2,13 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Building2, Upload, X, CheckCircle, AlertCircle, Loader2, FileText } from 'lucide-react';
+import { ChevronLeft, Building2, Upload, X, CheckCircle, AlertCircle, Loader2, FileText, MapPin } from 'lucide-react';
 
-const FIELDS = [
-  { id: 'business_name',   label: 'Business Name',           type: 'text',     required: true,  placeholder: 'e.g. Arabela Resort' },
-  { id: 'owner_name',      label: 'Owner / Representative',  type: 'text',     required: true,  placeholder: 'Full name' },
-  { id: 'email',           label: 'Email Address',           type: 'email',    required: true,  placeholder: 'your@email.com' },
-  { id: 'phone',           label: 'Contact Number',          type: 'tel',      required: true,  placeholder: '+63 9XX XXX XXXX' },
-  { id: 'address',         label: 'Business Address',        type: 'textarea', required: true,  placeholder: 'Complete address in Liliw, Laguna' },
-  { id: 'attraction_name', label: 'Attraction / Listing Name', type: 'text',   required: true,  placeholder: 'Name as it appears on the site' },
-  { id: 'business_type',   label: 'Business Type',           type: 'text',     required: true,  placeholder: 'e.g. Restaurant, Resort, Craft Shop' },
-  { id: 'permit_number',   label: "Mayor's Permit / DTI No.", type: 'text',    required: true,  placeholder: 'Business permit number' },
+const CATEGORY_OPTIONS = [
+  { value: 'heritage', label: 'Heritage Site' },
+  { value: 'spot',     label: 'Tourist Spot' },
+  { value: 'dining',   label: 'Dining & Food' },
+  { value: 'other',    label: 'Other' },
 ];
 
 export default function LBOApplyPage() {
@@ -36,7 +32,7 @@ export default function LBOApplyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (files.length === 0) {
-      setErrorMsg('Please upload at least one supporting document (Mayor\'s Permit, DTI registration, or valid ID).');
+      setErrorMsg("Please upload at least one supporting document (Mayor's Permit, DTI registration, or valid ID).");
       setStatus('error');
       return;
     }
@@ -63,6 +59,9 @@ export default function LBOApplyPage() {
     }
     setSubmitting(false);
   };
+
+  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400';
+  const labelCls = 'block text-sm font-semibold text-gray-700 mb-1.5';
 
   if (status === 'success') {
     return (
@@ -114,47 +113,118 @@ export default function LBOApplyPage() {
         </div>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto px-4 py-8 space-y-6">
 
-        {/* Business Info section */}
+        {/* ── Business Information ── */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
           <h2 className="font-bold text-gray-900 text-base">Business Information</h2>
 
-          {FIELDS.map(f => (
-            <div key={f.id}>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                {f.label} {f.required && <span className="text-red-500">*</span>}
-              </label>
-              {f.type === 'textarea' ? (
-                <textarea
-                  required={f.required}
-                  placeholder={f.placeholder}
-                  value={form[f.id] || ''}
-                  onChange={e => set(f.id, e.target.value)}
-                  rows={3}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-                />
-              ) : (
-                <input
-                  type={f.type}
-                  required={f.required}
-                  placeholder={f.placeholder}
-                  value={form[f.id] || ''}
-                  onChange={e => set(f.id, e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              )}
-            </div>
-          ))}
+          {/* Business Name */}
+          <div>
+            <label className={labelCls}>Business Name <span className="text-red-500">*</span></label>
+            <input type="text" required placeholder="e.g. Arabela Resort" value={form.business_name || ''}
+              onChange={e => set('business_name', e.target.value)} className={inputCls} />
+          </div>
+
+          {/* Owner */}
+          <div>
+            <label className={labelCls}>Owner / Representative <span className="text-red-500">*</span></label>
+            <input type="text" required placeholder="Full name" value={form.owner_name || ''}
+              onChange={e => set('owner_name', e.target.value)} className={inputCls} />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className={labelCls}>Email Address <span className="text-red-500">*</span></label>
+            <input type="email" required placeholder="your@email.com" value={form.email || ''}
+              onChange={e => set('email', e.target.value)} className={inputCls} />
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className={labelCls}>Contact Number <span className="text-red-500">*</span></label>
+            <input type="tel" required placeholder="+63 9XX XXX XXXX" value={form.phone || ''}
+              onChange={e => set('phone', e.target.value)} className={inputCls} />
+          </div>
+
+          {/* Address */}
+          <div>
+            <label className={labelCls}>Business Address <span className="text-red-500">*</span></label>
+            <textarea required placeholder="Complete address in Liliw, Laguna" value={form.address || ''}
+              onChange={e => set('address', e.target.value)} rows={3}
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
+          </div>
+
+          {/* Attraction Name */}
+          <div>
+            <label className={labelCls}>Attraction / Listing Name <span className="text-red-500">*</span></label>
+            <input type="text" required placeholder="Name as it appears on the site" value={form.attraction_name || ''}
+              onChange={e => set('attraction_name', e.target.value)} className={inputCls} />
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className={labelCls}>Category <span className="text-red-500">*</span></label>
+            <select required value={form.category || ''} onChange={e => set('category', e.target.value)}
+              className={inputCls + ' bg-white'}>
+              <option value="" disabled>Select a category…</option>
+              {CATEGORY_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Business Type */}
+          <div>
+            <label className={labelCls}>Business Type <span className="text-red-500">*</span></label>
+            <input type="text" required placeholder="e.g. Restaurant, Resort, Craft Shop" value={form.business_type || ''}
+              onChange={e => set('business_type', e.target.value)} className={inputCls} />
+          </div>
+
+          {/* Permit */}
+          <div>
+            <label className={labelCls}>Mayor's Permit / DTI No. <span className="text-red-500">*</span></label>
+            <input type="text" required placeholder="Business permit number" value={form.permit_number || ''}
+              onChange={e => set('permit_number', e.target.value)} className={inputCls} />
+          </div>
         </div>
 
-        {/* Documents section */}
+        {/* ── Attraction Location ── */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
+              <MapPin className="w-5 h-5 text-teal-600" />
+            </div>
+            <div>
+              <h2 className="font-bold text-gray-900 text-base">Attraction Location</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Provide the exact coordinates of your attraction for the map. Open Google Maps, right-click your location, and copy the coordinates shown.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Latitude</label>
+              <input type="number" step="any" placeholder="e.g. 14.1234" value={form.latitude || ''}
+                onChange={e => set('latitude', e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Longitude</label>
+              <input type="number" step="any" placeholder="e.g. 121.5678" value={form.longitude || ''}
+                onChange={e => set('longitude', e.target.value)} className={inputCls} />
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-500 flex gap-2">
+            <span className="shrink-0">💡</span>
+            <span>On Google Maps: right-click your attraction → the first line shows coordinates (e.g. <strong>14.1234, 121.5678</strong>). The first number is latitude, the second is longitude.</span>
+          </div>
+        </div>
+
+        {/* ── Supporting Documents ── */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
           <h2 className="font-bold text-gray-900 text-base mb-1">Supporting Documents <span className="text-red-500">*</span></h2>
           <p className="text-xs text-gray-400 mb-4">Upload your Mayor's Permit, DTI/SEC registration, or valid ID (PDF, JPG, PNG). At least one document is required.</p>
 
-          {/* Drop zone */}
           <div
             onClick={() => fileRef.current?.click()}
             onDragOver={e => e.preventDefault()}
@@ -163,11 +233,10 @@ export default function LBOApplyPage() {
             <Upload className="w-8 h-8 text-gray-300 mx-auto mb-2" />
             <p className="text-sm font-semibold text-gray-500">Click to upload or drag & drop</p>
             <p className="text-xs text-gray-400 mt-0.5">PDF, JPG, PNG up to 10MB each</p>
-            <input ref={fileRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"
+            <input ref={fileRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden"
               onChange={e => addFiles(e.target.files)} />
           </div>
 
-          {/* File list */}
           {files.length > 0 && (
             <div className="mt-4 space-y-2">
               {files.map(f => (
@@ -184,7 +253,6 @@ export default function LBOApplyPage() {
           )}
         </div>
 
-        {/* Error */}
         {status === 'error' && (
           <div className="flex items-center gap-2.5 px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -192,7 +260,6 @@ export default function LBOApplyPage() {
           </div>
         )}
 
-        {/* Submit */}
         <button type="submit" disabled={submitting}
           className="w-full py-3.5 rounded-xl text-white font-bold text-sm transition hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
           style={{ background: 'linear-gradient(135deg, #0B3D91, #1565C0)', boxShadow: '0 4px 16px rgba(21,101,192,0.3)' }}>
@@ -201,9 +268,9 @@ export default function LBOApplyPage() {
 
         <p className="text-center text-xs text-gray-400 pb-8">
           Already have an account?{' '}
-          <button type="button" className="font-semibold underline" style={{ color: '#1565C0' }}>
+          <Link href="/login" className="font-semibold underline" style={{ color: '#1565C0' }}>
             Log in here
-          </button>
+          </Link>
         </p>
       </form>
     </div>

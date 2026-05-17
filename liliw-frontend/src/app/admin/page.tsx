@@ -130,10 +130,13 @@ export default function AdminDashboard() {
   const [lboApps,       setLboApps]       = useState<any[]>([]);
   const [loadingLbo,    setLoadingLbo]    = useState(true);
   const [expandedLbo,   setExpandedLbo]   = useState<number | null>(null);
-  const [lboRegModal,   setLboRegModal]   = useState<any | null>(null);
-  const [lboRegForm,    setLboRegForm]    = useState({ username: '', password: '' });
-  const [savingLboReg,  setSavingLboReg]  = useState(false);
-  const [lboRegMsg,     setLboRegMsg]     = useState<{ ok: boolean; text: string } | null>(null);
+  const [lboRegModal,      setLboRegModal]      = useState<any | null>(null);
+  const [lboRegForm,       setLboRegForm]       = useState({ username: '', password: '' });
+  const [savingLboReg,     setSavingLboReg]     = useState(false);
+  const [lboRegMsg,        setLboRegMsg]        = useState<{ ok: boolean; text: string } | null>(null);
+  const [pickedAttraction, setPickedAttraction] = useState<Attraction | null>(null);
+  const [attrPickerQuery,  setAttrPickerQuery]  = useState('');
+  const [attrPickerOpen,   setAttrPickerOpen]   = useState(false);
   const [rejectModal,   setRejectModal]   = useState<any | null>(null);
   const [rejectNotes,   setRejectNotes]   = useState('');
   const [savingReject,  setSavingReject]  = useState(false);
@@ -287,6 +290,14 @@ export default function AdminDashboard() {
     setLboRegModal(app);
     setLboRegForm({ username: (a.email || '').split('@')[0], password: '' });
     setLboRegMsg(null);
+    // Auto-suggest matching attraction
+    const match = attractions.find(attr =>
+      attr.attributes.name.toLowerCase().includes((a.attraction_name || '').toLowerCase()) ||
+      (a.attraction_name || '').toLowerCase().includes(attr.attributes.name.toLowerCase())
+    ) || null;
+    setPickedAttraction(match);
+    setAttrPickerQuery(match ? match.attributes.name : (a.attraction_name || ''));
+    setAttrPickerOpen(false);
   };
 
   const handleLboReject = (app: any) => {
@@ -303,7 +314,14 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/lbo-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ applicationId: lboRegModal.id, username: lboRegForm.username, email: a.email, password: lboRegForm.password }),
+        body: JSON.stringify({
+          applicationId:         lboRegModal.id,
+          username:              lboRegForm.username,
+          email:                 a.email,
+          password:              lboRegForm.password,
+          strapi_attraction_id:   pickedAttraction?.strapiId   || null,
+          strapi_attraction_type: pickedAttraction?.type        || null,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -816,12 +834,15 @@ export default function AdminDashboard() {
                               {[
                                 { label: 'Business Name',              value: a.business_name },
                                 { label: 'Attraction / Listing Name',  value: a.attraction_name },
+                                { label: 'Category',                   value: a.category },
                                 { label: 'Owner / Representative',     value: a.owner_name },
                                 { label: 'Email',                      value: a.email },
                                 { label: 'Contact Number',             value: a.phone },
                                 { label: 'Business Address',           value: a.address },
                                 { label: 'Business Type',              value: a.business_type },
                                 { label: "Mayor's Permit / DTI No.",   value: a.permit_number },
+                                { label: 'Coordinates',                value: (a.latitude && a.longitude) ? `${a.latitude}, ${a.longitude}` : null },
+                                { label: 'Assigned Attraction ID',     value: a.strapi_attraction_id },
                               ].map(({ label, value }) => (
                                 <div key={label}>
                                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
@@ -1439,6 +1460,59 @@ export default function AdminDashboard() {
                   <h2 className="text-lg font-bold text-gray-900">Register LBO Account</h2>
                   <p className="text-xs text-gray-400">{a.business_name} · {a.email}</p>
                 </div>
+              </div>
+
+              {/* Attraction assignment */}
+              <div className="mb-5">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Assign to Existing Attraction <span className="text-gray-300 font-normal normal-case">(optional)</span>
+                </label>
+                <p className="text-xs text-gray-400 mb-2">Applied for: <span className="font-semibold text-gray-600">{a.attraction_name || '—'}</span></p>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={attrPickerQuery}
+                    onChange={e => { setAttrPickerQuery(e.target.value); setPickedAttraction(null); setAttrPickerOpen(true); }}
+                    onFocus={() => setAttrPickerOpen(true)}
+                    placeholder="Search attractions…"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  />
+                  {pickedAttraction && (
+                    <button type="button" onClick={() => { setPickedAttraction(null); setAttrPickerQuery(''); setAttrPickerOpen(false); }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                  {attrPickerOpen && attrPickerQuery && !pickedAttraction && (() => {
+                    const results = attractions.filter(attr =>
+                      attr.attributes.name.toLowerCase().includes(attrPickerQuery.toLowerCase())
+                    ).slice(0, 8);
+                    return results.length > 0 ? (
+                      <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                        {results.map(attr => (
+                          <button key={attr.id} type="button"
+                            onClick={() => { setPickedAttraction(attr); setAttrPickerQuery(attr.attributes.name); setAttrPickerOpen(false); }}
+                            className="w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5 transition">
+                            <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white shrink-0"
+                              style={{ backgroundColor: TYPE_COLORS[attr.type] }}>{TYPE_LABELS[attr.type]}</span>
+                            {attr.attributes.name}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 text-xs text-gray-400">
+                        No attractions found matching "{attrPickerQuery}"
+                      </div>
+                    );
+                  })()}
+                </div>
+                {pickedAttraction && (
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-teal-50 rounded-lg border border-teal-100">
+                    <CheckCircle className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                    <span className="text-xs text-teal-700 font-semibold">{pickedAttraction.attributes.name}</span>
+                    <span className="text-xs text-teal-500">({TYPE_LABELS[pickedAttraction.type]})</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4 mb-5">
