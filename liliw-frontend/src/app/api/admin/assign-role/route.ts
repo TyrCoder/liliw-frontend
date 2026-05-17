@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdminAuth } from '@/lib/auth';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
@@ -9,7 +10,8 @@ const headers = {
 };
 
 // GET /api/admin/assign-role — list all UP users and roles
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const [usersRes, rolesRes] = await Promise.all([
     fetch(`${STRAPI}/api/users?populate=role`, { headers }),
     fetch(`${STRAPI}/api/users-permissions/roles`, { headers }),
@@ -36,6 +38,7 @@ export async function GET() {
 
 // POST /api/admin/assign-role — { userId, roleId }
 export async function POST(request: NextRequest) {
+  if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { userId, roleId } = await request.json();
   if (!userId || !roleId) {
     return NextResponse.json({ error: 'userId and roleId are required' }, { status: 400 });
@@ -61,6 +64,7 @@ export async function POST(request: NextRequest) {
 
 // PATCH /api/admin/assign-role — { userId, password }
 export async function PATCH(request: NextRequest) {
+  if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { userId, password } = await request.json();
   if (!userId || !password || password.length < 6) {
     return NextResponse.json({ error: 'userId and password (min 6 chars) are required' }, { status: 400 });

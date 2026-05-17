@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireStaffAuth } from '@/lib/auth';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,6 +13,7 @@ const APIFY_BASE   = 'https://api.apify.com/v2';
 
 /* ── POST — start a scrape run ── */
 export async function POST(req: NextRequest) {
+  if (!await requireStaffAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { strapiId, attractionName, lat, lng } = await req.json();
   if (!strapiId || !attractionName) {
     return NextResponse.json({ error: 'strapiId and attractionName required' }, { status: 400 });
@@ -46,6 +48,7 @@ export async function POST(req: NextRequest) {
 
 /* ── GET — poll run status; save & return results when done ── */
 export async function GET(req: NextRequest) {
+  if (!await requireStaffAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const runId      = searchParams.get('runId');
   const strapiId   = searchParams.get('strapiId');
