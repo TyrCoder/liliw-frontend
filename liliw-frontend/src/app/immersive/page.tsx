@@ -108,7 +108,7 @@ export default function ImmersivePage() {
 
     const signRes = await fetch('/api/cloudinary-sign', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ timestamp, folder: CLOUDINARY_FOLDER }),
     });
     if (!signRes.ok) throw new Error('Failed to get upload signature');

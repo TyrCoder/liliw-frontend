@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { verifyToken } from '@/lib/verifyToken';
 
 export async function POST(req: NextRequest) {
+  const authUser = await verifyToken(req);
+  if (!authUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { timestamp, folder } = await req.json();
 
   const apiSecret = process.env.CLOUDINARY_SECRET;
