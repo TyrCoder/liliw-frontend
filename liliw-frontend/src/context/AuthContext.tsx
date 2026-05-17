@@ -19,6 +19,7 @@ interface AuthState {
 interface AuthCtx extends AuthState {
   login: (identifier: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
+  loginWithJwt: (jwt: string, user: StrapiUser) => void;
   logout: () => void;
   isAdmin: boolean;
   isChatoOfficer: boolean;
@@ -98,6 +99,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persist(data.jwt, data.user as StrapiUser);
   }, []);
 
+  const loginWithJwt = useCallback((jwt: string, user: StrapiUser) => {
+    persist(jwt, user);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
@@ -137,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      ...state, login, register, logout,
+      ...state, login, register, loginWithJwt, logout,
       isAdmin, isChatoOfficer, isChatoEditor, isStaff, isLocal,
       userRole, adminPanelRole,
     }}>
