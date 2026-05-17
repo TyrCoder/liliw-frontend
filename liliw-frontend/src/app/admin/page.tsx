@@ -24,9 +24,9 @@ interface EventSignup { id: any; attributes: { full_name: string; email: string;
 interface Analytics { pageViews: number; uniqueVisitors: number; avgSessionTime: string; bounceRate: string; topPages: { path: string; views: number }[]; devices?: { desktop: { count: number; pct: number }; mobile: { count: number; pct: number }; tablet: { count: number; pct: number } }; }
 interface AuditLog { id: string; event: string; model: string; uid?: string; entry_id: string; entry_title: string; performed_by?: string; changes?: any; created_at: string; }
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
-interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[] }; }
+interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports';
+type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews';
 
 /* ─── csv export ──────────────────────────────────────────── */
 function downloadCSV(filename: string, headers: string[], rows: (string | number)[][]) {
@@ -181,6 +181,12 @@ export default function AdminDashboard() {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
   const [syncCount, setSyncCount] = useState<number | null>(null);
 
+  const [externalReviews,    setExternalReviews]    = useState<any[]>([]);
+  const [loadingExternal,    setLoadingExternal]    = useState(false);
+  const [scrapingId,         setScrapingId]         = useState<string | null>(null);
+  const [scrapeMsg,          setScrapeMsg]          = useState<{ id: string; ok: boolean; text: string } | null>(null);
+  const [expandedReview,     setExpandedReview]     = useState<string | null>(null);
+
   useEffect(() => {
     if (!loading && (!user || !isStaff)) router.replace('/');
   }, [user, loading, isStaff, router]);
@@ -200,6 +206,8 @@ export default function AdminDashboard() {
     // All staff need attractions + reviews
     fetch('/api/strapi/attractions').then(r => r.json()).then(d => setAttractions(d.data || [])).catch(() => {}).finally(() => setLoadingAttr(false));
     fetch('/api/strapi/reviews').then(r => r.json()).then(d => setReviews(d.data || [])).catch(() => {}).finally(() => setLoadingReviews(false));
+    setLoadingExternal(true);
+    fetch('/api/admin/external-reviews').then(r => r.json()).then(d => setExternalReviews(d.data || [])).catch(() => {}).finally(() => setLoadingExternal(false));
 
     // Admin and CHATO Officer get everything else
     if (isAdmin || isChatoOfficer) {
@@ -464,8 +472,9 @@ export default function AdminDashboard() {
     { key: 'signups',       label: 'Event Sign-ups',     badge: signups.length,                                                                 roles: ['admin'] },
     { key: 'attractions',   label: 'Attractions',        badge: attractions.length,                                                             roles: ['admin', 'officer', 'editor'] },
     { key: 'ratings',       label: 'Ratings',            badge: reviews.length,                                                                 roles: ['admin', 'officer', 'editor'] },
-    { key: 'audit',         label: 'Audit Logs',         badge: auditLogs.length,                                                               roles: ['admin', 'officer'] },
-    { key: 'reports',       label: 'Reports',            badge: undefined,                                                                         roles: ['admin', 'officer'] },
+    { key: 'audit',           label: 'Audit Logs',         badge: auditLogs.length,   roles: ['admin', 'officer'] },
+    { key: 'reports',         label: 'Reports',            badge: undefined,           roles: ['admin', 'officer'] },
+    { key: 'externalreviews', label: 'Online Reviews',     badge: undefined,           roles: ['admin', 'officer'] },
   ];
 
   const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
@@ -1956,6 +1965,196 @@ export default function AdminDashboard() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── ONLINE REVIEWS (Apify / Google Maps) ─────────── */}
+        {activeTab === 'externalreviews' && (() => {
+          const handleScrape = async (attr: Attraction) => {
+            const id = attr.strapiId;
+            setScrapingId(id);
+            setScrapeMsg(null);
+            try {
+              const c = attr.attributes.coordinates;
+              const lat = c?.latitude ?? c?.lat ?? null;
+              const lng = c?.longitude ?? c?.lng ?? null;
+
+              // Start the run
+              const startRes = await fetch('/api/admin/scrape-reviews', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ strapiId: id, attractionName: attr.attributes.name, lat, lng }),
+              });
+              const { runId, error: startErr } = await startRes.json();
+              if (!startRes.ok || !runId) throw new Error(startErr || 'Failed to start scrape');
+
+              // Poll until done (max 3 min)
+              const deadline = Date.now() + 180_000;
+              while (Date.now() < deadline) {
+                await new Promise(r => setTimeout(r, 4000));
+                const pollRes = await fetch(
+                  `/api/admin/scrape-reviews?runId=${runId}&strapiId=${id}&attractionName=${encodeURIComponent(attr.attributes.name)}`
+                );
+                const poll = await pollRes.json();
+                if (poll.status === 'SUCCEEDED') {
+                  if (!poll.result) {
+                    setScrapeMsg({ id, ok: false, text: poll.message || 'No matching place found on Google Maps' });
+                  } else {
+                    // Refresh cached data
+                    fetch('/api/admin/external-reviews').then(r => r.json()).then(d => setExternalReviews(d.data || []));
+                    setScrapeMsg({ id, ok: true, text: `Done! Found ${poll.result.reviewCount} reviews · ${poll.result.googleRating}★` });
+                  }
+                  break;
+                }
+                if (poll.status === 'FAILED' || poll.status === 'ABORTED') {
+                  setScrapeMsg({ id, ok: false, text: 'Apify run failed. Try again.' });
+                  break;
+                }
+              }
+            } catch (e: any) {
+              setScrapeMsg({ id, ok: false, text: e.message || 'Network error' });
+            } finally {
+              setScrapingId(null);
+              setTimeout(() => setScrapeMsg(null), 6000);
+            }
+          };
+
+          const cachedMap = Object.fromEntries(externalReviews.map(r => [r.strapi_id, r]));
+
+          return (
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+                <h2 className="font-bold text-gray-900">Online Reviews — Google Maps</h2>
+                <p className="text-xs text-gray-400 mt-1">Fetch real visitor reviews from Google Maps for each attraction using Apify. Data is cached and updated on each scrape.</p>
+              </div>
+
+              {loadingAttr || loadingExternal ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} />
+                </div>
+              ) : attractions.length === 0 ? (
+                <div className="flex flex-col items-center py-20 text-center text-gray-400">
+                  <MapPin className="w-12 h-12 opacity-20 mb-3" />
+                  <p className="font-semibold">No attractions found</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {attractions.map(attr => {
+                    const cached   = cachedMap[attr.strapiId];
+                    const isScraping = scrapingId === attr.strapiId;
+                    const msg      = scrapeMsg?.id === attr.strapiId ? scrapeMsg : null;
+                    const isExpanded = expandedReview === attr.strapiId;
+                    const c        = attr.attributes.coordinates;
+                    const hasCoords = !!(c?.latitude ?? c?.lat);
+
+                    return (
+                      <div key={attr.strapiId} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div className="px-5 py-4 flex items-center gap-4 flex-wrap">
+                          {/* Attraction info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-gray-900 text-sm">{attr.attributes.name}</span>
+                              <span className="px-2 py-0.5 rounded-full text-xs font-semibold text-white capitalize"
+                                style={{ backgroundColor: attr.type === 'heritage' ? '#F59E0B' : attr.type === 'spot' ? '#3B82F6' : '#EF4444' }}>
+                                {attr.type}
+                              </span>
+                              {!hasCoords && (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400">No coordinates</span>
+                              )}
+                            </div>
+                            {attr.attributes.location && (
+                              <p className="text-xs text-gray-400 mt-0.5 truncate">{attr.attributes.location}</p>
+                            )}
+                          </div>
+
+                          {/* Cached rating */}
+                          {cached ? (
+                            <div className="flex items-center gap-3 shrink-0">
+                              <div className="text-center">
+                                <div className="flex items-center gap-1">
+                                  <Star className="w-4 h-4 fill-amber-400 stroke-amber-400" />
+                                  <span className="font-bold text-gray-900">{cached.google_rating ?? '—'}</span>
+                                </div>
+                                <p className="text-xs text-gray-400">{(cached.review_count ?? 0).toLocaleString()} reviews</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs text-gray-400">Last scraped</p>
+                                <p className="text-xs font-semibold text-gray-600">
+                                  {cached.last_scraped_at ? new Date(cached.last_scraped_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-400 shrink-0 italic">Not scraped yet</p>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {cached && (cached.reviews as any[]).length > 0 && (
+                              <button onClick={() => setExpandedReview(isExpanded ? null : attr.strapiId)}
+                                className="px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition flex items-center gap-1">
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                Reviews
+                              </button>
+                            )}
+                            <button onClick={() => handleScrape(attr)}
+                              disabled={isScraping || !!scrapingId}
+                              className="px-4 py-2 rounded-xl text-xs font-semibold text-white flex items-center gap-1.5 transition hover:opacity-90 disabled:opacity-50"
+                              style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
+                              {isScraping
+                                ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Scraping…</>
+                                : <><RefreshCw className="w-3.5 h-3.5" /> {cached ? 'Re-scrape' : 'Scrape Now'}</>}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Status message */}
+                        {(isScraping || msg) && (
+                          <div className={`px-5 py-2.5 text-xs font-semibold border-t flex items-center gap-2 ${
+                            isScraping ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                            msg?.ok    ? 'bg-green-50 border-green-100 text-green-700' :
+                                         'bg-red-50 border-red-100 text-red-600'}`}>
+                            {isScraping
+                              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Fetching reviews from Google Maps via Apify — this may take up to 2 minutes…</>
+                              : msg?.ok
+                                ? <><CheckCircle className="w-3.5 h-3.5" /> {msg.text}</>
+                                : <><AlertCircle className="w-3.5 h-3.5" /> {msg?.text}</>}
+                          </div>
+                        )}
+
+                        {/* Expanded reviews */}
+                        {isExpanded && cached && (cached.reviews as any[]).length > 0 && (
+                          <div className="border-t border-gray-100 divide-y divide-gray-50">
+                            {(cached.reviews as any[]).map((rev: any, i: number) => (
+                              <div key={i} className="px-5 py-4">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-semibold text-gray-900 text-sm">{rev.author || 'Anonymous'}</span>
+                                      <div className="flex gap-0.5">
+                                        {[1,2,3,4,5].map(s => (
+                                          <Star key={s} className={`w-3 h-3 ${s <= (rev.rating||0) ? 'fill-amber-400 stroke-amber-400' : 'fill-gray-200 stroke-gray-200'}`} />
+                                        ))}
+                                      </div>
+                                    </div>
+                                    {rev.text && <p className="text-sm text-gray-600 leading-relaxed">{rev.text}</p>}
+                                  </div>
+                                  {rev.published && (
+                                    <span className="text-xs text-gray-400 shrink-0">
+                                      {new Date(rev.published).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
