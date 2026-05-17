@@ -11,6 +11,7 @@ import {
   RefreshCw, UserCheck, Shield, Activity, MapPin, Edit, Layers,
   Monitor, Smartphone, Tablet, Wifi, Search,
   Building2, X, ChevronDown, ChevronUp, Key, Inbox,
+  Download, BarChart2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -24,7 +25,18 @@ interface AuditLog { id: string; event: string; model: string; uid?: string; ent
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[] }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit';
+type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports';
+
+/* ─── csv export ──────────────────────────────────────────── */
+function downloadCSV(filename: string, headers: string[], rows: (string | number)[][]) {
+  const escape = (v: string | number) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = [headers.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
 
 /* ─── helpers ─────────────────────────────────────────────── */
 const STATUS_BADGE: Record<string, string> = { new: 'bg-blue-50 text-blue-700', reviewed: 'bg-yellow-50 text-yellow-700', resolved: 'bg-green-50 text-green-700' };
@@ -448,6 +460,7 @@ export default function AdminDashboard() {
     { key: 'attractions',   label: 'Attractions',        badge: attractions.length,                                                             roles: ['admin', 'officer', 'editor'] },
     { key: 'ratings',       label: 'Ratings',            badge: reviews.length,                                                                 roles: ['admin', 'officer', 'editor'] },
     { key: 'audit',         label: 'Audit Logs',         badge: auditLogs.length,                                                               roles: ['admin', 'officer'] },
+    { key: 'reports',       label: 'Reports',            badge: undefined,                                                                         roles: ['admin', 'officer'] },
   ];
 
   const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
@@ -1592,6 +1605,233 @@ export default function AdminDashboard() {
             </table>
           </TableWrap>
         )}
+
+        {/* ── REPORTS ──────────────────────────────────────── */}
+        {activeTab === 'reports' && (() => {
+          const now = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+          const generated = `Generated ${now}`;
+
+          // ── Ratings summary ──
+          const ratingsByAttr: Record<string, { name: string; count: number; total: number }> = {};
+          reviews.forEach((r: any) => {
+            const name = r.attributes?.attraction_name || r.attributes?.attraction?.data?.attributes?.name || 'Unknown';
+            if (!ratingsByAttr[name]) ratingsByAttr[name] = { name, count: 0, total: 0 };
+            ratingsByAttr[name].count++;
+            ratingsByAttr[name].total += Number(r.attributes?.rating || 0);
+          });
+          const ratingsRows = Object.values(ratingsByAttr);
+          const avgRating = reviews.length
+            ? (reviews.reduce((s: number, r: any) => s + Number(r.attributes?.rating || 0), 0) / reviews.length).toFixed(2)
+            : '—';
+
+          // ── Submissions summary ──
+          const subByType: Record<string, number> = {};
+          submissions.forEach(s => { const t = s.attributes?.type || 'other'; subByType[t] = (subByType[t] || 0) + 1; });
+
+          // ── Visitor records summary ──
+          const vrByAttr: Record<string, number> = {};
+          visitorRecords.forEach((v: any) => { const k = v.attraction_name || 'Unknown'; vrByAttr[k] = (vrByAttr[k] || 0) + (Number(v.visitor_count) || 1); });
+          const totalVisitors = visitorRecords.reduce((s: number, v: any) => s + (Number(v.visitor_count) || 1), 0);
+
+          const ReportCard = ({ title, sub, value, color }: { title: string; sub: string; value: string | number; color: string }) => (
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{title}</p>
+              <p className="text-3xl font-black" style={{ color }}>{value}</p>
+              <p className="text-xs text-gray-400 mt-1">{sub}</p>
+            </div>
+          );
+
+          const SectionHeader = ({ title, filename, headers, rows }: { title: string; filename: string; headers: string[]; rows: (string|number)[][] }) => (
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-gray-800">{title}</h3>
+              <button
+                onClick={() => downloadCSV(filename, headers, rows)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition">
+                <Download className="w-3.5 h-3.5" /> Export CSV
+              </button>
+            </div>
+          );
+
+          return (
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#EFF6FF' }}>
+                    <BarChart2 className="w-5 h-5" style={{ color: '#1565C0' }} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900">Summary Reports</p>
+                    <p className="text-xs text-gray-400">{generated} · All data is live from the system</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const allRows: (string|number)[][] = [
+                      ['Section','Metric','Value'],
+                      ['Analytics','Page Views', analytics?.pageViews ?? 0],
+                      ['Analytics','Unique Visitors', analytics?.uniqueVisitors ?? 0],
+                      ['Analytics','Bounce Rate', analytics?.bounceRate ?? '—'],
+                      ['Ratings','Total Reviews', reviews.length],
+                      ['Ratings','Average Rating', avgRating],
+                      ...ratingsRows.map(r => ['Ratings', r.name, (r.total / r.count).toFixed(2)]),
+                      ['Submissions','Total', submissions.length],
+                      ...Object.entries(subByType).map(([t, c]) => ['Submissions', t, c]),
+                      ['Visitor Records','Total Visitors', totalVisitors],
+                      ...Object.entries(vrByAttr).map(([a, c]) => ['Visitor Records', a, c]),
+                    ];
+                    downloadCSV(`liliw-full-report-${Date.now()}.csv`, ['Section','Metric','Value'], allRows.slice(1));
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition"
+                  style={{ background: 'linear-gradient(135deg,#1565C0,#0B3D91)', boxShadow: '0 4px 14px rgba(21,101,192,.3)' }}>
+                  <Download className="w-4 h-4" /> Export Full Report
+                </button>
+              </div>
+
+              {/* ── Stat overview ── */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <ReportCard title="Page Views"      sub="Total tracked views"    value={(analytics?.pageViews ?? 0).toLocaleString()} color="#1565C0" />
+                <ReportCard title="Unique Visitors" sub="Distinct sessions"      value={(analytics?.uniqueVisitors ?? 0).toLocaleString()} color="#0B3D91" />
+                <ReportCard title="Total Reviews"   sub="Attraction ratings"     value={reviews.length} color="#F59E0B" />
+                <ReportCard title="Avg Rating"      sub="Across all attractions" value={avgRating} color="#10B981" />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <ReportCard title="Total Visitors"   sub="From LBO visitor logs" value={totalVisitors.toLocaleString()} color="#8B5CF6" />
+                <ReportCard title="Submissions"      sub="Inquiries & feedback"  value={submissions.length} color="#EC4899" />
+                <ReportCard title="Participations"   sub="Community engagements" value={participation.length} color="#00BFB3" />
+                <ReportCard title="Event Sign-ups"   sub="Event registrations"   value={signups.length} color="#F97316" />
+              </div>
+
+              {/* ── Ratings by attraction ── */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+                <SectionHeader
+                  title="Ratings by Attraction"
+                  filename={`ratings-report-${Date.now()}.csv`}
+                  headers={['Attraction', 'Total Reviews', 'Average Rating']}
+                  rows={ratingsRows.map(r => [r.name, r.count, (r.total / r.count).toFixed(2)])} />
+                {ratingsRows.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">No ratings data yet</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        <th className="px-4 py-3 text-left">Attraction</th>
+                        <th className="px-4 py-3 text-center">Reviews</th>
+                        <th className="px-4 py-3 text-center">Avg Rating</th>
+                        <th className="px-4 py-3 text-left">Distribution</th>
+                      </tr></thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {ratingsRows.sort((a,b) => b.count - a.count).map(r => {
+                          const avg = r.total / r.count;
+                          return (
+                            <tr key={r.name} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-3 font-medium text-gray-800">{r.name}</td>
+                              <td className="px-4 py-3 text-center text-gray-600">{r.count}</td>
+                              <td className="px-4 py-3 text-center">
+                                <span className="font-bold" style={{ color: avg >= 4 ? '#10B981' : avg >= 3 ? '#F59E0B' : '#EF4444' }}>
+                                  {avg.toFixed(1)} ★
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 bg-gray-100 rounded-full h-2">
+                                    <div className="h-2 rounded-full transition-all" style={{ width: `${(avg / 5) * 100}%`, backgroundColor: avg >= 4 ? '#10B981' : avg >= 3 ? '#F59E0B' : '#EF4444' }} />
+                                  </div>
+                                  <span className="text-xs text-gray-400 w-8">{((avg/5)*100).toFixed(0)}%</span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Submissions by type ── */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+                <SectionHeader
+                  title="Submissions & Inquiries"
+                  filename={`submissions-report-${Date.now()}.csv`}
+                  headers={['Type', 'Count', 'Percentage']}
+                  rows={Object.entries(subByType).map(([t, c]) => [t, c, `${((c/submissions.length)*100).toFixed(1)}%`])} />
+                {submissions.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">No submissions yet</p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {Object.entries(subByType).map(([type, count]) => (
+                      <div key={type} className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-center">
+                        <p className="text-2xl font-black text-gray-800">{count}</p>
+                        <p className="text-xs font-semibold text-gray-500 capitalize mt-1">{type}</p>
+                        <p className="text-[11px] text-gray-400">{((count/submissions.length)*100).toFixed(0)}% of total</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Visitor records by attraction ── */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+                <SectionHeader
+                  title="Visitor Records by Attraction"
+                  filename={`visitor-records-report-${Date.now()}.csv`}
+                  headers={['Attraction', 'Total Visitors']}
+                  rows={Object.entries(vrByAttr).map(([a, c]) => [a, c])} />
+                {Object.keys(vrByAttr).length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">No visitor records yet</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        <th className="px-4 py-3 text-left">Attraction</th>
+                        <th className="px-4 py-3 text-center">Total Visitors</th>
+                        <th className="px-4 py-3 text-left">Share</th>
+                      </tr></thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {Object.entries(vrByAttr).sort((a,b) => b[1]-a[1]).map(([attr, cnt]) => (
+                          <tr key={attr} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-4 py-3 font-medium text-gray-800">{attr}</td>
+                            <td className="px-4 py-3 text-center font-bold text-gray-700">{cnt.toLocaleString()}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-100 rounded-full h-2">
+                                  <div className="h-2 rounded-full" style={{ width: `${totalVisitors ? (cnt/totalVisitors)*100 : 0}%`, backgroundColor: '#1565C0' }} />
+                                </div>
+                                <span className="text-xs text-gray-400 w-10">{totalVisitors ? ((cnt/totalVisitors)*100).toFixed(0) : 0}%</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Analytics top pages ── */}
+              {analytics?.topPages && analytics.topPages.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+                  <SectionHeader
+                    title="Top Pages (Analytics)"
+                    filename={`analytics-pages-report-${Date.now()}.csv`}
+                    headers={['Page', 'Views']}
+                    rows={analytics.topPages.map(p => [p.path, p.views])} />
+                  <div className="space-y-2">
+                    {analytics.topPages.map(p => (
+                      <div key={p.path} className="flex items-center gap-3">
+                        <p className="text-sm text-gray-700 font-medium w-48 truncate">{p.path}</p>
+                        <div className="flex-1 bg-gray-100 rounded-full h-2">
+                          <div className="h-2 rounded-full" style={{ width: `${(p.views / (analytics.topPages[0]?.views || 1)) * 100}%`, backgroundColor: '#0B3D91' }} />
+                        </div>
+                        <span className="text-sm font-bold text-gray-700 w-16 text-right">{p.views.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
       </div>
 
