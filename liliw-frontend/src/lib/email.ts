@@ -152,6 +152,55 @@ export async function sendChangeRequestUpdate(data: {
   });
 }
 
+export async function sendAttractionRequestNotification(data: {
+  lbo_name: string; lbo_email: string; business_name: string;
+  attraction_name: string; category?: string; description?: string;
+}) {
+  await transporter.sendMail({
+    from: FROM,
+    to: ADMIN,
+    subject: `New Attraction Request — ${data.attraction_name}`,
+    html: base(
+      '📍 New Attraction Listing Request',
+      `<p style="color:#475569;margin:0 0 24px">An LBO has submitted a request to add a new attraction to the tourism directory.</p>
+      <div style="background:#f8fafc;border-radius:12px;padding:20px;margin-bottom:20px">
+        ${field('LBO / Owner', data.lbo_name)}
+        ${field('Email', data.lbo_email)}
+        ${field('Business', data.business_name)}
+        ${field('Attraction Name', data.attraction_name)}
+        ${field('Category', data.category || '—')}
+        ${field('Description', data.description || '—')}
+      </div>
+      ${btn('Review in Admin Dashboard', `${process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app'}/admin`)}`,
+    ),
+  });
+}
+
+export async function sendAttractionRequestUpdate(data: {
+  lbo_name: string; lbo_email: string; attraction_name: string;
+  status: 'approved' | 'rejected'; notes?: string;
+}) {
+  const isApproved = data.status === 'approved';
+  await transporter.sendMail({
+    from: FROM,
+    to: data.lbo_email,
+    subject: `Attraction Request ${isApproved ? 'Approved' : 'Update'} — ${data.attraction_name}`,
+    html: base(
+      isApproved ? '✅ Attraction Request Approved' : 'Attraction Request Update',
+      `<p style="color:#475569;margin:0 0 20px">Dear <strong>${data.lbo_name}</strong>,</p>
+      <p style="color:#475569;margin:0 0 20px">Your request to add <strong>${data.attraction_name}</strong> to the Liliw Tourism directory has been <strong>${isApproved ? 'approved' : 'reviewed'}</strong>.</p>
+      ${data.notes ? `<div style="background:${isApproved ? '#f0fdf4' : '#fff7ed'};border:1px solid ${isApproved ? '#bbf7d0' : '#fed7aa'};border-radius:12px;padding:20px;margin-bottom:20px">
+        <p style="margin:0;font-size:12px;font-weight:700;color:${isApproved ? '#166534' : '#9a3412'};text-transform:uppercase;letter-spacing:.06em">Notes</p>
+        <p style="margin:8px 0 0;color:${isApproved ? '#14532d' : '#7c2d12'};font-size:15px">${data.notes}</p>
+      </div>` : ''}
+      ${isApproved
+        ? `<p style="color:#475569;margin:0 0 20px">Our team will create the listing in the system. You will receive your attraction credentials soon.</p>${btn('View Your Dashboard', `${process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app'}/lbo`, '#10B981')}`
+        : `<p style="color:#475569;margin:0 0 20px">If you have questions or would like to submit a revised request, please contact us or resubmit through your dashboard.</p>${btn('Visit Liliw Tourism', `${process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app'}`, '#64748B')}`
+      }`,
+    ),
+  });
+}
+
 export async function sendContactNotification(data: {
   name: string; email: string; phone?: string; type: string; message: string;
 }) {

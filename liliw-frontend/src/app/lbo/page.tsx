@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Building2, ChevronLeft, Loader2, CheckCircle, AlertCircle,
   Clock, FileText, ArrowRight, RefreshCw, Users, Plus, X,
-  Edit, TrendingUp,
+  Edit, TrendingUp, MapPin, Star, Send, Layers,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -22,7 +22,13 @@ const FIELDS_TO_CHANGE = [
   'Other',
 ];
 
-type Tab = 'requests' | 'visitors';
+type Tab = 'overview' | 'requests' | 'visitors';
+
+const CATEGORIES = ['heritage', 'spot', 'dining', 'other'];
+const CATEGORY_LABELS: Record<string, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food', other: 'Other' };
+
+const TYPE_COLORS: Record<string, string> = { heritage: '#F59E0B', spot: '#3B82F6', dining: '#EF4444' };
+const TYPE_LABELS: Record<string, string>  = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food' };
 
 const CR_STATUS_COLOR: Record<string, string> = {
   pending:     'bg-yellow-50 text-yellow-700',
@@ -38,6 +44,20 @@ const CR_STATUS_LABEL: Record<string, string> = {
   rejected:    'Rejected',
 };
 
+const AR_STATUS_COLOR: Record<string, string> = {
+  pending:         'bg-yellow-50 text-yellow-700',
+  editor_reviewed: 'bg-blue-50 text-blue-700',
+  approved:        'bg-green-50 text-green-700',
+  rejected:        'bg-red-50 text-red-600',
+};
+
+const AR_STATUS_LABEL: Record<string, string> = {
+  pending:         'Pending Review',
+  editor_reviewed: 'Under Review',
+  approved:        'Approved',
+  rejected:        'Rejected',
+};
+
 type AppInfo = {
   id: number;
   business_name: string;
@@ -47,19 +67,33 @@ type AppInfo = {
   address: string;
   attraction_name: string;
   business_type: string;
+  category?: string | null;
+  strapi_attraction_id?: string | null;
+  strapi_attraction_type?: string | null;
 };
 
-type VisitorRow = {
-  label: string;
-  male_key: string;
-  female_key: string;
+type AttractionData = {
+  linked: boolean;
+  type?: string;
+  strapiId?: string;
+  attraction?: {
+    name: string;
+    description?: string | null;
+    location?: string | null;
+    category?: string | null;
+    rating?: number | null;
+    photos?: any[];
+  };
+  error?: string;
 };
+
+type VisitorRow = { label: string; male_key: string; female_key: string };
 
 const VISITOR_ROWS: VisitorRow[] = [
-  { label: 'Local (Liliw Residents)',    male_key: 'local_male',            female_key: 'local_female' },
-  { label: 'Other City (Same Province)', male_key: 'other_city_male',       female_key: 'other_city_female' },
-  { label: 'Other Province',             male_key: 'other_province_male',   female_key: 'other_province_female' },
-  { label: 'Foreign',                    male_key: 'foreign_male',          female_key: 'foreign_female' },
+  { label: 'Local (Liliw Residents)',    male_key: 'local_male',          female_key: 'local_female' },
+  { label: 'Other City (Same Province)', male_key: 'other_city_male',     female_key: 'other_city_female' },
+  { label: 'Other Province',             male_key: 'other_province_male', female_key: 'other_province_female' },
+  { label: 'Foreign',                    male_key: 'foreign_male',        female_key: 'foreign_female' },
 ];
 
 const BLANK_VISITORS = Object.fromEntries(
@@ -73,31 +107,43 @@ function fmt(dateStr: string) {
 export default function LboDashboard() {
   const { user, token, loading: authLoading } = useAuth();
 
-  const [checking,   setChecking]   = useState(true);
-  const [appInfo,    setAppInfo]    = useState<AppInfo | null>(null);
-  const [notLbo,     setNotLbo]     = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [appInfo,  setAppInfo]  = useState<AppInfo | null>(null);
+  const [notLbo,   setNotLbo]   = useState(false);
 
-  const [activeTab, setActiveTab]   = useState<Tab>('requests');
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
 
-  // Change requests
-  const [requests,      setRequests]     = useState<any[]>([]);
-  const [loadingReqs,   setLoadingReqs]  = useState(true);
-  const [showCrForm,    setShowCrForm]   = useState(false);
-  const [crForm,        setCrForm]       = useState({ field_to_change: '', current_value: '', requested_value: '', reason: '' });
-  const [submittingCr,  setSubmittingCr] = useState(false);
-  const [crMsg,         setCrMsg]        = useState<{ ok: boolean; text: string } | null>(null);
+  /* ── Attraction Overview ── */
+  const [attrData,    setAttrData]    = useState<AttractionData | null>(null);
+  const [loadingAttr, setLoadingAttr] = useState(false);
 
-  // Visitor records
-  const [records,       setRecords]      = useState<any[]>([]);
-  const [loadingRecs,   setLoadingRecs]  = useState(true);
+  /* ── Attraction Requests ── */
+  const [attrReqs,       setAttrReqs]       = useState<any[]>([]);
+  const [loadingAttrReqs,setLoadingAttrReqs]= useState(false);
+  const [showArForm,     setShowArForm]     = useState(false);
+  const [arForm,         setArForm]         = useState({ attraction_name: '', description: '', category: '' });
+  const [submittingAr,   setSubmittingAr]   = useState(false);
+  const [arMsg,          setArMsg]          = useState<{ ok: boolean; text: string } | null>(null);
+
+  /* ── Change Requests ── */
+  const [requests,      setRequests]    = useState<any[]>([]);
+  const [loadingReqs,   setLoadingReqs] = useState(true);
+  const [showCrForm,    setShowCrForm]  = useState(false);
+  const [crForm,        setCrForm]      = useState({ field_to_change: '', current_value: '', requested_value: '', reason: '' });
+  const [submittingCr,  setSubmittingCr]= useState(false);
+  const [crMsg,         setCrMsg]       = useState<{ ok: boolean; text: string } | null>(null);
+
+  /* ── Visitor Records ── */
+  const [records,      setRecords]     = useState<any[]>([]);
+  const [loadingRecs,  setLoadingRecs] = useState(true);
   const now = new Date();
-  const [vrMonth,       setVrMonth]      = useState(now.getMonth() + 1);
-  const [vrYear,        setVrYear]       = useState(now.getFullYear());
-  const [vrCounts,      setVrCounts]     = useState<Record<string, string>>(BLANK_VISITORS);
-  const [submittingVr,  setSubmittingVr] = useState(false);
-  const [vrMsg,         setVrMsg]        = useState<{ ok: boolean; text: string } | null>(null);
+  const [vrMonth,      setVrMonth]     = useState(now.getMonth() + 1);
+  const [vrYear,       setVrYear]      = useState(now.getFullYear());
+  const [vrCounts,     setVrCounts]    = useState<Record<string, string>>(BLANK_VISITORS);
+  const [submittingVr, setSubmittingVr]= useState(false);
+  const [vrMsg,        setVrMsg]       = useState<{ ok: boolean; text: string } | null>(null);
 
-  // Verify LBO status on mount
+  /* ── Auth check ── */
   useEffect(() => {
     if (authLoading) return;
     if (!user || !token) { setChecking(false); return; }
@@ -111,7 +157,29 @@ export default function LboDashboard() {
       .finally(() => setChecking(false));
   }, [authLoading, user, token]);
 
-  // Fetch change requests
+  /* ── Fetch attraction data ── */
+  useEffect(() => {
+    if (!appInfo || !token) return;
+    setLoadingAttr(true);
+    fetch('/api/lbo/attraction', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setAttrData(d))
+      .catch(() => setAttrData({ linked: false }))
+      .finally(() => setLoadingAttr(false));
+  }, [appInfo, token]);
+
+  /* ── Fetch attraction requests (only if no linked attraction) ── */
+  useEffect(() => {
+    if (!appInfo || !token || appInfo.strapi_attraction_id) return;
+    setLoadingAttrReqs(true);
+    fetch('/api/lbo/attraction-request', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setAttrReqs(d.data || []))
+      .catch(() => {})
+      .finally(() => setLoadingAttrReqs(false));
+  }, [appInfo, token]);
+
+  /* ── Fetch change requests ── */
   useEffect(() => {
     if (!appInfo || !token) return;
     fetch('/api/lbo/change-requests', { headers: { Authorization: `Bearer ${token}` } })
@@ -121,7 +189,7 @@ export default function LboDashboard() {
       .finally(() => setLoadingReqs(false));
   }, [appInfo, token]);
 
-  // Fetch visitor records
+  /* ── Fetch visitor records ── */
   useEffect(() => {
     if (!appInfo || !token) return;
     fetch('/api/lbo/visitor-records', { headers: { Authorization: `Bearer ${token}` } })
@@ -130,6 +198,39 @@ export default function LboDashboard() {
       .catch(() => {})
       .finally(() => setLoadingRecs(false));
   }, [appInfo, token]);
+
+  /* ── Handlers ── */
+  const handleSubmitAr = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appInfo) return;
+    setSubmittingAr(true);
+    setArMsg(null);
+    try {
+      const res = await fetch('/api/lbo/attraction-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          attraction_name: arForm.attraction_name,
+          description:     arForm.description || undefined,
+          category:        arForm.category    || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setArMsg({ ok: true, text: 'Request submitted! Our team will review it shortly.' });
+        setArForm({ attraction_name: '', description: '', category: '' });
+        setShowArForm(false);
+        fetch('/api/lbo/attraction-request', { headers: { Authorization: `Bearer ${token}` } })
+          .then(r => r.json()).then(d => setAttrReqs(d.data || []));
+      } else {
+        setArMsg({ ok: false, text: data.error || 'Submission failed' });
+      }
+    } catch {
+      setArMsg({ ok: false, text: 'Network error' });
+    }
+    setSubmittingAr(false);
+    setTimeout(() => setArMsg(null), 5000);
+  };
 
   const handleSubmitCr = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,7 +255,6 @@ export default function LboDashboard() {
         setCrMsg({ ok: true, text: 'Request submitted successfully!' });
         setCrForm({ field_to_change: '', current_value: '', requested_value: '', reason: '' });
         setShowCrForm(false);
-        // Refresh list
         fetch('/api/lbo/change-requests', { headers: { Authorization: `Bearer ${token}` } })
           .then(r => r.json()).then(d => setRequests(d.data || []));
       } else {
@@ -199,7 +299,7 @@ export default function LboDashboard() {
     setTimeout(() => setVrMsg(null), 4000);
   };
 
-  /* ─── Loading / auth states ─── */
+  /* ── Loading / access states ── */
   if (authLoading || checking) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--warm-white)' }}>
@@ -253,7 +353,7 @@ export default function LboDashboard() {
     );
   }
 
-  /* ─── Dashboard ─── */
+  /* ── Dashboard ── */
   const totalVisitors = (r: any) => {
     const a = r.attributes || r;
     return (a.local_male||0)+(a.local_female||0)+(a.other_city_male||0)+(a.other_city_female||0)+(a.other_province_male||0)+(a.other_province_female||0)+(a.foreign_male||0)+(a.foreign_female||0);
@@ -266,6 +366,9 @@ export default function LboDashboard() {
   };
 
   const vrGrandTotal = VISITOR_ROWS.reduce((sum, r) => sum + vrTotal(r.male_key, r.female_key), 0);
+
+  const pendingCrCount = requests.filter(r => (r.attributes?.status || r.status) === 'pending').length;
+  const isLinked = appInfo?.strapi_attraction_id;
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -282,9 +385,14 @@ export default function LboDashboard() {
             <div>
               <h1 className="text-2xl font-bold text-white">{appInfo!.business_name}</h1>
               <p className="text-blue-200 text-sm mt-0.5">{appInfo!.owner_name} · LBO Dashboard</p>
-              {appInfo!.attraction_name && (
+              {appInfo!.attraction_name && !isLinked && (
                 <span className="inline-block mt-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-blue-100">
                   {appInfo!.attraction_name}
+                </span>
+              )}
+              {isLinked && attrData?.attraction && (
+                <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-blue-100">
+                  <MapPin className="w-3 h-3" />{attrData.attraction.name}
                 </span>
               )}
             </div>
@@ -296,8 +404,9 @@ export default function LboDashboard() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 flex">
           {([
-            { key: 'requests', label: 'Change Requests', icon: <Edit className="w-4 h-4" />, badge: requests.filter(r => (r.attributes?.status || r.status) === 'pending').length },
-            { key: 'visitors', label: 'Visitor Records',  icon: <TrendingUp className="w-4 h-4" />, badge: 0 },
+            { key: 'overview',  label: 'Overview',        icon: <MapPin className="w-4 h-4" />,     badge: 0 },
+            { key: 'requests',  label: 'Change Requests',  icon: <Edit className="w-4 h-4" />,       badge: pendingCrCount },
+            { key: 'visitors',  label: 'Visitor Records',  icon: <TrendingUp className="w-4 h-4" />, badge: 0 },
           ] as { key: Tab; label: string; icon: React.ReactNode; badge: number }[]).map(({ key, label, icon, badge }) => (
             <button key={key} onClick={() => setActiveTab(key)}
               className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold border-b-2 transition-colors ${activeTab === key ? 'border-teal-400 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
@@ -312,14 +421,209 @@ export default function LboDashboard() {
 
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
 
+        {/* ── OVERVIEW ── */}
+        {activeTab === 'overview' && (
+          <>
+            {loadingAttr ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} />
+              </div>
+            ) : attrData?.linked && attrData.attraction ? (
+              /* ── Linked attraction card ── */
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${TYPE_COLORS[attrData.type!] || '#64748b'}20` }}>
+                      <Layers className="w-5 h-5" style={{ color: TYPE_COLORS[attrData.type!] || '#64748b' }} />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-gray-900">{attrData.attraction.name}</h2>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white"
+                          style={{ backgroundColor: TYPE_COLORS[attrData.type!] || '#64748b' }}>
+                          {TYPE_LABELS[attrData.type!] || attrData.type}
+                        </span>
+                        {attrData.attraction.category && (
+                          <span className="text-xs text-gray-400 capitalize">{attrData.attraction.category}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {(attrData.attraction.rating ?? 0) > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <Star className="w-4 h-4 fill-amber-400 stroke-amber-400" />
+                      <span className="text-sm font-bold text-gray-700">{Number(attrData.attraction.rating).toFixed(1)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="px-6 py-5 space-y-4">
+                  {attrData.attraction.description && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Description</p>
+                      <p className="text-sm text-gray-700 leading-relaxed">{attrData.attraction.description}</p>
+                    </div>
+                  )}
+                  {attrData.attraction.location && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                      {attrData.attraction.location}
+                    </div>
+                  )}
+                  {!attrData.attraction.description && !attrData.attraction.location && (
+                    <p className="text-sm text-gray-400">No additional details available from Strapi.</p>
+                  )}
+                </div>
+
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+                  <p className="text-xs text-gray-400">To update your listing information, submit a Change Request</p>
+                  <button onClick={() => setActiveTab('requests')}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90"
+                    style={{ backgroundColor: '#1565C0' }}>
+                    <Edit className="w-3.5 h-3.5" /> Request Changes
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* ── No attraction linked ── */
+              <>
+                <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
+                    <MapPin className="w-8 h-8 text-blue-400" />
+                  </div>
+                  <h2 className="font-bold text-gray-900 mb-1">No Attraction Linked Yet</h2>
+                  <p className="text-sm text-gray-400 max-w-md mx-auto mb-6">
+                    Your business hasn't been linked to an attraction listing in our tourism directory.
+                    {attrData?.linked === false && !attrData.error
+                      ? " Submit a request and our team will create and link your attraction."
+                      : " Contact us if you believe this is an error."}
+                  </p>
+                  {!showArForm && (
+                    <button onClick={() => { setShowArForm(true); setArMsg(null); }}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90"
+                      style={{ backgroundColor: '#1565C0' }}>
+                      <Plus className="w-4 h-4" /> Request New Listing
+                    </button>
+                  )}
+                </div>
+
+                {/* Attraction Request Form */}
+                {showArForm && (
+                  <form onSubmit={handleSubmitAr} className="bg-white rounded-2xl border border-blue-100 shadow-sm p-6 space-y-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-bold text-gray-900 text-sm">Request New Attraction Listing</h3>
+                      <button type="button" onClick={() => { setShowArForm(false); setArMsg(null); }}
+                        className="text-gray-400 hover:text-red-500 transition">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Attraction Name <span className="text-red-500">*</span></label>
+                      <input required type="text" value={arForm.attraction_name}
+                        onChange={e => setArForm(f => ({ ...f, attraction_name: e.target.value }))}
+                        placeholder="Official name of your attraction"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Category</label>
+                      <select value={arForm.category} onChange={e => setArForm(f => ({ ...f, category: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="">Select category (optional)</option>
+                        {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Description (optional)</label>
+                      <textarea value={arForm.description}
+                        onChange={e => setArForm(f => ({ ...f, description: e.target.value }))}
+                        rows={3} placeholder="Brief description of your attraction…"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
+                    </div>
+
+                    {arMsg && (
+                      <div className={`flex items-center gap-2 text-sm font-semibold ${arMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                        {arMsg.ok ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                        {arMsg.text}
+                      </div>
+                    )}
+
+                    <button type="submit" disabled={submittingAr}
+                      className="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+                      style={{ backgroundColor: '#1565C0' }}>
+                      {submittingAr ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : <><Send className="w-4 h-4" /> Submit Request</>}
+                    </button>
+                  </form>
+                )}
+
+                {/* Global arMsg when form is closed */}
+                {!showArForm && arMsg && (
+                  <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold border ${arMsg.ok ? 'bg-green-50 border-green-100 text-green-600' : 'bg-red-50 border-red-100 text-red-500'}`}>
+                    {arMsg.ok ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                    {arMsg.text}
+                  </div>
+                )}
+
+                {/* Past attraction requests */}
+                {(loadingAttrReqs || attrReqs.length > 0) && (
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                      <h2 className="font-bold text-gray-900">Your Listing Requests</h2>
+                      <span className="text-sm text-gray-400">{attrReqs.length} total</span>
+                    </div>
+                    {loadingAttrReqs ? (
+                      <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin" style={{ color: '#00BFB3' }} /></div>
+                    ) : (
+                      <div className="divide-y divide-gray-50">
+                        {attrReqs.map(req => {
+                          const status = req.status || 'pending';
+                          return (
+                            <div key={req.id} className="px-6 py-4">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-semibold text-gray-900 text-sm">{req.attraction_name}</span>
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${AR_STATUS_COLOR[status] || 'bg-gray-100 text-gray-600'}`}>
+                                      {AR_STATUS_LABEL[status] || status}
+                                    </span>
+                                    {req.category && (
+                                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 capitalize">{req.category}</span>
+                                    )}
+                                  </div>
+                                  {req.description && (
+                                    <p className="text-xs text-gray-400 mt-1 line-clamp-2">{req.description}</p>
+                                  )}
+                                  {(req.editor_notes || req.officer_notes) && (
+                                    <div className="mt-2 px-3 py-2 bg-amber-50 border border-amber-100 rounded-lg">
+                                      <p className="text-xs font-semibold text-amber-700">Staff note:</p>
+                                      <p className="text-xs text-amber-800 mt-0.5">{req.officer_notes || req.editor_notes}</p>
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="text-xs text-gray-400 shrink-0">{req.created_at ? fmt(req.created_at) : '—'}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
         {/* ── CHANGE REQUESTS ── */}
         {activeTab === 'requests' && (
           <>
-            {/* Info card */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-start gap-4 flex-wrap justify-between">
               <div>
                 <h2 className="font-bold text-gray-900">Change Requests</h2>
-                <p className="text-xs text-gray-400 mt-0.5 max-w-lg">Submit a request to update any information about your attraction listing. Our CHATO Editor will review and apply the changes in the system.</p>
+                <p className="text-xs text-gray-400 mt-0.5 max-w-lg">Submit a request to update any information about your attraction listing. Our CHATO Editor will review and apply the changes.</p>
               </div>
               <button onClick={() => { setShowCrForm(v => !v); setCrMsg(null); }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shrink-0"
@@ -328,7 +632,6 @@ export default function LboDashboard() {
               </button>
             </div>
 
-            {/* New request form */}
             {showCrForm && (
               <form onSubmit={handleSubmitCr} className="bg-white rounded-2xl border border-blue-100 shadow-sm p-6 space-y-4">
                 <h3 className="font-bold text-gray-900 text-sm mb-1">New Change Request</h3>
@@ -378,7 +681,6 @@ export default function LboDashboard() {
               </form>
             )}
 
-            {/* Global crMsg when form is closed */}
             {!showCrForm && crMsg && (
               <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold border ${crMsg.ok ? 'bg-green-50 border-green-100 text-green-600' : 'bg-red-50 border-red-100 text-red-500'}`}>
                 {crMsg.ok ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
@@ -386,7 +688,6 @@ export default function LboDashboard() {
               </div>
             )}
 
-            {/* Request list */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="font-bold text-gray-900">Your Requests</h2>
@@ -446,11 +747,9 @@ export default function LboDashboard() {
               <p className="text-xs text-gray-400 mt-0.5">Submit monthly visitor counts for your attraction. These are used for tourism statistics reporting.</p>
             </div>
 
-            {/* Submission form */}
             <form onSubmit={handleSubmitVr} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
               <h3 className="font-bold text-gray-900 text-sm">Submit Monthly Record</h3>
 
-              {/* Month + Year */}
               <div className="flex gap-4 flex-wrap">
                 <div className="flex-1 min-w-[160px]">
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Month</label>
@@ -466,7 +765,6 @@ export default function LboDashboard() {
                 </div>
               </div>
 
-              {/* VAR-2 style table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border-collapse">
                   <thead>
@@ -529,7 +827,6 @@ export default function LboDashboard() {
               </button>
             </form>
 
-            {/* Past records */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="font-bold text-gray-900">Past Submissions</h2>
