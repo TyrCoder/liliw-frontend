@@ -186,6 +186,8 @@ export default function AdminDashboard() {
   const [scrapingId,         setScrapingId]         = useState<string | null>(null);
   const [scrapeMsg,          setScrapeMsg]          = useState<{ id: string; ok: boolean; text: string } | null>(null);
   const [expandedReview,     setExpandedReview]     = useState<string | null>(null);
+  const [scrapeAllActive,    setScrapeAllActive]    = useState(false);
+  const [scrapeAllProgress,  setScrapeAllProgress]  = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     if (!loading && (!user || !isStaff)) router.replace('/');
@@ -2024,12 +2026,82 @@ export default function AdminDashboard() {
 
           const cachedMap = Object.fromEntries(externalReviews.map(r => [r.strapi_id, r]));
 
+          const handleScrapeAll = async () => {
+            const unscraped = attractions.filter(a => !cachedMap[a.strapiId]);
+            if (unscraped.length === 0) return;
+            setScrapeAllActive(true);
+            setScrapeAllProgress({ current: 0, total: unscraped.length });
+
+            // Start all runs in parallel
+            const runs = await Promise.all(unscraped.map(async attr => {
+              try {
+                const c = attr.attributes.coordinates;
+                const lat = c?.latitude ?? c?.lat ?? null;
+                const lng = c?.longitude ?? c?.lng ?? null;
+                const res = await fetch('/api/admin/scrape-reviews', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ strapiId: attr.strapiId, attractionName: attr.attributes.name, lat, lng }),
+                });
+                const { runId } = await res.json();
+                return { attr, runId: runId || null };
+              } catch { return { attr, runId: null }; }
+            }));
+
+            // Poll all in parallel until each finishes
+            let completed = 0;
+            await Promise.all(runs.filter(r => r.runId).map(async ({ attr, runId }) => {
+              const deadline = Date.now() + 300_000;
+              while (Date.now() < deadline) {
+                await new Promise(r => setTimeout(r, 5000));
+                try {
+                  const poll = await fetch(
+                    `/api/admin/scrape-reviews?runId=${runId}&strapiId=${attr.strapiId}&attractionName=${encodeURIComponent(attr.attributes.name)}`
+                  ).then(r => r.json());
+                  if (poll.status === 'SUCCEEDED' || poll.status === 'FAILED' || poll.status === 'ABORTED') {
+                    completed++;
+                    setScrapeAllProgress(p => ({ ...p, current: completed }));
+                    break;
+                  }
+                } catch {}
+              }
+            }));
+
+            fetch('/api/admin/external-reviews').then(r => r.json()).then(d => setExternalReviews(d.data || []));
+            setScrapeAllActive(false);
+            setScrapeAllProgress({ current: 0, total: 0 });
+          };
+
           return (
             <div className="space-y-4">
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-                <h2 className="font-bold text-gray-900">Online Reviews — Google Maps</h2>
-                <p className="text-xs text-gray-400 mt-1">Fetch real visitor reviews from Google Maps for each attraction using Apify. Data is cached and updated on each scrape.</p>
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <h2 className="font-bold text-gray-900">Online Reviews — Google Maps</h2>
+                  <p className="text-xs text-gray-400 mt-1">Fetch real visitor reviews from Google Maps for each attraction using Apify. Data is cached and updated on each scrape.</p>
+                </div>
+                <button onClick={handleScrapeAll}
+                  disabled={scrapeAllActive || !!scrapingId}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 shrink-0"
+                  style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
+                  {scrapeAllActive
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Scraping {scrapeAllProgress.current}/{scrapeAllProgress.total}…</>
+                    : <><RefreshCw className="w-4 h-4" /> Scrape All ({attractions.filter(a => !cachedMap[a.strapiId]).length} remaining)</>}
+                </button>
               </div>
+
+              {scrapeAllActive && (
+                <div className="bg-blue-50 border border-blue-100 rounded-2xl px-5 py-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold text-blue-700">Scraping all attractions via Apify…</p>
+                    <p className="text-sm font-bold text-blue-900">{scrapeAllProgress.current} / {scrapeAllProgress.total}</p>
+                  </div>
+                  <div className="w-full bg-blue-100 rounded-full h-2">
+                    <div className="h-2 rounded-full bg-blue-500 transition-all"
+                      style={{ width: `${scrapeAllProgress.total ? (scrapeAllProgress.current / scrapeAllProgress.total) * 100 : 0}%` }} />
+                  </div>
+                  <p className="text-xs text-blue-500 mt-2">This may take several minutes. Keep this tab open.</p>
+                </div>
+              )}
 
               {loadingAttr || loadingExternal ? (
                 <div className="flex items-center justify-center py-20">
