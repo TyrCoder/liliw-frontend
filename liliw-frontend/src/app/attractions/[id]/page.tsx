@@ -306,9 +306,13 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
                     </div>
                   </div>
                   {rev.text && <p className="text-sm text-gray-600 leading-relaxed line-clamp-4">{rev.text}</p>}
-                  {rev.published && (
-                    <p className="text-xs text-gray-400 mt-2">{new Date(rev.published).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                  )}
+                  {rev.published && (() => {
+                    const d = new Date(rev.published);
+                    const label = isNaN(d.getTime())
+                      ? rev.published
+                      : d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+                    return <p className="text-xs text-gray-400 mt-2">{label}</p>;
+                  })()}
                 </div>
               ))}
             </div>
