@@ -29,13 +29,21 @@ export default function Navbar() {
   const [exploreOpen, setExploreOpen]   = useState(false);
   const [searchOpen, setSearchOpen]     = useState(false);
   const [scrolled, setScrolled]         = useState(false);
-  const { user, logout, isAdmin, isChatoOfficer, isChatoEditor, isStaff, isLocal, adminPanelRole } = useAuth();
+  const [isLbo,    setIsLbo]            = useState(false);
+  const { user, token, logout, isAdmin, isChatoOfficer, isChatoEditor, isStaff, isLocal, adminPanelRole } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!isLocal || !token) { setIsLbo(false); return; }
+    fetch('/api/lbo/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => setIsLbo(r.ok))
+      .catch(() => setIsLbo(false));
+  }, [isLocal, token]);
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu  = () => { setIsOpen(false); setExploreOpen(false); };
@@ -231,12 +239,20 @@ export default function Navbar() {
                               {isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'Officer Dashboard' : 'Editor Dashboard'}
                             </Link>
                           )}
-                          {isLocal && (
+                          {isLocal && isLbo && (
                             <Link href="/lbo" onClick={() => setUserMenuOpen(false)}
                               className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 transition border-t border-gray-100"
                               style={{ color: '#374151', fontFamily: BL }}>
                               <LayoutDashboard className="w-4 h-4 text-blue-500" />
                               Business Dashboard
+                            </Link>
+                          )}
+                          {isLocal && !isLbo && (
+                            <Link href="/business/apply" onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-teal-50 hover:text-teal-700 transition border-t border-gray-100"
+                              style={{ color: '#374151', fontFamily: BL }}>
+                              <LayoutDashboard className="w-4 h-4 text-teal-500" />
+                              Apply as Business Owner
                             </Link>
                           )}
                           <button onClick={() => { logout(); setUserMenuOpen(false); }}
@@ -294,7 +310,8 @@ export default function Navbar() {
                     </>
                   )}
                   {isStaff && <NavLink href="/admin" label={isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'Officer Dashboard' : 'Editor Dashboard'} onClick={closeMenu} />}
-                  {isLocal && <NavLink href="/lbo" label="Business Dashboard" onClick={closeMenu} />}
+                  {isLocal && isLbo  && <NavLink href="/lbo" label="Business Dashboard" onClick={closeMenu} />}
+                  {isLocal && !isLbo && <NavLink href="/business/apply" label="Apply as Business Owner" onClick={closeMenu} />}
 
                   <button onClick={() => { setSearchOpen(true); closeMenu(); }}
                     className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition border border-gray-200 w-full hover:bg-blue-50 hover:text-blue-700"
