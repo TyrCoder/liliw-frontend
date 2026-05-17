@@ -5,11 +5,11 @@ import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/str
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // Cache the knowledge base for 5 minutes
-let knowledgeCache: { text: string; at: number } | null = null;
+let knowledgeCache: { text: string; at: number; attractionMap: Map<string, any> } | null = null;
 
-async function buildKnowledge(): Promise<string> {
+async function buildKnowledge(): Promise<{ text: string; attractionMap: Map<string, any> }> {
   if (knowledgeCache && Date.now() - knowledgeCache.at < 5 * 60 * 1000) {
-    return knowledgeCache.text;
+    return { text: knowledgeCache.text, attractionMap: knowledgeCache.attractionMap };
   }
 
   const [attractions, faqs, itineraries, events] = await Promise.allSettled([
@@ -20,6 +20,7 @@ async function buildKnowledge(): Promise<string> {
   ]);
 
   const lines: string[] = ['=== LILIW REAL DATA (from live database) ===\n'];
+  const attractionMap = new Map<string, any>();
 
   if (attractions.status === 'fulfilled' && attractions.value.length) {
     lines.push('ATTRACTIONS & PLACES (include the URL when recommending):');
@@ -27,6 +28,7 @@ async function buildKnowledge(): Promise<string> {
       const attr = a.attributes;
       const typeLabel = a.type === 'heritage' ? 'Heritage' : a.type === 'spot' ? 'Tourist Spot' : 'Dining';
       lines.push(`- [${typeLabel}] ${attr.name} | URL: /attractions/${a.id}${attr.location ? ` | ${attr.location}` : ''}${attr.description ? ` | ${attr.description.slice(0, 100)}` : ''}${attr.rating ? ` | Rating: ${attr.rating}/5` : ''}`);
+      attractionMap.set(a.id, a);
     }
     lines.push('');
   }
@@ -60,8 +62,8 @@ async function buildKnowledge(): Promise<string> {
   }
 
   const text = lines.join('\n');
-  knowledgeCache = { text, at: Date.now() };
-  return text;
+  knowledgeCache = { text, at: Date.now(), attractionMap };
+  return { text, attractionMap };
 }
 
 // Detect language from user message
@@ -140,7 +142,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Empty message' }, { status: 400 });
     }
 
-    const knowledge = await buildKnowledge();
+    const { text: knowledge, attractionMap } = await buildKnowledge();
     const language = detectLanguage(message);
     const systemPrompt = buildSystemPrompt(knowledge, language);
 
@@ -170,7 +172,35 @@ export async function POST(request: NextRequest) {
     const reply = completion.choices[0]?.message?.content
       || 'Ay, may problema sa connection ko. Ulit mo nga? 😅';
 
-    return NextResponse.json({ success: true, reply });
+    // Extract attraction IDs mentioned in the reply via markdown links
+    const linkRe = /\(\/attractions\/([^)]+)\)/g;
+    const mentionedAttractions: any[] = [];
+    const seen = new Set<string>();
+    let lm: RegExpExecArray | null;
+    while ((lm = linkRe.exec(reply)) !== null) {
+      const id = lm[1];
+      if (!seen.has(id) && attractionMap.has(id)) {
+        seen.add(id);
+        const a = attractionMap.get(id)!;
+        const attr = a.attributes;
+        const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+        const firstPhoto = attr.photos?.[0];
+        const imgUrl = firstPhoto?.url
+          ? (firstPhoto.url.startsWith('http') ? firstPhoto.url : `${STRAPI_BASE}${firstPhoto.url}`)
+          : null;
+        mentionedAttractions.push({
+          id: a.id,
+          name: attr.name,
+          type: a.type,
+          location: attr.location || null,
+          rating: attr.rating || null,
+          imageUrl: imgUrl,
+          url: `/attractions/${a.id}`,
+        });
+      }
+    }
+
+    return NextResponse.json({ success: true, reply, attractions: mentionedAttractions });
   } catch {
     return NextResponse.json({ error: 'Failed to respond' }, { status: 500 });
   }
