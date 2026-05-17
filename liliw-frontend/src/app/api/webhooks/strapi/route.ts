@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { syncAlgolia } from '@/lib/syncAlgolia';
 import { supabaseServer } from '@/lib/supabase-server';
 
@@ -40,6 +41,19 @@ export async function POST(req: NextRequest) {
     });
     if (error) console.error('[webhook] audit log insert failed:', error.code, error.message);
   }
+
+  // Bust Next.js cache for pages affected by this content type
+  const paths: string[] = ['/', '/attractions', '/map'];
+  if (uid?.includes('heritage-site'))    paths.push('/heritage');
+  if (uid?.includes('tourist-spot'))     paths.push('/tourist-spots');
+  if (uid?.includes('dining-and-food'))  paths.push('/dining');
+  if (uid?.includes('event'))            paths.push('/community');
+  if (uid?.includes('faq'))              paths.push('/faq');
+  if (uid?.includes('itinerary'))        paths.push('/itineraries');
+  if (uid?.includes('art-form'))         paths.push('/arts');
+  if (uid?.includes('culture'))          paths.push('/culture');
+  if (uid?.includes('news'))             paths.push('/news');
+  paths.forEach(p => revalidatePath(p));
 
   // Sync Algolia index — respond immediately so Strapi doesn't time out
   const syncPromise = syncAlgolia().catch(err => {
