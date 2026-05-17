@@ -90,7 +90,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-white">
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }}>
         <div className="max-w-3xl mx-auto px-4 py-14">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
             <Link href="/" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>

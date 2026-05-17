@@ -143,7 +143,7 @@ export default function EventDetailPage() {
       <div className="relative h-64 sm:h-80 bg-gray-900 overflow-hidden">
         {coverUrl
           ? <img src={coverUrl} alt={a.title} className="absolute inset-0 w-full h-full object-cover opacity-60" />
-          : <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg,#1E3A8A,#1565C0)' }} />
+          : <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }} />
         }
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6 max-w-3xl mx-auto">

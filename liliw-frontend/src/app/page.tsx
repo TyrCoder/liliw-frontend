@@ -116,7 +116,7 @@ function FestiveHeading({ title, sub, light = false }: { title: string; sub?: st
       <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
         <Bunting />
         <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black uppercase tracking-wide leading-tight"
-          style={{ fontFamily: HL, color: light ? '#ffffff' : '#1E3A8A' }}>
+          style={{ fontFamily: HL, color: light ? '#ffffff' : '#0B3D91' }}>
           {title}
         </h2>
         <Bunting flip />
@@ -404,7 +404,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════
           QUICK CATEGORY ICONS — colored squares over navy bg
           ══════════════════════════════════════════════════════ */}
-      <section className="py-16" style={{ backgroundColor: '#1E3A8A' }}>
+      <section className="py-16" style={{ backgroundColor: '#0B3D91' }}>
         <div className="max-w-3xl mx-auto px-4">
           <p className="text-center text-white/60 text-xs font-bold uppercase tracking-widest mb-8"
             style={{ fontFamily: HL }}>
@@ -428,7 +428,7 @@ export default function Home() {
       </section>
 
       {/* Wave: navy → white */}
-      <WaveDown from="#1E3A8A" to="#ffffff" />
+      <WaveDown from="#0B3D91" to="#ffffff" />
 
       {/* ══════════════════════════════════════════════════════
           FEATURED ATTRACTIONS

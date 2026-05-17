@@ -127,7 +127,7 @@ export default function AIChat() {
         whileTap={{ scale: 0.92 }}
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed bottom-6 z-40 rounded-full text-white shadow-xl transition-shadow hover:shadow-2xl ${isMapPage ? 'right-24' : 'right-6'}`}
-        style={{ background: 'linear-gradient(135deg, #1E3A8A, #1565C0)', padding: '14px 18px' }}
+        style={{ background: 'linear-gradient(135deg, #0B3D91, #1565C0)', padding: '14px 18px' }}
         title="Chat with Lilio"
       >
         {isOpen
@@ -152,7 +152,7 @@ export default function AIChat() {
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 text-white"
-              style={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #1565C0 100%)' }}>
+              style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full flex items-center justify-center"
                   style={{ background: 'rgba(255,255,255,0.15)' }}>
@@ -185,7 +185,7 @@ export default function AIChat() {
                         : 'text-gray-800 rounded-bl-sm border border-blue-100 bg-white'
                     }`}
                     style={msg.sender === 'user'
-                      ? { background: 'linear-gradient(135deg, #1E3A8A, #1565C0)' }
+                      ? { background: 'linear-gradient(135deg, #0B3D91, #1565C0)' }
                       : {}}
                   >
                     <p className="text-sm leading-relaxed" style={{ fontFamily: BL }}>
@@ -229,7 +229,7 @@ export default function AIChat() {
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.93 }}
                 className="w-10 h-10 flex items-center justify-center rounded-xl text-white shadow transition disabled:opacity-40"
-                style={{ background: 'linear-gradient(135deg, #1E3A8A, #1565C0)' }}
+                style={{ background: 'linear-gradient(135deg, #0B3D91, #1565C0)' }}
               >
                 <Send size={17} strokeWidth={2.5} />
               </motion.button>

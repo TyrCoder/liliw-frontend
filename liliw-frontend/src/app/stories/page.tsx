@@ -107,7 +107,7 @@ export default function StoriesPage() {
     <div className="min-h-screen bg-white" suppressHydrationWarning>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
         <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
             <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
@@ -155,7 +155,7 @@ export default function StoriesPage() {
               <div className="relative rounded-2xl overflow-hidden h-72 sm:h-96">
                 {featured.coverUrl
                   ? <img src={featured.coverUrl} alt={featured.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                  : <div className="w-full h-full" style={{ background: 'linear-gradient(135deg,#1E3A8A,#1565C0)' }} />
+                  : <div className="w-full h-full" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }} />
                 }
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
@@ -187,7 +187,7 @@ export default function StoriesPage() {
                 whileHover={{ y: -5 }} className="h-full">
                 <Link href={`/stories/${story.slug}`} className="block h-full">
                   <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 group"
-                    style={{ aspectRatio:'3/4', background:'linear-gradient(135deg,#1E3A8A,#1565C0)' }}>
+                    style={{ aspectRatio:'3/4', background:'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
                     {story.coverUrl
                       ? <img src={story.coverUrl} alt={story.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                       : <div className="absolute inset-0 flex items-center justify-center opacity-20"><BookOpen className="w-16 h-16 text-white" /></div>

@@ -436,7 +436,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
   return (
     <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
       {/* Header */}
-      <div className="rounded-3xl p-6 text-white" style={{ background: 'linear-gradient(135deg,#1E3A8A,#1565C0)' }}>
+      <div className="rounded-3xl p-6 text-white" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#F5C518', fontFamily: HL }}>Your Itinerary</p>
@@ -1622,7 +1622,7 @@ export default function ItinerariesPage() {
     <div className="min-h-screen" style={{ backgroundColor: '#FFFFFF' }} suppressHydrationWarning>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}
+      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }}
         className="py-14">
         <div className="max-w-5xl mx-auto px-4">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
