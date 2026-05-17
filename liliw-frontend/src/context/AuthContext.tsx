@@ -32,9 +32,27 @@ interface AuthCtx extends AuthState {
 
 const AuthContext = createContext<AuthCtx | null>(null);
 
-const TOKEN_KEY = 'liliw-jwt';
-const USER_KEY  = 'liliw-user';
-const STRAPI    = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+const TOKEN_KEY     = 'liliw-jwt';
+const USER_KEY      = 'liliw-user';
+const STRAPI        = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+const ADMIN_EMAILS  = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
+
+// Compute the normalized role value to store in the liliw-session cookie.
+// Must match the STAFF_ROLES array in middleware.ts exactly.
+function staffCookieRole(user: StrapiUser): string {
+  const roleType = user.role?.type ?? 'authenticated';
+  const roleName = (user.role?.name ?? '').toLowerCase();
+  const norm     = (s: string) => s.toLowerCase().replace(/[\s_-]/g, '');
+  const hasChatoRole = norm(roleName).includes('chato');
+
+  if (norm(roleType) === 'admin' || norm(roleName) === 'admin' ||
+      (user.email && ADMIN_EMAILS.includes(user.email) && !hasChatoRole)) {
+    return 'admin';
+  }
+  if (norm(roleType).includes('chatoofficer') || norm(roleName).includes('chatoofficer')) return 'chatoofficer';
+  if (norm(roleType).includes('chatoeditor')  || norm(roleName).includes('chatoeditor'))  return 'chatoeditor';
+  return roleType;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, token: null, loading: true });
@@ -52,11 +70,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then(user => {
         if (user?.id) {
           localStorage.setItem(USER_KEY, JSON.stringify(user));
+          // Refresh the session cookie on every page load so it never silently expires
+          setSessionCookie(staffCookieRole(user));
           setState({ user, token, loading: false });
         } else {
           // Token expired or invalid — clear session
           localStorage.removeItem(TOKEN_KEY);
           localStorage.removeItem(USER_KEY);
+          clearSessionCookie();
           setState({ user: null, token: null, loading: false });
         }
       })
@@ -64,7 +85,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Network error — fall back to cached data so offline still works
         const raw = localStorage.getItem(USER_KEY);
         try {
-          setState({ user: raw ? JSON.parse(raw) : null, token, loading: false });
+          const user = raw ? JSON.parse(raw) : null;
+          if (user) setSessionCookie(staffCookieRole(user));
+          setState({ user, token, loading: false });
         } catch {
           setState({ user: null, token: null, loading: false });
         }
@@ -82,8 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const persist = (token: string, user: StrapiUser) => {
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
-    const role = user.role?.type ?? 'authenticated';
-    setSessionCookie(role);
+    setSessionCookie(staffCookieRole(user));
     setState({ user, token, loading: false });
   };
 
