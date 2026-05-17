@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { BookOpen, User } from 'lucide-react';
+import GatTayaw from '@/components/GatTayaw';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -126,6 +127,9 @@ export default function StoriesPage() {
       <WaveDown from="#1565C0" to="#ffffff" />
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-24">
+
+        {/* Gat Tayaw narrator */}
+        <GatTayaw />
 
         {/* Skeleton */}
         {loading && (
