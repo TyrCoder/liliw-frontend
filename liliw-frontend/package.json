@@ -37,6 +37,7 @@
     "three": "^0.184.0",
     "threejs-post-processing": "^1.0.2",
     "web-push": "^3.6.7",
+    "xlsx": "^0.18.5",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

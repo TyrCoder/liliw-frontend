@@ -14,6 +14,7 @@ import {
   Download, BarChart2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import * as XLSX from 'xlsx';
 
 const STRAPI_URL = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
@@ -159,6 +160,10 @@ export default function AdminDashboard() {
   const [loadingVR,       setLoadingVR]       = useState(false);
   const [vrYear,          setVrYear]          = useState<string>('all');
   const [vrSearch,        setVrSearch]        = useState('');
+  const [vrExportOpen,    setVrExportOpen]    = useState(false);
+  const _now = new Date();
+  const [vrExportMonth,   setVrExportMonth]   = useState(_now.getMonth() + 1);
+  const [vrExportYear,    setVrExportYear]    = useState(_now.getFullYear());
   const [crActionModal,   setCrActionModal]   = useState<{ cr: any; action: 'done' | 'rejected' } | null>(null);
   const [crNotes,         setCrNotes]         = useState('');
   const [savingCR,        setSavingCR]        = useState(false);
@@ -1323,124 +1328,248 @@ export default function AdminDashboard() {
 
         {/* ── VISITOR RECORDS ────────────────────────────────── */}
         {activeTab === 'visitorrecords' && (() => {
-          const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const MONTHS_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
           const years = [...new Set(visitorRecords.map(r => String(r.year)))].sort((a,b) => Number(b)-Number(a));
           const filtered = visitorRecords.filter(r => {
             const matchYear   = vrYear === 'all' || String(r.year) === vrYear;
             const matchSearch = !vrSearch || (r.attraction_name || '').toLowerCase().includes(vrSearch.toLowerCase()) || (r.lbo_email || '').toLowerCase().includes(vrSearch.toLowerCase());
             return matchYear && matchSearch;
           });
-          const totalVisitors = (r: any) =>
+          const rowTotal = (r: any) =>
             (r.local_male||0)+(r.local_female||0)+(r.other_city_male||0)+(r.other_city_female||0)+
             (r.other_province_male||0)+(r.other_province_female||0)+(r.foreign_male||0)+(r.foreign_female||0);
-          const grandTotal = filtered.reduce((s, r) => s + totalVisitors(r), 0);
+          const grandTotal = filtered.reduce((s, r) => s + rowTotal(r), 0);
+
+          const exportYears = years.length > 0 ? years : [String(vrExportYear)];
+
+          const handleExportExcel = () => {
+            const exportRecords = [...visitorRecords]
+              .filter(r => Number(r.month) === vrExportMonth && Number(r.year) === vrExportYear)
+              .sort((a, b) => (a.attraction_name || '').localeCompare(b.attraction_name || ''));
+
+            const headers = [
+              'Attraction Name', 'LBO Email', 'Period',
+              'Local (M)', 'Local (F)', 'Local Total',
+              'Other City (M)', 'Other City (F)', 'Other City Total',
+              'Other Province (M)', 'Other Province (F)', 'Other Province Total',
+              'Foreign (M)', 'Foreign (F)', 'Foreign Total',
+              'GRAND TOTAL',
+            ];
+
+            const dataRows = exportRecords.map(r => {
+              const lM = r.local_male||0, lF = r.local_female||0;
+              const cM = r.other_city_male||0, cF = r.other_city_female||0;
+              const pM = r.other_province_male||0, pF = r.other_province_female||0;
+              const fM = r.foreign_male||0, fF = r.foreign_female||0;
+              return [
+                r.attraction_name || '—', r.lbo_email || '—',
+                `${MONTHS_FULL[vrExportMonth - 1]} ${vrExportYear}`,
+                lM, lF, lM + lF,
+                cM, cF, cM + cF,
+                pM, pF, pM + pF,
+                fM, fF, fM + fF,
+                lM+lF+cM+cF+pM+pF+fM+fF,
+              ];
+            });
+
+            const sum = (f: string) => exportRecords.reduce((s: number, r: any) => s + (r[f]||0), 0);
+            const lMt = sum('local_male'), lFt = sum('local_female');
+            const cMt = sum('other_city_male'), cFt = sum('other_city_female');
+            const pMt = sum('other_province_male'), pFt = sum('other_province_female');
+            const fMt = sum('foreign_male'), fFt = sum('foreign_female');
+            const totalRow = [
+              'TOTAL', '', '',
+              lMt, lFt, lMt+lFt,
+              cMt, cFt, cMt+cFt,
+              pMt, pFt, pMt+pFt,
+              fMt, fFt, fMt+fFt,
+              lMt+lFt+cMt+cFt+pMt+pFt+fMt+fFt,
+            ];
+
+            const wsData = [headers, ...dataRows, totalRow];
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            ws['!cols'] = [
+              { wch: 32 }, { wch: 26 }, { wch: 18 },
+              { wch: 10 }, { wch: 10 }, { wch: 12 },
+              { wch: 12 }, { wch: 12 }, { wch: 14 },
+              { wch: 15 }, { wch: 15 }, { wch: 18 },
+              { wch: 12 }, { wch: 12 }, { wch: 14 },
+              { wch: 14 },
+            ];
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, `${MONTHS_FULL[vrExportMonth - 1]} ${vrExportYear}`);
+            XLSX.writeFile(wb, `visitor-records-${MONTHS_FULL[vrExportMonth - 1]}-${vrExportYear}.xlsx`);
+            setVrExportOpen(false);
+          };
+
           return (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <StatCard icon={<Users className="w-5 h-5" />}       label="Total Visitors"  value={grandTotal.toLocaleString()} color="#00BFB3" />
-                <StatCard icon={<FileText className="w-5 h-5" />}    label="Records"          value={filtered.length}             color="#3B82F6" />
-                <StatCard icon={<Building2 className="w-5 h-5" />}   label="Attractions"      value={new Set(filtered.map(r => r.attraction_name)).size} color="#F59E0B" />
-                <StatCard icon={<MapPin className="w-5 h-5" />}      label="LBOs Reporting"   value={new Set(filtered.map(r => r.lbo_email)).size}       color="#8B5CF6" />
-              </div>
-
-              {/* Filters */}
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex flex-wrap gap-3 items-center">
-                <div className="relative flex-1 min-w-[180px]">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input type="text" placeholder="Search attraction or LBO…" value={vrSearch} onChange={e => setVrSearch(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
-                </div>
-                <select value={vrYear} onChange={e => setVrYear(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400">
-                  <option value="all">All Years</option>
-                  {years.map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
-                <span className="text-xs text-gray-400 shrink-0">{filtered.length} records</span>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                  <h2 className="font-bold text-gray-900">Visitor Records</h2>
-                  <span className="text-sm text-gray-400">{grandTotal.toLocaleString()} total visitors</span>
-                </div>
-                {loadingVR ? (
-                  <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
-                ) : filtered.length === 0 ? (
-                  <div className="flex flex-col items-center py-16 text-center text-gray-400">
-                    <Users className="w-12 h-12 opacity-20 mb-3" />
-                    <p className="font-semibold">No visitor records yet</p>
-                    <p className="text-xs mt-1">Records submitted by LBOs appear here</p>
+            <>
+              {/* Export Modal */}
+              {vrExportOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+                  <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setVrExportOpen(false)} />
+                  <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm z-10">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-bold text-gray-900">Export to Excel</h3>
+                      <button onClick={() => setVrExportOpen(false)} className="text-gray-400 hover:text-gray-600 transition">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-400 mb-5">Select the month and year to export. Records will be sorted alphabetically by attraction name.</p>
+                    <div className="grid grid-cols-2 gap-3 mb-5">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Month</label>
+                        <select value={vrExportMonth} onChange={e => setVrExportMonth(Number(e.target.value))}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-400">
+                          {MONTHS_FULL.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Year</label>
+                        <select value={vrExportYear} onChange={e => setVrExportYear(Number(e.target.value))}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-400">
+                          {exportYears.map(y => <option key={y} value={Number(y)}>{y}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    {(() => {
+                      const previewCount = visitorRecords.filter(r => Number(r.month) === vrExportMonth && Number(r.year) === vrExportYear).length;
+                      return previewCount === 0 ? (
+                        <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-4">
+                          No records found for {MONTHS_FULL[vrExportMonth - 1]} {vrExportYear}.
+                        </p>
+                      ) : (
+                        <p className="text-xs text-teal-700 bg-teal-50 border border-teal-100 rounded-xl px-3 py-2 mb-4">
+                          {previewCount} record{previewCount > 1 ? 's' : ''} will be exported for {MONTHS_FULL[vrExportMonth - 1]} {vrExportYear}.
+                        </p>
+                      );
+                    })()}
+                    <div className="flex gap-2">
+                      <button onClick={() => setVrExportOpen(false)}
+                        className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
+                        Cancel
+                      </button>
+                      <button onClick={handleExportExcel}
+                        className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition hover:opacity-90"
+                        style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
+                        <Download className="w-4 h-4" /> Export .xlsx
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                        <th className="px-4 py-3 text-left">LBO / Attraction</th>
-                        <th className="px-4 py-3 text-left">Period</th>
-                        <th className="px-4 py-3 text-right">Local</th>
-                        <th className="px-4 py-3 text-right">Other City</th>
-                        <th className="px-4 py-3 text-right">Other Province</th>
-                        <th className="px-4 py-3 text-right">Foreign</th>
-                        <th className="px-4 py-3 text-right font-bold text-gray-600">Total</th>
-                      </tr></thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {filtered.map(r => {
-                          const local    = (r.local_male||0)+(r.local_female||0);
-                          const city     = (r.other_city_male||0)+(r.other_city_female||0);
-                          const province = (r.other_province_male||0)+(r.other_province_female||0);
-                          const foreign  = (r.foreign_male||0)+(r.foreign_female||0);
-                          const total    = local+city+province+foreign;
-                          return (
-                            <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                              <td className="px-4 py-4">
-                                <p className="font-semibold text-gray-900">{r.attraction_name || '—'}</p>
-                                <p className="text-xs text-gray-400">{r.lbo_email}</p>
-                              </td>
-                              <td className="px-4 py-4">
-                                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
-                                  {MONTHS[(r.month||1)-1]} {r.year}
-                                </span>
-                              </td>
-                              <td className="px-4 py-4 text-right">
-                                <p className="font-semibold text-gray-800">{local.toLocaleString()}</p>
-                                <p className="text-xs text-gray-400">{r.local_male||0}M / {r.local_female||0}F</p>
-                              </td>
-                              <td className="px-4 py-4 text-right">
-                                <p className="font-semibold text-gray-800">{city.toLocaleString()}</p>
-                                <p className="text-xs text-gray-400">{r.other_city_male||0}M / {r.other_city_female||0}F</p>
-                              </td>
-                              <td className="px-4 py-4 text-right">
-                                <p className="font-semibold text-gray-800">{province.toLocaleString()}</p>
-                                <p className="text-xs text-gray-400">{r.other_province_male||0}M / {r.other_province_female||0}F</p>
-                              </td>
-                              <td className="px-4 py-4 text-right">
-                                <p className="font-semibold text-gray-800">{foreign.toLocaleString()}</p>
-                                <p className="text-xs text-gray-400">{r.foreign_male||0}M / {r.foreign_female||0}F</p>
-                              </td>
-                              <td className="px-4 py-4 text-right">
-                                <span className="text-base font-bold text-gray-900">{total.toLocaleString()}</span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                      {filtered.length > 1 && (
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <StatCard icon={<Users className="w-5 h-5" />}       label="Total Visitors"  value={grandTotal.toLocaleString()} color="#00BFB3" />
+                  <StatCard icon={<FileText className="w-5 h-5" />}    label="Records"          value={filtered.length}             color="#3B82F6" />
+                  <StatCard icon={<Building2 className="w-5 h-5" />}   label="Attractions"      value={new Set(filtered.map(r => r.attraction_name)).size} color="#F59E0B" />
+                  <StatCard icon={<MapPin className="w-5 h-5" />}      label="LBOs Reporting"   value={new Set(filtered.map(r => r.lbo_email)).size}       color="#8B5CF6" />
+                </div>
+
+                {/* Filters */}
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex flex-wrap gap-3 items-center">
+                  <div className="relative flex-1 min-w-[180px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input type="text" placeholder="Search attraction or LBO…" value={vrSearch} onChange={e => setVrSearch(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+                  </div>
+                  <select value={vrYear} onChange={e => setVrYear(e.target.value)}
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400">
+                    <option value="all">All Years</option>
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <span className="text-xs text-gray-400 shrink-0">{filtered.length} records</span>
+                  <button onClick={() => setVrExportOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition hover:opacity-90 shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
+                    <Download className="w-4 h-4" /> Export to Excel
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h2 className="font-bold text-gray-900">Visitor Records</h2>
+                    <span className="text-sm text-gray-400">{grandTotal.toLocaleString()} total visitors</span>
+                  </div>
+                  {loadingVR ? (
+                    <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+                  ) : filtered.length === 0 ? (
+                    <div className="flex flex-col items-center py-16 text-center text-gray-400">
+                      <Users className="w-12 h-12 opacity-20 mb-3" />
+                      <p className="font-semibold">No visitor records yet</p>
+                      <p className="text-xs mt-1">Records submitted by LBOs appear here</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                          <th className="px-4 py-3 text-left">LBO / Attraction</th>
+                          <th className="px-4 py-3 text-left">Period</th>
+                          <th className="px-4 py-3 text-right">Local</th>
+                          <th className="px-4 py-3 text-right">Other City</th>
+                          <th className="px-4 py-3 text-right">Other Province</th>
+                          <th className="px-4 py-3 text-right">Foreign</th>
+                          <th className="px-4 py-3 text-right font-bold text-gray-600">Total</th>
+                        </tr></thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {filtered.map(r => {
+                            const local    = (r.local_male||0)+(r.local_female||0);
+                            const city     = (r.other_city_male||0)+(r.other_city_female||0);
+                            const province = (r.other_province_male||0)+(r.other_province_female||0);
+                            const foreign  = (r.foreign_male||0)+(r.foreign_female||0);
+                            const total    = local+city+province+foreign;
+                            return (
+                              <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-4 py-4">
+                                  <p className="font-semibold text-gray-900">{r.attraction_name || '—'}</p>
+                                  <p className="text-xs text-gray-400">{r.lbo_email}</p>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
+                                    {MONTHS_SHORT[(r.month||1)-1]} {r.year}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-4 text-right">
+                                  <p className="font-semibold text-gray-800">{local.toLocaleString()}</p>
+                                  <p className="text-xs text-gray-400">{r.local_male||0}M / {r.local_female||0}F</p>
+                                </td>
+                                <td className="px-4 py-4 text-right">
+                                  <p className="font-semibold text-gray-800">{city.toLocaleString()}</p>
+                                  <p className="text-xs text-gray-400">{r.other_city_male||0}M / {r.other_city_female||0}F</p>
+                                </td>
+                                <td className="px-4 py-4 text-right">
+                                  <p className="font-semibold text-gray-800">{province.toLocaleString()}</p>
+                                  <p className="text-xs text-gray-400">{r.other_province_male||0}M / {r.other_province_female||0}F</p>
+                                </td>
+                                <td className="px-4 py-4 text-right">
+                                  <p className="font-semibold text-gray-800">{foreign.toLocaleString()}</p>
+                                  <p className="text-xs text-gray-400">{r.foreign_male||0}M / {r.foreign_female||0}F</p>
+                                </td>
+                                <td className="px-4 py-4 text-right">
+                                  <span className="text-base font-bold text-gray-900">{total.toLocaleString()}</span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
                         <tfoot>
-                          <tr className="bg-gray-50 border-t-2 border-gray-200">
-                            <td className="px-4 py-3 font-bold text-gray-700" colSpan={2}>Total</td>
+                          <tr className="bg-blue-50 border-t-2 border-blue-200">
+                            <td className="px-4 py-3 font-bold text-blue-900" colSpan={2}>TOTAL — All Attractions</td>
                             {(['local','other_city','other_province','foreign'] as const).map(key => {
                               const t = filtered.reduce((s,r) => s+(r[`${key}_male`]||0)+(r[`${key}_female`]||0),0);
-                              return <td key={key} className="px-4 py-3 text-right font-bold text-gray-700">{t.toLocaleString()}</td>;
+                              return <td key={key} className="px-4 py-3 text-right font-bold text-blue-900">{t.toLocaleString()}</td>;
                             })}
-                            <td className="px-4 py-3 text-right font-bold text-teal-600 text-base">{grandTotal.toLocaleString()}</td>
+                            <td className="px-4 py-3 text-right font-black text-teal-600 text-base">{grandTotal.toLocaleString()}</td>
                           </tr>
                         </tfoot>
-                      )}
-                    </table>
-                  </div>
-                )}
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </>
           );
         })()}
 
