@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setState(s => ({ ...s, loading: false }));
       return;
     }
-    fetch(`/api/auth/me?token=${encodeURIComponent(token)}`)
+    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => (r.ok ? r.json() : null))
       .then(user => {
         if (user?.id) {

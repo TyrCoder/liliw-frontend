@@ -4,7 +4,8 @@ const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
 export async function GET(request: NextRequest) {
-  const token = request.nextUrl.searchParams.get('token');
+  const auth = request.headers.get('Authorization');
+  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return NextResponse.json(null, { status: 401 });
 
   const meRes = await fetch(`${STRAPI}/api/users/me?populate=role`, {

@@ -10,6 +10,11 @@ export async function POST(req: NextRequest) {
 
   const { timestamp, folder } = await req.json();
 
+  const ALLOWED_FOLDERS = ['liliw-virtual-tours', 'liliw-attractions', 'liliw-gallery'];
+  if (!folder || !ALLOWED_FOLDERS.includes(folder)) {
+    return NextResponse.json({ error: 'Invalid upload folder' }, { status: 400 });
+  }
+
   const apiSecret = process.env.CLOUDINARY_SECRET;
   const apiKey = process.env.CLOUDINARY_KEY;
   const cloudName = process.env.CLOUDINARY_NAME;
