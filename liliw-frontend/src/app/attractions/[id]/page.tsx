@@ -20,6 +20,7 @@ const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage Site', spot: '
 
 interface Attraction {
   id: string | number;
+  strapiId?: string;
   attributes: {
     name: string; description?: string; location?: string; category?: string;
     is_featured?: boolean; rating?: number; phone?: string; hours?: string;
@@ -30,12 +31,20 @@ interface Attraction {
   type: 'heritage' | 'spot' | 'dining';
 }
 
+interface ExternalReview {
+  google_rating: number | null;
+  review_count: number;
+  reviews: { author: string; rating: number; text: string; published: string | null }[];
+  last_scraped_at: string | null;
+}
+
 export default function AttractionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const [attractionId, setAttractionId] = useState<string | null>(null);
   const [attraction, setAttraction] = useState<Attraction | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [relatedAttractions, setRelatedAttractions] = useState<Attraction[]>([]);
+  const [externalReview, setExternalReview] = useState<ExternalReview | null>(null);
 
   useEffect(() => {
     Promise.resolve(params).then(async (resolved) => { setAttractionId(resolved.id); });
@@ -54,6 +63,13 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         setRelatedAttractions(
           allAttractions.filter((a: any) => a.attributes.category === current.attributes.category && a.id !== current.id).slice(0, 3)
         );
+        // Fetch external reviews from Supabase cache
+        if (current.strapiId) {
+          fetch(`/api/admin/external-reviews?strapiId=${current.strapiId}`)
+            .then(r => r.json())
+            .then(d => { if (d.data?.[0]) setExternalReview(d.data[0]); })
+            .catch(() => {});
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load attraction');
       } finally { setLoading(false); }
@@ -259,6 +275,50 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           className="mb-8 sm:mb-12">
           <Ratings itemId={String(attraction.id)} itemName={attraction.attributes.name} />
         </motion.div>
+
+        {/* Google Maps Reviews */}
+        {externalReview && externalReview.reviews.length > 0 && (
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.5 }}
+            className="mb-8 sm:mb-12">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <h2 className="text-2xl font-bold" style={{ color: '#1A1A2E', fontFamily: HL }}>Google Reviews</h2>
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 fill-amber-400 stroke-amber-400" />
+                <span className="text-lg font-black text-gray-900">{externalReview.google_rating ?? '—'}</span>
+                <span className="text-sm text-gray-400">· {externalReview.review_count.toLocaleString()} reviews on Google Maps</span>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {externalReview.reviews.map((rev, i) => (
+                <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                      style={{ background: 'linear-gradient(135deg,#1565C0,#0B3D91)' }}>
+                      {(rev.author || 'A')[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 text-sm truncate">{rev.author || 'Anonymous'}</p>
+                      <div className="flex gap-0.5">
+                        {[1,2,3,4,5].map(s => (
+                          <Star key={s} className={`w-3 h-3 ${s <= (rev.rating||0) ? 'fill-amber-400 stroke-amber-400' : 'fill-gray-200 stroke-gray-200'}`} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {rev.text && <p className="text-sm text-gray-600 leading-relaxed line-clamp-4">{rev.text}</p>}
+                  {rev.published && (
+                    <p className="text-xs text-gray-400 mt-2">{new Date(rev.published).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            {externalReview.last_scraped_at && (
+              <p className="text-xs text-gray-400 mt-3 text-right">
+                Last updated {new Date(externalReview.last_scraped_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            )}
+          </motion.div>
+        )}
 
         {/* Event Calendar */}
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.5 }}
