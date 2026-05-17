@@ -24,13 +24,13 @@ export async function POST(request: NextRequest) {
       .insert({ name, email, phone: phone || '', message, type: type || 'feedback', status: 'new' });
 
     if (error) {
-      console.error('[submissions POST]', error.code, error.message);
+      logger.error('[submissions POST]', error.code, error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     // Email notification to admin (fire-and-forget)
     sendContactNotification({ name, email, phone, type: type || 'feedback', message })
-      .catch(err => console.error('[Email] contact notification:', err));
+      .catch(err => logger.error('[Email] contact notification:', err));
 
     // Secondary: Strapi (fire-and-forget)
     fetch(`${STRAPI}/api/submissions`, {

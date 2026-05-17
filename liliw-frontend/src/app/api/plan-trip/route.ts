@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/strapi';
+import { checkRateLimit } from '@/lib/ratelimit';
+import { logger } from '@/lib/logger';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
 
 let knowledgeCache: { text: string; at: number } | null = null;
 
@@ -80,6 +82,13 @@ async function buildKnowledge(): Promise<string> {
 }
 
 export async function POST(request: NextRequest) {
+  if (!groq) return NextResponse.json({ error: 'Trip planner is temporarily unavailable.' }, { status: 503 });
+
+  const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
+  if (!checkRateLimit(ip, 3, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 });
+  }
+
   try {
     const { duration, budget, interests, favoriteAttractions } = await request.json();
 
@@ -134,7 +143,7 @@ Budget level: ${budget}
 Interests: ${interests.join(', ')}${favoritesLine}
 Return only the JSON object.`;
 
-    const completion = await groq.chat.completions.create({
+    const completion = await groq!.chat.completions.create({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
@@ -150,7 +159,7 @@ Return only the JSON object.`;
 
     return NextResponse.json({ success: true, itinerary });
   } catch (err) {
-    console.error('plan-trip error:', err);
+    logger.error('plan-trip error:', err);
     return NextResponse.json({ error: 'Failed to generate itinerary' }, { status: 500 });
   }
 }
