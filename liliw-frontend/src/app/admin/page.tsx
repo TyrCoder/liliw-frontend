@@ -233,7 +233,7 @@ export default function AdminDashboard() {
     fetch('/api/strapi/attractions').then(r => r.json()).then(d => setAttractions(d.data || [])).catch(() => {}).finally(() => setLoadingAttr(false));
     fetch('/api/strapi/reviews').then(r => r.json()).then(d => setReviews(d.data || [])).catch(() => {}).finally(() => setLoadingReviews(false));
     setLoadingExternal(true);
-    fetch('/api/admin/external-reviews').then(r => r.json()).then(d => setExternalReviews(d.data || [])).catch(() => {}).finally(() => setLoadingExternal(false));
+    fetch('/api/admin/external-reviews', { headers: h }).then(r => r.json()).then(d => setExternalReviews(d.data || [])).catch(() => {}).finally(() => setLoadingExternal(false));
 
     // Admin and CHATO Officer get everything else
     if (isAdmin || isChatoOfficer) {
@@ -2110,10 +2110,11 @@ export default function AdminDashboard() {
               const lat = c?.latitude ?? c?.lat ?? null;
               const lng = c?.longitude ?? c?.lng ?? null;
 
+              const authH = { Authorization: `Bearer ${token}` };
               // Start the run
               const startRes = await fetch('/api/admin/scrape-reviews', {
                 method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...authH },
                 body:    JSON.stringify({ strapiId: id, attractionName: attr.attributes.name, lat, lng }),
               });
               const { runId, error: startErr } = await startRes.json();
@@ -2124,7 +2125,8 @@ export default function AdminDashboard() {
               while (Date.now() < deadline) {
                 await new Promise(r => setTimeout(r, 4000));
                 const pollRes = await fetch(
-                  `/api/admin/scrape-reviews?runId=${runId}&strapiId=${id}&attractionName=${encodeURIComponent(attr.attributes.name)}`
+                  `/api/admin/scrape-reviews?runId=${runId}&strapiId=${id}&attractionName=${encodeURIComponent(attr.attributes.name)}`,
+                  { headers: authH }
                 );
                 const poll = await pollRes.json();
                 if (poll.status === 'SUCCEEDED') {
@@ -2132,7 +2134,7 @@ export default function AdminDashboard() {
                     setScrapeMsg({ id, ok: false, text: poll.message || 'No matching place found on Google Maps' });
                   } else {
                     // Refresh cached data
-                    fetch('/api/admin/external-reviews').then(r => r.json()).then(d => setExternalReviews(d.data || []));
+                    fetch('/api/admin/external-reviews', { headers: authH }).then(r => r.json()).then(d => setExternalReviews(d.data || []));
                     setScrapeMsg({ id, ok: true, text: `Done! Found ${poll.result.reviewCount} reviews · ${poll.result.googleRating}★` });
                   }
                   break;
@@ -2164,9 +2166,10 @@ export default function AdminDashboard() {
                 const c = attr.attributes.coordinates;
                 const lat = c?.latitude ?? c?.lat ?? null;
                 const lng = c?.longitude ?? c?.lng ?? null;
+                const allAuthH = { Authorization: `Bearer ${token}` };
                 const res = await fetch('/api/admin/scrape-reviews', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', ...allAuthH },
                   body: JSON.stringify({ strapiId: attr.strapiId, attractionName: attr.attributes.name, lat, lng }),
                 });
                 const { runId } = await res.json();
@@ -2175,6 +2178,7 @@ export default function AdminDashboard() {
             }));
 
             // Poll all in parallel until each finishes
+            const pollAuthH = { Authorization: `Bearer ${token}` };
             let completed = 0;
             await Promise.all(runs.filter(r => r.runId).map(async ({ attr, runId }) => {
               const deadline = Date.now() + 300_000;
@@ -2182,7 +2186,8 @@ export default function AdminDashboard() {
                 await new Promise(r => setTimeout(r, 5000));
                 try {
                   const poll = await fetch(
-                    `/api/admin/scrape-reviews?runId=${runId}&strapiId=${attr.strapiId}&attractionName=${encodeURIComponent(attr.attributes.name)}`
+                    `/api/admin/scrape-reviews?runId=${runId}&strapiId=${attr.strapiId}&attractionName=${encodeURIComponent(attr.attributes.name)}`,
+                    { headers: pollAuthH }
                   ).then(r => r.json());
                   if (poll.status === 'SUCCEEDED' || poll.status === 'FAILED' || poll.status === 'ABORTED') {
                     completed++;
@@ -2193,7 +2198,7 @@ export default function AdminDashboard() {
               }
             }));
 
-            fetch('/api/admin/external-reviews').then(r => r.json()).then(d => setExternalReviews(d.data || []));
+            fetch('/api/admin/external-reviews', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => setExternalReviews(d.data || []));
             setScrapeAllActive(false);
             setScrapeAllProgress({ current: 0, total: 0 });
           };
