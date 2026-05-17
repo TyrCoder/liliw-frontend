@@ -71,9 +71,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
   }, []);
 
+  const setSessionCookie = (role: string) => {
+    document.cookie = `liliw-session=${role}; path=/; SameSite=Lax; max-age=604800`;
+  };
+
+  const clearSessionCookie = () => {
+    document.cookie = 'liliw-session=; path=/; SameSite=Lax; max-age=0';
+  };
+
   const persist = (token: string, user: StrapiUser) => {
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
+    const role = user.role?.type ?? 'authenticated';
+    setSessionCookie(role);
     setState({ user, token, loading: false });
   };
 
@@ -106,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    clearSessionCookie();
     setState({ user: null, token: null, loading: false });
   }, []);
 
@@ -115,10 +126,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const roleNorm       = roleName.replace(/[\s_-]/g, '');
   const roleType       = userRole.replace(/[\s_-]/g, '');
   const adminPanelRole = state.user?.adminPanelRole ?? null;
-
-  if (state.user?.role) {
-    console.log('[Auth] role:', state.user.role);
-  }
 
   const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
 

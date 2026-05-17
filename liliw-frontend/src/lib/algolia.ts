@@ -55,7 +55,6 @@ export async function indexAttractions(data: any[]) {
     }));
 
     await index.saveObjects(objects);
-    console.log(`✓ Indexed ${objects.length} items to Algolia`);
   } catch (error) {
     logger.error('Algolia indexing error:', error);
   }
