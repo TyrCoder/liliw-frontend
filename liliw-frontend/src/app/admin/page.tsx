@@ -727,22 +727,35 @@ export default function AdminDashboard() {
 
         {/* ── USERS ──────────────────────────────────────────── */}
         {activeTab === 'users' && (() => {
+          // Build set of approved LBO emails from lbo_applications
+          const approvedLboEmails = new Set(
+            lboApps
+              .filter((a: any) => (a.attributes?.status || a.status) === 'approved')
+              .map((a: any) => ((a.attributes?.email || a.email) || '').toLowerCase())
+              .filter(Boolean)
+          );
+          const isLbo = (u: any) => approvedLboEmails.has((u.email || '').toLowerCase());
+
           const ROLE_FILTERS = [
             { key: 'all',       label: 'All' },
+            { key: 'lbo',       label: 'LBO / Business' },
             { key: 'tourist',   label: 'Tourist / Local' },
             { key: 'officer',   label: 'CHATO Officer' },
             { key: 'editor',    label: 'CHATO Editor' },
             { key: 'admin',     label: 'Admin' },
           ];
+
           const filteredUsers = users.filter((u: any) => {
             if (userRoleFilter === 'all') return true;
             const rn = (u.role?.name || '').toLowerCase().replace(/[\s_-]/g, '');
-            if (userRoleFilter === 'tourist')  return rn.includes('authenticated') || rn.includes('tourist') || rn === '';
-            if (userRoleFilter === 'officer')  return rn.includes('chatoofficer') || rn.includes('officer');
-            if (userRoleFilter === 'editor')   return rn.includes('chatoeditor')  || rn.includes('editor');
-            if (userRoleFilter === 'admin')    return rn.includes('admin');
+            if (userRoleFilter === 'lbo')     return isLbo(u);
+            if (userRoleFilter === 'tourist') return !isLbo(u) && (rn.includes('authenticated') || rn.includes('tourist') || rn === '');
+            if (userRoleFilter === 'officer') return rn.includes('chatoofficer') || rn.includes('officer');
+            if (userRoleFilter === 'editor')  return rn.includes('chatoeditor')  || rn.includes('editor');
+            if (userRoleFilter === 'admin')   return rn.includes('admin');
             return true;
           });
+
           return (
           <div className="space-y-4">
             {/* Filter pills */}
@@ -760,7 +773,8 @@ export default function AdminDashboard() {
                     <span className="ml-1.5 opacity-70">
                       ({users.filter((u: any) => {
                         const rn = (u.role?.name || '').toLowerCase().replace(/[\s_-]/g, '');
-                        if (f.key === 'tourist') return rn.includes('authenticated') || rn.includes('tourist') || rn === '';
+                        if (f.key === 'lbo')     return isLbo(u);
+                        if (f.key === 'tourist') return !isLbo(u) && (rn.includes('authenticated') || rn.includes('tourist') || rn === '');
                         if (f.key === 'officer') return rn.includes('chatoofficer') || rn.includes('officer');
                         if (f.key === 'editor')  return rn.includes('chatoeditor')  || rn.includes('editor');
                         if (f.key === 'admin')   return rn.includes('admin');
@@ -783,19 +797,21 @@ export default function AdminDashboard() {
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredUsers.map((u: any) => {
-                  const roleName = u.role?.name || 'Authenticated';
-                  const rn = roleName.toLowerCase();
+                  const roleName  = u.role?.name || 'Authenticated';
+                  const rn        = roleName.toLowerCase();
+                  const userIsLbo = isLbo(u);
                   const isSuperAdmin = rn.includes('super admin') || rn.includes('super-admin');
                   const isOfficer   = rn.includes('officer');
                   const isEditor    = rn.includes('editor');
                   const isTourist   = rn.includes('authenticated') || rn.includes('tourist');
                   const isPanel     = u.source === 'admin';
-                  const roleColor = isSuperAdmin ? { bg: 'bg-red-600 text-white',     avatar: '#DC2626' }
-                    : isOfficer   ? { bg: 'bg-[#0F1F3C] text-white',                  avatar: '#0F1F3C' }
-                    : isEditor    ? { bg: 'bg-purple-50 text-purple-700',              avatar: '#8B5CF6' }
-                    : isTourist   ? { bg: 'bg-teal-50 text-teal-700',                 avatar: '#00BFB3' }
-                    :               { bg: 'bg-gray-100 text-gray-700',                avatar: '#6B7280' };
-                  const RoleIcon = isSuperAdmin ? Shield : isOfficer ? Shield : isEditor ? Edit : UserCheck;
+                  const roleColor = isSuperAdmin ? { bg: 'bg-red-600 text-white',        avatar: '#DC2626' }
+                    : isOfficer   ? { bg: 'bg-[#0F1F3C] text-white',                     avatar: '#0F1F3C' }
+                    : isEditor    ? { bg: 'bg-purple-50 text-purple-700',                 avatar: '#8B5CF6' }
+                    : userIsLbo   ? { bg: 'bg-orange-50 text-orange-700',                avatar: '#EA580C' }
+                    : isTourist   ? { bg: 'bg-teal-50 text-teal-700',                    avatar: '#00BFB3' }
+                    :               { bg: 'bg-gray-100 text-gray-700',                   avatar: '#6B7280' };
+                  const RoleIcon = isSuperAdmin ? Shield : isOfficer ? Shield : isEditor ? Edit : userIsLbo ? Building2 : UserCheck;
                   return (
                     <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-4">
@@ -811,9 +827,16 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-5 py-4 text-gray-600"><Mail className="w-3 h-3 inline mr-1 shrink-0" />{u.email}</td>
                       <td className="px-5 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${roleColor.bg}`}>
-                          <RoleIcon className="w-3 h-3" />{roleName}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${roleColor.bg}`}>
+                            <RoleIcon className="w-3 h-3" />{userIsLbo && isTourist ? 'Authenticated' : roleName}
+                          </span>
+                          {userIsLbo && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-500 text-white">
+                              <Building2 className="w-3 h-3" />LBO
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-4">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${u.confirmed ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'}`}>
