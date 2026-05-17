@@ -201,8 +201,9 @@ export default function AdminDashboard() {
   const [arNotes,         setArNotes]         = useState('');
   const [savingAR,        setSavingAR]        = useState(false);
 
-  const [attrSearch, setAttrSearch] = useState('');
-  const [attrType,   setAttrType]   = useState<string>('all');
+  const [attrSearch,      setAttrSearch]      = useState('');
+  const [attrType,        setAttrType]        = useState<string>('all');
+  const [userRoleFilter,  setUserRoleFilter]  = useState<string>('all');
 
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
@@ -564,7 +565,7 @@ export default function AdminDashboard() {
             <div className={`grid grid-cols-2 lg:grid-cols-${isAdmin ? 4 : 2} gap-4`}>
               <StatCard icon={<FileText className="w-5 h-5" />}    label="Submissions"     value={loadingSubs ? '—' : submissions.length} sub={`${newCount} new`} color="#8B5CF6" />
               <StatCard icon={<MessageSquare className="w-5 h-5" />} label="Participations" value={loadingPart ? '—' : participation.length} sub="requests" color="#EC4899" />
-              {isAdmin && <StatCard icon={<UserCheck className="w-5 h-5" />} label="Registered Users" value={loadingUsers ? '—' : users.length} sub="tourist accounts" color="#10B981" />}
+              {isAdmin && <StatCard icon={<UserCheck className="w-5 h-5" />} label="Registered Users" value={loadingUsers ? '—' : users.filter((u: any) => { const rn = (u.role?.name || '').toLowerCase(); return rn.includes('authenticated') || rn.includes('tourist') || rn === ''; }).length} sub="tourist accounts" color="#10B981" />}
               {isAdmin && <StatCard icon={<Calendar className="w-5 h-5" />}  label="Event Sign-ups"   value={loadingSignups ? '—' : signups.length} sub="total" color="#F59E0B" />}
             </div>
 
@@ -725,8 +726,53 @@ export default function AdminDashboard() {
         )}
 
         {/* ── USERS ──────────────────────────────────────────── */}
-        {activeTab === 'users' && (
-          <TableWrap title="All Users" count={users.length} loading={loadingUsers} empty={users.length === 0} emptyIcon={<Users className="w-12 h-12" />}>
+        {activeTab === 'users' && (() => {
+          const ROLE_FILTERS = [
+            { key: 'all',       label: 'All' },
+            { key: 'tourist',   label: 'Tourist / Local' },
+            { key: 'officer',   label: 'CHATO Officer' },
+            { key: 'editor',    label: 'CHATO Editor' },
+            { key: 'admin',     label: 'Admin' },
+          ];
+          const filteredUsers = users.filter((u: any) => {
+            if (userRoleFilter === 'all') return true;
+            const rn = (u.role?.name || '').toLowerCase().replace(/[\s_-]/g, '');
+            if (userRoleFilter === 'tourist')  return rn.includes('authenticated') || rn.includes('tourist') || rn === '';
+            if (userRoleFilter === 'officer')  return rn.includes('chatoofficer') || rn.includes('officer');
+            if (userRoleFilter === 'editor')   return rn.includes('chatoeditor')  || rn.includes('editor');
+            if (userRoleFilter === 'admin')    return rn.includes('admin');
+            return true;
+          });
+          return (
+          <div className="space-y-4">
+            {/* Filter pills */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {ROLE_FILTERS.map(f => (
+                <button key={f.key} onClick={() => setUserRoleFilter(f.key)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors border ${
+                    userRoleFilter === f.key
+                      ? 'text-white border-transparent'
+                      : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                  }`}
+                  style={userRoleFilter === f.key ? { backgroundColor: '#0B3D91', borderColor: '#0B3D91' } : {}}>
+                  {f.label}
+                  {f.key !== 'all' && (
+                    <span className="ml-1.5 opacity-70">
+                      ({users.filter((u: any) => {
+                        const rn = (u.role?.name || '').toLowerCase().replace(/[\s_-]/g, '');
+                        if (f.key === 'tourist') return rn.includes('authenticated') || rn.includes('tourist') || rn === '';
+                        if (f.key === 'officer') return rn.includes('chatoofficer') || rn.includes('officer');
+                        if (f.key === 'editor')  return rn.includes('chatoeditor')  || rn.includes('editor');
+                        if (f.key === 'admin')   return rn.includes('admin');
+                        return false;
+                      }).length})
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+          <TableWrap title="All Users" count={filteredUsers.length} loading={loadingUsers} empty={filteredUsers.length === 0} emptyIcon={<Users className="w-12 h-12" />}>
             <table className="w-full text-sm">
               <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
                 <th className="px-5 py-3 text-left">User</th>
@@ -736,7 +782,7 @@ export default function AdminDashboard() {
                 <th className="px-5 py-3 text-left">Joined</th>
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
-                {users.map((u: any) => {
+                {filteredUsers.map((u: any) => {
                   const roleName = u.role?.name || 'Authenticated';
                   const rn = roleName.toLowerCase();
                   const isSuperAdmin = rn.includes('super admin') || rn.includes('super-admin');
@@ -783,7 +829,9 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </TableWrap>
-        )}
+          </div>
+          );
+        })()}
 
         {/* ── ROLE MANAGEMENT ───────────────────────────────── */}
         {activeTab === 'roles' && (
