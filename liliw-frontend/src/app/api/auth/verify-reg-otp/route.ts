@@ -5,6 +5,12 @@ import { supabaseServer } from '@/lib/supabase-server';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
+function generateUsername(email: string): string {
+  const prefix = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').slice(0, 12).toLowerCase();
+  const suffix = Math.floor(1000 + Math.random() * 9000);
+  return `${prefix}${suffix}`;
+}
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
   if (!checkRateLimit(ip, 5, 60_000)) {
@@ -12,8 +18,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { email, otp, username, password, userType } = await req.json();
-    if (!email || !otp || !username || !password) {
+    const { email, otp, fullName, password, userType } = await req.json();
+    if (!email || !otp || !fullName || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     if (password.length < 6) {
@@ -36,6 +42,8 @@ export async function POST(req: NextRequest) {
     // OTP valid — consume it and register
     regOtpStore.delete(key);
 
+    const username = generateUsername(email);
+
     const regRes = await fetch(`${STRAPI}/api/auth/local/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -44,7 +52,7 @@ export async function POST(req: NextRequest) {
     const regData = await regRes.json();
     if (!regRes.ok) {
       return NextResponse.json(
-        { error: regData?.error?.message || 'Registration failed. The username or email may already be taken.' },
+        { error: regData?.error?.message || 'Registration failed. The email may already be taken.' },
         { status: regRes.status }
       );
     }
@@ -54,11 +62,11 @@ export async function POST(req: NextRequest) {
     });
     const user = await meRes.json();
 
-    // Store user type / location in Supabase (fire-and-forget)
+    // Store profile in Supabase (fire-and-forget)
     void supabaseServer
       .from('tourist_profiles')
       .upsert(
-        { email: key, username, user_type: userType || null },
+        { email: key, username, full_name: fullName, user_type: userType || null },
         { onConflict: 'email' }
       );
 
