@@ -10,7 +10,7 @@ const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 export async function POST(request: NextRequest) {
   if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { applicationId, username, email, password } = await request.json();
+  const { applicationId, username, email, password, strapi_attraction_id, strapi_attraction_type } = await request.json();
   if (!username || !email || !password) {
     return NextResponse.json({ error: 'username, email and password are required' }, { status: 400 });
   }
@@ -29,11 +29,15 @@ export async function POST(request: NextRequest) {
 
   const { user } = await regRes.json();
 
-  // Mark application as approved in Supabase
+  // Mark application as approved in Supabase, save assigned attraction
   if (applicationId) {
     await supabaseServer
       .from('lbo_applications')
-      .update({ status: 'approved' })
+      .update({
+        status: 'approved',
+        ...(strapi_attraction_id   ? { strapi_attraction_id }   : {}),
+        ...(strapi_attraction_type ? { strapi_attraction_type } : {}),
+      })
       .eq('id', applicationId);
   }
 
