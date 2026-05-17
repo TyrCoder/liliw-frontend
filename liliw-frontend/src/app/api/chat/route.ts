@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/strapi';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
 
 // Cache the knowledge base for 5 minutes
 let knowledgeCache: { text: string; at: number; attractionMap: Map<string, any> } | null = null;
@@ -134,6 +134,10 @@ interface ChatRequest {
 }
 
 export async function POST(request: NextRequest) {
+  if (!groq) {
+    return NextResponse.json({ error: 'Chat is temporarily unavailable.', unavailable: true }, { status: 503 });
+  }
+
   try {
     const body: ChatRequest = await request.json();
     const { message, history = [] } = body;

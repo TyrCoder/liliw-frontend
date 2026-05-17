@@ -1,8 +1,14 @@
-const CACHE_NAME = 'liliw-v3';
-const API_CACHE  = 'liliw-api-v1';
+const CACHE_NAME = 'liliw-v4';
+const API_CACHE   = 'liliw-api-v1';
+const IMAGE_CACHE = 'liliw-img-v1';
+
+const IMAGE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // Key routes to pre-cache on install
-const PRECACHE_URLS = ['/', '/attractions', '/map', '/news', '/about', '/faq'];
+const PRECACHE_URLS = [
+  '/', '/attractions', '/map', '/news', '/about', '/faq',
+  '/heritage', '/culture', '/arts', '/dining', '/gallery', '/stories', '/contact',
+];
 
 // Public Strapi API routes safe to serve stale (content doesn't change by the second)
 const CACHEABLE_API = [
@@ -36,13 +42,10 @@ self.addEventListener('install', (event) => {
 
 // ── Activate ─────────────────────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
+  const KEEP = new Set([CACHE_NAME, API_CACHE, IMAGE_CACHE]);
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k !== CACHE_NAME && k !== API_CACHE)
-          .map((k) => caches.delete(k))
-      )
+      Promise.all(keys.filter((k) => !KEEP.has(k)).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
@@ -101,18 +104,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ── Images (Cloudinary + local): cache-first ──────────────────────────────
+  // ── Images (Cloudinary + local): cache-first with 7-day expiry ────────────
   if (url.hostname.includes('cloudinary.com') || request.destination === 'image') {
     event.respondWith(
-      caches.open(CACHE_NAME).then(async (cache) => {
+      caches.open(IMAGE_CACHE).then(async (cache) => {
         const cached = await cache.match(request);
-        if (cached) return cached;
+        if (cached) {
+          const cachedAt = parseInt(cached.headers.get('sw-cached-at') || '0', 10);
+          if (Date.now() - cachedAt < IMAGE_MAX_AGE) return cached;
+        }
         try {
-          const response = await fetch(request);
-          if (response.ok) cache.put(request, response.clone());
-          return response;
+          const res = await fetch(request);
+          if (res.ok) {
+            const headers = new Headers(res.headers);
+            headers.set('sw-cached-at', String(Date.now()));
+            const stored = new Response(await res.clone().arrayBuffer(), {
+              status: res.status, statusText: res.statusText, headers,
+            });
+            cache.put(request, stored);
+          }
+          return res;
         } catch {
-          return new Response('', { status: 408 });
+          return cached || new Response('', { status: 408 });
         }
       })
     );

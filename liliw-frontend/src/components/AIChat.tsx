@@ -158,9 +158,15 @@ export default function AIChat() {
         body: JSON.stringify({ message: input, history }),
       });
 
-      if (!response.ok) throw new Error(`Chat API error: ${response.status}`);
-
       const data = await response.json();
+
+      if (!response.ok) {
+        const msg = data?.unavailable
+          ? 'Chat is temporarily unavailable. Please try again later.'
+          : 'Sorry, I had trouble responding. Please try again.';
+        throw new Error(msg);
+      }
+
       if (!data?.reply || typeof data.reply !== 'string') throw new Error('Invalid response');
 
       setMessages(prev => [...prev, {
@@ -170,11 +176,11 @@ export default function AIChat() {
         timestamp: new Date(),
         attractions: data.attractions ?? [],
       }]);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Chat error:', error);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
-        text: 'Sorry, I had trouble responding. Please try again.',
+        text: error?.message || 'Sorry, I had trouble responding. Please try again.',
         sender: 'bot',
         timestamp: new Date(),
       }]);
