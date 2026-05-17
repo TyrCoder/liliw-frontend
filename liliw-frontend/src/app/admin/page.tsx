@@ -2142,11 +2142,11 @@ export default function AdminDashboard() {
                                     </div>
                                     {rev.text && <p className="text-sm text-gray-600 leading-relaxed">{rev.text}</p>}
                                   </div>
-                                  {rev.published && (
-                                    <span className="text-xs text-gray-400 shrink-0">
-                                      {new Date(rev.published).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                    </span>
-                                  )}
+                                  {rev.published && (() => {
+                                    const d = new Date(rev.published);
+                                    const label = isNaN(d.getTime()) ? rev.published : d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+                                    return <span className="text-xs text-gray-400 shrink-0">{label}</span>;
+                                  })()}
                                 </div>
                               </div>
                             ))}
