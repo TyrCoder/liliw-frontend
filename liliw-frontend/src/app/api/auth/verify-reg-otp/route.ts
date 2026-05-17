@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { regOtpStore } from '@/lib/regOtpStore';
 import { checkRateLimit } from '@/lib/ratelimit';
+import { supabaseServer } from '@/lib/supabase-server';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { email, otp, username, password } = await req.json();
+    const { email, otp, username, password, userType } = await req.json();
     if (!email || !otp || !username || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
@@ -52,6 +53,14 @@ export async function POST(req: NextRequest) {
       headers: { Authorization: `Bearer ${regData.jwt}` },
     });
     const user = await meRes.json();
+
+    // Store user type / location in Supabase (fire-and-forget)
+    void supabaseServer
+      .from('tourist_profiles')
+      .upsert(
+        { email: key, username, user_type: userType || null },
+        { onConflict: 'email' }
+      );
 
     return NextResponse.json({ jwt: regData.jwt, user });
   } catch (err) {
