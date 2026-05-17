@@ -87,7 +87,7 @@ export default function ArtsPage() {
     <div className="min-h-screen bg-white">
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
         <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
             <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
@@ -108,7 +108,7 @@ export default function ArtsPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-10 text-center">
           <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
             <Bunting />
-            <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide" style={{ color: '#1E3A8A', fontFamily: HL }}>Art Forms &amp; Traditions</h2>
+            <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide" style={{ color: '#0B3D91', fontFamily: HL }}>Art Forms &amp; Traditions</h2>
             <Bunting flip />
           </div>
           <p className="text-gray-500 text-sm max-w-2xl mx-auto mt-2" style={{ fontFamily: BL }}>Living traditions passed down through generations of Liliw&apos;s creative community.</p>
@@ -155,7 +155,7 @@ export default function ArtsPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8 text-center">
           <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
             <Bunting />
-            <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide" style={{ color: '#1E3A8A', fontFamily: HL }}>Meet Our Artisans</h2>
+            <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide" style={{ color: '#0B3D91', fontFamily: HL }}>Meet Our Artisans</h2>
             <Bunting flip />
           </div>
           <p className="text-gray-500 text-sm max-w-2xl mx-auto mt-2" style={{ fontFamily: BL }}>The creative souls behind Liliw&apos;s thriving arts scene.</p>
@@ -315,7 +315,7 @@ export default function ArtsPage() {
       <div className="max-w-6xl mx-auto px-4 pb-16">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="relative rounded-3xl overflow-hidden p-10 text-center"
-          style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+          style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }}>
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, #EAB308, transparent 60%), radial-gradient(circle at 70% 30%, #ffffff, transparent 50%)' }} />
           <div className="relative">
             <h2 className="text-3xl font-bold text-white mb-3" style={{ fontFamily: HL }}>Support Local Creatives</h2>

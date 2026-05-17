@@ -77,7 +77,7 @@ export default function CulturePage() {
     <div className="min-h-screen bg-white" suppressHydrationWarning>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
         <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
             <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
@@ -198,7 +198,7 @@ export default function CulturePage() {
         {!loading && (
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
             className="mt-16 rounded-2xl p-8 text-white text-center"
-            style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+            style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }}>
             <h3 className="text-2xl font-bold mb-3" style={{ fontFamily: HL }}>Support Local Culture</h3>
             <p className="mb-6 text-white/70 text-sm" style={{ fontFamily: BL }}>
               Help preserve and celebrate Liliw&apos;s heritage through direct support of artisans and cultural initiatives

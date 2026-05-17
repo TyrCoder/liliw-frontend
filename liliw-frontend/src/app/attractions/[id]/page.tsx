@@ -112,7 +112,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
     <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }}>
         <div className="max-w-4xl mx-auto px-4 py-14">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
             <Link href="/attractions" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>

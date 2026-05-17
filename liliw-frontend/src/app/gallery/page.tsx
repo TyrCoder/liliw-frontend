@@ -107,7 +107,7 @@ export default function GalleryPage() {
     <div className="min-h-screen bg-white" suppressHydrationWarning>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
         <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
             <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
@@ -143,7 +143,7 @@ export default function GalleryPage() {
         {loading && (
           <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
             {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="break-inside-avoid rounded-xl overflow-hidden animate-pulse bg-gray-200"
+              <div key={i} className="break-inside-avoid rounded-2xl overflow-hidden animate-pulse bg-gray-200"
                 style={{ height: `${160 + (i % 3) * 60}px` }} />
             ))}
           </div>
@@ -163,7 +163,7 @@ export default function GalleryPage() {
             {filtered.map((item, idx) => (
               <motion.div key={item.id}
                 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
-                className="break-inside-avoid rounded-xl overflow-hidden cursor-pointer group relative"
+                className="break-inside-avoid rounded-2xl overflow-hidden cursor-pointer group relative"
                 onClick={() => setLightbox(item)}>
                 <img src={item.imageUrl} alt={item.title}
                   className="w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />

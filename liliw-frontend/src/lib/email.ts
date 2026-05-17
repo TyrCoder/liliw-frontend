@@ -112,7 +112,7 @@ function infoBox(content: string, variant: 'green' | 'amber' | 'blue' = 'blue') 
   const map = {
     green: { bg: '#F0FDF4', border: '#86EFAC', titleColor: '#166534', textColor: '#14532D' },
     amber: { bg: '#FFFBEB', border: '#FCD34D', titleColor: '#92400E', textColor: '#78350F' },
-    blue:  { bg: '#EFF6FF', border: '#93C5FD', titleColor: '#1E40AF', textColor: '#1E3A8A' },
+    blue:  { bg: '#EFF6FF', border: '#93C5FD', titleColor: '#1E40AF', textColor: '#0B3D91' },
   };
   const c = map[variant];
   return `<div style="background:${c.bg};border:1.5px solid ${c.border};border-radius:14px;padding:20px 24px;margin:20px 0">${content}</div>`;

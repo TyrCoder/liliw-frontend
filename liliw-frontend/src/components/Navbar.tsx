@@ -95,7 +95,7 @@ export default function Navbar() {
                   L
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-lg font-bold leading-none" style={{ fontFamily: HL, color: '#1E3A8A' }}>Liliw</h1>
+                  <h1 className="text-lg font-bold leading-none" style={{ fontFamily: HL, color: '#0B3D91' }}>Liliw</h1>
                   <p className="text-xs leading-none mt-0.5" style={{ color: '#9CA3AF' }}>Laguna, Philippines</p>
                 </div>
               </Link>

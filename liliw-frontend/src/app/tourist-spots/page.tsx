@@ -78,7 +78,7 @@ export default function TouristSpotsPage() {
     <div className="min-h-screen bg-white" suppressHydrationWarning>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }}>
         <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
             <div className="flex flex-wrap items-center justify-center gap-3 mb-2">

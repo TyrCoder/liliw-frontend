@@ -78,7 +78,7 @@ function OverlayCard({ attraction }: { attraction: Attraction }) {
     <motion.div whileHover={{ y: -5 }} transition={{ duration: 0.2 }} className="h-full">
       <Link href={`/attractions/${attraction.id}`} className="block h-full">
         <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 group"
-          style={{ aspectRatio: '3/4', background: 'linear-gradient(135deg,#1E3A8A,#1565C0)' }}>
+          style={{ aspectRatio: '3/4', background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
           {photo
             ? <img src={photo} alt={attraction.attributes?.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
             : <div className="absolute inset-0 flex items-center justify-center opacity-20"><Layers className="w-20 h-20 text-white" /></div>
@@ -172,7 +172,7 @@ export default function AttractionsPage() {
     <div className="min-h-screen bg-white" suppressHydrationWarning>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#1565C0 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }}>
         <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
           <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
             <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
