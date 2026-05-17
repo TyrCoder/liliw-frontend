@@ -12,6 +12,13 @@ const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
+const USER_TYPE_LABELS: Record<string, string> = {
+  liliw_local:   'Liliw Resident',
+  laguna:        'From Laguna Province',
+  provincial:    'From Another Province',
+  international: 'International Tourist',
+};
+
 interface Stop { time: string; place: string; activity: string; duration: string; tip: string; }
 interface Day  { day: number; theme: string; stops: Stop[]; }
 interface GeneratedPlan { title: string; summary: string; days: Day[]; tips: string[]; estimatedCostPerDay: string; }
@@ -25,6 +32,7 @@ export default function ProfilePage() {
   const [trips, setTrips]           = useState<SavedTrip[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTab, setActiveTab]   = useState<'trips' | 'favorites'>('trips');
+  const [profile, setProfile]       = useState<{ user_type: string | null; full_name: string | null } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -50,6 +58,14 @@ export default function ProfilePage() {
   }, [loadTrips]);
 
   useEffect(() => {
+    if (!token) return;
+    fetch('/api/user/profile', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setProfile(d); })
+      .catch(() => {});
+  }, [token]);
+
+  useEffect(() => {
     if (typeof window !== 'undefined' && window.location.hash === '#saved') {
       setActiveTab('trips');
       setTimeout(() => document.getElementById('saved')?.scrollIntoView({ behavior: 'smooth' }), 300);
@@ -66,7 +82,9 @@ export default function ProfilePage() {
 
   if (loading || !user) return null;
 
-  const initials = user.username.charAt(0).toUpperCase();
+  const displayName = profile?.full_name || user.username;
+  const initials    = displayName.charAt(0).toUpperCase();
+  const locationLabel = profile?.user_type ? (USER_TYPE_LABELS[profile.user_type] ?? 'Liliw Community Member') : 'Liliw Community Member';
 
   return (
     <div className="min-h-screen bg-white">
@@ -85,9 +103,9 @@ export default function ProfilePage() {
                 {initials}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white" style={{ fontFamily: DL }}>{user.username}</h1>
+                <h1 className="text-2xl font-bold text-white" style={{ fontFamily: DL }}>{displayName}</h1>
                 <p className="text-white/60 text-sm mt-0.5" style={{ fontFamily: BL }}>{user.email}</p>
-                <p className="text-xs mt-1 font-semibold" style={{ color: '#F5C518', fontFamily: HL }}>Liliw Community Member</p>
+                <p className="text-xs mt-1 font-semibold" style={{ color: '#F5C518', fontFamily: HL }}>{locationLabel}</p>
               </div>
             </div>
 
