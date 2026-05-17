@@ -23,12 +23,10 @@ export async function POST(request: NextRequest) {
       .insert({ item_id: itemId, item_name: itemName || '', author, rating, comment });
 
     if (error) {
-      console.error('[ratings POST]', error.code, error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json({ success: true }, { status: 201 });
-  } catch (err) {
-    console.error('[ratings POST] unexpected:', err);
+  } catch {
     return NextResponse.json({ error: 'Failed to save rating' }, { status: 500 });
   }
 }
