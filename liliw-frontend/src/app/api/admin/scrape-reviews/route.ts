@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     searchStringsArray:        [attractionName],
     ...(lat && lng ? { lat: Number(lat), lng: Number(lng), zoom: 15 } : {}),
     maxCrawledPlacesPerSearch: 1,
-    maxReviews:                20,
+    maxReviews:                5,
     language:                  'en',
     reviewsSort:               'newest',
   };
