@@ -2,7 +2,13 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Building2, Upload, X, CheckCircle, AlertCircle, Loader2, FileText, MapPin } from 'lucide-react';
+import { ChevronLeft, Building2, Upload, X, CheckCircle, AlertCircle, Loader2, FileText, MapPin, Navigation } from 'lucide-react';
+import Map, { Marker, NavigationControl } from 'react-map-gl/mapbox';
+import 'mapbox-gl/dist/mapbox-gl.css';
+
+const MAPBOX_TOKEN  = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+const LILIW_LNG     = 121.43605859033404;
+const LILIW_LAT     = 14.130301377593792;
 
 const CATEGORY_OPTIONS = [
   { value: 'heritage', label: 'Heritage Site' },
@@ -19,7 +25,46 @@ export default function LBOApplyPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [markerPos,  setMarkerPos]  = useState<{ lat: number; lng: number } | null>(null);
+  const [viewState,  setViewState]  = useState({ longitude: LILIW_LNG, latitude: LILIW_LAT, zoom: 14 });
+  const [geoLoading, setGeoLoading] = useState(false);
+
   const set = (id: string, val: string) => setForm(f => ({ ...f, [id]: val }));
+
+  const applyMarker = (lat: number, lng: number) => {
+    setMarkerPos({ lat, lng });
+    setForm(f => ({ ...f, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
+  };
+
+  const handleMapClick = (e: any) => {
+    const { lat, lng } = e.lngLat;
+    applyMarker(lat, lng);
+  };
+
+  const handleCoordChange = (field: 'latitude' | 'longitude', val: string) => {
+    set(field, val);
+    const lat = field === 'latitude'  ? parseFloat(val)              : parseFloat(form.latitude  || '');
+    const lng = field === 'longitude' ? parseFloat(val)              : parseFloat(form.longitude || '');
+    if (!isNaN(lat) && !isNaN(lng)) {
+      setMarkerPos({ lat, lng });
+      setViewState(v => ({ ...v, latitude: lat, longitude: lng }));
+    }
+  };
+
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) return;
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        applyMarker(lat, lng);
+        setViewState({ latitude: lat, longitude: lng, zoom: 17 });
+        setGeoLoading(false);
+      },
+      () => setGeoLoading(false),
+    );
+  };
 
   const addFiles = (incoming: FileList | null) => {
     if (!incoming) return;
@@ -190,34 +235,79 @@ export default function LBOApplyPage() {
         </div>
 
         {/* ── Attraction Location ── */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
-              <MapPin className="w-5 h-5 text-teal-600" />
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
+                <MapPin className="w-5 h-5 text-teal-600" />
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-900 text-base">Attraction Location</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Click on the map to pin your exact location</p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-bold text-gray-900 text-base">Attraction Location</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Provide the exact coordinates of your attraction for the map. Open Google Maps, right-click your location, and copy the coordinates shown.</p>
-            </div>
+            <button type="button" onClick={handleUseLocation} disabled={geoLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-teal-200 text-teal-700 hover:bg-teal-50 transition disabled:opacity-50">
+              {geoLoading
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Navigation className="w-3.5 h-3.5" />}
+              Use my location
+            </button>
           </div>
 
+          {/* Map */}
+          <div className="rounded-xl overflow-hidden border border-gray-200" style={{ height: 280 }}>
+            <Map
+              {...viewState}
+              onMove={e => setViewState(e.viewState)}
+              onClick={handleMapClick}
+              mapboxAccessToken={MAPBOX_TOKEN}
+              mapStyle="mapbox://styles/mapbox/streets-v12"
+              style={{ width: '100%', height: '100%' }}
+              cursor="crosshair">
+              <NavigationControl position="top-right" />
+              {markerPos && (
+                <Marker
+                  longitude={markerPos.lng}
+                  latitude={markerPos.lat}
+                  draggable
+                  onDragEnd={e => applyMarker(e.lngLat.lat, e.lngLat.lng)}>
+                  <div className="flex flex-col items-center">
+                    <div className="w-8 h-8 rounded-full border-4 border-white shadow-lg flex items-center justify-center"
+                      style={{ backgroundColor: '#1565C0' }}>
+                      <MapPin className="w-4 h-4 text-white" fill="white" />
+                    </div>
+                    <div className="w-1 h-2 rounded-b-full" style={{ backgroundColor: '#1565C0' }} />
+                  </div>
+                </Marker>
+              )}
+            </Map>
+          </div>
+
+          {!markerPos && (
+            <p className="text-xs text-center text-gray-400">👆 Click anywhere on the map above to place your pin</p>
+          )}
+
+          {/* Coordinate inputs — sync with map */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Latitude</label>
-              <input type="number" step="any" placeholder="e.g. 14.1234" value={form.latitude || ''}
-                onChange={e => set('latitude', e.target.value)} className={inputCls} />
+              <input type="number" step="any" placeholder="e.g. 14.1285" value={form.latitude || ''}
+                onChange={e => handleCoordChange('latitude', e.target.value)} className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>Longitude</label>
-              <input type="number" step="any" placeholder="e.g. 121.5678" value={form.longitude || ''}
-                onChange={e => set('longitude', e.target.value)} className={inputCls} />
+              <input type="number" step="any" placeholder="e.g. 121.4361" value={form.longitude || ''}
+                onChange={e => handleCoordChange('longitude', e.target.value)} className={inputCls} />
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-500 flex gap-2">
-            <span className="shrink-0">💡</span>
-            <span>On Google Maps: right-click your attraction → the first line shows coordinates (e.g. <strong>14.1234, 121.5678</strong>). The first number is latitude, the second is longitude.</span>
-          </div>
+          {markerPos && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-teal-50 rounded-lg border border-teal-100 text-xs text-teal-700">
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span>Pinned at <strong>{markerPos.lat.toFixed(6)}, {markerPos.lng.toFixed(6)}</strong> — drag the pin to adjust</span>
+            </div>
+          )}
         </div>
 
         {/* ── Supporting Documents ── */}
