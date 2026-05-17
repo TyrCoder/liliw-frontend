@@ -14,7 +14,7 @@ import {
   Download, BarChart2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 const STRAPI_URL = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
@@ -37,6 +37,30 @@ function downloadCSV(filename: string, headers: string[], rows: (string | number
   const a    = document.createElement('a');
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
+}
+
+/* ─── excel styles ────────────────────────────────────────── */
+const XL_BORDER = { top:{style:'thin',color:{rgb:'E5E7EB'}}, bottom:{style:'thin',color:{rgb:'E5E7EB'}}, left:{style:'thin',color:{rgb:'E5E7EB'}}, right:{style:'thin',color:{rgb:'E5E7EB'}} };
+const XL_BORDER_GOLD_BOTTOM = { ...XL_BORDER, bottom:{style:'medium',color:{rgb:'F5C518'}} };
+const XL_BORDER_NAVY_TOP = { ...XL_BORDER, top:{style:'medium',color:{rgb:'0B3D91'}}, bottom:{style:'medium',color:{rgb:'0B3D91'}} };
+const XL_STYLES = {
+  titleBlue:   { font:{bold:true,sz:14,color:{rgb:'FFFFFF'}}, fill:{patternType:'solid',fgColor:{rgb:'0B3D91'}}, alignment:{horizontal:'center',vertical:'center'} },
+  titleFill:   { fill:{patternType:'solid',fgColor:{rgb:'0B3D91'}} },
+  subtitleFill:{ font:{italic:true,sz:10,color:{rgb:'4B5563'}}, fill:{patternType:'solid',fgColor:{rgb:'EFF6FF'}}, alignment:{horizontal:'center'} },
+  subtitleRest:{ fill:{patternType:'solid',fgColor:{rgb:'EFF6FF'}} },
+  header:      { font:{bold:true,sz:10,color:{rgb:'FFFFFF'}}, fill:{patternType:'solid',fgColor:{rgb:'0B3D91'}}, alignment:{horizontal:'center',vertical:'center',wrapText:true}, border:XL_BORDER_GOLD_BOTTOM },
+  section:     (bg: string) => ({ font:{bold:true,sz:10,color:{rgb:'1A237E'}}, fill:{patternType:'solid',fgColor:{rgb:bg}}, border:XL_BORDER }),
+  dataEven:    { fill:{patternType:'solid',fgColor:{rgb:'F0F5FF'}}, border:XL_BORDER },
+  dataOdd:     { fill:{patternType:'solid',fgColor:{rgb:'FFFFFF'}}, border:XL_BORDER },
+  totalRow:    { font:{bold:true,color:{rgb:'0B3D91'}}, fill:{patternType:'solid',fgColor:{rgb:'FEF08A'}}, border:XL_BORDER_NAVY_TOP, alignment:{horizontal:'center'} },
+  totalName:   { font:{bold:true,color:{rgb:'0B3D91'}}, fill:{patternType:'solid',fgColor:{rgb:'FEF08A'}}, border:XL_BORDER_NAVY_TOP },
+};
+const XL_SECTION_BG: Record<string,string> = {
+  'Analytics':'DBEAFE', 'Ratings':'FEF9C3', 'Submissions':'F3E8FF', 'Visitor Records':'D1FAE5',
+};
+function xlStyle(ws: any, r: number, c: number, s: any) {
+  const addr = XLSX.utils.encode_cell({ r, c });
+  if (ws[addr]) ws[addr].s = s;
 }
 
 /* ─── helpers ─────────────────────────────────────────────── */
@@ -1408,6 +1432,18 @@ export default function AdminDashboard() {
               { wch: 12 }, { wch: 12 }, { wch: 14 },
               { wch: 14 },
             ];
+            ws['!rows'] = [{ hpt: 36 }];
+            // Style header row
+            for (let c = 0; c < headers.length; c++) xlStyle(ws, 0, c, XL_STYLES.header);
+            // Style data rows
+            for (let r = 1; r <= dataRows.length; r++) {
+              const s = r % 2 === 1 ? XL_STYLES.dataOdd : XL_STYLES.dataEven;
+              for (let c = 0; c < headers.length; c++) xlStyle(ws, r, c, s);
+            }
+            // Style total row
+            const totalR = dataRows.length + 1;
+            xlStyle(ws, totalR, 0, XL_STYLES.totalName);
+            for (let c = 1; c < headers.length; c++) xlStyle(ws, totalR, c, XL_STYLES.totalRow);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, `${MONTHS_FULL[vrExportMonth - 1]} ${vrExportYear}`);
             XLSX.writeFile(wb, `visitor-records-${MONTHS_FULL[vrExportMonth - 1]}-${vrExportYear}.xlsx`);
@@ -1806,8 +1842,8 @@ export default function AdminDashboard() {
                 </div>
                 <button
                   onClick={() => {
-                    const allRows: (string|number)[][] = [
-                      ['Section','Metric','Value'],
+                    const reportDate = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+                    const dataRows: (string|number)[][] = [
                       ['Analytics','Page Views', analytics?.pageViews ?? 0],
                       ['Analytics','Unique Visitors', analytics?.uniqueVisitors ?? 0],
                       ['Analytics','Bounce Rate', analytics?.bounceRate ?? '—'],
@@ -1819,7 +1855,44 @@ export default function AdminDashboard() {
                       ['Visitor Records','Total Visitors', totalVisitors],
                       ...Object.entries(vrByAttr).map(([a, c]) => ['Visitor Records', a, c]),
                     ];
-                    downloadCSV(`liliw-full-report-${Date.now()}.csv`, ['Section','Metric','Value'], allRows.slice(1));
+                    const wsData: (string|number)[][] = [
+                      ['LILIW TOURISM — FULL ANALYTICS REPORT', '', ''],
+                      [`Generated: ${reportDate}`, '', ''],
+                      ['', '', ''],
+                      ['Section', 'Metric', 'Value'],
+                      ...dataRows,
+                    ];
+                    const ws = XLSX.utils.aoa_to_sheet(wsData);
+                    ws['!cols'] = [{ wch: 22 }, { wch: 32 }, { wch: 18 }];
+                    ws['!rows'] = [{ hpt: 32 }, { hpt: 18 }, { hpt: 8 }, { hpt: 26 }];
+                    ws['!merges'] = [
+                      { s:{r:0,c:0}, e:{r:0,c:2} },
+                      { s:{r:1,c:0}, e:{r:1,c:2} },
+                    ];
+                    // Title row
+                    xlStyle(ws, 0, 0, XL_STYLES.titleBlue);
+                    xlStyle(ws, 0, 1, XL_STYLES.titleFill);
+                    xlStyle(ws, 0, 2, XL_STYLES.titleFill);
+                    // Subtitle row
+                    xlStyle(ws, 1, 0, XL_STYLES.subtitleFill);
+                    xlStyle(ws, 1, 1, XL_STYLES.subtitleRest);
+                    xlStyle(ws, 1, 2, XL_STYLES.subtitleRest);
+                    // Column header row (row 3)
+                    for (let c = 0; c < 3; c++) xlStyle(ws, 3, c, XL_STYLES.header);
+                    // Data rows (starting at row 4)
+                    let prevSect = '';
+                    for (let i = 0; i < dataRows.length; i++) {
+                      const r = i + 4;
+                      const sect = String(dataRows[i][0]);
+                      const isNew = sect !== prevSect;
+                      if (sect) prevSect = sect;
+                      const bg = isNew ? XL_SECTION_BG[sect] ?? 'EFF6FF' : (i % 2 === 0 ? 'FFFFFF' : 'F0F5FF');
+                      const base = isNew ? XL_STYLES.section(bg) : (i % 2 === 0 ? XL_STYLES.dataOdd : XL_STYLES.dataEven);
+                      for (let c = 0; c < 3; c++) xlStyle(ws, r, c, { ...base, alignment:{ horizontal: c===2 ? 'center' : 'left', vertical:'center' } });
+                    }
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Full Report');
+                    XLSX.writeFile(wb, `liliw-full-report-${Date.now()}.xlsx`);
                   }}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition"
                   style={{ background: 'linear-gradient(135deg,#1565C0,#0B3D91)', boxShadow: '0 4px 14px rgba(21,101,192,.3)' }}>
