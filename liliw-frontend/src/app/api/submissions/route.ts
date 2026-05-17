@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       .insert({ name, email, phone: phone || '', message, type: type || 'feedback', status: 'new' });
 
     if (error) {
-      logger.error('[submissions POST]', error.code, error.message);
+      logger.error('[submissions POST]', `${error.code}: ${error.message}`);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
