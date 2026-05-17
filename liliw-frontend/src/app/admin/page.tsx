@@ -1383,14 +1383,8 @@ export default function AdminDashboard() {
               .filter(r => Number(r.month) === vrExportMonth && Number(r.year) === vrExportYear)
               .sort((a, b) => (a.attraction_name || '').localeCompare(b.attraction_name || ''));
 
-            const headers = [
-              'Attraction Name', 'LBO Email', 'Period',
-              'Local (M)', 'Local (F)', 'Local Total',
-              'Other City (M)', 'Other City (F)', 'Other City Total',
-              'Other Province (M)', 'Other Province (F)', 'Other Province Total',
-              'Foreign (M)', 'Foreign (F)', 'Foreign Total',
-              'GRAND TOTAL',
-            ];
+            const NC = 16; // total columns
+            const period = `${MONTHS_FULL[vrExportMonth - 1]} ${vrExportYear}`;
 
             const dataRows = exportRecords.map(r => {
               const lM = r.local_male||0, lF = r.local_female||0;
@@ -1398,12 +1392,9 @@ export default function AdminDashboard() {
               const pM = r.other_province_male||0, pF = r.other_province_female||0;
               const fM = r.foreign_male||0, fF = r.foreign_female||0;
               return [
-                r.attraction_name || '—', r.lbo_email || '—',
-                `${MONTHS_FULL[vrExportMonth - 1]} ${vrExportYear}`,
-                lM, lF, lM + lF,
-                cM, cF, cM + cF,
-                pM, pF, pM + pF,
-                fM, fF, fM + fF,
+                r.attraction_name || '—', r.lbo_email || '—', period,
+                lM, lF, lM+lF, cM, cF, cM+cF,
+                pM, pF, pM+pF, fM, fF, fM+fF,
                 lM+lF+cM+cF+pM+pF+fM+fF,
               ];
             });
@@ -1413,40 +1404,102 @@ export default function AdminDashboard() {
             const cMt = sum('other_city_male'), cFt = sum('other_city_female');
             const pMt = sum('other_province_male'), pFt = sum('other_province_female');
             const fMt = sum('foreign_male'), fFt = sum('foreign_female');
-            const totalRow = [
+            const totalRow: (string|number)[] = [
               'TOTAL', '', '',
-              lMt, lFt, lMt+lFt,
-              cMt, cFt, cMt+cFt,
-              pMt, pFt, pMt+pFt,
-              fMt, fFt, fMt+fFt,
+              lMt, lFt, lMt+lFt, cMt, cFt, cMt+cFt,
+              pMt, pFt, pMt+pFt, fMt, fFt, fMt+fFt,
               lMt+lFt+cMt+cFt+pMt+pFt+fMt+fFt,
             ];
 
-            const wsData = [headers, ...dataRows, totalRow];
+            // 4-row header: title / subtitle / category group / sub-headers
+            const blank16 = () => Array(NC).fill('');
+            const categoryRow = [...blank16()];
+            categoryRow[3] = 'LOCAL'; categoryRow[6] = 'OTHER CITY';
+            categoryRow[9] = 'OTHER PROVINCE'; categoryRow[12] = 'FOREIGN';
+            categoryRow[15] = 'GRAND TOTAL';
+
+            const wsData: (string|number)[][] = [
+              ['LILIW TOURISM — VISITOR RECORDS REPORT', ...Array(NC-1).fill('')],
+              [`${period}  ·  ${exportRecords.length} attraction(s)`, ...Array(NC-1).fill('')],
+              categoryRow,
+              ['Attraction Name','LBO Email','Period','Male','Female','Total','Male','Female','Total','Male','Female','Total','Male','Female','Total','TOTAL'],
+              ...dataRows,
+              totalRow,
+            ];
+
             const ws = XLSX.utils.aoa_to_sheet(wsData);
             ws['!cols'] = [
-              { wch: 32 }, { wch: 26 }, { wch: 18 },
-              { wch: 10 }, { wch: 10 }, { wch: 12 },
-              { wch: 12 }, { wch: 12 }, { wch: 14 },
-              { wch: 15 }, { wch: 15 }, { wch: 18 },
-              { wch: 12 }, { wch: 12 }, { wch: 14 },
-              { wch: 14 },
+              {wch:32},{wch:26},{wch:18},
+              {wch:9},{wch:9},{wch:11},
+              {wch:9},{wch:9},{wch:11},
+              {wch:9},{wch:9},{wch:13},
+              {wch:9},{wch:9},{wch:11},
+              {wch:13},
             ];
-            ws['!rows'] = [{ hpt: 36 }];
-            // Style header row
-            for (let c = 0; c < headers.length; c++) xlStyle(ws, 0, c, XL_STYLES.header);
-            // Style data rows
-            for (let r = 1; r <= dataRows.length; r++) {
-              const s = r % 2 === 1 ? XL_STYLES.dataOdd : XL_STYLES.dataEven;
-              for (let c = 0; c < headers.length; c++) xlStyle(ws, r, c, s);
+            ws['!rows'] = [{hpt:32},{hpt:18},{hpt:26},{hpt:30}];
+            ws['!merges'] = [
+              {s:{r:0,c:0},e:{r:0,c:NC-1}},
+              {s:{r:1,c:0},e:{r:1,c:NC-1}},
+              {s:{r:2,c:0},e:{r:2,c:2}},
+              {s:{r:2,c:3},e:{r:2,c:5}},
+              {s:{r:2,c:6},e:{r:2,c:8}},
+              {s:{r:2,c:9},e:{r:2,c:11}},
+              {s:{r:2,c:12},e:{r:2,c:14}},
+            ];
+
+            // Group palette: [category bg, sub-header bg, data alt bg]
+            const G = {
+              local:    {cat:'1565C0', sub:'3B82F6', alt:'EFF6FF'},
+              city:     {cat:'047857', sub:'10B981', alt:'ECFDF5'},
+              province: {cat:'B45309', sub:'F59E0B', alt:'FEF3C7'},
+              foreign:  {cat:'6D28D9', sub:'8B5CF6', alt:'F5F3FF'},
+              grand:    {cat:'92400E', sub:'D97706', alt:'FEF9C3'},
+            };
+            const mkCat = (rgb: string) => ({font:{bold:true,sz:11,color:{rgb:'FFFFFF'}}, fill:{patternType:'solid',fgColor:{rgb}}, alignment:{horizontal:'center',vertical:'center'}, border:XL_BORDER});
+            const mkSub = (rgb: string) => ({font:{bold:true,sz:10,color:{rgb:'FFFFFF'}}, fill:{patternType:'solid',fgColor:{rgb}}, alignment:{horizontal:'center',vertical:'center'}, border:XL_BORDER});
+            const mkData = (bg: string, center = true) => ({fill:{patternType:'solid',fgColor:{rgb:bg}}, border:XL_BORDER, alignment:{horizontal:center?'center':'left',vertical:'center'}});
+            const mkDataBold = (bg: string) => ({font:{bold:true}, fill:{patternType:'solid',fgColor:{rgb:bg}}, border:XL_BORDER, alignment:{horizontal:'center',vertical:'center'}});
+
+            // Row 0: title
+            xlStyle(ws, 0, 0, XL_STYLES.titleBlue);
+            for (let c=1;c<NC;c++) xlStyle(ws, 0, c, XL_STYLES.titleFill);
+            // Row 1: subtitle
+            xlStyle(ws, 1, 0, XL_STYLES.subtitleFill);
+            for (let c=1;c<NC;c++) xlStyle(ws, 1, c, XL_STYLES.subtitleRest);
+            // Row 2: category headers
+            for (let c=0;c<3;c++) xlStyle(ws, 2, c, {fill:{patternType:'solid',fgColor:{rgb:'0B3D91'}}, border:XL_BORDER});
+            for (let c=3;c<=5;c++)   xlStyle(ws, 2, c, mkCat(G.local.cat));
+            for (let c=6;c<=8;c++)   xlStyle(ws, 2, c, mkCat(G.city.cat));
+            for (let c=9;c<=11;c++)  xlStyle(ws, 2, c, mkCat(G.province.cat));
+            for (let c=12;c<=14;c++) xlStyle(ws, 2, c, mkCat(G.foreign.cat));
+            xlStyle(ws, 2, 15, mkCat(G.grand.cat));
+            // Row 3: sub-headers
+            for (let c=0;c<3;c++) xlStyle(ws, 3, c, XL_STYLES.header);
+            for (let c=3;c<=5;c++)   xlStyle(ws, 3, c, mkSub(G.local.sub));
+            for (let c=6;c<=8;c++)   xlStyle(ws, 3, c, mkSub(G.city.sub));
+            for (let c=9;c<=11;c++)  xlStyle(ws, 3, c, mkSub(G.province.sub));
+            for (let c=12;c<=14;c++) xlStyle(ws, 3, c, mkSub(G.foreign.sub));
+            xlStyle(ws, 3, 15, mkSub(G.grand.sub));
+            // Data rows (start at row 4)
+            for (let i=0;i<dataRows.length;i++) {
+              const r = i + 4;
+              const even = i % 2 === 0;
+              const base = even ? 'FFFFFF' : 'F8FAFF';
+              for (let c=0;c<3;c++) xlStyle(ws, r, c, mkData(base, false));
+              for (let c=3;c<=5;c++)   xlStyle(ws, r, c, mkData(even ? 'FFFFFF' : G.local.alt));
+              for (let c=6;c<=8;c++)   xlStyle(ws, r, c, mkData(even ? 'FFFFFF' : G.city.alt));
+              for (let c=9;c<=11;c++)  xlStyle(ws, r, c, mkData(even ? 'FFFFFF' : G.province.alt));
+              for (let c=12;c<=14;c++) xlStyle(ws, r, c, mkData(even ? 'FFFFFF' : G.foreign.alt));
+              xlStyle(ws, r, 15, mkDataBold(even ? 'FFFBEB' : G.grand.alt));
             }
-            // Style total row
-            const totalR = dataRows.length + 1;
+            // Total row
+            const totalR = dataRows.length + 4;
             xlStyle(ws, totalR, 0, XL_STYLES.totalName);
-            for (let c = 1; c < headers.length; c++) xlStyle(ws, totalR, c, XL_STYLES.totalRow);
+            for (let c=1;c<NC;c++) xlStyle(ws, totalR, c, XL_STYLES.totalRow);
+
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, `${MONTHS_FULL[vrExportMonth - 1]} ${vrExportYear}`);
-            XLSX.writeFile(wb, `visitor-records-${MONTHS_FULL[vrExportMonth - 1]}-${vrExportYear}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws, period);
+            XLSX.writeFile(wb, `visitor-records-${MONTHS_FULL[vrExportMonth-1]}-${vrExportYear}.xlsx`);
             setVrExportOpen(false);
           };
 
