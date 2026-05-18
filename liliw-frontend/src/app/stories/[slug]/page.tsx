@@ -7,12 +7,34 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, User, Calendar, BookOpen, Play } from 'lucide-react';
 import GatTayaw from '@/components/GatTayaw';
 
-// Add your YouTube video IDs here — empty strings are hidden until filled
-const STORY_VIDEOS: { id: string; title: string }[] = [
-  { id: '', title: 'Video 1' },
-  { id: '', title: 'Video 2' },
-  { id: '', title: 'Video 3' },
-];
+// Add YouTube video IDs per story type — empty strings are hidden until filled
+const STORY_VIDEOS: Record<string, { id: string; title: string }[]> = {
+  church: [
+    { id: '', title: 'Parish Church Video 1' },
+    { id: '', title: 'Parish Church Video 2' },
+    { id: '', title: 'Parish Church Video 3' },
+  ],
+  ancestral: [
+    { id: '', title: 'Ancestral Houses Video 1' },
+    { id: '', title: 'Ancestral Houses Video 2' },
+    { id: '', title: 'Ancestral Houses Video 3' },
+  ],
+  legend: [
+    { id: '', title: 'Legend of Liliw Video 1' },
+    { id: '', title: 'Legend of Liliw Video 2' },
+    { id: '', title: 'Legend of Liliw Video 3' },
+  ],
+  tsinelas: [
+    { id: '', title: 'Slipper Capital Video 1' },
+    { id: '', title: 'Slipper Capital Video 2' },
+    { id: '', title: 'Slipper Capital Video 3' },
+  ],
+  welcome: [
+    { id: '', title: 'Liliw Video 1' },
+    { id: '', title: 'Liliw Video 2' },
+    { id: '', title: 'Liliw Video 3' },
+  ],
+};
 
 function getAudioKey(category: string, slug: string, title = ''): string {
   // Check slug + title together so synthetic stories (UUID slugs) still match by title
@@ -235,7 +257,9 @@ export default function StoryDetailPage() {
     );
   }
 
-  const catColor = CATEGORY_COLORS[story.category] ?? '#0B3D91';
+  const catColor  = CATEGORY_COLORS[story.category] ?? '#0B3D91';
+  const audioKey  = getAudioKey(story.category, slug, story.title);
+  const storyVids = (STORY_VIDEOS[audioKey] ?? []).filter(v => v.id.trim());
 
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
@@ -336,8 +360,8 @@ export default function StoryDetailPage() {
             </div>
           </div>
 
-          {/* Featured Videos */}
-          {STORY_VIDEOS.filter(v => v.id.trim()).length > 0 && (
+          {/* Featured Videos — specific to this story type */}
+          {storyVids.length > 0 && (
             <div className="mt-16 pt-10 border-t border-gray-100">
               <div className="flex items-center gap-3 mb-6">
                 <Play className="w-5 h-5" style={{ color: '#0B3D91' }} />
@@ -346,7 +370,7 @@ export default function StoryDetailPage() {
                 </h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {STORY_VIDEOS.filter(v => v.id.trim()).map(v => (
+                {storyVids.map(v => (
                   <div key={v.id} className="rounded-2xl overflow-hidden shadow-md" style={{ aspectRatio: '16/9' }}>
                     <iframe
                       src={`https://www.youtube.com/embed/${v.id}`}
