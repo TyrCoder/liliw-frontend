@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar, Bell, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Calendar, Bell, X } from 'lucide-react';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
@@ -61,8 +61,10 @@ interface NewsItem {
   dateKey: string;
   category: string;
   excerpt: string;
+  fullText: string;
   source: string;
   isEvent: boolean;
+  slug: string;
 }
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -103,33 +105,33 @@ function EventCalendar({
   const nextMonth = () => setView(new Date(year, month + 1, 1));
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-5 border" style={{ borderColor: 'rgba(11,61,145,0.1)' }}>
+    <div className="bg-white rounded-2xl shadow-sm p-6 border" style={{ borderColor: 'rgba(11,61,145,0.1)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <button onClick={prevMonth}
-          className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-50 transition"
+          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-blue-50 transition"
           style={{ color: '#0B3D91' }}>
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-5 h-5" />
         </button>
-        <h3 className="font-bold text-sm" style={{ color: '#0B3D91', fontFamily: HL }}>
+        <h3 className="font-bold text-base" style={{ color: '#0B3D91', fontFamily: HL }}>
           {MONTH_NAMES[month]} {year}
         </h3>
         <button onClick={nextMonth}
-          className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-50 transition"
+          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-blue-50 transition"
           style={{ color: '#0B3D91' }}>
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
       {/* Day labels */}
-      <div className="grid grid-cols-7 mb-1">
+      <div className="grid grid-cols-7 mb-2">
         {DAY_LABELS.map(d => (
-          <div key={d} className="text-center text-xs font-semibold py-1" style={{ color: '#9CA3AF', fontFamily: HL }}>{d}</div>
+          <div key={d} className="text-center text-sm font-semibold py-1.5" style={{ color: '#9CA3AF', fontFamily: HL }}>{d}</div>
         ))}
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-1">
         {cells.map((day, i) => {
           if (!day) return <div key={i} className="aspect-square" />;
           const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -141,7 +143,7 @@ function EventCalendar({
               key={i}
               onClick={() => onSelectDay(isSelected ? null : key)}
               className={`
-                aspect-square rounded-lg text-xs font-medium flex flex-col items-center justify-center
+                aspect-square rounded-xl text-sm font-medium flex flex-col items-center justify-center
                 relative transition-all
                 ${isSelected ? 'text-white shadow-sm' :
                   isToday    ? 'font-bold' :
@@ -169,7 +171,7 @@ function EventCalendar({
       </div>
 
       {/* Legend */}
-      <div className="mt-3 pt-3 border-t flex items-center gap-4 text-xs" style={{ borderColor: 'rgba(0,0,0,0.06)', color: '#9CA3AF', fontFamily: BL }}>
+      <div className="mt-4 pt-4 border-t flex items-center gap-4 text-xs" style={{ borderColor: 'rgba(0,0,0,0.06)', color: '#9CA3AF', fontFamily: BL }}>
         <span className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-blue-600 inline-block" /> Has event
         </span>
@@ -187,14 +189,14 @@ function EventCalendar({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden">
-            <div className="mt-3 pt-3 border-t space-y-2" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
-              <p className="text-xs font-semibold" style={{ color: '#0B3D91', fontFamily: HL }}>
+            <div className="mt-4 pt-4 border-t space-y-2" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
+              <p className="text-sm font-semibold" style={{ color: '#0B3D91', fontFamily: HL }}>
                 {new Date(selectedDay + 'T00:00:00').toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
               {eventDates[selectedDay].map((ev, i) => (
                 <div key={i} className="flex items-start gap-2">
-                  <span className="mt-1 shrink-0 w-2 h-2 rounded-full" style={{ backgroundColor: '#F97316' }} />
-                  <p className="text-xs leading-snug" style={{ color: '#1A1A2E', fontFamily: BL }}>{ev.title}</p>
+                  <span className="mt-1.5 shrink-0 w-2 h-2 rounded-full" style={{ backgroundColor: '#F97316' }} />
+                  <p className="text-sm leading-snug" style={{ color: '#1A1A2E', fontFamily: BL }}>{ev.title}</p>
                 </div>
               ))}
             </div>
@@ -209,6 +211,7 @@ export default function NewsPage() {
   const [news, setNews]       = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/strapi/news-events')
@@ -219,27 +222,33 @@ export default function NewsPage() {
         combined?.news?.data?.forEach((item: any) => {
           const a = item.attributes || item;
           const date = a.publishedAt || a.createdAt || '';
+          const full = extractText(a.content);
           items.push({
             title: a.title || 'News Item',
             date,
             dateKey: toDateKey(date),
             category: a.category || 'announcement',
-            excerpt: extractText(a.content).substring(0, 200) || 'Read this news item for more information.',
+            excerpt: full.substring(0, 200) || 'Read this news item for more information.',
+            fullText: full,
             source: 'Liliw Tourism Office',
             isEvent: false,
+            slug: a.slug || a.documentId || String(item.id),
           });
         });
         combined?.events?.data?.forEach((item: any) => {
           const a = item.attributes || item;
           const date = a.date_start || a.createdAt || '';
+          const full = extractText(a.description);
           items.push({
             title: a.title || 'Upcoming Event',
             date,
             dateKey: toDateKey(date),
             category: a.category || 'other',
-            excerpt: extractText(a.description).substring(0, 200) || `Event at ${a.venue || 'Liliw'}`,
+            excerpt: full.substring(0, 200) || `Event at ${a.venue || 'Liliw'}`,
+            fullText: full,
             source: a.venue || 'Liliw',
             isEvent: true,
+            slug: a.slug || a.documentId || String(item.id),
           });
         });
         if (items.length > 0) items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -296,9 +305,26 @@ export default function NewsPage() {
               style={{ borderColor: 'rgba(11,61,145,0.2)', borderTopColor: '#0B3D91' }} />
           </div>
         ) : (
-          <div className="lg:grid lg:grid-cols-[1fr_300px] gap-8 items-start">
+          <div className="lg:grid lg:grid-cols-[400px_1fr] gap-8 items-start">
 
-            {/* ── News list ── */}
+            {/* ── Calendar sidebar (LEFT) ── */}
+            <div className="lg:sticky lg:top-24 mb-8 lg:mb-0">
+              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#0B3D91', fontFamily: HL }}>
+                Event Calendar
+              </p>
+              <EventCalendar
+                eventDates={eventDates}
+                selectedDay={selectedDay}
+                onSelectDay={setSelectedDay}
+              />
+              {!hasEvents && !loading && (
+                <p className="mt-3 text-xs text-center text-gray-400" style={{ fontFamily: BL }}>
+                  No upcoming events scheduled yet.
+                </p>
+              )}
+            </div>
+
+            {/* ── News list (RIGHT) ── */}
             <div>
               {/* Active filter chip */}
               {selectedDay && (
@@ -337,6 +363,8 @@ export default function NewsPage() {
                 <div className="space-y-4">
                   {displayed.map((item, idx) => {
                     const catStyle = CATEGORY_STYLE[item.category] || CATEGORY_STYLE.other;
+                    const isExpanded = expandedIdx === idx;
+                    const showToggle = !item.isEvent && item.fullText.length > 200;
                     return (
                       <motion.div key={`${item.dateKey}-${idx}`}
                         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
@@ -364,10 +392,45 @@ export default function NewsPage() {
                           </div>
                         </div>
                         <h3 className="text-lg font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>{item.title}</h3>
-                        <p className="text-gray-600 text-sm leading-relaxed mb-3" style={{ fontFamily: BL }}>{item.excerpt}</p>
+
+                        {/* Expandable content */}
+                        <AnimatePresence initial={false}>
+                          {isExpanded ? (
+                            <motion.p key="full"
+                              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                              className="text-gray-600 text-sm leading-relaxed mb-3" style={{ fontFamily: BL }}>
+                              {item.fullText || item.excerpt}
+                            </motion.p>
+                          ) : (
+                            <motion.p key="short"
+                              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                              className="text-gray-600 text-sm leading-relaxed mb-3" style={{ fontFamily: BL }}>
+                              {item.excerpt}{item.fullText.length > 200 && !isExpanded ? '...' : ''}
+                            </motion.p>
+                          )}
+                        </AnimatePresence>
+
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-400" style={{ fontFamily: BL }}>{item.source}</span>
-                          <button className="font-semibold text-sm" style={{ color: '#1565C0', fontFamily: BL }}>Read More →</button>
+                          {item.isEvent ? (
+                            <Link
+                              href={`/community/events/${item.slug}`}
+                              className="inline-flex items-center gap-1 font-semibold text-sm transition hover:underline"
+                              style={{ color: '#1565C0', fontFamily: BL }}>
+                              Read More →
+                            </Link>
+                          ) : showToggle ? (
+                            <button
+                              onClick={() => setExpandedIdx(isExpanded ? null : idx)}
+                              className="inline-flex items-center gap-1 font-semibold text-sm transition hover:underline"
+                              style={{ color: '#1565C0', fontFamily: BL }}>
+                              {isExpanded ? (
+                                <><ChevronUp className="w-4 h-4" /> Show Less</>
+                              ) : (
+                                <><ChevronDown className="w-4 h-4" /> Read More</>
+                              )}
+                            </button>
+                          ) : null}
                         </div>
                       </motion.div>
                     );
@@ -396,22 +459,6 @@ export default function NewsPage() {
               )}
             </div>
 
-            {/* ── Calendar sidebar ── */}
-            <div className="lg:sticky lg:top-24 mt-8 lg:mt-0">
-              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#0B3D91', fontFamily: HL }}>
-                Event Calendar
-              </p>
-              <EventCalendar
-                eventDates={eventDates}
-                selectedDay={selectedDay}
-                onSelectDay={setSelectedDay}
-              />
-              {!hasEvents && !loading && (
-                <p className="mt-3 text-xs text-center text-gray-400" style={{ fontFamily: BL }}>
-                  No upcoming events scheduled yet.
-                </p>
-              )}
-            </div>
           </div>
         )}
       </div>
