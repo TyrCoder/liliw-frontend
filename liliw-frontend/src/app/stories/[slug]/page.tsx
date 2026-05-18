@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -57,6 +57,13 @@ function getAudioKey(category: string, slug: string, title = ''): string {
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
+
+const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+
+function mediaUrl(url: string | undefined): string {
+  if (!url) return '';
+  return url.startsWith('http') ? url : `${STRAPI_BASE}${url}`;
+}
 
 const CATEGORY_COLORS: Record<string, string> = {
   history:  '#EF4444',
