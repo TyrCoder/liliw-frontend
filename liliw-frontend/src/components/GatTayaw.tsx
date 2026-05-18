@@ -52,9 +52,15 @@ const NARRATIONS = [
   },
 ];
 
-export default function GatTayaw() {
+interface Props { defaultKey?: string; }
+
+export default function GatTayaw({ defaultKey }: Props) {
+  const startIdx = defaultKey
+    ? Math.max(0, NARRATIONS.findIndex(n => n.key === defaultKey))
+    : 0;
+
   const [lang, setLang]       = useState<Lang>('en');
-  const [idx, setIdx]         = useState(0);
+  const [idx, setIdx]         = useState(startIdx);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted]     = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);

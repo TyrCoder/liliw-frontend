@@ -5,6 +5,20 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, User, Calendar, BookOpen } from 'lucide-react';
+import GatTayaw from '@/components/GatTayaw';
+
+function getAudioKey(category: string, slug: string): string {
+  const s = slug.toLowerCase();
+  const c = category.toLowerCase();
+  if (s.includes('church') || s.includes('simbahan') || s.includes('parish'))    return 'church';
+  if (s.includes('tsinelas') || s.includes('slipper') || s.includes('sapatos'))  return 'tsinelas';
+  if (s.includes('ancestral') || s.includes('bahay') || s.includes('house'))     return 'ancestral';
+  if (s.includes('legend') || s.includes('alamat') || s.includes('myth'))        return 'legend';
+  if (c === 'history')  return 'legend';
+  if (c === 'culture')  return 'ancestral';
+  if (c === 'food')     return 'tsinelas';
+  return 'welcome';
+}
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -178,6 +192,9 @@ export default function StoryDetailPage() {
             <p className="text-lg text-gray-600 leading-relaxed mb-8 font-medium italic"
               style={{ fontFamily: DL }}>{story.excerpt}</p>
           )}
+
+          {/* Gat Tayaw narrator — narration matched to this story */}
+          <GatTayaw defaultKey={getAudioKey(story.category, slug)} />
 
           {/* Rich text content */}
           <div className="prose-custom">
