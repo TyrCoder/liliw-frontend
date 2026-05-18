@@ -7,8 +7,9 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, User, Calendar, BookOpen } from 'lucide-react';
 import GatTayaw from '@/components/GatTayaw';
 
-function getAudioKey(category: string, slug: string): string {
-  const s = slug.toLowerCase();
+function getAudioKey(category: string, slug: string, title = ''): string {
+  // Check slug + title together so synthetic stories (UUID slugs) still match by title
+  const s = (slug + ' ' + title).toLowerCase();
   const c = category.toLowerCase();
   if (s.includes('church') || s.includes('simbahan') || s.includes('parish'))    return 'church';
   if (s.includes('tsinelas') || s.includes('slipper') || s.includes('sapatos'))  return 'tsinelas';
@@ -293,9 +294,18 @@ export default function StoryDetailPage() {
           {/* Two-column layout: GatTayaw sidebar (left) + Article content (right) */}
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
 
-            {/* ── Left sidebar: GatTayaw narrator (sticky on desktop) ── */}
+            {/* ── Left sidebar: GatTayaw + dog (sticky on desktop) ── */}
             <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-8">
-              <GatTayaw defaultKey={getAudioKey(story.category, slug)} />
+              <GatTayaw defaultKey={getAudioKey(story.category, slug, story.title)} />
+              <div className="hidden lg:flex justify-center mt-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/liliw-dog.png"
+                  alt="Liliw mascot"
+                  className="gat-float"
+                  style={{ width: 130, height: 130, objectFit: 'contain', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.12))' }}
+                />
+              </div>
             </div>
 
             {/* ── Right column: Article body ── */}
