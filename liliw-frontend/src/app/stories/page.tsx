@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { BookOpen, User } from 'lucide-react';
+import GatTayaw from '@/components/GatTayaw';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -126,6 +127,25 @@ export default function StoriesPage() {
       <WaveDown from="#1565C0" to="#ffffff" />
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-24">
+
+        {/* Mascot row — GatTayaw left, dog right */}
+        <div className="flex items-end justify-between gap-6 mb-10">
+          <div className="w-72 shrink-0">
+            <GatTayaw defaultKey="welcome" />
+          </div>
+          <div className="hidden sm:flex items-end justify-center pb-2 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/liliw-dog.png"
+              alt="Liliw mascot"
+              className="gat-float"
+              style={{
+                width: 180, height: 180, objectFit: 'contain',
+                filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.15))',
+              }}
+            />
+          </div>
+        </div>
 
         {/* Skeleton */}
         {loading && (

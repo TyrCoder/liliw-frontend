@@ -67,7 +67,9 @@ export default function GatTayaw({ defaultKey }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const narration = NARRATIONS[idx];
-  const audioSrc  = `/audio/${narration.key}-${lang}.mp3`;
+  const audioSrc  = narration.key === 'welcome'
+    ? `/audio/welcome.mp3`
+    : `/audio/${narration.key}-${lang}.mp3`;
 
   useEffect(() => {
     const audio = audioRef.current;
