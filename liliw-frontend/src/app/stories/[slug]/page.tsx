@@ -37,16 +37,20 @@ const STORY_VIDEOS: Record<string, { id: string; title: string }[]> = {
 };
 
 function getAudioKey(category: string, slug: string, title = ''): string {
-  // Check slug + title together so synthetic stories (UUID slugs) still match by title
+  // Check slug + title first so specific story topics always win
   const s = (slug + ' ' + title).toLowerCase();
   const c = category.toLowerCase();
   if (s.includes('church') || s.includes('simbahan') || s.includes('parish'))    return 'church';
   if (s.includes('tsinelas') || s.includes('slipper') || s.includes('sapatos'))  return 'tsinelas';
   if (s.includes('ancestral') || s.includes('bahay') || s.includes('house'))     return 'ancestral';
   if (s.includes('legend') || s.includes('alamat') || s.includes('myth'))        return 'legend';
+  // Fallback by category (matches Strapi enum: history, culture, people, nature, food, festival)
   if (c === 'history')  return 'legend';
   if (c === 'culture')  return 'ancestral';
   if (c === 'food')     return 'tsinelas';
+  if (c === 'people')   return 'welcome';
+  if (c === 'nature')   return 'welcome';
+  if (c === 'festival') return 'welcome';
   return 'welcome';
 }
 
