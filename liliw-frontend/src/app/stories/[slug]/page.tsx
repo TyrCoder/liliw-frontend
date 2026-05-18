@@ -4,8 +4,15 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, User, Calendar, BookOpen } from 'lucide-react';
+import { ChevronLeft, User, Calendar, BookOpen, Play } from 'lucide-react';
 import GatTayaw from '@/components/GatTayaw';
+
+// Add your YouTube video IDs here — empty strings are hidden until filled
+const STORY_VIDEOS: { id: string; title: string }[] = [
+  { id: '', title: 'Video 1' },
+  { id: '', title: 'Video 2' },
+  { id: '', title: 'Video 3' },
+];
 
 function getAudioKey(category: string, slug: string, title = ''): string {
   // Check slug + title together so synthetic stories (UUID slugs) still match by title
@@ -328,6 +335,31 @@ export default function StoryDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Featured Videos */}
+          {STORY_VIDEOS.filter(v => v.id.trim()).length > 0 && (
+            <div className="mt-16 pt-10 border-t border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <Play className="w-5 h-5" style={{ color: '#0B3D91' }} />
+                <h2 className="text-2xl font-bold" style={{ color: '#1A1A2E', fontFamily: HL }}>
+                  Featured Videos
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {STORY_VIDEOS.filter(v => v.id.trim()).map(v => (
+                  <div key={v.id} className="rounded-2xl overflow-hidden shadow-md" style={{ aspectRatio: '16/9' }}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${v.id}`}
+                      title={v.title}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Footer */}
           <div className="mt-16 pt-8 border-t border-gray-100">
