@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import { Play, Pause, ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
 
 type Lang = 'en' | 'fil';
@@ -124,19 +123,20 @@ export default function GatTayaw({ defaultKey }: Props) {
         .speaker-pulse { animation: speakerPulse 1s ease-in-out infinite; }
       `}</style>
 
-      <div className="w-full max-w-3xl mx-auto mb-10 px-2">
+      <div className="w-full mb-6 px-0">
         {/* Layout: illustration left, bubble right */}
         <div className="flex items-end gap-0 sm:gap-1">
 
           {/* ── Gat Tayaw illustration ── */}
           <div className="relative shrink-0 gat-float select-none"
             style={{ width: 110, height: 155, filter: 'drop-shadow(0 8px 18px rgba(11,61,145,0.25))' }}>
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src="/images/gat-tayaw.png"
-              alt="Gat Tayaw, narrator of Liliw's stories"
-              fill
-              className="object-contain"
-              priority
+              alt="Gat Tayaw"
+              width={110}
+              height={155}
+              style={{ width: 110, height: 155, objectFit: 'contain' }}
             />
           </div>
 

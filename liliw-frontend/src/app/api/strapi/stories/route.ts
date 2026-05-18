@@ -37,15 +37,26 @@ function firstImageUrl(attrs: any): string {
 function toStory(item: any, prefix: string, category: string, titleField = 'title') {
   const a = item?.attributes ?? item;
   const title = a?.[titleField] || a?.title || a?.name || '';
-  const description = a?.description || a?.excerpt || '';
-  const content = a?.content || a?.body || (description ? [{ type: 'paragraph', children: [{ text: description }] }] : []);
+  const rawDesc = a?.description || a?.excerpt || '';
+  const excerptText = typeof rawDesc === 'string' ? rawDesc.slice(0, 200) : extractText(rawDesc);
+  const rawContent = a?.content || a?.body;
+  let content: any[];
+  if (Array.isArray(rawContent)) {
+    content = rawContent;
+  } else if (rawContent) {
+    content = [{ type: 'paragraph', children: [{ type: 'text', text: extractText(rawContent) }] }];
+  } else if (excerptText) {
+    content = [{ type: 'paragraph', children: [{ type: 'text', text: excerptText }] }];
+  } else {
+    content = [];
+  }
   return {
     id: `${prefix}-${item.id}`,
     attributes: {
       title,
       slug: `${prefix}-${item.documentId ?? item.id}`,
-      excerpt: typeof description === 'string' ? description.slice(0, 200) : extractText(description),
-      content: Array.isArray(content) ? content : [{ type: 'paragraph', children: [{ text: extractText(content) }] }],
+      excerpt: excerptText,
+      content,
       category,
       author: a?.author || 'Liliw Tourism Office',
       featured: a?.featured ?? false,
