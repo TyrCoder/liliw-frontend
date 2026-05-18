@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -54,8 +54,6 @@ const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
-const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-
 const CATEGORY_COLORS: Record<string, string> = {
   history:  '#EF4444',
   culture:  '#8B5CF6',
@@ -64,11 +62,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   food:     '#F97316',
   festival: '#EC4899',
 };
-
-function mediaUrl(url: string | undefined): string {
-  if (!url) return '';
-  return url.startsWith('http') ? url : `${STRAPI_BASE}${url}`;
-}
 
 // Render a single inline node (text with formatting, or link)
 function InlineNode({ node }: { node: any }): React.ReactNode {
@@ -266,28 +259,17 @@ export default function StoryDetailPage() {
         });
         if (found) {
           const a = found?.attributes ?? found;
-          const img = a?.cover_image?.data?.attributes ?? a?.cover_image ?? {};
-          const coverUrl = mediaUrl(img?.url ?? img?.formats?.large?.url);
-
-          // Collect all photos for carousel
-          const seen = new Set<string>();
-          const allImgs: string[] = [];
-          const addImg = (url: string) => { if (url && !seen.has(url)) { seen.add(url); allImgs.push(url); } };
-          if (coverUrl) addImg(coverUrl);
-          const photoArr = a?.photos?.data ?? (Array.isArray(a?.photos) ? a.photos : []);
-          photoArr.forEach((p: any) => { const pa = p?.attributes ?? p; addImg(mediaUrl(pa?.url ?? pa?.formats?.large?.url ?? pa?.formats?.medium?.url)); });
-          const imgArr = a?.images?.data ?? (Array.isArray(a?.images) ? a.images : []);
-          imgArr.forEach((p: any) => { const pa = p?.attributes ?? p; addImg(mediaUrl(pa?.url ?? pa?.formats?.large?.url ?? pa?.formats?.medium?.url)); });
-
           setStory({
             id:       found.id,
             title:    a?.title ?? '',
             excerpt:  typeof a?.excerpt === 'string' ? a.excerpt : '',
             content:  Array.isArray(a?.content) ? a.content : [],
             category: a?.category ?? 'history',
-            author:   a?.author ?? 'Liliw Tourism',
-            coverUrl,
-            images:   allImgs,
+            author:   a?.author ?? 'Liliw Tourism Office',
+            coverUrl: found._coverUrl ?? '',
+            images:   Array.isArray(found._allImages) && found._allImages.length > 0
+                        ? found._allImages
+                        : found._coverUrl ? [found._coverUrl] : [],
             featured: a?.featured ?? false,
             date:     a?.publishedAt
               ? new Date(a.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
