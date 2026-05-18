@@ -322,24 +322,15 @@ export default function StoryDetailPage() {
             {story.date && <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />{story.date}</span>}
           </div>
 
-          {/* Two-column layout: GatTayaw sidebar (left) + Article content (right) */}
+          {/* Three-column layout: GatTayaw | Article | Dog */}
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
 
-            {/* ── Left sidebar: GatTayaw + dog (sticky on desktop) ── */}
+            {/* ── Left sidebar: GatTayaw (sticky) ── */}
             <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-8">
               <GatTayaw defaultKey={getAudioKey(story.category, slug, story.title)} />
-              <div className="flex justify-center mt-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/liliw-dog.png"
-                  alt="Liliw mascot"
-                  className="gat-float"
-                  style={{ width: 130, height: 'auto', display: 'block', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.12))' }}
-                />
-              </div>
             </div>
 
-            {/* ── Right column: Article body ── */}
+            {/* ── Center: Article body ── */}
             <div className="flex-1 min-w-0">
 
               {/* Excerpt — styled pull quote */}
@@ -358,6 +349,18 @@ export default function StoryDetailPage() {
                 }
               </div>
             </div>
+
+            {/* ── Right sidebar: floating dog (sticky) ── */}
+            <div className="hidden xl:flex w-40 shrink-0 flex-col items-center xl:sticky xl:top-32">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/liliw-dog.png"
+                alt="Liliw mascot"
+                className="gat-float"
+                style={{ width: 140, height: 'auto', display: 'block', filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.13))' }}
+              />
+            </div>
+
           </div>
 
           {/* Featured Videos — specific to this story type */}
