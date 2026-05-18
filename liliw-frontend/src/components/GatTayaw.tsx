@@ -132,11 +132,11 @@ export default function GatTayaw({ defaultKey }: Props) {
             style={{ width: 110, height: 155, filter: 'drop-shadow(0 8px 18px rgba(11,61,145,0.25))' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/images/gat-tayaw.png"
+              src={playing ? '/images/gat-tayaw-speaking.png' : '/images/gat-tayaw.png'}
               alt="Gat Tayaw"
               width={110}
               height={155}
-              style={{ width: 110, height: 155, objectFit: 'contain' }}
+              style={{ width: 110, height: 155, objectFit: 'contain', transition: 'opacity 0.15s ease' }}
             />
           </div>
 
