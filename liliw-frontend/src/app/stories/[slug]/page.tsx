@@ -297,13 +297,13 @@ export default function StoryDetailPage() {
             {/* ── Left sidebar: GatTayaw + dog (sticky on desktop) ── */}
             <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-8">
               <GatTayaw defaultKey={getAudioKey(story.category, slug, story.title)} />
-              <div className="hidden lg:flex justify-center mt-2">
+              <div className="flex justify-center mt-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/images/liliw-dog.png"
                   alt="Liliw mascot"
                   className="gat-float"
-                  style={{ width: 130, height: 130, objectFit: 'contain', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.12))' }}
+                  style={{ width: 130, height: 'auto', display: 'block', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.12))' }}
                 />
               </div>
             </div>
