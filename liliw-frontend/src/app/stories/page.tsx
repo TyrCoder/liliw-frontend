@@ -91,15 +91,14 @@ export default function StoriesPage() {
         const raw: any[] = json?.data ?? [];
         setStories(raw.map(item => {
           const a = item?.attributes ?? item;
-          const img = a?.cover_image?.data?.attributes ?? a?.cover_image ?? {};
           return {
             id: item.id,
-            slug: a?.slug ?? String(item.id),
+            slug: a?.slug ?? String(item.documentId ?? item.id),
             title: a?.title ?? '',
-            excerpt: a?.excerpt || extractExcerpt(a?.content, ''),
+            excerpt: typeof a?.excerpt === 'string' ? a.excerpt : extractExcerpt(a?.content, ''),
             category: a?.category ?? 'history',
-            author: a?.author ?? 'Liliw Tourism',
-            coverUrl: mediaUrl(img?.url ?? img?.formats?.medium?.url ?? img?.formats?.large?.url),
+            author: a?.author ?? 'Liliw Tourism Office',
+            coverUrl: item._coverUrl ?? '',
             featured: a?.featured ?? false,
             date: a?.publishedAt ? new Date(a.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
           };
