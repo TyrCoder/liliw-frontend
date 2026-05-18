@@ -41,13 +41,12 @@ function toStory(item: any, prefix: string, category: string, titleField = 'titl
   const excerptText = typeof rawDesc === 'string' ? rawDesc.slice(0, 200) : extractText(rawDesc);
   const rawContent = a?.content || a?.body;
   let content: any[];
-  if (Array.isArray(rawContent)) {
+  if (Array.isArray(rawContent) && rawContent.length > 0) {
     content = rawContent;
-  } else if (rawContent) {
+  } else if (rawContent && !Array.isArray(rawContent)) {
     content = [{ type: 'paragraph', children: [{ type: 'text', text: extractText(rawContent) }] }];
-  } else if (excerptText) {
-    content = [{ type: 'paragraph', children: [{ type: 'text', text: excerptText }] }];
   } else {
+    // No real content — leave empty so the excerpt block doesn't duplicate on the detail page
     content = [];
   }
   return {
