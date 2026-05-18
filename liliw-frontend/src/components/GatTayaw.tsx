@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Pause, ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 
 type Lang = 'en' | 'fil';
 
@@ -54,12 +54,14 @@ const NARRATIONS = [
 interface Props { defaultKey?: string; }
 
 export default function GatTayaw({ defaultKey }: Props) {
+  // When defaultKey is provided, lock to that narration only
+  const locked = !!defaultKey;
   const startIdx = defaultKey
     ? Math.max(0, NARRATIONS.findIndex(n => n.key === defaultKey))
     : 0;
 
   const [lang, setLang]       = useState<Lang>('en');
-  const [idx, setIdx]         = useState(startIdx);
+  const [idx]                 = useState(startIdx);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted]     = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -67,7 +69,6 @@ export default function GatTayaw({ defaultKey }: Props) {
   const narration = NARRATIONS[idx];
   const audioSrc  = `/audio/${narration.key}-${lang}.mp3`;
 
-  // Stop playback when track or language changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -88,13 +89,10 @@ export default function GatTayaw({ defaultKey }: Props) {
         await audio.play();
         setPlaying(true);
       } catch {
-        // Autoplay blocked — silently ignore
+        // Autoplay blocked
       }
     }
   }, [playing]);
-
-  const prev = () => setIdx(i => (i - 1 + NARRATIONS.length) % NARRATIONS.length);
-  const next = () => setIdx(i => (i + 1) % NARRATIONS.length);
 
   const toggleMute = () => {
     if (audioRef.current) audioRef.current.muted = !muted;
@@ -106,145 +104,142 @@ export default function GatTayaw({ defaultKey }: Props) {
       <style>{`
         @keyframes gatFloat {
           0%, 100% { transform: translateY(0px) rotate(-1deg); }
-          50%       { transform: translateY(-14px) rotate(1deg); }
+          50%       { transform: translateY(-12px) rotate(1deg); }
         }
         .gat-float { animation: gatFloat 4s ease-in-out infinite; will-change: transform; }
 
         @keyframes bubbleFade {
-          from { opacity: 0; transform: translateX(-6px) scale(0.97); }
-          to   { opacity: 1; transform: translateX(0)   scale(1); }
+          from { opacity: 0; transform: translateY(8px) scale(0.97); }
+          to   { opacity: 1; transform: translateY(0)   scale(1); }
         }
-        .bubble-fade { animation: bubbleFade 0.3s ease-out forwards; }
+        .bubble-fade { animation: bubbleFade 0.35s ease-out forwards; }
 
         @keyframes speakerPulse {
           0%, 100% { opacity: 1; }
-          50%       { opacity: 0.4; }
+          50%       { opacity: 0.35; }
         }
-        .speaker-pulse { animation: speakerPulse 1s ease-in-out infinite; }
+        .speaker-pulse { animation: speakerPulse 0.9s ease-in-out infinite; }
+
+        @keyframes gatTalk {
+          0%, 100% { transform: translateY(0px) rotate(-1deg) scale(1); }
+          25%       { transform: translateY(-10px) rotate(0.5deg) scale(1.02); }
+          50%       { transform: translateY(-14px) rotate(1deg) scale(1); }
+          75%       { transform: translateY(-8px) rotate(-0.5deg) scale(1.01); }
+        }
+        .gat-talk { animation: gatTalk 0.6s ease-in-out infinite; will-change: transform; }
       `}</style>
 
-      <div className="w-full mb-6 px-0">
-        {/* Layout: illustration left, bubble right */}
-        <div className="flex items-end gap-0 sm:gap-1">
+      <div className="w-full mb-6">
 
-          {/* ── Gat Tayaw illustration ── */}
-          <div className="relative shrink-0 gat-float select-none"
-            style={{ width: 110, height: 155, filter: 'drop-shadow(0 8px 18px rgba(11,61,145,0.25))' }}>
+        {/* ── Character (centered, large) ── */}
+        <div className="flex justify-center mb-0">
+          <div
+            className={playing ? 'gat-talk select-none' : 'gat-float select-none'}
+            style={{ filter: 'drop-shadow(0 10px 22px rgba(11,61,145,0.3))' }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={playing ? '/images/gat-tayaw-speaking.png' : '/images/gat-tayaw.png'}
               alt="Gat Tayaw"
-              width={110}
-              height={155}
-              style={{ width: 110, height: 155, objectFit: 'contain', transition: 'opacity 0.15s ease' }}
+              width={170}
+              height={238}
+              style={{ width: 170, height: 238, objectFit: 'contain', transition: 'opacity 0.15s ease' }}
             />
           </div>
+        </div>
 
-          {/* ── Triangle tail pointing left ── */}
-          <div className="self-center mb-6 shrink-0" style={{
+        {/* ── Triangle tail pointing up from bubble ── */}
+        <div className="flex justify-center" style={{ marginBottom: -1, zIndex: 1, position: 'relative' }}>
+          <div style={{
             width: 0, height: 0,
-            borderTop:    '11px solid transparent',
-            borderBottom: '11px solid transparent',
-            borderRight:  '14px solid #F5C518',
-            marginRight: -1,
-            zIndex: 1,
+            borderLeft:   '13px solid transparent',
+            borderRight:  '13px solid transparent',
+            borderBottom: '16px solid #F5C518',
           }} />
-          <div className="self-center mb-6 shrink-0" style={{
+        </div>
+        <div className="flex justify-center" style={{ marginTop: -14, marginBottom: -1, zIndex: 2, position: 'relative' }}>
+          <div style={{
             width: 0, height: 0,
-            borderTop:    '9px solid transparent',
-            borderBottom: '9px solid transparent',
-            borderRight:  '12px solid #0B3D91',
-            marginRight: -1,
-            zIndex: 2,
-            marginLeft: -13,
+            borderLeft:   '11px solid transparent',
+            borderRight:  '11px solid transparent',
+            borderBottom: '14px solid #0B3D91',
           }} />
+        </div>
 
-          {/* ── Speech bubble ── */}
-          <div key={`${idx}-${lang}`} className="bubble-fade flex-1 rounded-2xl border-2 shadow-xl overflow-hidden"
-            style={{ borderColor: '#F5C518', background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)' }}>
+        {/* ── Speech bubble ── */}
+        <div
+          key={`${idx}-${lang}`}
+          className="bubble-fade rounded-2xl border-2 shadow-2xl overflow-hidden"
+          style={{ borderColor: '#F5C518', background: 'linear-gradient(150deg, #0B3D91 0%, #1565C0 100%)' }}
+        >
+          {/* Top bar: title + EN/FIL */}
+          <div className="flex items-center justify-between px-4 py-3 border-b"
+            style={{ borderColor: 'rgba(245,197,24,0.3)' }}>
+            <span className="text-sm font-bold uppercase tracking-wide"
+              style={{ color: '#F5C518', fontFamily: HL }}>
+              {narration.title[lang]}
+            </span>
 
-            {/* Top bar */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-b"
-              style={{ borderColor: 'rgba(245,197,24,0.25)' }}>
-
-              {/* Prev / title / Next */}
-              <div className="flex items-center gap-1.5 min-w-0">
-                <button onClick={prev} aria-label="Previous narration"
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors shrink-0">
-                  <ChevronLeft className="w-4 h-4" />
+            {/* EN / FIL toggle */}
+            <div className="flex items-center gap-0.5 rounded-full p-0.5 shrink-0"
+              style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}>
+              {(['en', 'fil'] as Lang[]).map(l => (
+                <button key={l} onClick={() => setLang(l)}
+                  className="px-3 py-1 rounded-full text-xs font-bold transition-all"
+                  style={{
+                    backgroundColor: lang === l ? '#F5C518' : 'transparent',
+                    color:           lang === l ? '#0B3D91' : 'rgba(255,255,255,0.6)',
+                    fontFamily: HL,
+                  }}>
+                  {l === 'en' ? 'EN' : 'FIL'}
                 </button>
-                <span className="text-xs font-bold uppercase tracking-wide truncate"
-                  style={{ color: '#F5C518', fontFamily: HL }}>
-                  {narration.title[lang]}
-                </span>
-                <button onClick={next} aria-label="Next narration"
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors shrink-0">
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* EN / FIL toggle */}
-              <div className="flex items-center gap-0.5 rounded-full p-0.5 shrink-0"
-                style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}>
-                {(['en', 'fil'] as Lang[]).map(l => (
-                  <button key={l} onClick={() => setLang(l)}
-                    className="px-2.5 py-0.5 rounded-full text-xs font-bold transition-all"
-                    style={{
-                      backgroundColor: lang === l ? '#F5C518' : 'transparent',
-                      color:           lang === l ? '#0B3D91' : 'rgba(255,255,255,0.6)',
-                      fontFamily: HL,
-                    }}>
-                    {l === 'en' ? 'EN' : 'FIL'}
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
+          </div>
 
-            {/* Narration text */}
-            <div className="px-4 py-3">
-              <p className="text-white text-sm leading-relaxed"
-                style={{ fontFamily: BL, textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
-                &ldquo;{narration.text[lang]}&rdquo;
-              </p>
-            </div>
+          {/* Narration text */}
+          <div className="px-5 py-4">
+            <p className="text-white text-sm leading-relaxed"
+              style={{ fontFamily: BL, textShadow: '0 1px 3px rgba(0,0,0,0.35)' }}>
+              &ldquo;{narration.text[lang]}&rdquo;
+            </p>
+          </div>
 
-            {/* Bottom controls */}
-            <div className="flex items-center gap-3 px-4 pb-4">
-              {/* Play / Pause */}
-              <button onClick={toggle} aria-label={playing ? 'Pause narration' : 'Play narration'}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold transition-all active:scale-95 hover:brightness-110"
-                style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}>
-                {playing
-                  ? <Pause className="w-3.5 h-3.5" />
-                  : <Play  className="w-3.5 h-3.5" />}
-                {playing ? 'Pause' : 'Listen'}
-              </button>
+          {/* Controls */}
+          <div className="flex items-center gap-3 px-5 pb-5">
+            <button onClick={toggle} aria-label={playing ? 'Pause narration' : 'Play narration'}
+              className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all active:scale-95 hover:brightness-110"
+              style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}>
+              {playing
+                ? <Pause className="w-4 h-4" />
+                : <Play  className="w-4 h-4" />}
+              {playing ? 'Pause' : 'Listen'}
+            </button>
 
-              {/* Mute toggle */}
-              <button onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}
-                className="text-white/50 hover:text-white transition-colors">
-                {muted
-                  ? <VolumeX className={`w-4 h-4`} />
-                  : <Volume2 className={`w-4 h-4 ${playing ? 'speaker-pulse' : ''}`} />}
-              </button>
+            <button onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}
+              className="text-white/50 hover:text-white transition-colors">
+              {muted
+                ? <VolumeX className="w-4 h-4" />
+                : <Volume2 className={`w-4 h-4 ${playing ? 'speaker-pulse' : ''}`} />}
+            </button>
 
-              {/* Dot indicators */}
+            {/* Dot indicator (single dot when locked, shows which narration otherwise) */}
+            {!locked && (
               <div className="flex items-center gap-1 ml-auto">
                 {NARRATIONS.map((_, i) => (
-                  <button key={i} onClick={() => setIdx(i)} aria-label={`Go to narration ${i + 1}`}
-                    className="rounded-full transition-all"
+                  <div key={i} className="rounded-full"
                     style={{
                       width:  i === idx ? 16 : 6,
                       height: 6,
                       backgroundColor: i === idx ? '#F5C518' : 'rgba(255,255,255,0.3)',
+                      transition: 'all 0.2s',
                     }} />
                 ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Hidden audio element */}
         <audio
           ref={audioRef}
           src={audioSrc}
