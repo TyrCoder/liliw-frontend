@@ -20,7 +20,6 @@ const STORY_VIDEOS: { id: string; title: string }[] = [
 
 const CATEGORY_COLORS: Record<string, string> = {
   history: '#EF4444', culture: '#8B5CF6', people: '#EAB308',
-  nature: '#22C55E', food: '#F97316', festival: '#EC4899',
 };
 
 const PENNANT = ['#EF4444','#F97316','#EAB308','#22C55E','#0D9488','#3B82F6','#8B5CF6'];

@@ -44,13 +44,10 @@ function getAudioKey(category: string, slug: string, title = ''): string {
   if (s.includes('tsinelas') || s.includes('slipper') || s.includes('sapatos'))  return 'tsinelas';
   if (s.includes('ancestral') || s.includes('bahay') || s.includes('house'))     return 'ancestral';
   if (s.includes('legend') || s.includes('alamat') || s.includes('myth'))        return 'legend';
-  // Fallback by category (matches Strapi enum: history, culture, people, nature, food, festival)
+  // Fallback by category (matches Strapi enum: history, culture, people)
   if (c === 'history')  return 'legend';
   if (c === 'culture')  return 'ancestral';
-  if (c === 'food')     return 'tsinelas';
   if (c === 'people')   return 'welcome';
-  if (c === 'nature')   return 'welcome';
-  if (c === 'festival') return 'welcome';
   return 'welcome';
 }
 
