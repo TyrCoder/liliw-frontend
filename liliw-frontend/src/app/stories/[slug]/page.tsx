@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -185,6 +185,70 @@ function RichTextBlock({ block }: { block: any }) {
   );
 }
 
+function Carousel({ images, title, catColor }: { images: string[]; title: string; catColor: string }) {
+  const [idx, setIdx] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const reset = (newIdx: number) => {
+    setIdx(newIdx);
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (images.length > 1) {
+      timerRef.current = setInterval(() => setIdx(i => (i + 1) % images.length), 4500);
+    }
+  };
+
+  useEffect(() => {
+    if (images.length > 1) {
+      timerRef.current = setInterval(() => setIdx(i => (i + 1) % images.length), 4500);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [images.length]);
+
+  if (!images.length) return null;
+
+  return (
+    <div className="w-full h-64 sm:h-96 overflow-hidden relative">
+      {images.map((src, i) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={i} src={src} alt={title}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: i === idx ? 1 : 0, transition: 'opacity 0.9s ease' }}
+        />
+      ))}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+      {/* Dot indicators */}
+      {images.length > 1 && (
+        <div className="absolute bottom-5 left-0 right-0 flex justify-center gap-2">
+          {images.map((_, i) => (
+            <button key={i} onClick={() => reset(i)} aria-label={`Go to photo ${i + 1}`}
+              className="rounded-full transition-all duration-300"
+              style={{
+                width: i === idx ? 20 : 8, height: 8,
+                backgroundColor: i === idx ? '#F5C518' : 'rgba(255,255,255,0.5)',
+              }} />
+          ))}
+        </div>
+      )}
+
+      {/* Arrow controls (only when multiple images) */}
+      {images.length > 1 && (
+        <>
+          <button onClick={() => reset((idx - 1 + images.length) % images.length)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition">
+            ‹
+          </button>
+          <button onClick={() => reset((idx + 1) % images.length)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition">
+            ›
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function StoryDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const [story, setStory]     = useState<any>(null);
@@ -203,6 +267,18 @@ export default function StoryDetailPage() {
         if (found) {
           const a = found?.attributes ?? found;
           const img = a?.cover_image?.data?.attributes ?? a?.cover_image ?? {};
+          const coverUrl = mediaUrl(img?.url ?? img?.formats?.large?.url);
+
+          // Collect all photos for carousel
+          const seen = new Set<string>();
+          const allImgs: string[] = [];
+          const addImg = (url: string) => { if (url && !seen.has(url)) { seen.add(url); allImgs.push(url); } };
+          if (coverUrl) addImg(coverUrl);
+          const photoArr = a?.photos?.data ?? (Array.isArray(a?.photos) ? a.photos : []);
+          photoArr.forEach((p: any) => { const pa = p?.attributes ?? p; addImg(mediaUrl(pa?.url ?? pa?.formats?.large?.url ?? pa?.formats?.medium?.url)); });
+          const imgArr = a?.images?.data ?? (Array.isArray(a?.images) ? a.images : []);
+          imgArr.forEach((p: any) => { const pa = p?.attributes ?? p; addImg(mediaUrl(pa?.url ?? pa?.formats?.large?.url ?? pa?.formats?.medium?.url)); });
+
           setStory({
             id:       found.id,
             title:    a?.title ?? '',
@@ -210,7 +286,8 @@ export default function StoryDetailPage() {
             content:  Array.isArray(a?.content) ? a.content : [],
             category: a?.category ?? 'history',
             author:   a?.author ?? 'Liliw Tourism',
-            coverUrl: mediaUrl(img?.url ?? img?.formats?.large?.url),
+            coverUrl,
+            images:   allImgs,
             featured: a?.featured ?? false,
             date:     a?.publishedAt
               ? new Date(a.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -264,12 +341,11 @@ export default function StoryDetailPage() {
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
 
-      {/* Cover image */}
-      {story.coverUrl && (
-        <div className="w-full h-64 sm:h-96 overflow-hidden relative">
-          <img src={story.coverUrl} alt={story.title} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-          <div className="absolute bottom-6 left-6 flex items-center gap-2">
+      {/* Cover photo carousel */}
+      {story.images?.length > 0 && (
+        <div className="relative">
+          <Carousel images={story.images} title={story.title} catColor={catColor} />
+          <div className="absolute bottom-14 left-6 flex items-center gap-2 z-10">
             <span className="text-xs font-bold px-3 py-1.5 rounded-full text-white uppercase tracking-wide"
               style={{ backgroundColor: catColor, fontFamily: HL }}>
               {story.category}

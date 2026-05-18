@@ -18,7 +18,6 @@ function extractText(richText: any): string {
 }
 
 function firstImageUrl(attrs: any): string {
-  // Try cover_image, image, images, photos in order
   const candidates = [
     attrs?.cover_image?.data?.attributes,
     attrs?.cover_image,
@@ -32,6 +31,30 @@ function firstImageUrl(attrs: any): string {
     if (url) return url;
   }
   return '';
+}
+
+function allImageUrls(attrs: any): string[] {
+  const seen = new Set<string>();
+  const urls: string[] = [];
+  const add = (url: string | undefined) => {
+    if (url && !seen.has(url)) { seen.add(url); urls.push(url); }
+  };
+  // cover image
+  const ci = attrs?.cover_image?.data?.attributes ?? attrs?.cover_image;
+  add(ci?.url ?? ci?.formats?.large?.url ?? ci?.formats?.medium?.url);
+  // photos array
+  const photos = attrs?.photos?.data ?? (Array.isArray(attrs?.photos) ? attrs.photos : []);
+  photos.forEach((p: any) => {
+    const a = p?.attributes ?? p;
+    add(a?.url ?? a?.formats?.large?.url ?? a?.formats?.medium?.url);
+  });
+  // images array
+  const images = attrs?.images?.data ?? (Array.isArray(attrs?.images) ? attrs.images : []);
+  images.forEach((img: any) => {
+    const a = img?.attributes ?? img;
+    add(a?.url ?? a?.formats?.large?.url ?? a?.formats?.medium?.url);
+  });
+  return urls;
 }
 
 function toStory(item: any, prefix: string, category: string, titleField = 'title') {
@@ -60,6 +83,7 @@ function toStory(item: any, prefix: string, category: string, titleField = 'titl
       author: a?.author || 'Liliw Tourism Office',
       featured: a?.featured ?? false,
       cover_image: { data: { attributes: { url: firstImageUrl(a), formats: {} } } },
+      photos: allImageUrls(a),
       publishedAt: a?.publishedAt || a?.createdAt || new Date().toISOString(),
     },
   };
