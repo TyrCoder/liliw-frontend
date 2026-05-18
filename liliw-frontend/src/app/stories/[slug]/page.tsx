@@ -25,7 +25,7 @@ const STORY_VIDEOS: Record<string, { id: string; title: string }[]> = {
     { id: '', title: 'Legend of Liliw Video 3' },
   ],
   tsinelas: [
-    { id: '', title: 'Slipper Capital Video 1' },
+    { id: 'Ubb75gYhKzM', title: 'Slipper Capital Video 1' },
     { id: '', title: 'Slipper Capital Video 2' },
     { id: '', title: 'Slipper Capital Video 3' },
   ],
