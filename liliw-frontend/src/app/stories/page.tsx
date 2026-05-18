@@ -265,7 +265,7 @@ export default function StoriesPage() {
           </div>
 
           {/* ── Right sidebar: floating dog (sticky) ── */}
-          <div className="hidden xl:flex w-44 shrink-0 flex-col items-center sticky top-32">
+          <div className="hidden xl:flex w-44 shrink-0 flex-col items-center sticky top-8">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/images/liliw-dog.png"
