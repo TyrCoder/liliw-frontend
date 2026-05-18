@@ -143,9 +143,7 @@ export default function GatTayaw({ defaultKey }: Props) {
             <img
               src={playing ? '/images/gat-tayaw-speaking.png' : '/images/gat-tayaw.png'}
               alt="Gat Tayaw"
-              width={170}
-              height={238}
-              style={{ width: 170, height: 238, objectFit: 'contain', transition: 'opacity 0.15s ease' }}
+              style={{ width: 170, height: 'auto', display: 'block', transition: 'opacity 0.15s ease' }}
             />
           </div>
         </div>

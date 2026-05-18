@@ -272,7 +272,7 @@ export default function StoriesPage() {
               alt="Liliw mascot"
               className="gat-float"
               style={{
-                width: 160, height: 160, objectFit: 'contain',
+                width: 160, height: 'auto', display: 'block',
                 filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.15))',
               }}
             />
