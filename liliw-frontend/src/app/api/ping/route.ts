@@ -45,10 +45,10 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({ data: { path } }),
     }).catch(() => {});
 
-    // Upsert live session into Supabase (fire-and-forget)
+    // Upsert live session into Supabase — must await before returning or Vercel kills the write
     if (sessionId) {
       const d: Device = ['desktop', 'mobile', 'tablet'].includes(device) ? device : 'desktop';
-      void supabaseServer.from('active_sessions').upsert({
+      await supabaseServer.from('active_sessions').upsert({
         session_id: sessionId,
         page: path,
         device: d,
