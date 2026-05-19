@@ -393,18 +393,23 @@ export default function LboDashboard() {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }} className="py-8">
+      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }} className="py-7">
         <div className="max-w-4xl mx-auto px-4">
-          <Link href="/" className="inline-flex items-center text-sm font-semibold mb-4 opacity-80 hover:opacity-100 transition" style={{ color: '#00BFB3' }}>
-            <ChevronLeft className="w-4 h-4 mr-1" /> Back to Site
+          <Link href="/" className="inline-flex items-center text-xs font-semibold mb-5 opacity-70 hover:opacity-100 transition" style={{ color: '#00BFB3' }}>
+            <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Back to Site
           </Link>
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
-              <Building2 className="w-7 h-7 text-white" />
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">{appInfo!.business_name}</h1>
-              <p className="text-blue-200 text-sm mt-0.5">{appInfo!.owner_name} · LBO Dashboard</p>
+              <div className="flex items-center gap-2.5 mb-0.5">
+                <h1 className="text-2xl font-bold text-white">{appInfo!.business_name}</h1>
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold border" style={{ color: '#93C5FD', borderColor: 'rgba(147,197,253,0.35)', background: 'rgba(147,197,253,0.1)' }}>
+                  LBO
+                </span>
+              </div>
+              <p className="text-blue-200 text-sm">{appInfo!.owner_name}</p>
               {appInfo!.attraction_name && !isLinked && (
                 <span className="inline-block mt-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-blue-100">
                   {appInfo!.attraction_name}
@@ -421,19 +426,26 @@ export default function LboDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 flex">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-2.5 flex flex-wrap gap-1">
           {([
-            { key: 'overview',  label: 'Overview',        icon: <MapPin className="w-4 h-4" />,     badge: 0 },
-            { key: 'requests',  label: 'Change Requests',  icon: <Edit className="w-4 h-4" />,       badge: pendingCrCount },
-            { key: 'visitors',  label: 'Visitor Records',  icon: <TrendingUp className="w-4 h-4" />, badge: 0 },
-            ...(attrData?.linked ? [{ key: 'ratings' as Tab, label: 'Ratings & Reviews', icon: <Star className="w-4 h-4" />, badge: 0 }] : []),
+            { key: 'overview',  label: 'Overview',        icon: <MapPin className="w-3.5 h-3.5" />,     badge: 0 },
+            { key: 'requests',  label: 'Change Requests',  icon: <Edit className="w-3.5 h-3.5" />,       badge: pendingCrCount },
+            { key: 'visitors',  label: 'Visitor Records',  icon: <TrendingUp className="w-3.5 h-3.5" />, badge: 0 },
+            ...(attrData?.linked ? [{ key: 'ratings' as Tab, label: 'Ratings & Reviews', icon: <Star className="w-3.5 h-3.5" />, badge: 0 }] : []),
           ] as { key: Tab; label: string; icon: React.ReactNode; badge: number }[]).map(({ key, label, icon, badge }) => (
             <button key={key} onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold border-b-2 transition-colors ${activeTab === key ? 'border-teal-400 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                activeTab === key
+                  ? 'text-white shadow-sm'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+              }`}
+              style={activeTab === key ? { backgroundColor: '#1565C0' } : undefined}>
               {icon}{label}
               {badge > 0 && (
-                <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#F59E0B' }}>{badge}</span>
+                <span className={`px-1.5 rounded-full text-[10px] font-bold leading-[18px] ${
+                  activeTab === key ? 'bg-white/25 text-white' : 'bg-amber-100 text-amber-700'
+                }`}>{badge}</span>
               )}
             </button>
           ))}
