@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   const [eventsRes, newsRes] = await Promise.allSettled([
     fetch(`${STRAPI}/api/events?sort=createdAt:desc&pagination[limit]=8&fields[0]=title&fields[1]=createdAt&fields[2]=date`, { headers }),
-    fetch(`${STRAPI}/api/news?sort=createdAt:desc&pagination[limit]=8&fields[0]=title&fields[1]=createdAt`, { headers }),
+    fetch(`${STRAPI}/api/newses?sort=createdAt:desc&pagination[limit]=8&fields[0]=title&fields[1]=createdAt`, { headers }),
   ]);
 
   const items: PublicNotifItem[] = [];

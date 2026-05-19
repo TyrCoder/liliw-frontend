@@ -136,6 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithJwt = useCallback((jwt: string, user: StrapiUser) => {
     persist(jwt, user);
+    toast.success(`Welcome to Liliw, ${user.username}!`);
   }, []);
 
   const logout = useCallback(() => {
