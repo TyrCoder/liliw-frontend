@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -216,7 +216,6 @@ export default function AdminDashboard() {
   const [expandedReview,     setExpandedReview]     = useState<string | null>(null);
   const [scrapeAllActive,    setScrapeAllActive]    = useState(false);
   const [scrapeAllProgress,  setScrapeAllProgress]  = useState({ current: 0, total: 0 });
-  const autoScrapeRef = useRef(false);
 
   useEffect(() => {
     if (!loading && (!user || !isStaff)) router.replace('/');
@@ -295,69 +294,6 @@ export default function AdminDashboard() {
     const id = setInterval(poll, 10_000);
     return () => clearInterval(id);
   }, [isAdmin, token]);
-
-  // Auto-scrape reviews for attractions with coordinates that haven't been scraped yet
-  useEffect(() => {
-    if (activeTab !== 'externalreviews') return;
-    if (loadingAttr || loadingExternal) return;
-    if (scrapeAllActive || scrapingId) return;
-    if (autoScrapeRef.current) return;
-    if (!token) return;
-
-    const cachedMap = Object.fromEntries(externalReviews.map((r: any) => [r.strapi_id, r]));
-    const unscraped = attractions.filter(a => {
-      const c = a.attributes.coordinates;
-      const hasCoords = !!(c?.latitude ?? c?.lat);
-      return hasCoords && !cachedMap[a.strapiId];
-    });
-    if (unscraped.length === 0) return;
-
-    autoScrapeRef.current = true;
-    setScrapeAllActive(true);
-    setScrapeAllProgress({ current: 0, total: unscraped.length });
-
-    (async () => {
-      const authH = { Authorization: `Bearer ${token}` };
-      const runs = await Promise.all(unscraped.map(async (attr) => {
-        try {
-          const c = attr.attributes.coordinates;
-          const lat = c?.latitude ?? c?.lat ?? null;
-          const lng = c?.longitude ?? c?.lng ?? null;
-          const res = await fetch('/api/admin/scrape-reviews', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authH },
-            body: JSON.stringify({ strapiId: attr.strapiId, attractionName: attr.attributes.name, lat, lng }),
-          });
-          const { runId } = await res.json();
-          return { attr, runId: runId || null };
-        } catch { return { attr, runId: null }; }
-      }));
-
-      let completed = 0;
-      await Promise.all(runs.filter(r => r.runId).map(async ({ attr, runId }) => {
-        const deadline = Date.now() + 300_000;
-        while (Date.now() < deadline) {
-          await new Promise(r => setTimeout(r, 5000));
-          try {
-            const poll = await fetch(
-              `/api/admin/scrape-reviews?runId=${runId}&strapiId=${attr.strapiId}&attractionName=${encodeURIComponent(attr.attributes.name)}`,
-              { headers: authH },
-            ).then(r => r.json());
-            if (poll.status === 'SUCCEEDED' || poll.status === 'FAILED' || poll.status === 'ABORTED') {
-              completed++;
-              setScrapeAllProgress(p => ({ ...p, current: completed }));
-              break;
-            }
-          } catch {}
-        }
-      }));
-
-      fetch('/api/admin/external-reviews', { headers: authH }).then(r => r.json()).then(d => setExternalReviews(d.data || []));
-      setScrapeAllActive(false);
-      setScrapeAllProgress({ current: 0, total: 0 });
-    })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, loadingAttr, loadingExternal]);
 
   const handleAssignRole = async (userId: number, roleId: number) => {
     setSavingRole(userId);
@@ -2355,9 +2291,13 @@ export default function AdminDashboard() {
           };
 
           const cachedMap = Object.fromEntries(externalReviews.map(r => [r.strapi_id, r]));
+          const attractionsWithCoords = attractions.filter(a => {
+            const c = a.attributes.coordinates as any;
+            return !!(c?.latitude ?? c?.lat);
+          });
 
           const handleScrapeAll = async () => {
-            const unscraped = attractions.filter(a => !cachedMap[a.strapiId]);
+            const unscraped = attractionsWithCoords.filter(a => !cachedMap[a.strapiId]);
             if (unscraped.length === 0) return;
             setScrapeAllActive(true);
             setScrapeAllProgress({ current: 0, total: unscraped.length });
@@ -2418,7 +2358,7 @@ export default function AdminDashboard() {
                   style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
                   {scrapeAllActive
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> Scraping {scrapeAllProgress.current}/{scrapeAllProgress.total}…</>
-                    : <><RefreshCw className="w-4 h-4" /> Scrape All ({attractions.filter(a => !cachedMap[a.strapiId]).length} remaining)</>}
+                    : <><RefreshCw className="w-4 h-4" /> Scrape All ({attractionsWithCoords.filter(a => !cachedMap[a.strapiId]).length} remaining)</>}
                 </button>
               </div>
 
@@ -2440,20 +2380,19 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-center py-20">
                   <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} />
                 </div>
-              ) : attractions.length === 0 ? (
+              ) : attractionsWithCoords.length === 0 ? (
                 <div className="flex flex-col items-center py-20 text-center text-gray-400">
                   <MapPin className="w-12 h-12 opacity-20 mb-3" />
-                  <p className="font-semibold">No attractions found</p>
+                  <p className="font-semibold">No attractions with coordinates found</p>
+                  <p className="text-sm mt-1">Add coordinates to attractions in Strapi to enable review scraping.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {attractions.map(attr => {
+                  {attractionsWithCoords.map(attr => {
                     const cached   = cachedMap[attr.strapiId];
                     const isScraping = scrapingId === attr.strapiId;
                     const msg      = scrapeMsg?.id === attr.strapiId ? scrapeMsg : null;
                     const isExpanded = expandedReview === attr.strapiId;
-                    const c        = attr.attributes.coordinates;
-                    const hasCoords = !!(c?.latitude ?? c?.lat);
 
                     return (
                       <div key={attr.strapiId} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
@@ -2466,9 +2405,6 @@ export default function AdminDashboard() {
                                 style={{ backgroundColor: attr.type === 'heritage' ? '#F59E0B' : attr.type === 'spot' ? '#3B82F6' : '#EF4444' }}>
                                 {attr.type}
                               </span>
-                              {!hasCoords && (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400">No coordinates</span>
-                              )}
                             </div>
                             {attr.attributes.location && (
                               <p className="text-xs text-gray-400 mt-0.5 truncate">{attr.attributes.location}</p>
