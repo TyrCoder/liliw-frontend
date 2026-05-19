@@ -90,6 +90,7 @@ export async function GET(req: NextRequest) {
   }));
 
   // Save / update in Supabase
+  let dbError: string | null = null;
   if (strapiId) {
     const { error: dbErr } = await supabase.from('external_reviews').upsert({
       strapi_id:       strapiId,
@@ -99,11 +100,15 @@ export async function GET(req: NextRequest) {
       reviews,
       last_scraped_at: new Date().toISOString(),
     }, { onConflict: 'strapi_id' });
-    if (dbErr) console.error('[scrape-reviews] Supabase upsert error:', dbErr.message);
+    if (dbErr) {
+      console.error('[scrape-reviews] Supabase upsert error:', dbErr.message);
+      dbError = dbErr.message;
+    }
   }
 
   return NextResponse.json({
     status: 'SUCCEEDED',
     result: { googleRating, reviewCount, reviews, placeName: place.title ?? attrName },
+    dbError,
   });
 }
