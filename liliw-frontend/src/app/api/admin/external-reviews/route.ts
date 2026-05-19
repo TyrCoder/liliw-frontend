@@ -9,9 +9,13 @@ const supabase = createClient(
 );
 
 export async function GET(req: NextRequest) {
-  if (!await requireStaffAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const strapiId = searchParams.get('strapiId');
+
+  // Bulk (no strapiId) is staff-only; single-attraction lookup is public (cached Google data)
+  if (!strapiId && !await requireStaffAuth(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   let query = supabase.from('external_reviews').select('*').order('attraction_name', { ascending: true });
   if (strapiId) query = query.eq('strapi_id', strapiId);
