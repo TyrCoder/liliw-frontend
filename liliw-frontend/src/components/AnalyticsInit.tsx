@@ -15,5 +15,13 @@ export default function AnalyticsInit() {
     }
   }, [pathname]);
 
+  // Heartbeat every 30s so users stay visible in Live on Site while on the same page
+  useEffect(() => {
+    const id = setInterval(() => {
+      trackPageView(window.location.pathname);
+    }, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   return null;
 }

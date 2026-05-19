@@ -6,13 +6,23 @@ const STRAPI          = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/
 const ADMIN_EMAIL     = process.env.STRAPI_ADMIN_EMAIL    || '';
 const ADMIN_PASSWORD  = process.env.STRAPI_ADMIN_PASSWORD || '';
 
-// Cache the admin JWT so we don't login on every request
-let cachedJwt: string | null = null;
-let cachedJwtAt = 0;
-const JWT_TTL = 20 * 60 * 1000; // 20 minutes
+import { supabaseServer } from '@/lib/supabase-server';
+
+const JWT_TTL_SECONDS = 18 * 60; // 18 minutes (Strapi tokens last 20 min)
 
 async function getAdminJwt(): Promise<string | null> {
-  if (cachedJwt && Date.now() - cachedJwtAt < JWT_TTL) return cachedJwt;
+  // Check Supabase cache first (persists across serverless instances)
+  const { data: cached } = await supabaseServer
+    .from('kv_cache')
+    .select('value, updated_at')
+    .eq('key', 'strapi_admin_jwt')
+    .single();
+
+  if (cached?.value) {
+    const age = (Date.now() - new Date(cached.updated_at).getTime()) / 1000;
+    if (age < JWT_TTL_SECONDS) return cached.value;
+  }
+
   try {
     const res = await fetch(`${STRAPI}/admin/login`, {
       method: 'POST',
@@ -22,9 +32,14 @@ async function getAdminJwt(): Promise<string | null> {
     });
     if (!res.ok) { logger.error('[strapi-activity] admin login failed', res.status); return null; }
     const json = await res.json();
-    cachedJwt  = json?.data?.token ?? null;
-    cachedJwtAt = Date.now();
-    return cachedJwt;
+    const jwt  = json?.data?.token ?? null;
+    if (jwt) {
+      await supabaseServer.from('kv_cache').upsert(
+        { key: 'strapi_admin_jwt', value: jwt, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      );
+    }
+    return jwt;
   } catch (err) {
     logger.error('[strapi-activity] admin login error', err);
     return null;
