@@ -2,11 +2,45 @@
 
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck, ChevronDown, Search } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck, ChevronDown, Search, Bell, MessageSquare, Users, Building2, MapPin } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import SmartSearchModal from '@/components/SmartSearchModal';
+
+type NotifItem = {
+  id: string;
+  type: 'submission' | 'participation' | 'lbo_application' | 'attraction_request';
+  title: string;
+  subtitle: string;
+  status: string;
+  createdAt: string;
+};
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function notifIcon(type: NotifItem['type']) {
+  if (type === 'submission')        return <MessageSquare className="w-3.5 h-3.5" />;
+  if (type === 'participation')     return <Users className="w-3.5 h-3.5" />;
+  if (type === 'lbo_application')   return <Building2 className="w-3.5 h-3.5" />;
+  if (type === 'attraction_request') return <MapPin className="w-3.5 h-3.5" />;
+}
+
+function notifColor(type: NotifItem['type']) {
+  if (type === 'submission')         return { bg: '#EFF6FF', color: '#1D4ED8' };
+  if (type === 'participation')      return { bg: '#F0FDF4', color: '#166534' };
+  if (type === 'lbo_application')    return { bg: '#FFF7ED', color: '#C2410C' };
+  if (type === 'attraction_request') return { bg: '#F5F3FF', color: '#6D28D9' };
+  return { bg: '#F1F5F9', color: '#475569' };
+}
 
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -30,6 +64,9 @@ export default function Navbar() {
   const [searchOpen, setSearchOpen]     = useState(false);
   const [scrolled, setScrolled]         = useState(false);
   const [isLbo,    setIsLbo]            = useState(false);
+  const [notifOpen,    setNotifOpen]    = useState(false);
+  const [notifItems,   setNotifItems]   = useState<NotifItem[]>([]);
+  const [newCount,     setNewCount]     = useState(0);
   const { user, token, logout, isAdmin, isChatoOfficer, isChatoEditor, isStaff, isLocal, adminPanelRole } = useAuth();
 
   useEffect(() => {
@@ -45,8 +82,30 @@ export default function Navbar() {
       .catch(() => setIsLbo(false));
   }, [isLocal, token]);
 
+  useEffect(() => {
+    if (!isStaff || !token) return;
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('liliw-notif-lastseen') : null;
+    const lastSeen = stored ? Number(stored) : 0;
+    fetch('/api/admin/notifications', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.data) {
+          setNotifItems(d.data);
+          setNewCount(d.data.filter((n: NotifItem) => new Date(n.createdAt).getTime() > lastSeen).length);
+        }
+      })
+      .catch(() => {});
+  }, [isStaff, token]);
+
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu  = () => { setIsOpen(false); setExploreOpen(false); };
+
+  const openNotif = () => {
+    setNotifOpen(true);
+    const now = Date.now();
+    if (typeof window !== 'undefined') localStorage.setItem('liliw-notif-lastseen', String(now));
+    setNewCount(0);
+  };
 
   const exploreLinks = [
     { href: '/heritage', label: 'History & Heritage' },
@@ -171,6 +230,76 @@ export default function Navbar() {
                   3D Tour
                 </Link>
               </motion.div>
+
+              {/* Notification bell — staff only */}
+              {user && isStaff && (
+                <div className="relative">
+                  <button onClick={() => notifOpen ? setNotifOpen(false) : openNotif()}
+                    className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-blue-50 transition"
+                    aria-label="Notifications">
+                    <Bell className="w-4.5 h-4.5" style={{ color: '#374151' }} />
+                    {newCount > 0 && (
+                      <span className="absolute top-1 right-1 w-4 h-4 rounded-full text-white text-[9px] font-bold flex items-center justify-center"
+                        style={{ backgroundColor: '#EF4444', lineHeight: 1 }}>
+                        {newCount > 9 ? '9+' : newCount}
+                      </span>
+                    )}
+                  </button>
+                  <AnimatePresence>
+                    {notifOpen && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.96, y: -6 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.96, y: -6 }}
+                          transition={{ duration: 0.12 }}
+                          className="absolute right-0 top-full mt-2 w-80 rounded-2xl overflow-hidden z-20"
+                          style={dropdownStyle}>
+                          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                            <p className="text-sm font-bold text-gray-900" style={{ fontFamily: HL }}>Notifications</p>
+                            <span className="text-xs text-gray-400">{notifItems.length} recent</span>
+                          </div>
+                          <div className="max-h-80 overflow-y-auto">
+                            {notifItems.length === 0 ? (
+                              <p className="text-sm text-gray-400 text-center py-8">No recent activity</p>
+                            ) : notifItems.map(n => {
+                              const c = notifColor(n.type);
+                              return (
+                                <a key={n.id} href="/admin" onClick={() => setNotifOpen(false)}
+                                  className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50 last:border-0">
+                                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                                    style={{ backgroundColor: c.bg, color: c.color }}>
+                                    {notifIcon(n.type)}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-800 truncate">{n.title}</p>
+                                    {n.subtitle && <p className="text-xs text-gray-400 truncate capitalize">{n.subtitle}</p>}
+                                    <p className="text-[11px] text-gray-400 mt-0.5">{timeAgo(n.createdAt)}</p>
+                                  </div>
+                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize shrink-0 mt-0.5"
+                                    style={{
+                                      backgroundColor: n.status === 'new' || n.status === 'pending' ? '#FEF3C7' : n.status === 'approved' ? '#D1FAE5' : n.status === 'rejected' ? '#FEE2E2' : '#E0E7FF',
+                                      color: n.status === 'new' || n.status === 'pending' ? '#92400E' : n.status === 'approved' ? '#065F46' : n.status === 'rejected' ? '#991B1B' : '#3730A3',
+                                    }}>
+                                    {n.status}
+                                  </span>
+                                </a>
+                              );
+                            })}
+                          </div>
+                          <div className="px-4 py-2.5 border-t border-gray-100">
+                            <a href="/admin" onClick={() => setNotifOpen(false)}
+                              className="text-xs font-semibold hover:underline" style={{ color: '#1565C0' }}>
+                              View all in dashboard →
+                            </a>
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
 
               {/* Auth */}
               {user ? (
