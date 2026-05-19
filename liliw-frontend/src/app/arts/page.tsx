@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, MapPin, Phone, ExternalLink, Search, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Star, MapPin, Phone, ExternalLink, Search, ChevronLeft, ChevronRight, X, Maximize2 } from 'lucide-react';
+import PhotoLightbox from '@/components/PhotoLightbox';
 
 const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || '';
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -86,6 +87,7 @@ function ArtFormModal({ art, onClose }: { art: any; onClose: () => void }) {
   const photos = getPhotoUrls(art);
   const features = parseFeatures(art.features);
   const [current, setCurrent] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -101,6 +103,7 @@ function ArtFormModal({ art, onClose }: { art: any; onClose: () => void }) {
   };
 
   return (
+    <>
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
@@ -118,7 +121,8 @@ function ArtFormModal({ art, onClose }: { art: any; onClose: () => void }) {
                 <motion.img key={current} src={photos[current]} alt={art.name}
                   initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
                   transition={{ duration: 0.35 }}
-                  className="absolute inset-0 w-full h-full object-contain" />
+                  onClick={() => setLightbox(true)}
+                  className="absolute inset-0 w-full h-full object-contain cursor-zoom-in" />
               </AnimatePresence>
               {photos.length > 1 && (
                 <>
@@ -137,6 +141,11 @@ function ArtFormModal({ art, onClose }: { art: any; onClose: () => void }) {
                   </div>
                 </>
               )}
+              <button onClick={() => setLightbox(true)}
+                className="absolute top-3 left-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition"
+                title="Fullscreen">
+                <Maximize2 className="w-4 h-4" />
+              </button>
             </>
           ) : art.icon_emoji ? (
             <div className="flex items-center justify-center h-full text-6xl">{art.icon_emoji}</div>
@@ -170,6 +179,12 @@ function ArtFormModal({ art, onClose }: { art: any; onClose: () => void }) {
         </div>
       </motion.div>
     </motion.div>
+    <AnimatePresence>
+      {lightbox && photos.length > 0 && (
+        <PhotoLightbox photos={photos} initial={current} onClose={() => setLightbox(false)} />
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 

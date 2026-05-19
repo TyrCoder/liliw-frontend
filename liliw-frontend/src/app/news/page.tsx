@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar, Bell, X, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Bell, X, MapPin, Maximize2 } from 'lucide-react';
+import PhotoLightbox from '@/components/PhotoLightbox';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
@@ -228,6 +229,7 @@ function extractPhotos(raw: any): string[] {
 
 function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => void }) {
   const [current, setCurrent] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const catStyle = CATEGORY_STYLE[item.category] || CATEGORY_STYLE.other;
 
@@ -245,6 +247,7 @@ function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => voi
   };
 
   return (
+    <>
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
@@ -261,7 +264,8 @@ function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => voi
               <motion.img key={current} src={item.photos[current]} alt={item.title}
                 initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
                 transition={{ duration: 0.35 }}
-                className="absolute inset-0 w-full h-full object-contain" />
+                onClick={() => setLightbox(true)}
+                className="absolute inset-0 w-full h-full object-contain cursor-zoom-in" />
             </AnimatePresence>
             {item.photos.length > 1 && (
               <>
@@ -281,6 +285,11 @@ function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => voi
               </>
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+            <button onClick={() => setLightbox(true)}
+              className="absolute top-3 left-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition"
+              title="Fullscreen">
+              <Maximize2 className="w-4 h-4" />
+            </button>
             <button onClick={onClose}
               className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition">
               <X className="w-4 h-4" />
@@ -325,6 +334,12 @@ function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => voi
         </div>
       </motion.div>
     </motion.div>
+    <AnimatePresence>
+      {lightbox && item.photos.length > 0 && (
+        <PhotoLightbox photos={item.photos} initial={current} onClose={() => setLightbox(false)} />
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 
