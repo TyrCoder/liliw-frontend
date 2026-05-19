@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, BookmarkCheck, Heart, Trash2, ChevronDown, MapPin, Calendar } from 'lucide-react';
+import { ChevronLeft, BookmarkCheck, Heart, Trash2, ChevronDown, MapPin, Calendar, Lightbulb } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useFavorites } from '@/context/FavoritesContext';
 
@@ -174,7 +174,7 @@ export default function ProfilePage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-900 text-sm truncate" style={{ fontFamily: HL }}>{trip.title}</p>
                     <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: BL }}>
-                      {trip.duration} Â· {trip.budget} Â· {new Date(trip.savedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {trip.duration} · {trip.budget} · {new Date(trip.savedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
                   <button onClick={e => { e.stopPropagation(); deleteTrip(trip.id); }}
@@ -194,7 +194,7 @@ export default function ProfilePage() {
                           {trip.plan.days?.map(day => (
                             <div key={day.day}>
                               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2" style={{ fontFamily: HL }}>
-                                Day {day.day} â€” {day.theme}
+                                Day {day.day} — {day.theme}
                               </p>
                               <div className="space-y-2">
                                 {day.stops?.map((stop, i) => (
@@ -206,7 +206,7 @@ export default function ProfilePage() {
                                     <div>
                                       <p className="font-semibold text-gray-800" style={{ fontFamily: HL }}>{stop.place}</p>
                                       <p className="text-gray-500 text-xs" style={{ fontFamily: BL }}>{stop.activity}</p>
-                                      {stop.tip && <p className="text-xs text-amber-600 mt-0.5" style={{ fontFamily: BL }}>ðŸ’¡ {stop.tip}</p>}
+                                      {stop.tip && <p className="text-xs text-amber-600 mt-0.5 flex items-start gap-0.5" style={{ fontFamily: BL }}><Lightbulb className="w-3 h-3 inline mr-0.5 shrink-0" /> {stop.tip}</p>}
                                     </div>
                                   </div>
                                 ))}
@@ -253,7 +253,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-bold text-gray-900 text-sm truncate" style={{ fontFamily: HL }}>{fav.name}</p>
-                      <p className="text-xs text-gray-400 capitalize" style={{ fontFamily: BL }}>{fav.type}{fav.category ? ` Â· ${fav.category}` : ''}</p>
+                      <p className="text-xs text-gray-400 capitalize" style={{ fontFamily: BL }}>{fav.type}{fav.category ? ` · ${fav.category}` : ''}</p>
                     </div>
                     <MapPin className="w-3.5 h-3.5 text-gray-300 shrink-0 ml-auto" />
                   </Link>
