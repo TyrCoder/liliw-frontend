@@ -152,7 +152,7 @@ export default function AdminDashboard() {
   const [loadingSignups,   setLoadingSignups]   = useState(true);
   const [loadingStats,     setLoadingStats]     = useState(true);
   const [loadingReviews,   setLoadingReviews]   = useState(true);
-  const [loadingUsers,     setLoadingUsers]     = useState(true);
+  const [loadingUsers,     setLoadingUsers]     = useState(false);
   const [loadingAttr,      setLoadingAttr]      = useState(true);
   const [loadingAudit,     setLoadingAudit]     = useState(true);
   const [loadingActivity,  setLoadingActivity]  = useState(true);
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
   const [pwdMsg,        setPwdMsg]        = useState<{ ok: boolean; text: string } | null>(null);
 
   const [lboApps,       setLboApps]       = useState<any[]>([]);
-  const [loadingLbo,    setLoadingLbo]    = useState(true);
+  const [loadingLbo,    setLoadingLbo]    = useState(false);
   const [expandedLbo,   setExpandedLbo]   = useState<number | null>(null);
   const [lboRegModal,      setLboRegModal]      = useState<any | null>(null);
   const [lboRegForm,       setLboRegForm]       = useState({ username: '', password: '' });
@@ -251,6 +251,8 @@ export default function AdminDashboard() {
 
     // Admin only — user management + LBO applications
     if (isAdmin) {
+      setLoadingUsers(true);
+      setLoadingLbo(true);
       fetch('/api/admin/users',           { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
       fetch('/api/admin/lbo-applications',{ headers: h }).then(r => r.json()).then(d => { if (d._error) console.error('[LBO] Strapi error:', d._error, 'status:', d._status); setLboApps(d.data || []); }).catch(() => {}).finally(() => setLoadingLbo(false));
     }
@@ -283,9 +285,9 @@ export default function AdminDashboard() {
     }
   }, [isAdmin, isChatoOfficer, isChatoEditor, isStaff, token]);
 
-  // Live visitors polling — every 10 seconds
+  // Live visitors polling — every 10 seconds (admin + officer both see the overview tab)
   useEffect(() => {
-    if (!isAdmin || !token) return;
+    if ((!isAdmin && !isChatoOfficer) || !token) return;
     const h = { Authorization: `Bearer ${token}` };
     const poll = () => {
       fetch('/api/admin/live-visitors', { headers: h })
@@ -296,7 +298,7 @@ export default function AdminDashboard() {
     poll();
     const id = setInterval(poll, 10_000);
     return () => clearInterval(id);
-  }, [isAdmin, token]);
+  }, [isAdmin, isChatoOfficer, token]);
 
   const handleAssignRole = async (userId: number, roleId: number) => {
     setSavingRole(userId);
@@ -572,8 +574,8 @@ export default function AdminDashboard() {
               {isAdmin && <StatCard icon={<Calendar className="w-5 h-5" />}  label="Event Sign-ups"   value={loadingSignups ? '—' : signups.length} sub="total" color="#F59E0B" />}
             </div>
 
-            {/* Sync search */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-center justify-between gap-4 flex-wrap">
+            {/* Sync search — admin only */}
+            {isAdmin && <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <p className="text-sm font-bold text-gray-900">Search Index</p>
                 <p className="text-xs text-gray-400 mt-0.5">
@@ -588,7 +590,7 @@ export default function AdminDashboard() {
                  : syncStatus === 'error' ? <><AlertCircle className="w-4 h-4" /> Retry Sync</>
                  : <><RefreshCw className="w-4 h-4" /> Sync Search</>}
               </button>
-            </div>
+            </div>}
 
             {/* Live Visitors */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
