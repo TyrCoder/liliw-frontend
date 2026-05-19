@@ -82,8 +82,13 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         if (current.strapiId) {
           fetch(`/api/admin/external-reviews?strapiId=${current.strapiId}`)
             .then(r => r.json())
-            .then(d => { if (d.data?.[0]) setExternalReview(d.data[0]); })
-            .catch(() => {});
+            .then(d => {
+              console.log('[ExternalReviews] strapiId:', current.strapiId, 'response:', d);
+              if (d.data?.[0]) setExternalReview({ ...d.data[0], reviews: d.data[0].reviews ?? [] });
+            })
+            .catch(err => console.error('[ExternalReviews] fetch error:', err));
+        } else {
+          console.log('[ExternalReviews] no strapiId on attraction:', current.id);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load attraction');
@@ -301,7 +306,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         </motion.div>
 
         {/* Google Maps Reviews */}
-        {externalReview && (externalReview.reviews.length > 0 || externalReview.google_rating !== null) && (
+        {externalReview && ((externalReview.reviews?.length ?? 0) > 0 || externalReview.google_rating !== null) && (
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.5 }}
             className="mb-8 sm:mb-12">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -312,11 +317,11 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
                 <span className="text-sm text-gray-400">· {externalReview.review_count.toLocaleString()} reviews on Google Maps</span>
               </div>
             </div>
-            {externalReview.reviews.length === 0 && (
+            {(externalReview.reviews?.length ?? 0) === 0 && (
               <p className="text-sm text-gray-400 mt-2">No review text captured yet. Rating and count sourced from Google Maps.</p>
             )}
             <div className="grid gap-4 sm:grid-cols-3">
-              {externalReview.reviews.map((rev, i) => (
+              {(externalReview.reviews ?? []).map((rev, i) => (
                 <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
