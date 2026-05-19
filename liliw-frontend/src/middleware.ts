@@ -17,8 +17,12 @@ export function middleware(req: NextRequest) {
 
   // ── Protect /api/admin/* routes ──
   // These must always carry a Bearer token — block requests without one.
+  // Exception: external-reviews with a strapiId param is public (cached Google data for attraction pages).
   if (pathname.startsWith('/api/admin/')) {
-    if (!hasAuthHeader(req)) {
+    const isPublicExternalReview =
+      pathname === '/api/admin/external-reviews' &&
+      req.nextUrl.searchParams.has('strapiId');
+    if (!isPublicExternalReview && !hasAuthHeader(req)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     return NextResponse.next();
