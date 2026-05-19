@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -216,6 +216,7 @@ export default function AdminDashboard() {
   const [expandedReview,     setExpandedReview]     = useState<string | null>(null);
   const [scrapeAllActive,    setScrapeAllActive]    = useState(false);
   const [scrapeAllProgress,  setScrapeAllProgress]  = useState({ current: 0, total: 0 });
+  const autoScrapeRef = useRef(false);
 
   useEffect(() => {
     if (!loading && (!user || !isStaff)) router.replace('/');
@@ -294,6 +295,69 @@ export default function AdminDashboard() {
     const id = setInterval(poll, 10_000);
     return () => clearInterval(id);
   }, [isAdmin, token]);
+
+  // Auto-scrape reviews for attractions with coordinates that haven't been scraped yet
+  useEffect(() => {
+    if (activeTab !== 'externalreviews') return;
+    if (loadingAttr || loadingExternal) return;
+    if (scrapeAllActive || scrapingId) return;
+    if (autoScrapeRef.current) return;
+    if (!token) return;
+
+    const cachedMap = Object.fromEntries(externalReviews.map((r: any) => [r.strapi_id, r]));
+    const unscraped = attractions.filter(a => {
+      const c = a.attributes.coordinates;
+      const hasCoords = !!(c?.latitude ?? c?.lat);
+      return hasCoords && !cachedMap[a.strapiId];
+    });
+    if (unscraped.length === 0) return;
+
+    autoScrapeRef.current = true;
+    setScrapeAllActive(true);
+    setScrapeAllProgress({ current: 0, total: unscraped.length });
+
+    (async () => {
+      const authH = { Authorization: `Bearer ${token}` };
+      const runs = await Promise.all(unscraped.map(async (attr) => {
+        try {
+          const c = attr.attributes.coordinates;
+          const lat = c?.latitude ?? c?.lat ?? null;
+          const lng = c?.longitude ?? c?.lng ?? null;
+          const res = await fetch('/api/admin/scrape-reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authH },
+            body: JSON.stringify({ strapiId: attr.strapiId, attractionName: attr.attributes.name, lat, lng }),
+          });
+          const { runId } = await res.json();
+          return { attr, runId: runId || null };
+        } catch { return { attr, runId: null }; }
+      }));
+
+      let completed = 0;
+      await Promise.all(runs.filter(r => r.runId).map(async ({ attr, runId }) => {
+        const deadline = Date.now() + 300_000;
+        while (Date.now() < deadline) {
+          await new Promise(r => setTimeout(r, 5000));
+          try {
+            const poll = await fetch(
+              `/api/admin/scrape-reviews?runId=${runId}&strapiId=${attr.strapiId}&attractionName=${encodeURIComponent(attr.attributes.name)}`,
+              { headers: authH },
+            ).then(r => r.json());
+            if (poll.status === 'SUCCEEDED' || poll.status === 'FAILED' || poll.status === 'ABORTED') {
+              completed++;
+              setScrapeAllProgress(p => ({ ...p, current: completed }));
+              break;
+            }
+          } catch {}
+        }
+      }));
+
+      fetch('/api/admin/external-reviews', { headers: authH }).then(r => r.json()).then(d => setExternalReviews(d.data || []));
+      setScrapeAllActive(false);
+      setScrapeAllProgress({ current: 0, total: 0 });
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, loadingAttr, loadingExternal]);
 
   const handleAssignRole = async (userId: number, roleId: number) => {
     setSavingRole(userId);

@@ -45,6 +45,8 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
   const [error, setError] = useState<string | null>(null);
   const [relatedAttractions, setRelatedAttractions] = useState<Attraction[]>([]);
   const [externalReview, setExternalReview] = useState<ExternalReview | null>(null);
+  const [frontendAvg, setFrontendAvg] = useState(0);
+  const [frontendCount, setFrontendCount] = useState(0);
 
   useEffect(() => {
     Promise.resolve(params).then(async (resolved) => { setAttractionId(resolved.id); });
@@ -63,6 +65,19 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         setRelatedAttractions(
           allAttractions.filter((a: any) => a.attributes.category === current.attributes.category && a.id !== current.id).slice(0, 3)
         );
+        // Fetch frontend ratings from Supabase
+        fetch(`/api/strapi/reviews?itemId=${encodeURIComponent(attractionId)}`)
+          .then(r => r.json())
+          .then(d => {
+            const revs: any[] = d?.data ?? [];
+            const count = revs.length;
+            const avg = count > 0
+              ? revs.reduce((s, r) => s + (r.attributes?.rating ?? r.rating ?? 0), 0) / count
+              : 0;
+            setFrontendAvg(avg);
+            setFrontendCount(count);
+          })
+          .catch(() => {});
         // Fetch external reviews from Supabase cache
         if (current.strapiId) {
           fetch(`/api/admin/external-reviews?strapiId=${current.strapiId}`)
@@ -137,12 +152,13 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
                 <span className="text-sm">{attraction.attributes.location}</span>
               </div>
             )}
-            {attraction.attributes.rating && (
+            {frontendCount > 0 && (
               <div className="flex items-center gap-1.5 mt-3">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4" fill={i < Math.round(attraction.attributes.rating!) ? '#F5C518' : 'none'} stroke={i < Math.round(attraction.attributes.rating!) ? '#F5C518' : 'rgba(255,255,255,0.3)'} />
+                  <Star key={i} className="w-4 h-4" fill={i < Math.round(frontendAvg) ? '#F5C518' : 'none'} stroke={i < Math.round(frontendAvg) ? '#F5C518' : 'rgba(255,255,255,0.3)'} />
                 ))}
-                <span className="text-sm font-semibold text-white/80 ml-1" style={{ fontFamily: BL }}>{attraction.attributes.rating}/5</span>
+                <span className="text-sm font-semibold text-white/80 ml-1" style={{ fontFamily: BL }}>{frontendAvg.toFixed(1)}/5</span>
+                <span className="text-xs text-white/50 ml-1">({frontendCount} review{frontendCount !== 1 ? 's' : ''})</span>
               </div>
             )}
           </motion.div>
@@ -230,21 +246,29 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           )}
         </motion.div>
 
-        {/* Interactive Map */}
-        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.3 }}
-          className="mb-8 sm:mb-12">
-          <h2 className="text-2xl font-bold mb-4" style={{ color: '#1A1A2E', fontFamily: HL }}>Location & Directions</h2>
-          <InteractiveMap
-            attractions={[{
-              name: attraction.attributes.name,
-              lat: attraction.attributes.coordinates?.latitude || 14.3086,
-              lng: attraction.attributes.coordinates?.longitude || 121.2286,
-              google_place_id: attraction.attributes.google_place_id,
-              category: attraction.attributes.category,
-              description: attraction.attributes.description,
-            }]}
-          />
-        </motion.div>
+        {/* Interactive Map — only render when coordinates are set in Strapi */}
+        {(() => {
+          const c = attraction.attributes.coordinates as any;
+          const lat = c?.latitude ?? c?.lat ?? null;
+          const lng = c?.longitude ?? c?.lng ?? null;
+          if (!lat || !lng) return null;
+          return (
+            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.3 }}
+              className="mb-8 sm:mb-12">
+              <h2 className="text-2xl font-bold mb-4" style={{ color: '#1A1A2E', fontFamily: HL }}>Location & Directions</h2>
+              <InteractiveMap
+                attractions={[{
+                  name: attraction.attributes.name,
+                  lat,
+                  lng,
+                  google_place_id: attraction.attributes.google_place_id,
+                  category: attraction.attributes.category,
+                  description: attraction.attributes.description,
+                }]}
+              />
+            </motion.div>
+          );
+        })()}
 
         {/* QR Code */}
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.35 }}
