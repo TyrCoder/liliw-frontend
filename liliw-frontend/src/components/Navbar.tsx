@@ -247,14 +247,6 @@ export default function Navbar() {
                               Business Dashboard
                             </Link>
                           )}
-                          {isLocal && !isLbo && (
-                            <Link href="/business/apply" onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-teal-50 hover:text-teal-700 transition border-t border-gray-100"
-                              style={{ color: '#374151', fontFamily: BL }}>
-                              <LayoutDashboard className="w-4 h-4 text-teal-500" />
-                              Apply as Business Owner
-                            </Link>
-                          )}
                           <button onClick={() => { logout(); setUserMenuOpen(false); }}
                             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 transition border-t border-gray-100"
                             style={{ fontFamily: BL }}>
@@ -311,7 +303,6 @@ export default function Navbar() {
                   )}
                   {isStaff && <NavLink href="/admin" label={isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'Officer Dashboard' : 'Editor Dashboard'} onClick={closeMenu} />}
                   {isLocal && isLbo  && <NavLink href="/lbo" label="Business Dashboard" onClick={closeMenu} />}
-                  {isLocal && !isLbo && <NavLink href="/business/apply" label="Apply as Business Owner" onClick={closeMenu} />}
 
                   <button onClick={() => { setSearchOpen(true); closeMenu(); }}
                     className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition border border-gray-200 w-full hover:bg-blue-50 hover:text-blue-700"
