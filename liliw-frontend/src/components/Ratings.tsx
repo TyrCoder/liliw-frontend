@@ -108,24 +108,28 @@ export default function Ratings({ itemId, itemName }: RatingsProps) {
     <div className="space-y-6 py-6 border-t border-gray-100">
       <h3 className="text-2xl font-bold" style={{ color: '#1A1A2E', fontFamily: HL }}>Reviews</h3>
 
-      {/* Average rating summary */}
-      <div className="flex items-center gap-4 p-4 rounded-2xl border border-gray-100 bg-white">
-        <div className="text-center px-4 border-r border-gray-100">
-          <div className="text-4xl font-extrabold" style={{ color: '#0B3D91', fontFamily: HL }}>{avgRating}</div>
-          <div className="flex gap-0.5 mt-1 justify-center">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} size={13}
-                style={i < Math.round(Number(avgRating)) ? { fill: '#F5C518', color: '#F5C518' } : { color: '#d1d5db' }} />
-            ))}
+      {/* Average rating summary — hidden when no ratings exist */}
+      {(loading || dbRatings.length > 0) && (
+        <div className="flex items-center gap-4 p-4 rounded-2xl border border-gray-100 bg-white">
+          <div className="text-center px-4 border-r border-gray-100">
+            <div className="text-4xl font-extrabold" style={{ color: '#0B3D91', fontFamily: HL }}>
+              {loading ? '—' : avgRating}
+            </div>
+            <div className="flex gap-0.5 mt-1 justify-center">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={13}
+                  style={i < Math.round(Number(avgRating)) ? { fill: '#F5C518', color: '#F5C518' } : { color: '#d1d5db' }} />
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-700" style={{ fontFamily: HL }}>
+              {loading ? '…' : `${dbRatings.length} review${dbRatings.length !== 1 ? 's' : ''}`}
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: BL }}>Based on visitor feedback</p>
           </div>
         </div>
-        <div>
-          <p className="text-sm font-semibold text-gray-700" style={{ fontFamily: HL }}>
-            {loading ? '…' : `${dbRatings.length} review${dbRatings.length !== 1 ? 's' : ''}`}
-          </p>
-          <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: BL }}>Based on visitor feedback</p>
-        </div>
-      </div>
+      )}
 
       {/* Submit form — login required */}
       {!user ? (
