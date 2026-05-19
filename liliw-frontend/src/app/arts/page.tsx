@@ -126,25 +126,46 @@ export default function ArtsPage() {
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {artForms.map((art, idx) => (
-            <motion.div key={idx}
-              initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.07 }}
-              whileHover={{ y: -6 }}
-              className="group relative rounded-2xl p-6 bg-white border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300 overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-5 group-hover:opacity-10 transition-opacity" style={{ backgroundColor: '#0B3D91' }} />
-              {art.icon_emoji && <div className="text-5xl mb-4">{art.icon_emoji}</div>}
-              <h3 className="text-lg font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>{art.name || art.title}</h3>
-              <p className="text-gray-500 text-sm leading-relaxed mb-4" style={{ fontFamily: BL }}>{art.description}</p>
-              <div className="space-y-1.5">
-                {(Array.isArray(art.features) ? art.features : []).map((f: string, i: number) => (
-                  <div key={i} className="flex items-center gap-2 text-xs text-gray-500" style={{ fontFamily: BL }}>
-                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: '#F5C518' }} />
-                    {f}
+          {artForms.map((art, idx) => {
+            const firstPhoto = art.photos?.[0]?.url || art.photos?.data?.[0]?.attributes?.url;
+            const photoUrl = firstPhoto ? (firstPhoto.startsWith('http') ? firstPhoto : `${STRAPI}${firstPhoto}`) : null;
+            const featureLines = typeof art.features === 'string'
+              ? art.features.split('\n').map((l: string) => l.replace(/^[-*]\s*/, '').trim()).filter(Boolean)
+              : [];
+            return (
+              <motion.div key={idx}
+                initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.07 }}
+                whileHover={{ y: -6 }}
+                className="group rounded-2xl bg-white border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300 overflow-hidden">
+                {photoUrl ? (
+                  <div className="h-44 overflow-hidden">
+                    <img src={photoUrl} alt={art.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   </div>
-                ))}
-              </div>
-            </motion.div>
-          ))}
+                ) : art.icon_emoji ? (
+                  <div className="h-24 flex items-center justify-center text-5xl" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
+                    {art.icon_emoji}
+                  </div>
+                ) : (
+                  <div className="h-24" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }} />
+                )}
+                <div className="p-6 relative">
+                  <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-full opacity-5 group-hover:opacity-10 transition-opacity" style={{ backgroundColor: '#0B3D91' }} />
+                  <h3 className="text-lg font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>{art.name || art.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed mb-4" style={{ fontFamily: BL }}>{art.description}</p>
+                  {featureLines.length > 0 && (
+                    <div className="space-y-1.5">
+                      {featureLines.map((f: string, i: number) => (
+                        <div key={i} className="flex items-center gap-2 text-xs text-gray-500" style={{ fontFamily: BL }}>
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: '#F5C518' }} />
+                          {f}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
