@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminAuth } from '@/lib/auth';
+import { requireStaffAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
 
 export async function GET(request: NextRequest) {
-  const isAdmin = await requireAdminAuth(request);
-  if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!await requireStaffAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
