@@ -25,8 +25,10 @@ const FIELDS_TO_CHANGE = [
 
 type Tab = 'overview' | 'requests' | 'visitors' | 'ratings';
 
-const CATEGORIES = ['heritage', 'spot', 'dining', 'other'];
-const CATEGORY_LABELS: Record<string, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food', other: 'Other' };
+const CATEGORIES = ['heritage', 'spot', 'dining'] as const;
+type AttrCategory = typeof CATEGORIES[number];
+const CATEGORY_LABELS: Record<AttrCategory, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food' };
+const CATEGORY_ICONS: Record<AttrCategory, string> = { heritage: '🏛️', spot: '🌿', dining: '🍽️' };
 
 const TYPE_COLORS: Record<string, string> = { heritage: '#F59E0B', spot: '#3B82F6', dining: '#EF4444' };
 const TYPE_LABELS: Record<string, string>  = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food' };
@@ -123,7 +125,17 @@ export default function LboDashboard() {
   const [attrReqs,       setAttrReqs]       = useState<any[]>([]);
   const [loadingAttrReqs,setLoadingAttrReqs]= useState(false);
   const [showArForm,     setShowArForm]     = useState(false);
-  const [arForm,         setArForm]         = useState({ attraction_name: '', description: '', category: '' });
+  const [arForm,         setArForm]         = useState({
+    category: '' as AttrCategory | '',
+    attraction_name: '', description: '', location: '',
+    has_virtual_tour: false,
+    // tourist spot
+    opening_hours: '', entrance_fee: '', best_time_to_visit: '', difficulty_level: '',
+    // heritage site
+    place_type: '', distance_from_center: '',
+    // dining
+    cuisine_type: '', price_range: '', contact_number: '',
+  });
   const [submittingAr,   setSubmittingAr]   = useState(false);
   const [arMsg,          setArMsg]          = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -228,14 +240,31 @@ export default function LboDashboard() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           attraction_name: arForm.attraction_name,
-          description:     arForm.description || undefined,
-          category:        arForm.category    || undefined,
+          category:        arForm.category || undefined,
+          description: (() => {
+            const extras: string[] = [];
+            if (arForm.location)              extras.push(`Location: ${arForm.location}`);
+            if (arForm.opening_hours)         extras.push(`Opening Hours: ${arForm.opening_hours}`);
+            if (arForm.entrance_fee)          extras.push(`Entrance Fee: ${arForm.entrance_fee}`);
+            if (arForm.best_time_to_visit)    extras.push(`Best Time to Visit: ${arForm.best_time_to_visit}`);
+            if (arForm.difficulty_level)      extras.push(`Difficulty: ${arForm.difficulty_level}`);
+            if (arForm.place_type)            extras.push(`Place Type: ${arForm.place_type}`);
+            if (arForm.distance_from_center)  extras.push(`Distance from Center: ${arForm.distance_from_center}`);
+            if (arForm.cuisine_type)          extras.push(`Cuisine: ${arForm.cuisine_type}`);
+            if (arForm.price_range)           extras.push(`Price Range: ${arForm.price_range}`);
+            if (arForm.contact_number)        extras.push(`Contact: ${arForm.contact_number}`);
+            if (arForm.has_virtual_tour)      extras.push(`Has Virtual Tour: Yes`);
+            const base = arForm.description.trim();
+            return base && extras.length ? `${base}\n\n--- Details ---\n${extras.join('\n')}`
+                 : extras.length ? extras.join('\n')
+                 : base || undefined;
+          })(),
         }),
       });
       const data = await res.json();
       if (res.ok) {
         setArMsg({ ok: true, text: 'Request submitted! Our team will review it shortly.' });
-        setArForm({ attraction_name: '', description: '', category: '' });
+        setArForm({ category: '', attraction_name: '', description: '', location: '', has_virtual_tour: false, opening_hours: '', entrance_fee: '', best_time_to_visit: '', difficulty_level: '', place_type: '', distance_from_center: '', cuisine_type: '', price_range: '', contact_number: '' });
         setShowArForm(false);
         fetch('/api/lbo/attraction-request', { headers: { Authorization: `Bearer ${token}` } })
           .then(r => r.json()).then(d => setAttrReqs(d.data || []));
@@ -543,39 +572,172 @@ export default function LboDashboard() {
 
                 {/* Attraction Request Form */}
                 {showArForm && (
-                  <form onSubmit={handleSubmitAr} className="bg-white rounded-2xl border border-blue-100 shadow-sm p-6 space-y-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-bold text-gray-900 text-sm">Request New Attraction Listing</h3>
+                  <form onSubmit={handleSubmitAr} className="bg-white rounded-2xl border border-blue-100 shadow-sm p-6 space-y-5">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold text-gray-900">Request New Attraction Listing</h3>
                       <button type="button" onClick={() => { setShowArForm(false); setArMsg(null); }}
                         className="text-gray-400 hover:text-red-500 transition">
                         <X className="w-4 h-4" />
                       </button>
                     </div>
 
+                    {/* Step 1 — Category */}
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Attraction Name <span className="text-red-500">*</span></label>
-                      <input required type="text" value={arForm.attraction_name}
-                        onChange={e => setArForm(f => ({ ...f, attraction_name: e.target.value }))}
-                        placeholder="Official name of your attraction"
-                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                      <p className="text-sm font-semibold text-gray-700 mb-2">What type of attraction is this? <span className="text-red-500">*</span></p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {CATEGORIES.map(c => (
+                          <button key={c} type="button"
+                            onClick={() => setArForm(f => ({ ...f, category: c, place_type: '', difficulty_level: '', cuisine_type: '', price_range: '' }))}
+                            className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl border-2 text-sm font-semibold transition ${arForm.category === c ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-blue-300 hover:bg-blue-50'}`}>
+                            <span className="text-xl">{CATEGORY_ICONS[c]}</span>
+                            {CATEGORY_LABELS[c]}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Category</label>
-                      <select value={arForm.category} onChange={e => setArForm(f => ({ ...f, category: e.target.value }))}
-                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
-                        <option value="">Select category (optional)</option>
-                        {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
-                      </select>
-                    </div>
+                    {arForm.category && <>
+                      {/* Step 2 — Name */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">What is the name of your attraction? <span className="text-red-500">*</span></label>
+                        <input required type="text" value={arForm.attraction_name}
+                          onChange={e => setArForm(f => ({ ...f, attraction_name: e.target.value }))}
+                          placeholder="Official name"
+                          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                      </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Description (optional)</label>
-                      <textarea value={arForm.description}
-                        onChange={e => setArForm(f => ({ ...f, description: e.target.value }))}
-                        rows={3} placeholder="Brief description of your attraction…"
-                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
-                    </div>
+                      {/* Step 3 — Description */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Describe your attraction <span className="text-xs font-normal text-gray-400">(optional)</span></label>
+                        <textarea value={arForm.description}
+                          onChange={e => setArForm(f => ({ ...f, description: e.target.value }))}
+                          rows={3} placeholder="Brief description…"
+                          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
+                      </div>
+
+                      {/* Step 4 — Location */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Where is it located? <span className="text-xs font-normal text-gray-400">(optional)</span></label>
+                        <input type="text" value={arForm.location}
+                          onChange={e => setArForm(f => ({ ...f, location: e.target.value }))}
+                          placeholder="e.g. 123 Rizal Street, Liliw, Laguna"
+                          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                      </div>
+
+                      {/* Heritage Site fields */}
+                      {arForm.category === 'heritage' && <>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700 mb-2">What type of heritage site is it? <span className="text-xs font-normal text-gray-400">(optional)</span></p>
+                          <div className="flex gap-2 flex-wrap">
+                            {[['heritage_site','Heritage Site'],['landmark','Landmark'],['museum','Museum']].map(([val, label]) => (
+                              <button key={val} type="button"
+                                onClick={() => setArForm(f => ({ ...f, place_type: f.place_type === val ? '' : val }))}
+                                className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${arForm.place_type === val ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-blue-300'}`}>
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Distance from town center <span className="text-xs font-normal text-gray-400">(optional)</span></label>
+                          <input type="text" value={arForm.distance_from_center}
+                            onChange={e => setArForm(f => ({ ...f, distance_from_center: e.target.value }))}
+                            placeholder="e.g. 2.5 km from town center"
+                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                        </div>
+                      </>}
+
+                      {/* Tourist Spot fields */}
+                      {arForm.category === 'spot' && <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Opening Hours <span className="text-xs font-normal text-gray-400">(optional)</span></label>
+                            <input type="text" value={arForm.opening_hours}
+                              onChange={e => setArForm(f => ({ ...f, opening_hours: e.target.value }))}
+                              placeholder="e.g. 8AM – 5PM daily"
+                              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Entrance Fee <span className="text-xs font-normal text-gray-400">(optional)</span></label>
+                            <input type="text" value={arForm.entrance_fee}
+                              onChange={e => setArForm(f => ({ ...f, entrance_fee: e.target.value }))}
+                              placeholder="e.g. ₱50 / Free"
+                              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Best Time to Visit <span className="text-xs font-normal text-gray-400">(optional)</span></label>
+                          <input type="text" value={arForm.best_time_to_visit}
+                            onChange={e => setArForm(f => ({ ...f, best_time_to_visit: e.target.value }))}
+                            placeholder="e.g. Early morning, dry season"
+                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700 mb-2">How difficult is it to reach? <span className="text-xs font-normal text-gray-400">(optional)</span></p>
+                          <div className="flex gap-2">
+                            {[['easy','Easy'],['moderate','Moderate'],['difficult','Difficult']].map(([val, label]) => (
+                              <button key={val} type="button"
+                                onClick={() => setArForm(f => ({ ...f, difficulty_level: f.difficulty_level === val ? '' : val }))}
+                                className={`flex-1 py-2 rounded-xl border text-sm font-medium transition ${arForm.difficulty_level === val ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-blue-300'}`}>
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>}
+
+                      {/* Dining & Food fields */}
+                      {arForm.category === 'dining' && <>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700 mb-2">What type of cuisine? <span className="text-xs font-normal text-gray-400">(optional)</span></p>
+                          <div className="flex gap-2 flex-wrap">
+                            {[['local','Local'],['international','International'],['fusion','Fusion'],['cafe','Café'],['food_stall','Food Stall']].map(([val, label]) => (
+                              <button key={val} type="button"
+                                onClick={() => setArForm(f => ({ ...f, cuisine_type: f.cuisine_type === val ? '' : val }))}
+                                className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${arForm.cuisine_type === val ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-blue-300'}`}>
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700 mb-2">What is the price range? <span className="text-xs font-normal text-gray-400">(optional)</span></p>
+                          <div className="flex gap-2">
+                            {[['budget','💰 Budget'],['moderate','💰💰 Moderate'],['expensive','💰💰💰 Expensive']].map(([val, label]) => (
+                              <button key={val} type="button"
+                                onClick={() => setArForm(f => ({ ...f, price_range: f.price_range === val ? '' : val }))}
+                                className={`flex-1 py-2 px-3 rounded-xl border text-xs font-medium transition ${arForm.price_range === val ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-blue-300'}`}>
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contact Number <span className="text-xs font-normal text-gray-400">(optional)</span></label>
+                            <input type="text" value={arForm.contact_number}
+                              onChange={e => setArForm(f => ({ ...f, contact_number: e.target.value }))}
+                              placeholder="e.g. 09171234567"
+                              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Opening Hours <span className="text-xs font-normal text-gray-400">(optional)</span></label>
+                            <input type="text" value={arForm.opening_hours}
+                              onChange={e => setArForm(f => ({ ...f, opening_hours: e.target.value }))}
+                              placeholder="e.g. 9AM – 9PM"
+                              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                          </div>
+                        </div>
+                      </>}
+
+                      {/* Virtual Tour checkbox */}
+                      <label className="flex items-center gap-3 cursor-pointer select-none">
+                        <input type="checkbox" checked={arForm.has_virtual_tour}
+                          onChange={e => setArForm(f => ({ ...f, has_virtual_tour: e.target.checked }))}
+                          className="w-4 h-4 rounded accent-blue-600" />
+                        <span className="text-sm font-medium text-gray-700">This attraction has a virtual tour available</span>
+                      </label>
+                    </>}
 
                     {arMsg && (
                       <div className={`flex items-center gap-2 text-sm font-semibold ${arMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
@@ -584,8 +746,8 @@ export default function LboDashboard() {
                       </div>
                     )}
 
-                    <button type="submit" disabled={submittingAr}
-                      className="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+                    <button type="submit" disabled={submittingAr || !arForm.category || !arForm.attraction_name.trim()}
+                      className="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
                       style={{ backgroundColor: '#1565C0' }}>
                       {submittingAr ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : <><Send className="w-4 h-4" /> Submit Request</>}
                     </button>

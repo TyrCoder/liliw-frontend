@@ -232,8 +232,8 @@ export default function AdminDashboard() {
   // Set default tab based on role
   useEffect(() => {
     if (!loading && isStaff) {
-      if (isChatoEditor) setActiveTab('changerequests');
-      else if (isChatoOfficer) setActiveTab('overview');
+      if (isChatoEditor) setActiveTab('lbo');
+      else if (isChatoOfficer) setActiveTab('lbo');
     }
   }, [loading, isStaff, isChatoEditor, isChatoOfficer]);
 
@@ -241,56 +241,48 @@ export default function AdminDashboard() {
     if (!isStaff || !token) return;
     const h = { Authorization: `Bearer ${token}` };
 
-    // All staff need attractions + reviews
+    // Editor + Officer — attractions & reviews
     fetch('/api/strapi/attractions').then(r => r.json()).then(d => setAttractions(d.data || [])).catch(() => {}).finally(() => setLoadingAttr(false));
     fetch('/api/strapi/reviews').then(r => r.json()).then(d => setReviews(d.data || [])).catch(() => {}).finally(() => setLoadingReviews(false));
-    setLoadingExternal(true);
-    fetch('/api/admin/external-reviews', { headers: h }).then(r => r.json()).then(d => setExternalReviews(d.data || [])).catch(() => {}).finally(() => setLoadingExternal(false));
 
-    // Admin and CHATO Officer get everything else
-    if (isAdmin || isChatoOfficer) {
-      fetch('/api/admin/submissions',   { headers: h }).then(r => r.json()).then(d => setSubmissions(d.data || [])).catch(() => {}).finally(() => setLoadingSubs(false));
-      fetch('/api/admin/participation',  { headers: h }).then(r => r.json()).then(d => setParticipation(d.data || [])).catch(() => {}).finally(() => setLoadingPart(false));
-      fetch('/api/event-signup',         { headers: h }).then(r => r.json()).then(d => setSignups(d.data || [])).catch(() => {}).finally(() => setLoadingSignups(false));
+    // Admin — analytics, users, audit, reports
+    if (isAdmin) {
+      setLoadingUsers(true);
+      fetch('/api/admin/users',           { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
       fetch('/api/analytics/track').then(r => r.json()).then(d => setAnalytics(d)).catch(() => {}).finally(() => setLoadingStats(false));
       fetch('/api/admin/audit-logs',      { headers: h }).then(r => r.json()).then(d => setAuditLogs(d.data || [])).catch(() => {}).finally(() => setLoadingAudit(false));
       fetch('/api/admin/strapi-activity', { headers: h }).then(r => r.json()).then(d => setStrapiActivity(d.data || [])).catch(() => {}).finally(() => setLoadingActivity(false));
-    }
-
-    // Admin only — user management + LBO applications
-    if (isAdmin) {
-      setLoadingUsers(true);
-      setLoadingLbo(true);
-      fetch('/api/admin/users',           { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
-      fetch('/api/admin/lbo-applications',{ headers: h }).then(r => r.json()).then(d => { if (d._error) console.error('[LBO] Strapi error:', d._error, 'status:', d._status); setLboApps(d.data || []); }).catch(() => {}).finally(() => setLoadingLbo(false));
-    }
-
-    // Admin and Editor — change requests
-    if (isAdmin || isChatoEditor) {
-      setLoadingCR(true);
-      fetch('/api/admin/change-requests', { headers: h }).then(r => r.json()).then(d => setChangeRequests(d.data || [])).catch(() => {}).finally(() => setLoadingCR(false));
-    }
-
-    // Admin and Officer — visitor records
-    if (isAdmin || isChatoOfficer) {
-      setLoadingVR(true);
-      fetch('/api/admin/visitor-records', { headers: h }).then(r => r.json()).then(d => setVisitorRecords(d.data || [])).catch(() => {}).finally(() => setLoadingVR(false));
-    }
-
-    // All staff — attraction requests
-    setLoadingAR(true);
-    fetch('/api/admin/attraction-requests', { headers: h }).then(r => r.json()).then(d => {
-      if (d.error) console.error('[AttractionReqs]', d.error);
-      setAttractionReqs(d.data || []);
-    }).catch(() => {}).finally(() => setLoadingAR(false));
-
-    // Role management — admin and CHATO Officer
-    if (isAdmin || isChatoOfficer) {
       fetch('/api/admin/assign-role', { headers: h }).then(r => r.json()).then(d => {
         setRoleUsers(d.users || []);
         setAvailRoles(d.roles || []);
       }).catch(() => {}).finally(() => setLoadingRoles(false));
     }
+
+    // Officer — requests & submissions
+    if (isChatoOfficer) {
+      fetch('/api/admin/submissions',   { headers: h }).then(r => r.json()).then(d => setSubmissions(d.data || [])).catch(() => {}).finally(() => setLoadingSubs(false));
+      fetch('/api/admin/participation',  { headers: h }).then(r => r.json()).then(d => setParticipation(d.data || [])).catch(() => {}).finally(() => setLoadingPart(false));
+      fetch('/api/event-signup',         { headers: h }).then(r => r.json()).then(d => setSignups(d.data || [])).catch(() => {}).finally(() => setLoadingSignups(false));
+      setLoadingVR(true);
+      fetch('/api/admin/visitor-records', { headers: h }).then(r => r.json()).then(d => setVisitorRecords(d.data || [])).catch(() => {}).finally(() => setLoadingVR(false));
+      setLoadingExternal(true);
+      fetch('/api/admin/external-reviews', { headers: h }).then(r => r.json()).then(d => setExternalReviews(d.data || [])).catch(() => {}).finally(() => setLoadingExternal(false));
+    }
+
+    // Officer + Editor — LBO applications & change requests
+    if (isChatoOfficer || isChatoEditor) {
+      setLoadingLbo(true);
+      fetch('/api/admin/lbo-applications',{ headers: h }).then(r => r.json()).then(d => { if (d._error) console.error('[LBO] Strapi error:', d._error, 'status:', d._status); setLboApps(d.data || []); }).catch(() => {}).finally(() => setLoadingLbo(false));
+      setLoadingCR(true);
+      fetch('/api/admin/change-requests', { headers: h }).then(r => r.json()).then(d => setChangeRequests(d.data || [])).catch(() => {}).finally(() => setLoadingCR(false));
+    }
+
+    // Officer + Editor — attraction requests
+    setLoadingAR(true);
+    fetch('/api/admin/attraction-requests', { headers: h }).then(r => r.json()).then(d => {
+      if (d.error) console.error('[AttractionReqs]', d.error);
+      setAttractionReqs(d.data || []);
+    }).catch(() => {}).finally(() => setLoadingAR(false));
   }, [isAdmin, isChatoOfficer, isChatoEditor, isStaff, token]);
 
   // Live visitors polling — every 10 seconds (admin + officer both see the overview tab)
@@ -533,25 +525,28 @@ export default function AdminDashboard() {
   });
 
   const dashboardTitle = isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'CHATO Officer Dashboard' : 'CHATO Editor Dashboard';
-  const dashboardSub   = isAdmin ? 'Full admin access' : isChatoOfficer ? 'Operations & analytics' : 'Content management';
+  const dashboardSub   = isAdmin ? 'Analytics & user management' : isChatoOfficer ? 'Requests & submissions' : 'LBO & attractions management';
 
   // Tab visibility per role
   const ALL_TABS: { key: Tab; label: string; badge?: number; roles: string[] }[] = [
-    { key: 'overview',      label: 'Analytics',         badge: undefined,                                                                     roles: ['admin', 'officer'] },
-    { key: 'users',         label: 'Users',              badge: users.length,                                                                   roles: ['admin'] },
-    { key: 'roles',         label: 'Role Management',    badge: roleUsers.length,                                                               roles: ['admin', 'officer'] },
-    { key: 'lbo',           label: 'LBO Applications',   badge: lboApps.filter(a => (a.attributes?.status || a.status) === 'pending').length,   roles: ['admin'] },
-    { key: 'changerequests',    label: 'Change Requests',    badge: changeRequests.filter(cr => cr.status === 'pending').length,                     roles: ['admin', 'editor'] },
-    { key: 'attractionrequests', label: 'Attraction Requests', badge: attractionReqs.filter(r => r.status === 'pending' || r.status === 'editor_reviewed').length, roles: ['admin', 'officer', 'editor'] },
-    { key: 'visitorrecords',  label: 'Visitor Records',   badge: undefined,                                                                         roles: ['admin', 'officer'] },
-    { key: 'submissions',    label: 'Submissions',       badge: newCount,                                                                        roles: ['admin'] },
-    { key: 'participation', label: 'Participation',      badge: participation.length,                                                           roles: ['admin', 'officer'] },
-    { key: 'signups',       label: 'Event Sign-ups',     badge: signups.length,                                                                 roles: ['admin'] },
-    { key: 'attractions',   label: 'Attractions',        badge: attractions.length,                                                             roles: ['admin', 'officer', 'editor'] },
-    { key: 'ratings',       label: 'Ratings',            badge: reviews.length,                                                                 roles: ['admin', 'officer', 'editor'] },
-    { key: 'audit',           label: 'Audit Logs',         badge: strapiActivity.length, roles: ['admin', 'officer'] },
-    { key: 'reports',         label: 'Reports',            badge: undefined,           roles: ['admin', 'officer'] },
-    { key: 'externalreviews', label: 'Online Reviews',     badge: undefined,           roles: ['admin', 'officer'] },
+    // Admin: analytics + user management
+    { key: 'overview',           label: 'Analytics',           badge: undefined,                                                                                    roles: ['admin'] },
+    { key: 'users',              label: 'Users',                badge: users.length,                                                                                 roles: ['admin'] },
+    { key: 'roles',              label: 'Role Management',      badge: roleUsers.length,                                                                             roles: ['admin'] },
+    { key: 'audit',              label: 'Audit Logs',           badge: strapiActivity.length,                                                                        roles: ['admin'] },
+    { key: 'reports',            label: 'Reports',              badge: undefined,                                                                                    roles: ['admin'] },
+    // Officer: all requests & submissions
+    { key: 'lbo',                label: 'LBO Applications',     badge: lboApps.filter(a => (a.attributes?.status || a.status) === 'pending').length,                roles: ['officer', 'editor'] },
+    { key: 'changerequests',     label: 'Change Requests',      badge: changeRequests.filter(cr => cr.status === 'pending').length,                                  roles: ['officer', 'editor'] },
+    { key: 'attractionrequests', label: 'Attraction Requests',  badge: attractionReqs.filter(r => r.status === 'pending' || r.status === 'editor_reviewed').length,  roles: ['officer', 'editor'] },
+    { key: 'submissions',        label: 'Submissions',          badge: newCount,                                                                                     roles: ['officer'] },
+    { key: 'participation',      label: 'Participation',        badge: participation.length,                                                                         roles: ['officer'] },
+    { key: 'signups',            label: 'Event Sign-ups',       badge: signups.length,                                                                               roles: ['officer'] },
+    { key: 'visitorrecords',     label: 'Visitor Records',      badge: undefined,                                                                                    roles: ['officer'] },
+    { key: 'externalreviews',    label: 'Online Reviews',       badge: undefined,                                                                                    roles: ['officer'] },
+    { key: 'ratings',            label: 'Ratings',              badge: reviews.length,                                                                               roles: ['officer'] },
+    // Editor: LBO + attractions management
+    { key: 'attractions',        label: 'Attractions',          badge: attractions.length,                                                                           roles: ['editor'] },
   ];
 
   const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
