@@ -288,6 +288,16 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
       }
     }
 
+    // Fuzzy lookup: try exact, then partial substring match
+    const findCoord = (place: string): [number, number] | undefined => {
+      const key = place.toLowerCase().trim();
+      if (strapiCoords.has(key)) return strapiCoords.get(key);
+      for (const [name, coord] of strapiCoords) {
+        if (name.includes(key) || key.includes(name)) return coord;
+      }
+      return undefined;
+    };
+
     import('mapbox-gl').then(async ({ default: mapboxgl }) => {
       if (cancelled || !mapContainer.current) return;
       if (mapInstance.current) { mapInstance.current.remove(); mapInstance.current = null; }
@@ -356,7 +366,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
         for (let i = 0; i < allStops.length; i++) {
           const stop = allStops[i];
           const stopNum = i + 1;
-          const strapiCoord = strapiCoords.get(stop.place.toLowerCase());
+          const strapiCoord = findCoord(stop.place);
           if (strapiCoord) {
             coords.push(strapiCoord);
             new mapboxgl.Marker({ element: makeMarkerEl(stopNum) })
@@ -366,7 +376,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
           } else {
             try {
               const q = encodeURIComponent(`${stop.place}, Liliw, Laguna, Philippines`);
-              const r = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${MAPBOX_TOKEN}&limit=1&country=ph`);
+              const r = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${MAPBOX_TOKEN}&limit=1&bbox=121.40,14.10,121.47,14.16&country=ph`);
               const d = await r.json();
               const coord = d?.features?.[0]?.center as [number, number] | undefined;
               if (coord) {
@@ -381,16 +391,18 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
         }
         if (coords.length >= 2) {
           try {
-            const r = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${coords.map(c => c.join(',')).join(';')}?geometries=geojson&access_token=${MAPBOX_TOKEN}`);
+            const waypointStr = coords.map(c => `${c[0]},${c[1]}`).join(';');
+            const r = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${waypointStr}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`);
             const d = await r.json();
             const geometry = d?.routes?.[0]?.geometry;
             if (geometry) {
               map.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry } });
-              map.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#1565C0', 'line-width': 4, 'line-opacity': 0.85 } });
+              map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 8, 'line-opacity': 0.5 } });
+              map.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#1565C0', 'line-width': 4, 'line-opacity': 0.9 } });
             }
           } catch {}
           const bounds = coords.reduce((b, c) => b.extend(c as any), new mapboxgl.LngLatBounds(coords[0], coords[0]));
-          map.fitBounds(bounds, { padding: 60 });
+          map.fitBounds(bounds, { padding: 80 });
         } else if (coords.length === 1) {
           map.setCenter(coords[0]); map.setZoom(14);
         }

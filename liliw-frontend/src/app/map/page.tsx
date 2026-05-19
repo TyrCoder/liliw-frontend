@@ -120,7 +120,7 @@ function ExploreStrip({
   return (
     <div className="absolute bottom-0 left-0 right-0 z-20"
       style={{ background: 'rgba(10,28,80,0.97)', borderTop: '1px solid rgba(245,197,24,0.25)', backdropFilter: 'blur(14px)' }}>
-      <div className="px-4 pt-2.5 pb-3">
+      <div className="px-4 pt-2.5" style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}>
         <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Explore Liliw</p>
         <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
           {attractions.map(a => (
@@ -195,8 +195,8 @@ function RouteOverlay({
           transition={{ type: 'spring', stiffness: 340, damping: 26 }}
           className="absolute top-4 left-4 z-20 w-72 max-w-[calc(100vw-2rem)]"
         >
-          <div className="rounded-2xl overflow-hidden shadow-2xl"
-            style={{ backgroundColor: 'rgba(11,61,145,0.97)', border: '1px solid rgba(245,197,24,0.35)', backdropFilter: 'blur(14px)' }}>
+          <div className="rounded-2xl shadow-2xl"
+            style={{ backgroundColor: 'rgba(11,61,145,0.97)', border: '1px solid rgba(245,197,24,0.35)', backdropFilter: 'blur(14px)', maxHeight: 'calc(100vh - 7rem)', overflowY: 'auto', overflowX: 'hidden' }}>
 
             {/* Loading */}
             {routeLoading && (
@@ -246,55 +246,52 @@ function RouteOverlay({
                         </div>
                       ))}
 
-                      {/* Add Stop */}
-                      <div className="relative">
-                        <button onClick={() => setStopPickerOpen(v => !v)}
-                          className="flex items-center gap-1.5 text-xs font-semibold transition py-0.5"
-                          style={{ color: stopPickerOpen ? '#F5C518' : 'rgba(245,197,24,0.55)' }}>
-                          <Plus className="w-3.5 h-3.5" />
-                          Add Stop
-                        </button>
-
-                        {/* Stop picker dropdown */}
-                        <AnimatePresence>
-                          {stopPickerOpen && (
-                            <motion.div
-                              initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                              transition={{ duration: 0.15 }}
-                              className="absolute left-0 top-full mt-1 w-60 rounded-xl shadow-2xl z-30 overflow-hidden"
-                              style={{ backgroundColor: 'rgba(8,20,60,0.98)', border: '1px solid rgba(245,197,24,0.3)' }}>
-                              <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                                <Search className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />
-                                <input
-                                  autoFocus
-                                  type="text"
-                                  placeholder="Search attraction…"
-                                  value={stopSearch}
-                                  onChange={e => setStopSearch(e.target.value)}
-                                  className="flex-1 bg-transparent text-white text-xs outline-none placeholder:text-white/30"
-                                />
-                                <button onClick={() => { setStopPickerOpen(false); setStopSearch(''); }} className="text-white/30 hover:text-white">
-                                  <X className="w-3 h-3" />
+                      {/* Add Stop — inline expandable */}
+                      <div>
+                        {stopPickerOpen ? (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="rounded-lg overflow-hidden mt-1"
+                            style={{ backgroundColor: 'rgba(8,20,60,0.98)', border: '1px solid rgba(245,197,24,0.3)' }}>
+                            <div className="flex items-center gap-2 px-2.5 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                              <Search className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />
+                              <input
+                                autoFocus
+                                type="text"
+                                placeholder="Search attraction…"
+                                value={stopSearch}
+                                onChange={e => setStopSearch(e.target.value)}
+                                className="flex-1 bg-transparent text-white text-xs outline-none placeholder:text-white/30"
+                              />
+                              <button onClick={() => { setStopPickerOpen(false); setStopSearch(''); }} className="text-white/30 hover:text-white">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <div className="max-h-40 overflow-y-auto">
+                              {pickerAttractions.length === 0 ? (
+                                <p className="text-white/30 text-xs text-center py-4">No attractions found</p>
+                              ) : pickerAttractions.map(a => (
+                                <button key={a.id}
+                                  onClick={() => { onAddStop(a); setStopPickerOpen(false); setStopSearch(''); }}
+                                  className="w-full flex items-center gap-2.5 px-2.5 py-2.5 text-left hover:bg-white/10 transition">
+                                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_CONFIG[a.type].color }} />
+                                  <span className="text-white text-xs font-medium truncate">{a.name}</span>
+                                  <span className="text-white/30 text-[10px] flex-shrink-0 ml-auto">{TYPE_CONFIG[a.type].label}</span>
                                 </button>
-                              </div>
-                              <div className="max-h-44 overflow-y-auto">
-                                {pickerAttractions.length === 0 ? (
-                                  <p className="text-white/30 text-xs text-center py-4">No attractions found</p>
-                                ) : pickerAttractions.map(a => (
-                                  <button key={a.id}
-                                    onClick={() => { onAddStop(a); setStopPickerOpen(false); setStopSearch(''); }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-white/10 transition">
-                                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_CONFIG[a.type].color }} />
-                                    <span className="text-white text-xs font-medium truncate">{a.name}</span>
-                                    <span className="text-white/30 text-[10px] flex-shrink-0 ml-auto">{TYPE_CONFIG[a.type].label}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                              ))}
+                            </div>
+                          </motion.div>
+                        ) : (
+                          <button onClick={() => setStopPickerOpen(v => !v)}
+                            className="flex items-center gap-1.5 text-xs font-semibold transition py-0.5"
+                            style={{ color: 'rgba(245,197,24,0.55)' }}>
+                            <Plus className="w-3.5 h-3.5" />
+                            Add Stop
+                          </button>
+                        )}
                       </div>
 
                       <div>
@@ -546,25 +543,25 @@ export default function MapPage() {
     <div className="flex flex-col" style={{ height: 'calc(100vh - 65px)', backgroundColor: '#1565C0' }}>
 
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 py-2.5 border-b shrink-0 flex-wrap gap-y-2"
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b shrink-0"
         style={{ borderColor: '#F5C518', backgroundColor: 'rgba(11,61,145,0.98)' }}>
-        <Link href="/attractions" className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition">
+        <Link href="/attractions" className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </Link>
-        <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5" style={{ color: '#F5C518' }} />
-          <span className="text-white font-bold text-base">Liliw Map</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <Layers className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: '#F5C518' }} />
+          <span className="text-white font-bold text-sm sm:text-base whitespace-nowrap">Liliw Map</span>
           {!loading && (
             <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
               style={{ backgroundColor: 'rgba(245,197,24,0.2)', color: '#F5C518' }}>
-              {filtered.length} places
+              {filtered.length}
             </span>
           )}
         </div>
-        <div className="flex gap-1.5 ml-auto flex-wrap">
+        <div className="flex gap-1.5 ml-auto overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
           {(['all', 'heritage', 'spot', 'dining'] as FilterType[]).map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className="px-3 py-1.5 rounded-full text-xs font-bold transition"
+              className="flex-shrink-0 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold transition"
               style={{ backgroundColor: filter === f ? '#F5C518' : 'rgba(255,255,255,0.08)', color: filter === f ? '#1565C0' : 'rgba(255,255,255,0.7)' }}>
               {f === 'all' ? 'All' : TYPE_CONFIG[f as keyof typeof TYPE_CONFIG].label}
             </button>
@@ -574,7 +571,11 @@ export default function MapPage() {
 
       {/* Map area */}
       <div className="flex-1 relative">
-        <style>{`.mapboxgl-popup { z-index: 10 !important; }`}</style>
+        <style>{`
+          .mapboxgl-popup { z-index: 10 !important; }
+          .mapboxgl-ctrl-bottom-right { bottom: 165px !important; }
+          .mapboxgl-ctrl-bottom-left  { bottom: 165px !important; }
+        `}</style>
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">

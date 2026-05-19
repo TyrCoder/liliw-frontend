@@ -161,14 +161,14 @@ export default function Ratings({ itemId, itemName }: RatingsProps) {
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2" style={{ fontFamily: HL }}>
               Your Rating
             </label>
-            <div className="flex gap-1.5">
+            <div className="flex gap-0.5">
               {[1,2,3,4,5].map(num => (
                 <button key={num} type="button"
                   onClick={() => setUserRating(num)}
                   onMouseEnter={() => setHoverRating(num)}
                   onMouseLeave={() => setHoverRating(0)}
-                  className="transition-transform hover:scale-110">
-                  <Star size={28}
+                  className="p-1.5 transition-transform hover:scale-110 active:scale-95">
+                  <Star size={26}
                     style={(hoverRating || userRating) >= num
                       ? { fill: '#F5C518', color: '#F5C518' }
                       : { color: '#d1d5db' }} />
