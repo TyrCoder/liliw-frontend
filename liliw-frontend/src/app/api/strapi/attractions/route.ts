@@ -51,24 +51,28 @@ function transform(item: any, type: 'heritage' | 'spot' | 'dining') {
 }
 
 export async function GET() {
-  const [hRes, sRes, dRes] = await Promise.allSettled([
-    fetch(`${STRAPI}/api/heritage-sites?populate=*&pagination[pageSize]=100`, OPTS),
-    fetch(`${STRAPI}/api/tourist-spots?populate=*&pagination[pageSize]=100`, OPTS),
-    fetch(`${STRAPI}/api/dining-and-foods?populate=*&pagination[pageSize]=100`, OPTS),
-  ]);
+  try {
+    const [hRes, sRes, dRes] = await Promise.allSettled([
+      fetch(`${STRAPI}/api/heritage-sites?populate=*&pagination[pageSize]=100`, OPTS),
+      fetch(`${STRAPI}/api/tourist-spots?populate=*&pagination[pageSize]=100`, OPTS),
+      fetch(`${STRAPI}/api/dining-and-foods?populate=*&pagination[pageSize]=100`, OPTS),
+    ]);
 
-  const pick = async (r: PromiseSettledResult<Response>) =>
-    r.status === 'fulfilled' && r.value.ok ? (await r.value.json()).data ?? [] : [];
+    const pick = async (r: PromiseSettledResult<Response>) =>
+      r.status === 'fulfilled' && r.value.ok ? (await r.value.json()).data ?? [] : [];
 
-  const [heritage, spots, dining] = await Promise.all([pick(hRes), pick(sRes), pick(dRes)]);
+    const [heritage, spots, dining] = await Promise.all([pick(hRes), pick(sRes), pick(dRes)]);
 
-  const data = [
-    ...heritage.map((h: any) => transform(h, 'heritage')).filter(Boolean),
-    ...spots.map((s: any)   => transform(s, 'spot')).filter(Boolean),
-    ...dining.map((d: any)  => transform(d, 'dining')).filter(Boolean),
-  ];
+    const data = [
+      ...heritage.map((h: any) => transform(h, 'heritage')).filter(Boolean),
+      ...spots.map((s: any)   => transform(s, 'spot')).filter(Boolean),
+      ...dining.map((d: any)  => transform(d, 'dining')).filter(Boolean),
+    ];
 
-  return NextResponse.json({ data }, {
-    headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=60' },
-  });
+    return NextResponse.json({ data }, {
+      headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=60' },
+    });
+  } catch {
+    return NextResponse.json({ data: [] });
+  }
 }
