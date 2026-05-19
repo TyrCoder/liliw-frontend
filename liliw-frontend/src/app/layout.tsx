@@ -83,7 +83,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             {children}
             <Footer />
             <AIChat />
-            <Toaster richColors position="top-right" closeButton />
+            <Toaster richColors position="bottom-left" closeButton />
           </FavoritesProvider>
         </AuthProvider>
       </body>
