@@ -53,9 +53,9 @@ export async function POST(request: NextRequest) {
     }
 
     const sessionToken = createSession(user.email, computeRole(user));
-    const res = NextResponse.json({ jwt: data.jwt, user });
-    if (sessionToken) res.headers.set('Set-Cookie', sessionCookieHeader(sessionToken));
-    return res;
+    const response = NextResponse.json({ jwt: data.jwt, user });
+    if (sessionToken) response.headers.set('Set-Cookie', sessionCookieHeader(sessionToken));
+    return response;
   } catch {
     return NextResponse.json(
       { error: { message: 'Login failed. Please try again.' } },
