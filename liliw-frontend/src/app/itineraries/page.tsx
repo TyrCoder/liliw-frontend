@@ -334,20 +334,21 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
             ? getPhotoUrl(strapiAttr.photos[0])
             : null;
           return `
-            <div style="font-family:system-ui,sans-serif;min-width:220px;max-width:260px">
-              ${photo ? `<img src="${photo}" alt="${stop.place}" style="width:100%;height:110px;object-fit:cover;border-radius:8px 8px 0 0;display:block;margin:-12px -12px 10px -12px;width:calc(100% + 24px);" />` : ''}
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-                <span style="background:#0B3D91;color:#F5C518;font-weight:700;font-size:11px;
-                  padding:2px 8px;border-radius:20px">Stop ${num}</span>
-                ${stop.time ? `<span style="color:#9CA3AF;font-size:11px">${stop.time}</span>` : ''}
+            <div style="font-family:system-ui,sans-serif;min-width:220px;max-width:260px;background:#fff;border-radius:10px;overflow:hidden;">
+              ${photo ? `<img src="${photo}" alt="${stop.place}" style="width:100%;height:110px;object-fit:cover;display:block;" />` : ''}
+              <div style="padding:12px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                  <span style="background:#0B3D91;color:#F5C518;font-weight:700;font-size:11px;padding:2px 8px;border-radius:20px">Stop ${num}</span>
+                  ${stop.time ? `<span style="color:#9CA3AF;font-size:11px">${stop.time}</span>` : ''}
+                </div>
+                <p style="font-weight:700;font-size:14px;color:#1A1A2E;margin:0 0 4px">${stop.place}</p>
+                ${desc ? `<p style="font-size:12px;color:#4B5563;margin:0 0 6px;line-height:1.5">${desc}${desc.length >= 120 ? '…' : ''}</p>` : ''}
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  ${stop.duration ? `<span style="font-size:11px;color:#1565C0;background:rgba(21,101,192,0.08);padding:2px 8px;border-radius:20px">⏱ ${stop.duration}</span>` : ''}
+                  ${stop.dayNum ? `<span style="font-size:11px;color:#6B7280;background:#F3F4F6;padding:2px 8px;border-radius:20px">Day ${stop.dayNum}</span>` : ''}
+                </div>
+                ${stop.tip ? `<p style="font-size:11px;color:#6B7280;margin:6px 0 0;font-style:italic">💡 ${stop.tip}</p>` : ''}
               </div>
-              <p style="font-weight:700;font-size:14px;color:#1A1A2E;margin:0 0 4px">${stop.place}</p>
-              ${desc ? `<p style="font-size:12px;color:#4B5563;margin:0 0 6px;line-height:1.5">${desc}${desc.length >= 120 ? '…' : ''}</p>` : ''}
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                ${stop.duration ? `<span style="font-size:11px;color:#1565C0;background:rgba(21,101,192,0.08);padding:2px 8px;border-radius:20px">⏱ ${stop.duration}</span>` : ''}
-                ${stop.dayNum ? `<span style="font-size:11px;color:#6B7280;background:#F3F4F6;padding:2px 8px;border-radius:20px">Day ${stop.dayNum}</span>` : ''}
-              </div>
-              ${stop.tip ? `<p style="font-size:11px;color:#6B7280;margin:6px 0 0;font-style:italic">💡 ${stop.tip}</p>` : ''}
             </div>
           `;
         };
