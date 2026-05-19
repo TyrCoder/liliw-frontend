@@ -644,13 +644,26 @@ export default function AdminDashboard() {
                     const timeAgo = secsAgo < 60 ? 'just now' : secsAgo < 3600 ? `${Math.floor(secsAgo / 60)}m ago` : `${Math.floor(secsAgo / 3600)}h ago`;
                     const DeviceIcon = v.device === 'mobile' ? Smartphone : v.device === 'tablet' ? Tablet : Monitor;
                     const deviceColor = v.device === 'mobile' ? '#00BFB3' : v.device === 'tablet' ? '#8B5CF6' : '#3B82F6';
+                    const staticLabels: Record<string, string> = {
+                      '/': 'Home', '/attractions': 'Attractions', '/map': 'Map',
+                      '/about': 'About', '/heritage': 'Heritage Sites', '/dining': 'Dining',
+                      '/itineraries': 'Itineraries', '/news': 'News & Events',
+                      '/community': 'Community', '/immersive': 'Immersive Tour',
+                      '/stories': 'Stories', '/admin': 'Admin Dashboard',
+                      '/lbo': 'LBO Dashboard', '/login': 'Login', '/register': 'Register',
+                    };
+                    const attrMatch = v.page?.match(/^\/attractions\/(.+)$/);
+                    const attrName = attrMatch
+                      ? attractions.find(a => a.id === attrMatch[1])?.attributes?.name
+                      : null;
+                    const pageLabel = attrName || staticLabels[v.page] || v.page || '/';
                     return (
                       <div key={v.session_id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-100">
                         <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${deviceColor}18`, color: deviceColor }}>
                           <DeviceIcon className="w-3.5 h-3.5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-800 truncate">{v.page || '/'}</p>
+                          <p className="text-sm font-semibold text-gray-800 truncate">{pageLabel}</p>
                           <p className="text-xs text-gray-400 capitalize">{v.device}</p>
                         </div>
                         <span className="text-xs text-gray-400 shrink-0 font-medium">{timeAgo}</span>
