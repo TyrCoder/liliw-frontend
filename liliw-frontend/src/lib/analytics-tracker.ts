@@ -20,7 +20,7 @@ export function trackPageView(path: string): void {
   if (typeof window === 'undefined') return;
   const sessionId = getOrCreateSessionId();
   const device    = getDeviceType();
-  fetch('/api/analytics/track', {
+  fetch('/api/ping', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, sessionId, device }),
