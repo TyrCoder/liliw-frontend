@@ -118,7 +118,7 @@ function ArtFormModal({ art, onClose }: { art: any; onClose: () => void }) {
                 <motion.img key={current} src={photos[current]} alt={art.name}
                   initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
                   transition={{ duration: 0.35 }}
-                  className="absolute inset-0 w-full h-full object-cover" />
+                  className="absolute inset-0 w-full h-full object-contain" />
               </AnimatePresence>
               {photos.length > 1 && (
                 <>
