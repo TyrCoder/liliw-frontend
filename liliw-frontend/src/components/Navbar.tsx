@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck, ChevronDown, Search, Bell, MessageSquare, Users, Building2, MapPin } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck, ChevronDown, Search, Bell, MessageSquare, Users, Building2, MapPin, Newspaper, CalendarDays } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
@@ -10,10 +10,10 @@ import SmartSearchModal from '@/components/SmartSearchModal';
 
 type NotifItem = {
   id: string;
-  type: 'submission' | 'participation' | 'lbo_application' | 'attraction_request';
+  type: 'submission' | 'participation' | 'lbo_application' | 'attraction_request' | 'event' | 'news';
   title: string;
   subtitle: string;
-  status: string;
+  status?: string;
   createdAt: string;
 };
 
@@ -28,10 +28,12 @@ function timeAgo(dateStr: string) {
 }
 
 function notifIcon(type: NotifItem['type']) {
-  if (type === 'submission')        return <MessageSquare className="w-3.5 h-3.5" />;
-  if (type === 'participation')     return <Users className="w-3.5 h-3.5" />;
-  if (type === 'lbo_application')   return <Building2 className="w-3.5 h-3.5" />;
+  if (type === 'submission')         return <MessageSquare className="w-3.5 h-3.5" />;
+  if (type === 'participation')      return <Users className="w-3.5 h-3.5" />;
+  if (type === 'lbo_application')    return <Building2 className="w-3.5 h-3.5" />;
   if (type === 'attraction_request') return <MapPin className="w-3.5 h-3.5" />;
+  if (type === 'event')              return <CalendarDays className="w-3.5 h-3.5" />;
+  if (type === 'news')               return <Newspaper className="w-3.5 h-3.5" />;
 }
 
 function notifColor(type: NotifItem['type']) {
@@ -39,6 +41,8 @@ function notifColor(type: NotifItem['type']) {
   if (type === 'participation')      return { bg: '#F0FDF4', color: '#166534' };
   if (type === 'lbo_application')    return { bg: '#FFF7ED', color: '#C2410C' };
   if (type === 'attraction_request') return { bg: '#F5F3FF', color: '#6D28D9' };
+  if (type === 'event')              return { bg: '#FEF3C7', color: '#B45309' };
+  if (type === 'news')               return { bg: '#F0FDF4', color: '#065F46' };
   return { bg: '#F1F5F9', color: '#475569' };
 }
 
@@ -83,10 +87,11 @@ export default function Navbar() {
   }, [isLocal, token]);
 
   useEffect(() => {
-    if (!isStaff || !token) return;
+    if (!user || !token) return;
     const stored = typeof window !== 'undefined' ? localStorage.getItem('liliw-notif-lastseen') : null;
     const lastSeen = stored ? Number(stored) : 0;
-    fetch('/api/admin/notifications', { headers: { Authorization: `Bearer ${token}` } })
+    const endpoint = isStaff ? '/api/admin/notifications' : '/api/notifications';
+    fetch(endpoint, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d?.data) {
@@ -95,7 +100,7 @@ export default function Navbar() {
         }
       })
       .catch(() => {});
-  }, [isStaff, token]);
+  }, [user, isStaff, token]);
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu  = () => { setIsOpen(false); setExploreOpen(false); };
@@ -231,8 +236,8 @@ export default function Navbar() {
                 </Link>
               </motion.div>
 
-              {/* Notification bell — staff only */}
-              {user && isStaff && (
+              {/* Notification bell — all logged-in users */}
+              {user && (
                 <div className="relative">
                   <button onClick={() => notifOpen ? setNotifOpen(false) : openNotif()}
                     className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-blue-50 transition"
@@ -257,16 +262,20 @@ export default function Navbar() {
                           className="absolute right-0 top-full mt-2 w-80 rounded-2xl overflow-hidden z-20"
                           style={dropdownStyle}>
                           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                            <p className="text-sm font-bold text-gray-900" style={{ fontFamily: HL }}>Notifications</p>
+                            <p className="text-sm font-bold text-gray-900" style={{ fontFamily: HL }}>
+                              {isStaff ? 'Notifications' : 'Latest Updates'}
+                            </p>
                             <span className="text-xs text-gray-400">{notifItems.length} recent</span>
                           </div>
                           <div className="max-h-80 overflow-y-auto">
                             {notifItems.length === 0 ? (
-                              <p className="text-sm text-gray-400 text-center py-8">No recent activity</p>
+                              <p className="text-sm text-gray-400 text-center py-8">
+                                {isStaff ? 'No recent activity' : 'No updates yet'}
+                              </p>
                             ) : notifItems.map(n => {
                               const c = notifColor(n.type);
                               return (
-                                <a key={n.id} href="/admin" onClick={() => setNotifOpen(false)}
+                                <a key={n.id} href={isStaff ? '/admin' : (n.type === 'event' ? '/news' : '/news')} onClick={() => setNotifOpen(false)}
                                   className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50 last:border-0">
                                   <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
                                     style={{ backgroundColor: c.bg, color: c.color }}>
@@ -277,21 +286,23 @@ export default function Navbar() {
                                     {n.subtitle && <p className="text-xs text-gray-400 truncate capitalize">{n.subtitle}</p>}
                                     <p className="text-[11px] text-gray-400 mt-0.5">{timeAgo(n.createdAt)}</p>
                                   </div>
-                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize shrink-0 mt-0.5"
-                                    style={{
-                                      backgroundColor: n.status === 'new' || n.status === 'pending' ? '#FEF3C7' : n.status === 'approved' ? '#D1FAE5' : n.status === 'rejected' ? '#FEE2E2' : '#E0E7FF',
-                                      color: n.status === 'new' || n.status === 'pending' ? '#92400E' : n.status === 'approved' ? '#065F46' : n.status === 'rejected' ? '#991B1B' : '#3730A3',
-                                    }}>
-                                    {n.status}
-                                  </span>
+                                  {n.status && (
+                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize shrink-0 mt-0.5"
+                                      style={{
+                                        backgroundColor: n.status === 'new' || n.status === 'pending' ? '#FEF3C7' : n.status === 'approved' ? '#D1FAE5' : n.status === 'rejected' ? '#FEE2E2' : '#E0E7FF',
+                                        color: n.status === 'new' || n.status === 'pending' ? '#92400E' : n.status === 'approved' ? '#065F46' : n.status === 'rejected' ? '#991B1B' : '#3730A3',
+                                      }}>
+                                      {n.status}
+                                    </span>
+                                  )}
                                 </a>
                               );
                             })}
                           </div>
                           <div className="px-4 py-2.5 border-t border-gray-100">
-                            <a href="/admin" onClick={() => setNotifOpen(false)}
+                            <a href={isStaff ? '/admin' : '/news'} onClick={() => setNotifOpen(false)}
                               className="text-xs font-semibold hover:underline" style={{ color: '#1565C0' }}>
-                              View all in dashboard →
+                              {isStaff ? 'View all in dashboard →' : 'See all news & events →'}
                             </a>
                           </div>
                         </motion.div>
