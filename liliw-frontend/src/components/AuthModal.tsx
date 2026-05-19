@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Eye, EyeOff, Loader2, ArrowLeft, Mail, CheckCircle,
-  ShieldCheck, RefreshCw, User, Lock,
+  ShieldCheck, RefreshCw, User, Lock, AtSign,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -107,9 +107,10 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
   const [identifier, setIdentifier] = useState('');
   const [password,   setPassword]   = useState('');
 
-  const [fullName, setFullName] = useState('');
-  const [email,    setEmail]    = useState('');
-  const [regPw,    setRegPw]    = useState('');
+  const [fullName,  setFullName]  = useState('');
+  const [username,  setUsername]  = useState('');
+  const [email,     setEmail]     = useState('');
+  const [regPw,     setRegPw]     = useState('');
 
   const [captchaCode,  setCaptchaCode]  = useState(generateCode);
   const [captchaInput, setCaptchaInput] = useState('');
@@ -164,8 +165,9 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault(); setError('');
-    if (!captchaOk)       { setError('Please complete the security check'); return; }
-    if (regPw.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (!captchaOk)        { setError('Please complete the security check'); return; }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) { setError('Username must be 3–20 characters: letters, numbers, underscores only'); return; }
+    if (regPw.length < 6)  { setError('Password must be at least 6 characters'); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/send-reg-otp', {
@@ -186,7 +188,7 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
     try {
       const res = await fetch('/api/auth/verify-reg-otp', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp: regOtp, fullName, password: regPw }),
+        body: JSON.stringify({ email, otp: regOtp, fullName, username, password: regPw }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Verification failed'); return; }
@@ -396,6 +398,16 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                     <input required value={fullName} onChange={e => setFullName(e.target.value)}
                       className={INPUT_CLS} placeholder="Juan dela Cruz" autoComplete="name" />
                   </div>
+                </div>
+                <div>
+                  <label className={LABEL_CLS}>Username</label>
+                  <div className="relative">
+                    <InputIcon icon={AtSign} />
+                    <input required value={username} onChange={e => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20))}
+                      className={INPUT_CLS} placeholder="juandelacruz123" autoComplete="username"
+                      minLength={3} maxLength={20} />
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-1">3–20 chars · letters, numbers, underscores</p>
                 </div>
                 <div>
                   <label className={LABEL_CLS}>Email</label>
