@@ -9,64 +9,148 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #0B3D91 0%, #1565C0 100%);
+      background: linear-gradient(160deg, #0B3D91 0%, #1565C0 50%, #0d47a1 100%);
       min-height: 100vh;
-      display: flex; align-items: center; justify-content: center; padding: 20px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
     }
     .card {
-      max-width: 420px; width: 100%;
-      background: white; border-radius: 20px; padding: 48px 32px;
-      text-align: center; box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+      max-width: 480px; width: 100%;
+      background: white; border-radius: 24px; padding: 36px 28px 28px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+      overflow: hidden;
     }
-    .icon { font-size: 64px; margin-bottom: 20px; animation: pulse 2s ease-in-out infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-    h1 { color: #0B3D91; font-size: 26px; font-weight: 700; margin-bottom: 12px; }
-    .subtitle { color: #64748b; font-size: 15px; line-height: 1.7; margin-bottom: 24px; }
-    .cached {
-      background: rgba(11,61,145,0.06); border-left: 3px solid #F5C518;
-      border-radius: 8px; padding: 14px 16px; margin-bottom: 28px; text-align: left;
+    .icon-wrap {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px; font-size: 36px;
     }
-    .cached strong { color: #0B3D91; font-size: 13px; display: block; margin-bottom: 8px; }
-    .cached ul { list-style: none; }
-    .cached li { color: #374151; font-size: 13px; padding: 2px 0; }
-    .cached li::before { content: '✓ '; color: #F5C518; font-weight: bold; }
+    h1 {
+      color: #0B3D91; font-size: 24px; font-weight: 800;
+      text-align: center; margin-bottom: 8px; letter-spacing: -0.3px;
+    }
+    .subtitle {
+      color: #64748b; font-size: 14px; line-height: 1.7;
+      text-align: center; margin-bottom: 24px;
+    }
+
+    /* Pages section */
+    .section-label {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.18em;
+      text-transform: uppercase; color: #0B3D91;
+      margin-bottom: 10px;
+    }
+    .pages-box {
+      background: #F8FAFF; border-radius: 14px; padding: 14px 16px;
+      border-left: 3px solid #F5C518; margin-bottom: 16px;
+    }
+    .pages-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px;
+    }
+    .page-link {
+      display: flex; align-items: center; gap: 6px;
+      color: #1e3a5f; font-size: 13px; font-weight: 500;
+      text-decoration: none; padding: 5px 6px; border-radius: 8px;
+      transition: background 0.15s;
+    }
+    .page-link:hover { background: rgba(11,61,145,0.07); }
+    .page-link::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: #F5C518; flex-shrink: 0;
+    }
+
+    /* Network-only */
+    .net-box {
+      background: #FFF8F0; border-radius: 14px; padding: 12px 16px;
+      border-left: 3px solid #F97316; margin-bottom: 24px;
+    }
+    .net-box .section-label { color: #C2410C; }
+    .net-item {
+      display: flex; align-items: center; gap: 6px;
+      color: #9CA3AF; font-size: 13px; padding: 4px 6px;
+    }
+    .net-item::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: #FCA5A5; flex-shrink: 0;
+    }
+
+    /* Buttons */
     .actions { display: flex; gap: 10px; flex-direction: column; }
     .btn-primary {
-      padding: 13px 24px; border-radius: 12px; font-size: 15px; font-weight: 700;
+      padding: 14px 24px; border-radius: 14px; font-size: 15px; font-weight: 700;
       text-decoration: none; background: #0B3D91; color: #F5C518;
-      display: block; transition: opacity .2s;
+      display: block; text-align: center; transition: opacity .2s;
+      letter-spacing: 0.01em;
     }
     .btn-primary:hover { opacity: 0.9; }
     .btn-secondary {
-      padding: 13px 24px; border-radius: 12px; font-size: 15px; font-weight: 600;
+      padding: 14px 24px; border-radius: 14px; font-size: 15px; font-weight: 600;
       border: 2px solid #0B3D91; color: #0B3D91; background: transparent;
       cursor: pointer; font-family: inherit; transition: background .2s;
+      letter-spacing: 0.01em;
     }
     .btn-secondary:hover { background: rgba(11,61,145,0.06); }
-    .note { color: #9CA3AF; font-size: 12px; margin-top: 20px; line-height: 1.6; }
+    .note { color: #9CA3AF; font-size: 11px; margin-top: 16px; text-align: center; line-height: 1.6; }
+
+    /* Status dot animation */
+    .status-bar {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; margin-bottom: 20px;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #EF4444;
+      animation: blink 1.8s ease-in-out infinite;
+    }
+    .status-text { font-size: 12px; font-weight: 600; color: #EF4444; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="icon">📡</div>
+    <div class="icon-wrap">📡</div>
     <h1>You're Offline</h1>
-    <p class="subtitle">No internet connection detected. Pages you've already visited are still available below.</p>
-    <div class="cached">
-      <strong>Available offline:</strong>
-      <ul>
-        <li>Home</li>
-        <li>Stories</li>
-        <li>Attractions</li>
-        <li>News &amp; Events</li>
-        <li>Heritage &amp; Culture</li>
-        <li>FAQ</li>
-      </ul>
+    <div class="status-bar">
+      <div class="dot"></div>
+      <span class="status-text">No internet connection</span>
     </div>
+    <p class="subtitle">Pages you've already visited are cached and available below. Connect to the internet to access everything.</p>
+
+    <div class="pages-box">
+      <p class="section-label">Available Offline</p>
+      <div class="pages-grid">
+        <a href="/" class="page-link">Home</a>
+        <a href="/about" class="page-link">About Liliw</a>
+        <a href="/attractions" class="page-link">Attractions</a>
+        <a href="/tourist-spots" class="page-link">Tourist Spots</a>
+        <a href="/stories" class="page-link">Stories</a>
+        <a href="/heritage" class="page-link">Heritage Sites</a>
+        <a href="/culture" class="page-link">Culture</a>
+        <a href="/arts" class="page-link">Arts &amp; Crafts</a>
+        <a href="/news" class="page-link">News &amp; Events</a>
+        <a href="/gallery" class="page-link">Photo Gallery</a>
+        <a href="/dining" class="page-link">Dining</a>
+        <a href="/business" class="page-link">Business Directory</a>
+        <a href="/itineraries" class="page-link">Itineraries</a>
+        <a href="/community" class="page-link">Community</a>
+        <a href="/lbo" class="page-link">Tourism Desk</a>
+        <a href="/participate" class="page-link">Participate</a>
+        <a href="/contact" class="page-link">Contact Us</a>
+        <a href="/faq" class="page-link">FAQ</a>
+      </div>
+    </div>
+
+    <div class="net-box">
+      <p class="section-label">Requires Internet</p>
+      <div class="net-item">Interactive Map</div>
+      <div class="net-item">Virtual Tours &amp; Immersive</div>
+    </div>
+
     <div class="actions">
       <a href="/" class="btn-primary">Go to Home</a>
       <button class="btn-secondary" onclick="window.location.reload()">Try Again</button>
     </div>
-    <p class="note">Map and virtual tours require an active internet connection.</p>
+    <p class="note">Your saved favorites and itineraries are stored locally and accessible offline.</p>
   </div>
 </body>
 </html>
