@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
+    // ── Page views from Strapi ────────────────────────────────────────────
     const res = await fetch(
       `${STRAPI}/api/page-views?pagination[limit]=500&sort=createdAt:desc`,
       { headers: { Authorization: `Bearer ${TOKEN}` }, next: { revalidate: 0 } },
@@ -87,16 +88,31 @@ export async function GET() {
         .sort((a, b) => b.views - a.views);
     }
 
-    const sessions = Array.from(sessionStore.values());
-    const uniqueVisitors = sessions.length;
-    const bounceCount = sessions.filter(s => s.pageViews <= 1).length;
-    const bounceRate = uniqueVisitors > 0 ? `${Math.round((bounceCount / uniqueVisitors) * 100)}%` : '—';
+    // ── Unique visitors from Supabase active_sessions (persistent) ────────
+    const { data: sessionRows, error: sessionErr } = await supabaseServer
+      .from('active_sessions')
+      .select('session_id, device', { count: 'exact' });
 
-    const total = deviceCounts.desktop + deviceCounts.mobile + deviceCounts.tablet || 1;
+    const rows = sessionErr ? [] : (sessionRows ?? []);
+    const uniqueVisitors = rows.length;
+
+    // Bounce rate: sessions with only 1 page view (use in-memory fallback if available)
+    const inMemSessions = Array.from(sessionStore.values());
+    const bounceCount   = inMemSessions.filter(s => s.pageViews <= 1).length;
+    const bounceBase    = inMemSessions.length || uniqueVisitors;
+    const bounceRate    = bounceBase > 0 ? `${Math.round((bounceCount / bounceBase) * 100)}%` : '—';
+
+    // Device breakdown from Supabase rows
+    const dc = { desktop: 0, mobile: 0, tablet: 0 };
+    rows.forEach((r: any) => {
+      const d = r.device as Device;
+      if (d in dc) dc[d]++;
+    });
+    const total = dc.desktop + dc.mobile + dc.tablet || 1;
     const devices = {
-      desktop: { count: deviceCounts.desktop, pct: Math.round((deviceCounts.desktop / total) * 100) },
-      mobile:  { count: deviceCounts.mobile,  pct: Math.round((deviceCounts.mobile  / total) * 100) },
-      tablet:  { count: deviceCounts.tablet,  pct: Math.round((deviceCounts.tablet  / total) * 100) },
+      desktop: { count: dc.desktop, pct: Math.round((dc.desktop / total) * 100) },
+      mobile:  { count: dc.mobile,  pct: Math.round((dc.mobile  / total) * 100) },
+      tablet:  { count: dc.tablet,  pct: Math.round((dc.tablet  / total) * 100) },
     };
 
     return NextResponse.json({ pageViews: totalViews, uniqueVisitors, bounceRate, avgSessionTime: '—', topPages, devices });
