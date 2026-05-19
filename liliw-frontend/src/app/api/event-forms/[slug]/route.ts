@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 
 // GET — get active form for an event (public)
-export async function GET(_req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+
   const { data, error } = await supabaseServer
     .from('event_forms')
     .select('id, event_slug, event_title, fields')
-    .eq('event_slug', params.slug)
+    .eq('event_slug', slug)
     .eq('is_active', true)
     .single();
 
@@ -15,7 +17,8 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
 }
 
 // POST — submit a response (public)
-export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const { form_id, respondent_name, respondent_email, answers } = await req.json();
 
   if (!form_id || !answers || typeof answers !== 'object') {
@@ -27,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     .from('event_forms')
     .select('id, fields')
     .eq('id', form_id)
-    .eq('event_slug', params.slug)
+    .eq('event_slug', slug)
     .eq('is_active', true)
     .single();
 
@@ -45,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     .from('event_form_responses')
     .insert({
       form_id,
-      event_slug: params.slug,
+      event_slug: slug,
       respondent_name: respondent_name?.trim() || null,
       respondent_email: respondent_email?.trim() || null,
       answers,
