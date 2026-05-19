@@ -412,14 +412,7 @@ export default function NewsPage() {
 
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-400" style={{ fontFamily: BL }}>{item.source}</span>
-                          {item.isEvent ? (
-                            <Link
-                              href={`/community/events/${item.slug}`}
-                              className="inline-flex items-center gap-1 font-semibold text-sm transition hover:underline"
-                              style={{ color: '#1565C0', fontFamily: BL }}>
-                              Read More →
-                            </Link>
-                          ) : showToggle ? (
+                          {(showToggle || item.isEvent) && item.fullText.length > 200 ? (
                             <button
                               onClick={() => setExpandedIdx(isExpanded ? null : idx)}
                               className="inline-flex items-center gap-1 font-semibold text-sm transition hover:underline"
