@@ -1,17 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { verifySession, SESSION_COOKIE } from '@/lib/session';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
-async function getUser(authHeader: string) {
-  const token = authHeader.replace('Bearer ', '');
+async function getUser(req: NextRequest): Promise<{ email: string; username?: string } | null> {
+  const cookie = req.cookies.get(SESSION_COOKIE)?.value;
+  const session = cookie ? verifySession(cookie) : null;
+  if (session?.email) return { email: session.email };
+
+  const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
   if (!token) return null;
-  const res = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-  return res.ok ? res.json() : null;
+  try {
+    const res = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(request: NextRequest) {
-  const user = await getUser(request.headers.get('Authorization') || '');
+  const user = await getUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data, error } = await supabaseServer
@@ -25,7 +35,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getUser(request.headers.get('Authorization') || '');
+  const user = await getUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: lboApp } = await supabaseServer

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { verifySession, SESSION_COOKIE } from '@/lib/session';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
@@ -10,19 +11,31 @@ const TYPE_PATH: Record<string, string> = {
   dining:   'dining-and-foods',
 };
 
-export async function GET(request: NextRequest) {
-  const auth = request.headers.get('Authorization') || '';
-  const token = auth.replace('Bearer ', '');
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+async function getEmail(req: NextRequest): Promise<string | null> {
+  const cookie = req.cookies.get(SESSION_COOKIE)?.value;
+  const session = cookie ? verifySession(cookie) : null;
+  if (session?.email) return session.email;
 
-  const meRes = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-  if (!meRes.ok) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-  const user = await meRes.json();
+  const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
+  if (!token) return null;
+  try {
+    const res = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return user.email ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function GET(request: NextRequest) {
+  const email = await getEmail(request);
+  if (!email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: app } = await supabaseServer
     .from('lbo_applications')
     .select('strapi_attraction_id, strapi_attraction_type')
-    .eq('email', user.email)
+    .eq('email', email)
     .eq('status', 'approved')
     .single();
 
