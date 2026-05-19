@@ -639,7 +639,10 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {liveVisitors.map((v) => {
+                  {liveVisitors.filter(v => {
+                    const INTERNAL = ['/admin', '/lbo', '/login', '/register'];
+                    return !INTERNAL.some(prefix => v.page === prefix || v.page?.startsWith(prefix + '/'));
+                  }).map((v) => {
                     const secsAgo = Math.floor((Date.now() - new Date(v.last_seen).getTime()) / 1000);
                     const timeAgo = secsAgo < 60 ? 'just now' : secsAgo < 3600 ? `${Math.floor(secsAgo / 60)}m ago` : `${Math.floor(secsAgo / 3600)}h ago`;
                     const DeviceIcon = v.device === 'mobile' ? Smartphone : v.device === 'tablet' ? Tablet : Monitor;
@@ -648,14 +651,10 @@ export default function AdminDashboard() {
                       '/': 'Home', '/attractions': 'Attractions', '/map': 'Map',
                       '/about': 'About', '/heritage': 'Heritage Sites', '/dining': 'Dining',
                       '/itineraries': 'Itineraries', '/news': 'News & Events',
-                      '/community': 'Community', '/immersive': 'Immersive Tour',
-                      '/stories': 'Stories', '/admin': 'Admin Dashboard',
-                      '/lbo': 'LBO Dashboard', '/login': 'Login', '/register': 'Register',
+                      '/community': 'Community', '/immersive': 'Immersive Tour', '/stories': 'Stories',
                     };
                     const attrMatch = v.page?.match(/^\/attractions\/(.+)$/);
-                    const attrName = attrMatch
-                      ? attractions.find(a => a.id === attrMatch[1])?.attributes?.name
-                      : null;
+                    const attrName = attrMatch ? attractions.find(a => a.id === attrMatch[1])?.attributes?.name : null;
                     const pageLabel = attrName || staticLabels[v.page] || v.page || '/';
                     return (
                       <div key={v.session_id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-100">
@@ -721,25 +720,39 @@ export default function AdminDashboard() {
             )}
 
             {/* Top pages */}
-            {analytics?.topPages && analytics.topPages.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-                <h2 className="text-base font-bold text-gray-900 mb-5">Top Pages</h2>
-                <div className="space-y-3">
-                  {analytics.topPages.slice(0, 8).map(({ path, views }) => {
-                    const max = analytics.topPages[0]?.views || 1;
-                    return (
+            {analytics?.topPages && analytics.topPages.length > 0 && (() => {
+              const INTERNAL = ['/admin', '/lbo', '/login', '/register'];
+              const isInternal = (p: string) => INTERNAL.some(prefix => p === prefix || p.startsWith(prefix + '/'));
+              const staticLabels: Record<string, string> = {
+                '/': 'Home', '/attractions': 'Attractions', '/map': 'Map',
+                '/about': 'About', '/heritage': 'Heritage Sites', '/dining': 'Dining',
+                '/itineraries': 'Itineraries', '/news': 'News & Events',
+                '/community': 'Community', '/immersive': 'Immersive Tour', '/stories': 'Stories',
+              };
+              const getLabel = (p: string) => {
+                const attrMatch = p?.match(/^\/attractions\/(.+)$/);
+                const attrName = attrMatch ? attractions.find(a => a.id === attrMatch[1])?.attributes?.name : null;
+                return attrName || staticLabels[p] || p || '/';
+              };
+              const publicPages = analytics.topPages.filter(({ path }) => !isInternal(path));
+              const max = publicPages[0]?.views || 1;
+              return publicPages.length > 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                  <h2 className="text-base font-bold text-gray-900 mb-5">Top Pages</h2>
+                  <div className="space-y-3">
+                    {publicPages.slice(0, 8).map(({ path, views }) => (
                       <div key={path} className="flex items-center gap-3">
-                        <span className="text-sm text-gray-600 w-40 shrink-0 truncate">{path || '/'}</span>
+                        <span className="text-sm text-gray-600 w-40 shrink-0 truncate">{getLabel(path)}</span>
                         <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${(views / max) * 100}%`, backgroundColor: '#00BFB3' }} />
                         </div>
                         <span className="text-sm font-semibold text-gray-700 w-12 text-right">{views}</span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : null;
+            })()}
           </div>
         )}
 
