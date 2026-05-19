@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Calendar, Bell, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Bell, X, MapPin } from 'lucide-react';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
@@ -65,6 +65,7 @@ interface NewsItem {
   source: string;
   isEvent: boolean;
   slug: string;
+  photos: string[];
 }
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -207,11 +208,131 @@ function EventCalendar({
   );
 }
 
+const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+
+function extractPhotos(raw: any): string[] {
+  const lists = [
+    raw?.photos?.data ?? raw?.photos,
+    raw?.cover_image?.data ? [raw.cover_image.data] : raw?.cover_image ? [raw.cover_image] : [],
+  ];
+  const urls: string[] = [];
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    for (const p of list) {
+      const url = p?.attributes?.url ?? p?.url;
+      if (url) urls.push(url.startsWith('http') ? url : `${STRAPI_BASE}${url}`);
+    }
+  }
+  return [...new Set(urls)];
+}
+
+function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => void }) {
+  const [current, setCurrent] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const catStyle = CATEGORY_STYLE[item.category] || CATEGORY_STYLE.other;
+
+  useEffect(() => {
+    if (item.photos.length < 2) return;
+    timerRef.current = setInterval(() => setCurrent(c => (c + 1) % item.photos.length), 3500);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [item.photos.length]);
+
+  const go = (dir: number) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setCurrent(c => (c + dir + item.photos.length) % item.photos.length);
+    if (item.photos.length > 1)
+      timerRef.current = setInterval(() => setCurrent(c => (c + 1) % item.photos.length), 3500);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92, y: 24 }}
+        transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+        className="bg-white rounded-2xl overflow-hidden max-w-2xl w-full shadow-2xl max-h-[90vh] flex flex-col">
+
+        {/* Carousel / header */}
+        {item.photos.length > 0 ? (
+          <div className="relative h-64 shrink-0 overflow-hidden bg-gray-900">
+            <AnimatePresence mode="wait">
+              <motion.img key={current} src={item.photos[current]} alt={item.title}
+                initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
+                transition={{ duration: 0.35 }}
+                className="absolute inset-0 w-full h-full object-contain" />
+            </AnimatePresence>
+            {item.photos.length > 1 && (
+              <>
+                <button onClick={() => go(-1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button onClick={() => go(1)} className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {item.photos.map((_, i) => (
+                    <button key={i} onClick={() => { if (timerRef.current) clearInterval(timerRef.current); setCurrent(i); }}
+                      className="rounded-full transition-all"
+                      style={{ width: i === current ? 20 : 8, height: 8, backgroundColor: i === current ? '#F5C518' : 'rgba(255,255,255,0.5)' }} />
+                  ))}
+                </div>
+              </>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+            <button onClick={onClose}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="relative h-16 shrink-0" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
+            <button onClick={onClose}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="p-6 overflow-y-auto">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="px-3 py-1 rounded-full text-xs font-bold capitalize"
+              style={{ backgroundColor: catStyle.bg, color: catStyle.text, fontFamily: HL }}>
+              {item.category.replace('_', ' ')}
+            </span>
+            {item.isEvent && (
+              <span className="px-2 py-1 rounded-full text-xs font-bold"
+                style={{ backgroundColor: 'rgba(249,115,22,0.1)', color: '#C2410C', fontFamily: HL }}>
+                Event
+              </span>
+            )}
+            <span className="ml-auto flex items-center gap-1.5 text-xs text-gray-400" style={{ fontFamily: BL }}>
+              <Calendar className="w-3.5 h-3.5" />
+              {item.date ? new Date(item.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
+            </span>
+          </div>
+          <h3 className="text-xl font-bold mb-3" style={{ color: '#1A1A2E', fontFamily: HL }}>{item.title}</h3>
+          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line" style={{ fontFamily: BL }}>
+            {item.fullText || item.excerpt}
+          </p>
+          {item.source && (
+            <div className="flex items-center gap-1.5 mt-4 text-xs text-gray-400" style={{ fontFamily: BL }}>
+              <MapPin className="w-3.5 h-3.5 shrink-0" />{item.source}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function NewsPage() {
   const [news, setNews]       = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [selectedItem, setSelectedItem] = useState<NewsItem | null>(null);
 
   useEffect(() => {
     fetch('/api/strapi/news-events')
@@ -233,6 +354,7 @@ export default function NewsPage() {
             source: 'Liliw Tourism Office',
             isEvent: false,
             slug: a.slug || a.documentId || String(item.id),
+            photos: extractPhotos(a),
           });
         });
         combined?.events?.data?.forEach((item: any) => {
@@ -249,6 +371,7 @@ export default function NewsPage() {
             source: a.venue || 'Liliw',
             isEvent: true,
             slug: a.slug || a.documentId || String(item.id),
+            photos: extractPhotos(a),
           });
         });
         if (items.length > 0) items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -363,67 +486,51 @@ export default function NewsPage() {
                 <div className="space-y-4">
                   {displayed.map((item, idx) => {
                     const catStyle = CATEGORY_STYLE[item.category] || CATEGORY_STYLE.other;
-                    const isExpanded = expandedIdx === idx;
-                    const showToggle = !item.isEvent && item.fullText.length > 200;
                     return (
                       <motion.div key={`${item.dateKey}-${idx}`}
                         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
-                        className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all"
+                        onClick={() => setSelectedItem(item)}
+                        className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
                         style={{ borderLeft: '4px solid #0B3D91' }}>
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Bell className="w-4 h-4 shrink-0" style={{ color: '#0B3D91' }} />
-                            <span className="px-3 py-1 rounded-full text-xs font-bold capitalize"
-                              style={{ backgroundColor: catStyle.bg, color: catStyle.text, fontFamily: HL }}>
-                              {item.category.replace('_', ' ')}
-                            </span>
-                            {item.isEvent && (
-                              <span className="px-2 py-1 rounded-full text-xs font-bold"
-                                style={{ backgroundColor: 'rgba(249,115,22,0.1)', color: '#C2410C', fontFamily: HL }}>
-                                Event
+                        {/* Cover photo strip */}
+                        {item.photos.length > 0 && (
+                          <div className="h-40 overflow-hidden">
+                            <img src={item.photos[0]} alt={item.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          </div>
+                        )}
+                        <div className="p-6">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Bell className="w-4 h-4 shrink-0" style={{ color: '#0B3D91' }} />
+                              <span className="px-3 py-1 rounded-full text-xs font-bold capitalize"
+                                style={{ backgroundColor: catStyle.bg, color: catStyle.text, fontFamily: HL }}>
+                                {item.category.replace('_', ' ')}
                               </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-400 shrink-0" style={{ fontFamily: BL }}>
-                            <Calendar className="w-4 h-4" />
-                            {item.date
-                              ? new Date(item.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })
-                              : '—'}
-                          </div>
-                        </div>
-                        <h3 className="text-lg font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>{item.title}</h3>
-
-                        {/* Expandable content */}
-                        <AnimatePresence initial={false}>
-                          {isExpanded ? (
-                            <motion.p key="full"
-                              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                              className="text-gray-600 text-sm leading-relaxed mb-3" style={{ fontFamily: BL }}>
-                              {item.fullText || item.excerpt}
-                            </motion.p>
-                          ) : (
-                            <motion.p key="short"
-                              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                              className="text-gray-600 text-sm leading-relaxed mb-3" style={{ fontFamily: BL }}>
-                              {item.excerpt}{item.fullText.length > 200 && !isExpanded ? '...' : ''}
-                            </motion.p>
-                          )}
-                        </AnimatePresence>
-
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-400" style={{ fontFamily: BL }}>{item.source}</span>
-                          {(showToggle || item.isEvent) && item.fullText.length > 200 ? (
-                            <button
-                              onClick={() => setExpandedIdx(isExpanded ? null : idx)}
-                              className="inline-flex items-center gap-1 font-semibold text-sm transition hover:underline"
-                              style={{ color: '#1565C0', fontFamily: BL }}>
-                              {isExpanded ? (
-                                <><ChevronUp className="w-4 h-4" /> Show Less</>
-                              ) : (
-                                <><ChevronDown className="w-4 h-4" /> Read More</>
+                              {item.isEvent && (
+                                <span className="px-2 py-1 rounded-full text-xs font-bold"
+                                  style={{ backgroundColor: 'rgba(249,115,22,0.1)', color: '#C2410C', fontFamily: HL }}>
+                                  Event
+                                </span>
                               )}
-                            </button>
-                          ) : null}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-400 shrink-0" style={{ fontFamily: BL }}>
+                              <Calendar className="w-4 h-4" />
+                              {item.date
+                                ? new Date(item.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })
+                                : '—'}
+                            </div>
+                          </div>
+                          <h3 className="text-lg font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>{item.title}</h3>
+                          <p className="text-gray-600 text-sm leading-relaxed line-clamp-3" style={{ fontFamily: BL }}>
+                            {item.excerpt}{item.fullText.length > 200 ? '...' : ''}
+                          </p>
+                          <div className="flex items-center justify-between mt-3">
+                            <span className="text-xs text-gray-400" style={{ fontFamily: BL }}>{item.source}</span>
+                            <span className="text-xs font-semibold" style={{ color: '#1565C0', fontFamily: BL }}>
+                              View Details →
+                            </span>
+                          </div>
                         </div>
                       </motion.div>
                     );
@@ -455,6 +562,10 @@ export default function NewsPage() {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {selectedItem && <NewsDetailModal item={selectedItem} onClose={() => setSelectedItem(null)} />}
+      </AnimatePresence>
     </div>
   );
 }
