@@ -217,6 +217,14 @@ export default function AdminDashboard() {
   const [scrapeAllActive,    setScrapeAllActive]    = useState(false);
   const [scrapeAllProgress,  setScrapeAllProgress]  = useState({ current: 0, total: 0 });
 
+  // Submission / participation detail + reply state
+  const [subDetailModal,  setSubDetailModal]  = useState<{ type: 'submission' | 'participation'; data: Record<string, any> } | null>(null);
+  const [replyCompose,    setReplyCompose]    = useState(false);
+  const [replySubject,    setReplySubject]    = useState('');
+  const [replyMessage,    setReplyMessage]    = useState('');
+  const [sendingReply,    setSendingReply]    = useState(false);
+  const [replyResult,     setReplyResult]     = useState<{ ok: boolean; text: string } | null>(null);
+
   useEffect(() => {
     if (!loading && (!user || !isStaff)) router.replace('/');
   }, [user, loading, isStaff, router]);
@@ -478,6 +486,39 @@ export default function AdminDashboard() {
     setSavingAR(false);
   };
 
+  const handleSendReply = async () => {
+    if (!subDetailModal || !replyMessage.trim()) return;
+    setSendingReply(true);
+    setReplyResult(null);
+    try {
+      const res = await fetch('/api/admin/send-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          to:      subDetailModal.data.email,
+          name:    subDetailModal.data.name || subDetailModal.data.full_name,
+          subject: replySubject,
+          message: replyMessage,
+        }),
+      });
+      const d = await res.json();
+      setReplyResult(d.success
+        ? { ok: true,  text: `Email sent to ${subDetailModal.data.email}` }
+        : { ok: false, text: d.error || 'Failed to send email' });
+    } catch {
+      setReplyResult({ ok: false, text: 'Network error. Please try again.' });
+    }
+    setSendingReply(false);
+  };
+
+  const openSubDetail = (type: 'submission' | 'participation', data: Record<string, any>) => {
+    setSubDetailModal({ type, data });
+    setReplyCompose(false);
+    setReplyMessage('');
+    setReplyResult(null);
+    setReplySubject(`Re: Your ${data.type || type} inquiry to Liliw Tourism`);
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} /></div>;
   if (!user || !isStaff) return null;
 
@@ -516,38 +557,56 @@ export default function AdminDashboard() {
   const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
   const TABS = ALL_TABS.filter(t => t.roles.includes(myRole));
 
+  const roleBadge = isAdmin ? 'Admin' : isChatoOfficer ? 'Officer' : 'Editor';
+
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg,#0F1F3C 0%,#1a3a5c 100%)' }} className="py-8">
+      <div style={{ background: 'linear-gradient(135deg,#0F1F3C 0%,#1a3a5c 100%)' }} className="py-7">
         <div className="max-w-7xl mx-auto px-4">
-          <Link href="/" className="inline-flex items-center text-sm font-semibold mb-4 group" style={{ color: '#00BFB3' }}>
-            <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to Site
+          <Link href="/" className="inline-flex items-center text-xs font-semibold mb-5 group opacity-70 hover:opacity-100 transition" style={{ color: '#00BFB3' }}>
+            <ChevronLeft className="w-3.5 h-3.5 mr-1 group-hover:-translate-x-1 transition" /> Back to Site
           </Link>
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-white">{dashboardTitle}</h1>
-              <p className="text-gray-400 text-sm mt-1">Welcome back, {user.username} · {dashboardSub}</p>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'rgba(0,191,179,0.15)', border: '1px solid rgba(0,191,179,0.3)' }}>
+                <Shield className="w-6 h-6" style={{ color: '#00BFB3' }} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2.5 mb-0.5">
+                  <h1 className="text-2xl font-bold text-white">{dashboardTitle}</h1>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold border" style={{ color: '#00BFB3', borderColor: 'rgba(0,191,179,0.4)', background: 'rgba(0,191,179,0.1)' }}>
+                    {roleBadge}
+                  </span>
+                </div>
+                <p className="text-gray-400 text-sm">Welcome back, <span className="text-gray-300 font-medium">{user.username}</span> · {dashboardSub}</p>
+              </div>
             </div>
             <a href={`${STRAPI_URL}/admin`} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)', boxShadow: '0 4px 16px rgba(0,191,179,.35)' }}>
-              <ExternalLink className="w-4 h-4" /> Open Strapi Admin
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold text-sm transition hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)', boxShadow: '0 4px 14px rgba(0,191,179,.3)' }}>
+              <ExternalLink className="w-4 h-4" /> Open Strapi
             </a>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 overflow-x-auto">
-        <div className="max-w-7xl mx-auto px-4 flex gap-0.5 min-w-max">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap gap-1">
           {TABS.map(({ key, label, badge }) => (
             <button key={key} onClick={() => setActiveTab(key)}
-              className={`px-4 py-3.5 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 ${activeTab === key ? 'border-teal-400 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                activeTab === key
+                  ? 'text-white shadow-sm'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+              }`}
+              style={activeTab === key ? { backgroundColor: '#00BFB3' } : undefined}>
               {label}
               {badge !== undefined && badge > 0 && (
-                <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold text-white"
-                  style={{ backgroundColor: key === 'audit' ? '#8B5CF6' : key === 'ratings' ? '#F59E0B' : key === 'users' ? '#3B82F6' : '#00BFB3' }}>
+                <span className={`px-1.5 rounded-full text-[10px] font-bold leading-[18px] ${
+                  activeTab === key ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-600'
+                }`}>
                   {badge}
                 </span>
               )}
@@ -1130,12 +1189,14 @@ export default function AdminDashboard() {
                 <th className="px-5 py-3 text-left">Message</th>
                 <th className="px-5 py-3 text-left">Status</th>
                 <th className="px-5 py-3 text-left">Date</th>
+                <th className="px-5 py-3" />
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {submissions.map(s => {
                   const a = s.attributes;
                   return (
-                    <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={s.id} className="hover:bg-teal-50/40 transition-colors cursor-pointer group"
+                        onClick={() => openSubDetail('submission', { name: a.name, email: a.email, phone: a.phone, type: a.type, message: a.message, status: a.status, createdAt: a.createdAt })}>
                       <td className="px-5 py-4 font-semibold text-gray-900">{a.name}</td>
                       <td className="px-5 py-4">
                         <p className="flex items-center gap-1 text-gray-600"><Mail className="w-3 h-3 shrink-0" />{a.email}</p>
@@ -1152,6 +1213,9 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
                         <Clock className="w-3 h-3 inline mr-1" />{new Date(a.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <span className="text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity px-2.5 py-1 rounded-lg" style={{ color: '#00BFB3', backgroundColor: '#00BFB310' }}>View →</span>
                       </td>
                     </tr>
                   );
@@ -1171,10 +1235,12 @@ export default function AdminDashboard() {
                 <th className="px-5 py-3 text-left">Type</th>
                 <th className="px-5 py-3 text-left">Message</th>
                 <th className="px-5 py-3 text-left">Date</th>
+                <th className="px-5 py-3" />
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {participation.map(p => (
-                  <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={p.id} className="hover:bg-teal-50/40 transition-colors cursor-pointer group"
+                      onClick={() => openSubDetail('participation', { full_name: p.full_name, email: p.email, phone: p.phone, type: p.type, message: p.message, created_at: p.created_at })}>
                     <td className="px-5 py-4 font-semibold text-gray-900">{p.full_name}</td>
                     <td className="px-5 py-4">
                       <p className="flex items-center gap-1 text-gray-600"><Mail className="w-3 h-3 shrink-0" />{p.email}</p>
@@ -1186,6 +1252,9 @@ export default function AdminDashboard() {
                     <td className="px-5 py-4 max-w-xs"><p className="text-gray-600 line-clamp-2">{p.message || '—'}</p></td>
                     <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
                       <Clock className="w-3 h-3 inline mr-1" />{new Date(p.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <span className="text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity px-2.5 py-1 rounded-lg" style={{ color: '#00BFB3', backgroundColor: '#00BFB310' }}>View →</span>
                     </td>
                   </tr>
                 ))}
@@ -2838,6 +2907,155 @@ export default function AdminDashboard() {
                 {savingPwd ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Save Password'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Submission / Participation detail + reply modal ─── */}
+      {subDetailModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+             onClick={e => { if (e.target === e.currentTarget) { setSubDetailModal(null); setReplyCompose(false); }}}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl z-10">
+              <div className="flex items-center gap-2">
+                {replyCompose && (
+                  <button onClick={() => setReplyCompose(false)} className="p-1.5 rounded-lg hover:bg-gray-100 transition -ml-1">
+                    <ChevronLeft className="w-4 h-4 text-gray-500" />
+                  </button>
+                )}
+                <h2 className="font-bold text-gray-900 text-base">
+                  {replyCompose ? 'Send Reply' : subDetailModal.type === 'submission' ? 'Submission Details' : 'Participation Request'}
+                </h2>
+              </div>
+              <button onClick={() => { setSubDetailModal(null); setReplyCompose(false); }} className="p-1.5 rounded-lg hover:bg-gray-100 transition">
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Detail view */}
+            {!replyCompose && (() => {
+              const d = subDetailModal.data;
+              const name = d.name || d.full_name || '—';
+              const date = d.createdAt || d.created_at;
+              return (
+                <div className="px-6 py-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Name</p>
+                      <p className="font-semibold text-gray-900">{name}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Date Submitted</p>
+                      <p className="text-gray-600 text-sm">{date ? fmt(date) : '—'}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Email</p>
+                    <p className="flex items-center gap-1.5 text-gray-700 text-sm"><Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />{d.email}</p>
+                  </div>
+
+                  {d.phone && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Phone</p>
+                      <p className="flex items-center gap-1.5 text-gray-700 text-sm"><Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />{d.phone}</p>
+                    </div>
+                  )}
+
+                  {d.type && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Type</p>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${TYPE_BADGE[d.type] || 'bg-gray-100 text-gray-600'}`}>{d.type}</span>
+                    </div>
+                  )}
+
+                  {subDetailModal.type === 'submission' && d.status && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status</p>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${STATUS_BADGE[d.status] || 'bg-gray-100 text-gray-600'}`}>
+                        {d.status === 'new' ? <AlertCircle className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}{d.status}
+                      </span>
+                    </div>
+                  )}
+
+                  {d.message && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Message</p>
+                      <div className="bg-gray-50 rounded-xl px-4 py-3.5 border border-gray-100">
+                        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{d.message}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2.5 pt-1">
+                    <button
+                      onClick={() => { setReplyCompose(true); setReplyResult(null); }}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90"
+                      style={{ backgroundColor: '#00BFB3' }}>
+                      <Mail className="w-4 h-4" /> Reply via Email
+                    </button>
+                    <button onClick={() => setSubDetailModal(null)}
+                      className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-100 transition">
+                      Close
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Compose / reply view */}
+            {replyCompose && (
+              <div className="px-6 py-5 space-y-4">
+                <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-100 space-y-1">
+                  <p className="text-xs text-gray-400">To: <span className="font-semibold text-gray-700">{subDetailModal.data.email}</span></p>
+                  <p className="text-xs text-gray-400">From: <span className="font-semibold text-gray-700">Liliw CHATO Office</span></p>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Subject</label>
+                  <input
+                    value={replySubject}
+                    onChange={e => setReplySubject(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-300 transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Message</label>
+                  <textarea
+                    rows={8}
+                    value={replyMessage}
+                    onChange={e => setReplyMessage(e.target.value)}
+                    placeholder={`Hi ${subDetailModal.data.name || subDetailModal.data.full_name || ''},\n\nThank you for reaching out to us. We appreciate your ${subDetailModal.data.type || 'inquiry'}.\n\n`}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-300 resize-none transition"
+                  />
+                </div>
+
+                {replyResult && (
+                  <div className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-medium ${replyResult.ok ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                    {replyResult.ok ? <CheckCircle className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                    {replyResult.text}
+                  </div>
+                )}
+
+                <div className="flex gap-2.5">
+                  <button
+                    onClick={handleSendReply}
+                    disabled={sendingReply || !replyMessage.trim()}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition disabled:opacity-60 hover:opacity-90"
+                    style={{ backgroundColor: '#00BFB3' }}>
+                    {sendingReply ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                    {sendingReply ? 'Sending…' : 'Send Email'}
+                  </button>
+                  <button onClick={() => { setReplyCompose(false); setReplyResult(null); }}
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-100 transition">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
