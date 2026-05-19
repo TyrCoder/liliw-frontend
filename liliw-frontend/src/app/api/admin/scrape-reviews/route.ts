@@ -4,7 +4,8 @@ import { requireStaffAuth } from '@/lib/auth';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { auth: { persistSession: false } }
 );
 
 const APIFY_TOKEN  = process.env.APIFY_TOKEN || '';
@@ -90,7 +91,7 @@ export async function GET(req: NextRequest) {
 
   // Save / update in Supabase
   if (strapiId) {
-    await supabase.from('external_reviews').upsert({
+    const { error: dbErr } = await supabase.from('external_reviews').upsert({
       strapi_id:       strapiId,
       attraction_name: attrName,
       google_rating:   googleRating,
@@ -98,6 +99,7 @@ export async function GET(req: NextRequest) {
       reviews,
       last_scraped_at: new Date().toISOString(),
     }, { onConflict: 'strapi_id' });
+    if (dbErr) console.error('[scrape-reviews] Supabase upsert error:', dbErr.message);
   }
 
   return NextResponse.json({
