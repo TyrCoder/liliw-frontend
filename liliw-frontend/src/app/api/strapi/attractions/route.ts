@@ -28,7 +28,7 @@ function transform(item: any, type: 'heritage' | 'spot' | 'dining') {
   const a = item.attributes ?? item;
   return {
     id: `${type}-${item.id}`,
-    strapiId: item.documentId ?? item.id,
+    strapiId: String(item.id),
     attributes: {
       name: a.name || 'Unnamed',
       description: extractText(a.description),

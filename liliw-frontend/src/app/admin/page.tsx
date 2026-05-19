@@ -2292,6 +2292,8 @@ export default function AdminDashboard() {
                 if (poll.status === 'SUCCEEDED') {
                   if (!poll.result) {
                     setScrapeMsg({ id, ok: false, text: poll.message || 'No matching place found on Google Maps' });
+                  } else if (poll.dbError) {
+                    setScrapeMsg({ id, ok: false, text: `Scraped but DB save failed: ${poll.dbError}` });
                   } else {
                     // Refresh cached data
                     fetch('/api/admin/external-reviews', { headers: authH }).then(r => r.json()).then(d => setExternalReviews(d.data || []));
