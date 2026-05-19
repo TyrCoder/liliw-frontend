@@ -1,9 +1,9 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, MapPin, Phone, ExternalLink, Search } from 'lucide-react';
+import { Star, MapPin, Phone, ExternalLink, Search, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || '';
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -59,6 +59,120 @@ function StarRow({ rating }: { rating: number }) {
   );
 }
 
+function parseFeatures(features: any): string[] {
+  if (!features) return [];
+  if (Array.isArray(features)) return features.map(String).filter(Boolean);
+  if (typeof features === 'string') {
+    // try JSON array first (old data)
+    if (features.trim().startsWith('[')) {
+      try { return JSON.parse(features).map(String).filter(Boolean); } catch { /* fall through */ }
+    }
+    // richtext: split by newlines, strip markdown bullets
+    return features.split('\n').map((l: string) => l.replace(/^[-*#]\s*/, '').trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function getPhotoUrls(art: any): string[] {
+  const photos: any[] = art.photos?.data
+    ? art.photos.data.map((p: any) => p.attributes?.url || p.url)
+    : Array.isArray(art.photos) ? art.photos.map((p: any) => p.url) : [];
+  return photos
+    .filter(Boolean)
+    .map((u: string) => u.startsWith('http') ? u : `${STRAPI}${u}`);
+}
+
+function ArtFormModal({ art, onClose }: { art: any; onClose: () => void }) {
+  const photos = getPhotoUrls(art);
+  const features = parseFeatures(art.features);
+  const [current, setCurrent] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (photos.length < 2) return;
+    timerRef.current = setInterval(() => setCurrent(c => (c + 1) % photos.length), 3500);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [photos.length]);
+
+  const go = (dir: number) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setCurrent(c => (c + dir + photos.length) % photos.length);
+    timerRef.current = setInterval(() => setCurrent(c => (c + 1) % photos.length), 3500);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92, y: 24 }}
+        transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+        className="bg-white rounded-2xl overflow-hidden max-w-lg w-full shadow-2xl max-h-[90vh] flex flex-col">
+
+        {/* Carousel */}
+        <div className="relative h-64 shrink-0 overflow-hidden" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
+          {photos.length > 0 ? (
+            <>
+              <AnimatePresence mode="wait">
+                <motion.img key={current} src={photos[current]} alt={art.name}
+                  initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
+                  transition={{ duration: 0.35 }}
+                  className="absolute inset-0 w-full h-full object-cover" />
+              </AnimatePresence>
+              {photos.length > 1 && (
+                <>
+                  <button onClick={() => go(-1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => go(1)} className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition">
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {photos.map((_, i) => (
+                      <button key={i} onClick={() => { go(0); setCurrent(i); }}
+                        className="rounded-full transition-all"
+                        style={{ width: i === current ? 20 : 8, height: 8, backgroundColor: i === current ? '#F5C518' : 'rgba(255,255,255,0.5)' }} />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          ) : art.icon_emoji ? (
+            <div className="flex items-center justify-center h-full text-6xl">{art.icon_emoji}</div>
+          ) : null}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+          <button onClick={onClose}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 overflow-y-auto">
+          <h3 className="text-2xl font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>{art.name || art.title}</h3>
+          {art.description && (
+            <p className="text-gray-600 text-sm leading-relaxed mb-5" style={{ fontFamily: BL }}>{art.description}</p>
+          )}
+          {features.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#0B3D91', fontFamily: HL }}>Highlights</p>
+              <div className="space-y-2">
+                {features.map((f, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm text-gray-600" style={{ fontFamily: BL }}>
+                    <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: '#F5C518' }} />
+                    {f}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function ArtsPage() {
   const [loading, setLoading] = useState(true);
   const [artForms, setArtForms] = useState<any[]>([]);
@@ -66,6 +180,7 @@ export default function ArtsPage() {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedArtisan, setSelectedArtisan] = useState<any | null>(null);
+  const [selectedArtForm, setSelectedArtForm] = useState<any | null>(null);
 
   useEffect(() => {
     fetch('/api/strapi/arts')
@@ -127,19 +242,17 @@ export default function ArtsPage() {
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {artForms.map((art, idx) => {
-            const firstPhoto = art.photos?.[0]?.url || art.photos?.data?.[0]?.attributes?.url;
-            const photoUrl = firstPhoto ? (firstPhoto.startsWith('http') ? firstPhoto : `${STRAPI}${firstPhoto}`) : null;
-            const featureLines = typeof art.features === 'string'
-              ? art.features.split('\n').map((l: string) => l.replace(/^[-*]\s*/, '').trim()).filter(Boolean)
-              : [];
+            const photos = getPhotoUrls(art);
+            const features = parseFeatures(art.features);
             return (
               <motion.div key={idx}
                 initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.07 }}
                 whileHover={{ y: -6 }}
-                className="group rounded-2xl bg-white border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300 overflow-hidden">
-                {photoUrl ? (
+                onClick={() => setSelectedArtForm(art)}
+                className="group rounded-2xl bg-white border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300 overflow-hidden cursor-pointer">
+                {photos.length > 0 ? (
                   <div className="h-44 overflow-hidden">
-                    <img src={photoUrl} alt={art.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={photos[0]} alt={art.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   </div>
                 ) : art.icon_emoji ? (
                   <div className="h-24 flex items-center justify-center text-5xl" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
@@ -151,16 +264,11 @@ export default function ArtsPage() {
                 <div className="p-6 relative">
                   <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-full opacity-5 group-hover:opacity-10 transition-opacity" style={{ backgroundColor: '#0B3D91' }} />
                   <h3 className="text-lg font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>{art.name || art.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed mb-4" style={{ fontFamily: BL }}>{art.description}</p>
-                  {featureLines.length > 0 && (
-                    <div className="space-y-1.5">
-                      {featureLines.map((f: string, i: number) => (
-                        <div key={i} className="flex items-center gap-2 text-xs text-gray-500" style={{ fontFamily: BL }}>
-                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: '#F5C518' }} />
-                          {f}
-                        </div>
-                      ))}
-                    </div>
+                  <p className="text-gray-500 text-sm leading-relaxed line-clamp-2" style={{ fontFamily: BL }}>{art.description}</p>
+                  {features.length > 0 && (
+                    <p className="text-xs text-blue-600 mt-3 font-semibold" style={{ fontFamily: BL }}>
+                      {features.length} highlight{features.length > 1 ? 's' : ''} · tap to view
+                    </p>
                   )}
                 </div>
               </motion.div>
@@ -260,6 +368,11 @@ export default function ArtsPage() {
           </div>
         )}
       </div>
+
+      {/* Art Form modal */}
+      <AnimatePresence>
+        {selectedArtForm && <ArtFormModal art={selectedArtForm} onClose={() => setSelectedArtForm(null)} />}
+      </AnimatePresence>
 
       {/* Artisan detail modal */}
       <AnimatePresence>
