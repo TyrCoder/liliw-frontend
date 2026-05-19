@@ -302,21 +302,78 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
           coords.push(userLocation);
           new mapboxgl.Marker({ color: '#1565C0' }).setLngLat(userLocation).setPopup(new mapboxgl.Popup({ offset: 25 }).setText('Your Location')).addTo(map);
         }
-        const allStops = localPlan.days.flatMap((d: any) => d.stops.map((s: Stop) => s.place)).filter(Boolean);
-        for (const place of allStops) {
-          const strapiCoord = strapiCoords.get(place.toLowerCase());
+        const allStops = localPlan.days.flatMap((d: any) =>
+          d.stops.map((s: Stop) => ({ ...s, dayNum: d.day as number }))
+        ).filter((s: any) => s.place);
+
+        const makeMarkerEl = (num: number) => {
+          const el = document.createElement('div');
+          el.style.cssText = `
+            width:34px;height:34px;border-radius:50%;
+            background:#0B3D91;border:3px solid #F5C518;
+            box-shadow:0 2px 10px rgba(0,0,0,0.35);
+            display:flex;align-items:center;justify-content:center;
+            color:#F5C518;font-weight:700;font-size:13px;
+            font-family:system-ui,sans-serif;cursor:pointer;
+          `;
+          el.textContent = String(num);
+          return el;
+        };
+
+        const makePopupHtml = (stop: any, num: number) => {
+          const strapiAttr = allAttractions.find(
+            (a: any) => (a.attributes?.name || '').toLowerCase() === stop.place.toLowerCase()
+          )?.attributes;
+          const desc = strapiAttr?.description
+            ? (typeof strapiAttr.description === 'string'
+                ? strapiAttr.description
+                : blocksToText(strapiAttr.description)
+              ).substring(0, 120)
+            : stop.activity || '';
+          const photo = strapiAttr?.photos?.[0]
+            ? getPhotoUrl(strapiAttr.photos[0])
+            : null;
+          return `
+            <div style="font-family:system-ui,sans-serif;min-width:220px;max-width:260px">
+              ${photo ? `<img src="${photo}" alt="${stop.place}" style="width:100%;height:110px;object-fit:cover;border-radius:8px 8px 0 0;display:block;margin:-12px -12px 10px -12px;width:calc(100% + 24px);" />` : ''}
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                <span style="background:#0B3D91;color:#F5C518;font-weight:700;font-size:11px;
+                  padding:2px 8px;border-radius:20px">Stop ${num}</span>
+                ${stop.time ? `<span style="color:#9CA3AF;font-size:11px">${stop.time}</span>` : ''}
+              </div>
+              <p style="font-weight:700;font-size:14px;color:#1A1A2E;margin:0 0 4px">${stop.place}</p>
+              ${desc ? `<p style="font-size:12px;color:#4B5563;margin:0 0 6px;line-height:1.5">${desc}${desc.length >= 120 ? '…' : ''}</p>` : ''}
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                ${stop.duration ? `<span style="font-size:11px;color:#1565C0;background:rgba(21,101,192,0.08);padding:2px 8px;border-radius:20px">⏱ ${stop.duration}</span>` : ''}
+                ${stop.dayNum ? `<span style="font-size:11px;color:#6B7280;background:#F3F4F6;padding:2px 8px;border-radius:20px">Day ${stop.dayNum}</span>` : ''}
+              </div>
+              ${stop.tip ? `<p style="font-size:11px;color:#6B7280;margin:6px 0 0;font-style:italic">💡 ${stop.tip}</p>` : ''}
+            </div>
+          `;
+        };
+
+        for (let i = 0; i < allStops.length; i++) {
+          const stop = allStops[i];
+          const stopNum = i + 1;
+          const strapiCoord = strapiCoords.get(stop.place.toLowerCase());
           if (strapiCoord) {
             coords.push(strapiCoord);
-            new mapboxgl.Marker({ color: '#EF4444' }).setLngLat(strapiCoord).setPopup(new mapboxgl.Popup({ offset: 25 }).setText(place)).addTo(map);
+            new mapboxgl.Marker({ element: makeMarkerEl(stopNum) })
+              .setLngLat(strapiCoord)
+              .setPopup(new mapboxgl.Popup({ offset: 20, maxWidth: '280px' }).setHTML(makePopupHtml(stop, stopNum)))
+              .addTo(map);
           } else {
             try {
-              const q = encodeURIComponent(`${place}, Liliw, Laguna, Philippines`);
+              const q = encodeURIComponent(`${stop.place}, Liliw, Laguna, Philippines`);
               const r = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${MAPBOX_TOKEN}&limit=1&country=ph`);
               const d = await r.json();
               const coord = d?.features?.[0]?.center as [number, number] | undefined;
               if (coord) {
                 coords.push(coord);
-                new mapboxgl.Marker({ color: '#EF4444' }).setLngLat(coord).setPopup(new mapboxgl.Popup({ offset: 25 }).setText(place)).addTo(map);
+                new mapboxgl.Marker({ element: makeMarkerEl(stopNum) })
+                  .setLngLat(coord)
+                  .setPopup(new mapboxgl.Popup({ offset: 20, maxWidth: '280px' }).setHTML(makePopupHtml(stop, stopNum)))
+                  .addTo(map);
               }
             } catch {}
           }
@@ -653,7 +710,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
               )}
             </div>
             <div ref={mapContainer} className="rounded-2xl overflow-hidden shadow-md" style={{ height: 360 }} />
-            <p className="text-xs text-gray-400 mt-2 text-center" style={{ fontFamily: BL }}>Red pins = stops · Blue line = driving route</p>
+            <p className="text-xs text-gray-400 mt-2 text-center" style={{ fontFamily: BL }}>Numbered pins = stops (click for details) · Blue line = driving route</p>
           </motion.div>
         )}
       </AnimatePresence>
