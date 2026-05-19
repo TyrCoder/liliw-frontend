@@ -326,7 +326,7 @@ export const getCultureHeritages = async () => {
   const cached = getCachedResponse(cacheKey);
   if (cached) return cached;
   try {
-    const response = await fetchWithRetry<StrapiResponse<any[]>>('/culture-heritages?populate=*&publicationState=live');
+    const response = await fetchWithRetry<StrapiResponse<any[]>>('/culture-heritages?populate=*&status=published');
     const data = response.data || [];
     setCachedResponse(cacheKey, data);
     return data;
