@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 
 export interface StrapiUser {
   id: number;
@@ -118,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error?.message || 'Login failed');
     persist(data.jwt, data.user as StrapiUser);
+    toast.success(`Welcome back, ${(data.user as StrapiUser).username}!`);
   }, []);
 
   const register = useCallback(async (username: string, email: string, password: string) => {
@@ -129,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error?.message || 'Registration failed');
     persist(data.jwt, data.user as StrapiUser);
+    toast.success(`Welcome to Liliw, ${(data.user as StrapiUser).username}!`);
   }, []);
 
   const loginWithJwt = useCallback((jwt: string, user: StrapiUser) => {
@@ -140,6 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(USER_KEY);
     clearSessionCookie();
     setState({ user: null, token: null, loading: false });
+    toast('You\'ve been signed out.');
   }, []);
 
   const userRole       = state.user?.role?.type ?? 'public';

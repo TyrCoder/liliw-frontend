@@ -9,6 +9,7 @@ import PWAHandler from "@/components/PWAHandler";
 import AnalyticsInit from "@/components/AnalyticsInit";
 import { AuthProvider } from "@/context/AuthContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
+import { Toaster } from "sonner";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-display",
@@ -82,6 +83,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             {children}
             <Footer />
             <AIChat />
+            <Toaster richColors position="top-right" closeButton />
           </FavoritesProvider>
         </AuthProvider>
       </body>

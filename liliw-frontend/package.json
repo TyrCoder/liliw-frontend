@@ -34,6 +34,7 @@
     "react-map-gl": "^8.1.1",
     "recharts": "^3.8.1",
     "resend": "^6.12.2",
+    "sonner": "^2.0.7",
     "three": "^0.184.0",
     "threejs-post-processing": "^1.0.2",
     "web-push": "^3.6.7",
