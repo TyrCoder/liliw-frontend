@@ -269,7 +269,10 @@ export default function AdminDashboard() {
 
     // All staff — attraction requests
     setLoadingAR(true);
-    fetch('/api/admin/attraction-requests', { headers: h }).then(r => r.json()).then(d => setAttractionReqs(d.data || [])).catch(() => {}).finally(() => setLoadingAR(false));
+    fetch('/api/admin/attraction-requests', { headers: h }).then(r => r.json()).then(d => {
+      if (d.error) console.error('[AttractionReqs]', d.error);
+      setAttractionReqs(d.data || []);
+    }).catch(() => {}).finally(() => setLoadingAR(false));
 
     // Role management — admin and CHATO Officer
     if (isAdmin || isChatoOfficer) {
@@ -1764,7 +1767,24 @@ export default function AdminDashboard() {
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="font-bold text-gray-900">New Attraction Listing Requests</h2>
-                <span className="text-sm text-gray-400">{attractionReqs.length} total</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-400">{attractionReqs.length} total</span>
+                  <button
+                    onClick={() => {
+                      if (!token) return;
+                      setLoadingAR(true);
+                      fetch('/api/admin/attraction-requests', { headers: { Authorization: `Bearer ${token}` } })
+                        .then(r => r.json())
+                        .then(d => { if (d.error) console.error('[AttractionReqs]', d.error); setAttractionReqs(d.data || []); })
+                        .catch(() => {})
+                        .finally(() => setLoadingAR(false));
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition"
+                    disabled={loadingAR}>
+                    <RefreshCw className={`w-3.5 h-3.5 ${loadingAR ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                </div>
               </div>
               {loadingAR ? (
                 <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>

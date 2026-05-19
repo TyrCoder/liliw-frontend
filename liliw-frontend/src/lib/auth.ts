@@ -25,11 +25,10 @@ export async function requireAuth(req: NextRequest): Promise<false | { email: st
 export async function requireAdminAuth(req: NextRequest): Promise<boolean> {
   const user = await requireAuth(req);
   if (!user) return false;
-  // Use private ADMIN_EMAILS (not NEXT_PUBLIC_) so the list is never in the browser bundle
-  const adminEmails = (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+  const adminEmails = [
+    ...(process.env.ADMIN_EMAILS || '').split(','),
+    ...(process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(','),
+  ].map(e => e.trim().toLowerCase()).filter(Boolean);
   return adminEmails.includes(user.email.toLowerCase());
 }
 
@@ -43,8 +42,11 @@ export async function requireStaffAuth(req: NextRequest): Promise<boolean> {
     });
     if (!res.ok) return false;
     const user = await res.json();
-    const adminEmails = (process.env.ADMIN_EMAILS || '')
-      .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+    // Accept both ADMIN_EMAILS and NEXT_PUBLIC_ADMIN_EMAILS so only one needs to be set
+    const adminEmails = [
+      ...(process.env.ADMIN_EMAILS || '').split(','),
+      ...(process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(','),
+    ].map(e => e.trim().toLowerCase()).filter(Boolean);
     if (adminEmails.includes((user.email || '').toLowerCase())) return true;
     const role = (user.role?.name || '').toLowerCase().replace(/[\s_-]/g, '');
     return role.includes('chato') || role.includes('editor') || role.includes('officer') || role.includes('admin');
