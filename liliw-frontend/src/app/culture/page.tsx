@@ -1,9 +1,8 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Heart, Play, AlertCircle } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Heart, Play, AlertCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -60,10 +59,122 @@ function mediaUrl(url: string | undefined): string {
   return url.startsWith('http') ? url : `${STRAPI_BASE}${url}`;
 }
 
+function CultureModal({ item, onClose }: { item: any; onClose: () => void }) {
+  const a = item?.attributes ?? item;
+  const title = a?.title ?? '';
+  const description = extractText(a?.description);
+  const rawImages = a?.images;
+  const images: any[] = Array.isArray(rawImages) ? rawImages : Array.isArray(rawImages?.data) ? rawImages.data.map((d: any) => d?.attributes ?? d) : [];
+  const rawVideo = a?.video;
+  const video = rawVideo?.data?.attributes ?? rawVideo;
+  const videoUrl = video?.url ? mediaUrl(video.url) : null;
+  const [photoIdx, setPhotoIdx] = useState(0);
+
+  const prev = useCallback(() => setPhotoIdx(i => (i - 1 + images.length) % images.length), [images.length]);
+  const next = useCallback(() => setPhotoIdx(i => (i + 1) % images.length), [images.length]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') prev();
+      if (e.key === 'ArrowRight') next();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose, prev, next]);
+
+  const currentImg = images[photoIdx];
+  const currentImgUrl = currentImg ? mediaUrl(currentImg?.url ?? currentImg?.attributes?.url) : null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+        style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+          transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+          className="w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Media */}
+          {videoUrl ? (
+            <div className="relative bg-black" style={{ aspectRatio: '16/9' }}>
+              <video src={videoUrl} controls className="w-full h-full object-contain" />
+              <button onClick={onClose} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          ) : currentImgUrl ? (
+            <div className="relative bg-gray-900" style={{ aspectRatio: '16/9' }}>
+              <img src={currentImgUrl} alt={title} className="w-full h-full object-cover" />
+              {images.length > 1 && (
+                <>
+                  <button onClick={prev} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button onClick={next} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors">
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {images.map((_: any, i: number) => (
+                      <button key={i} onClick={() => setPhotoIdx(i)}
+                        className="w-2 h-2 rounded-full transition-colors"
+                        style={{ backgroundColor: i === photoIdx ? '#F5C518' : 'rgba(255,255,255,0.5)' }} />
+                    ))}
+                  </div>
+                </>
+              )}
+              <button onClick={onClose} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center" style={{ height: 180, backgroundColor: 'rgba(11,61,145,0.06)', position: 'relative' }}>
+              <Heart className="w-12 h-12" style={{ color: '#0B3D91' }} />
+              <button onClick={onClose} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/10 flex items-center justify-center hover:bg-black/20 transition-colors">
+                <X className="w-5 h-5" style={{ color: '#0B3D91' }} />
+              </button>
+            </div>
+          )}
+
+          {/* Content */}
+          <div className="p-6">
+            <h2 className="text-2xl font-extrabold mb-4" style={{ color: '#1A1A2E', fontFamily: HL }}>{title}</h2>
+            {description && (
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line" style={{ fontFamily: BL }}>{description}</p>
+            )}
+
+            {/* Thumbnail strip */}
+            {images.length > 1 && (
+              <div className="flex gap-2 mt-5 overflow-x-auto pb-1">
+                {images.map((img: any, i: number) => {
+                  const url = mediaUrl(img?.url ?? img?.attributes?.url);
+                  return url ? (
+                    <button key={i} onClick={() => setPhotoIdx(i)}
+                      className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors"
+                      style={{ borderColor: i === photoIdx ? '#F5C518' : 'transparent' }}>
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ) : null;
+                })}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 export default function CulturePage() {
   const [cultureItems, setCultureItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
 
   useEffect(() => {
     fetch('/api/strapi/culture-heritages')
@@ -75,6 +186,7 @@ export default function CulturePage() {
 
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
+      {selectedItem && <CultureModal item={selectedItem} onClose={() => setSelectedItem(null)} />}
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
@@ -147,7 +259,8 @@ export default function CulturePage() {
                 <motion.div key={item.id ?? idx}
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: idx * 0.1 }}
                   whileHover={{ y: -4 }}
-                  className="rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 bg-white editorial-card">
+                  onClick={() => setSelectedItem(item)}
+                  className="rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 bg-white editorial-card cursor-pointer">
                   {/* Media */}
                   {videoUrl ? (
                     <div className="relative h-56 bg-gray-900 flex items-center justify-center">
