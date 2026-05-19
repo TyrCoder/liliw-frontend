@@ -1,23 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { verifySession, SESSION_COOKIE } from '@/lib/session';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
-async function getUser(authHeader: string) {
-  const token = authHeader.replace('Bearer ', '');
+async function getEmail(req: NextRequest): Promise<string | null> {
+  const cookie = req.cookies.get(SESSION_COOKIE)?.value;
+  const session = cookie ? verifySession(cookie) : null;
+  if (session?.email) return session.email;
+
+  const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
   if (!token) return null;
-  const res = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-  return res.ok ? res.json() : null;
+  try {
+    const res = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return user.email ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(request: NextRequest) {
-  const user = await getUser(request.headers.get('Authorization') || '');
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const email = await getEmail(request);
+  if (!email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data, error } = await supabaseServer
     .from('lbo_visitor_records')
     .select('*')
-    .eq('lbo_email', user.email)
+    .eq('lbo_email', email)
     .order('year',  { ascending: false })
     .order('month', { ascending: false });
 
@@ -26,13 +37,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getUser(request.headers.get('Authorization') || '');
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const email = await getEmail(request);
+  if (!email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: lboApp } = await supabaseServer
     .from('lbo_applications')
     .select('id')
-    .eq('email', user.email)
+    .eq('email', email)
     .eq('status', 'approved')
     .limit(1)
     .single();
@@ -59,7 +70,7 @@ export async function POST(request: NextRequest) {
       other_province_female: n(b.other_province_female),
       foreign_male:          n(b.foreign_male),
       foreign_female:        n(b.foreign_female),
-      lbo_email:             user.email,
+      lbo_email:             email,
     });
 
   if (error) return NextResponse.json({ error: 'Failed to submit', detail: error.message }, { status: 500 });

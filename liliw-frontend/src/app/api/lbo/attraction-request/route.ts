@@ -1,26 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { sendAttractionRequestNotification } from '@/lib/email';
+import { verifySession, SESSION_COOKIE } from '@/lib/session';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
-async function getVerifiedLbo(req: NextRequest) {
-  const auth = req.headers.get('Authorization') || '';
-  const token = auth.replace('Bearer ', '');
+async function getEmail(req: NextRequest): Promise<string | null> {
+  const cookie = req.cookies.get(SESSION_COOKIE)?.value;
+  const session = cookie ? verifySession(cookie) : null;
+  if (session?.email) return session.email;
+
+  const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
   if (!token) return null;
-  const res = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-  if (!res.ok) return null;
-  const user = await res.json();
+  try {
+    const res = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return user.email ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function getVerifiedLbo(req: NextRequest) {
+  const email = await getEmail(req);
+  if (!email) return null;
 
   const { data: app } = await supabaseServer
     .from('lbo_applications')
     .select('id, business_name, owner_name, email')
-    .eq('email', user.email)
+    .eq('email', email)
     .eq('status', 'approved')
     .single();
 
   if (!app) return null;
-  return { user, app };
+  return { user: { email }, app };
 }
 
 export async function GET(request: NextRequest) {

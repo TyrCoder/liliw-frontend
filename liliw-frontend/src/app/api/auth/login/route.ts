@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/ratelimit';
+import { createSession, computeRole, sessionCookieHeader } from '@/lib/session';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
@@ -51,7 +52,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ jwt: data.jwt, user });
+    const sessionToken = createSession(user.email, computeRole(user));
+    const res = NextResponse.json({ jwt: data.jwt, user });
+    if (sessionToken) res.headers.set('Set-Cookie', sessionCookieHeader(sessionToken));
+    return res;
   } catch {
     return NextResponse.json(
       { error: { message: 'Login failed. Please try again.' } },
