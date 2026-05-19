@@ -65,9 +65,9 @@ function blocksToText(blocks: any): string {
     .join(' ').trim();
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ══════════════════════════════════════════════════════════
    PART 1 â€" AI ITINERARY BUILDER WIZARD
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ══════════════════════════════════════════════════════════ */
 
 const DURATIONS = [
   { value: 'half-day', label: 'Half Day',  sub: '4 hours' },
@@ -78,9 +78,9 @@ const DURATIONS = [
 ];
 
 const BUDGETS = [
-  { value: 'budget-friendly (under â‚±1,000/day)', label: 'Budget',    sub: 'Under â‚±1,000/day' },
-  { value: 'mid-range (â‚±1,000â€"â‚±3,000/day)',      label: 'Mid-range', sub: 'â‚±1,000 â€" â‚±3,000/day' },
-  { value: 'premium (â‚±3,000+/day)',               label: 'Premium',   sub: 'â‚±3,000+/day' },
+  { value: 'budget-friendly (under ₱1,000/day)', label: 'Budget',    sub: 'Under ₱1,000/day' },
+  { value: 'mid-range (₱1,000–₱3,000/day)',      label: 'Mid-range', sub: '₱1,000 – ₱3,000/day' },
+  { value: 'premium (₱3,000+/day)',               label: 'Premium',   sub: '₱3,000+/day' },
   { value: 'custom',                              label: 'Custom',    sub: 'Set your own' },
 ];
 
@@ -573,7 +573,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
                           onChange={e => updateStop(dayIdx, stopIdx, 'place', e.target.value)}
                           className="w-full font-bold text-gray-900 text-sm border-b border-blue-200 focus:outline-none focus:border-blue-400 bg-white pb-0.5 appearance-none pr-5 cursor-pointer"
                           style={{ fontFamily: HL }}>
-                          <option value="">Pick a placeâ€¦</option>
+                          <option value="">Pick a place…</option>
                           {(['heritage', 'spot', 'dining'] as const)
                             .filter(type => filteredAttractions.some(a => a.type === type))
                             .map(type => {
@@ -913,7 +913,7 @@ function ItineraryWizard() {
           <Sparkles className="w-5 h-5" style={{ color: '#F5C518' }} />
           <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: HL }}>Itinerary Builder</h2>
         </div>
-        <p className="text-sm text-gray-500 ml-8" style={{ fontFamily: BL }}>Tell us your preferences â€" we&apos;ll build your perfect Liliw trip</p>
+        <p className="text-sm text-gray-500 ml-8" style={{ fontFamily: BL }}>Tell us your preferences — we&apos;ll build your perfect Liliw trip</p>
       </div>
 
       {/* Progress */}
@@ -957,7 +957,7 @@ function ItineraryWizard() {
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
                   <input
                     type="text"
-                    placeholder="e.g. 5 hours, 4 days, long weekendâ€¦"
+                    placeholder="e.g. 5 hours, 4 days, long weekend…"
                     value={customDuration}
                     onChange={e => setCustomDuration(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border-2 text-sm focus:outline-none"
@@ -996,7 +996,7 @@ function ItineraryWizard() {
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
                   <input
                     type="text"
-                    placeholder="e.g. â‚±2,500/day, around â‚±500â€¦"
+                    placeholder="e.g. ₱2,500/day, around ₱500…"
                     value={customBudget}
                     onChange={e => setCustomBudget(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border-2 text-sm focus:outline-none"
@@ -1123,7 +1123,7 @@ function ItineraryWizard() {
               <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
                 className="w-12 h-12 rounded-full border-4 mb-5"
                 style={{ borderColor: '#F5C518', borderTopColor: 'transparent' }} />
-              <h3 className="text-lg font-bold text-gray-900 mb-2" style={{ fontFamily: HL }}>Building your itineraryâ€¦</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2" style={{ fontFamily: HL }}>Building your itinerary…</h3>
               <p className="text-sm text-gray-500 max-w-xs" style={{ fontFamily: BL }}>Crafting a personalized plan using real Liliw attractions. Just a moment!</p>
             </motion.div>
           )}
@@ -1149,9 +1149,9 @@ function ItineraryWizard() {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ══════════════════════════════════════════════════════════
    PART 2 â€" STRAPI ITINERARIES FROM DATABASE
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ══════════════════════════════════════════════════════════ */
 
 const DURATION_LABEL: Record<string, string> = {
   'half-day': '4 hours', 'one-day': '8 hours', 'two-day': '2 days',
@@ -1215,7 +1215,7 @@ function StrapiBlocks({ blocks }: { blocks: any }) {
                 ))}</ol>
               : <ul key={i} className="space-y-1.5">{(block.children || []).map((item: any, j: number) => (
                   <li key={j} className="flex items-start gap-2 text-sm text-gray-700" style={{ fontFamily: BL }}>
-                    <span className="shrink-0 font-bold mt-0.5" style={{ color: '#F5C518' }}>â†’</span>
+                    <span className="shrink-0 font-bold mt-0.5" style={{ color: '#F5C518' }}>→</span>
                     <span>{children(item.children)}</span>
                   </li>
                 ))}</ul>;
@@ -1403,7 +1403,7 @@ function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }
             style={{ boxShadow: '0 -4px 24px rgba(0,0,0,.07)' }}>
             <Calendar className="w-4 h-4 text-gray-400" />
             <div>
-              <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: DL }}>â‚±{Number(itin.price).toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: DL }}>₱{Number(itin.price).toLocaleString()}</p>
               <p className="text-xs text-gray-400" style={{ fontFamily: BL }}>per person</p>
             </div>
           </div>
@@ -1514,7 +1514,7 @@ function DatabaseItineraries() {
                     <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-1.5 shadow">
                       <p className="text-xs text-gray-400 leading-none" style={{ fontFamily: BL }}>from</p>
                       <p className="text-base font-bold leading-tight" style={{ color: '#1565C0', fontFamily: HL }}>
-                        â‚±{Number(itin.price).toLocaleString()}
+                        ₱{Number(itin.price).toLocaleString()}
                       </p>
                     </div>
                   )}
@@ -1556,9 +1556,9 @@ function DatabaseItineraries() {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ══════════════════════════════════════════════════════════
    MAIN PAGE
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ══════════════════════════════════════════════════════════ */
 
 function SavedTripsSection() {
   const { user, token } = useAuth();
@@ -1623,7 +1623,7 @@ function SavedTripsSection() {
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-gray-900 text-sm truncate" style={{ fontFamily: HL }}>{trip.title}</p>
                       <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: BL }}>
-                        {trip.duration} Â· {new Date(trip.savedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {trip.duration} · {new Date(trip.savedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
                     </div>
                     <button onClick={(e) => { e.stopPropagation(); deleteTrip(trip.id); }}
@@ -1642,7 +1642,7 @@ function SavedTripsSection() {
                           {trip.plan.days?.map(day => (
                             <div key={day.day}>
                               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2" style={{ fontFamily: HL }}>
-                                Day {day.day} â€" {day.theme}
+                                Day {day.day} — {day.theme}
                               </p>
                               <div className="space-y-2">
                                 {day.stops?.map((stop, i) => (
