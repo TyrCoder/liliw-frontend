@@ -459,16 +459,16 @@ export default function MapPage() {
       ].join(';');
 
       const res  = await fetch(
-        `https://api.mapbox.com/directions/v5/mapbox/${mapboxProfile}/${waypoints}?geometries=geojson&overview=full&steps=true&alternatives=true&access_token=${TOKEN}`
+        `https://api.mapbox.com/directions/v5/mapbox/${mapboxProfile}/${waypoints}?geometries=geojson&overview=full&steps=true&access_token=${TOKEN}`
       );
       const data = await res.json();
 
       if (data.routes?.length) {
-        const route = (data.routes as any[]).reduce(
-          (best: any, r: any) => (r.distance < best.distance ? r : best),
-          data.routes[0],
-        );
-        const steps: RouteInfo['steps'] = (route.legs?.[0]?.steps ?? []).map((s: any) => ({
+        // Use routes[0] — Mapbox's recommended fastest/practical route via main roads
+        const route = data.routes[0];
+        // Collect steps from all legs (covers multi-stop routes)
+        const allSteps = (route.legs ?? []).flatMap((leg: any) => leg.steps ?? []);
+        const steps: RouteInfo['steps'] = allSteps.map((s: any) => ({
           instruction: s.maneuver?.instruction ?? '',
           distance: s.distance >= 1000 ? `${(s.distance / 1000).toFixed(1)} km` : `${Math.round(s.distance)} m`,
         }));
