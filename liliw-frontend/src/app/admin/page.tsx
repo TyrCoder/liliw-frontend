@@ -11,7 +11,7 @@ import {
   RefreshCw, UserCheck, Shield, Activity, MapPin, Edit, Layers,
   Monitor, Smartphone, Tablet, Wifi, Search,
   Building2, X, ChevronDown, ChevronUp, Key, Inbox,
-  Download, BarChart2,
+  Download, BarChart2, Plus, Trash2, ArrowUp, ArrowDown, ClipboardList, Send,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import * as XLSX from 'xlsx-js-style';
@@ -27,7 +27,13 @@ interface StrapiActivity { id: string; contentType: string; entryName: string; a
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews';
+type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses';
+
+type FieldType = 'short_text' | 'paragraph' | 'number' | 'dropdown' | 'multiple_choice' | 'checkboxes';
+interface FormField { id: string; type: FieldType; label: string; required: boolean; options: string[]; }
+const FIELD_TYPE_LABELS: Record<FieldType, string> = { short_text: 'Short Text', paragraph: 'Paragraph', number: 'Number', dropdown: 'Dropdown', multiple_choice: 'Multiple Choice', checkboxes: 'Checkboxes' };
+const FIELD_TYPES: FieldType[] = ['short_text', 'paragraph', 'number', 'dropdown', 'multiple_choice', 'checkboxes'];
+function makeField(): FormField { return { id: `f_${Date.now()}_${Math.random().toString(36).slice(2,7)}`, type: 'short_text', label: '', required: false, options: [] }; }
 
 /* ─── csv export ──────────────────────────────────────────── */
 function downloadCSV(filename: string, headers: string[], rows: (string | number)[][]) {
@@ -205,6 +211,21 @@ export default function AdminDashboard() {
   const [attrType,        setAttrType]        = useState<string>('all');
   const [userRoleFilter,  setUserRoleFilter]  = useState<string>('all');
 
+  // Event forms (editor)
+  const [eventForms,       setEventForms]       = useState<any[]>([]);
+  const [loadingEF,        setLoadingEF]        = useState(false);
+  const [joinableEvents,   setJoinableEvents]   = useState<any[]>([]);
+  const [loadingJE,        setLoadingJE]        = useState(false);
+  const [activeFormSlug,   setActiveFormSlug]   = useState<string | null>(null);
+  const [formBuilderFields, setFormBuilderFields] = useState<FormField[]>([]);
+  const [formIsActive,     setFormIsActive]     = useState(true);
+  const [savingForm,       setSavingForm]       = useState(false);
+  const [formSaveMsg,      setFormSaveMsg]      = useState<{ ok: boolean; text: string } | null>(null);
+  // Event form responses (officer)
+  const [efResponseData,   setEfResponseData]   = useState<{ form: any; responses: any[] } | null>(null);
+  const [loadingEFR,       setLoadingEFR]       = useState(false);
+  const [selectedFormId,   setSelectedFormId]   = useState<string | null>(null);
+
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
   const [syncCount, setSyncCount] = useState<number | null>(null);
@@ -283,6 +304,20 @@ export default function AdminDashboard() {
       if (d.error) console.error('[AttractionReqs]', d.error);
       setAttractionReqs(d.data || []);
     }).catch(() => {}).finally(() => setLoadingAR(false));
+
+    // Editor — event forms + joinable events
+    if (isChatoEditor) {
+      setLoadingEF(true);
+      setLoadingJE(true);
+      fetch('/api/admin/event-forms', { headers: h }).then(r => r.json()).then(d => setEventForms(d.data || [])).catch(() => {}).finally(() => setLoadingEF(false));
+      fetch(`${STRAPI_URL}/api/events?filters[is_joinable][$eq]=true&fields[0]=title&fields[1]=slug&fields[2]=date_start&pagination[limit]=100`, { headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || ''}` } }).then(r => r.json()).then(d => setJoinableEvents((d.data || []).map((e: any) => ({ id: e.id, slug: e.slug || e.attributes?.slug, title: e.title || e.attributes?.title, date_start: e.date_start || e.attributes?.date_start })))).catch(() => {}).finally(() => setLoadingJE(false));
+    }
+
+    // Officer — event form list for responses viewer
+    if (isChatoOfficer) {
+      setLoadingEF(true);
+      fetch('/api/admin/event-forms', { headers: h }).then(r => r.json()).then(d => setEventForms(d.data || [])).catch(() => {}).finally(() => setLoadingEF(false));
+    }
   }, [isAdmin, isChatoOfficer, isChatoEditor, isStaff, token]);
 
   // Live visitors polling — every 10 seconds (admin + officer both see the overview tab)
@@ -524,6 +559,65 @@ export default function AdminDashboard() {
     return matchType && matchSearch;
   });
 
+  // ── Event form builder helpers ──────────────────────────────
+  const openFormBuilder = (event: any) => {
+    const existing = eventForms.find(f => f.event_slug === event.slug);
+    setActiveFormSlug(event.slug);
+    setFormBuilderFields(existing?.fields ? JSON.parse(JSON.stringify(existing.fields)) : [makeField()]);
+    setFormIsActive(existing?.is_active ?? true);
+    setFormSaveMsg(null);
+  };
+
+  const saveEventForm = async (event: any) => {
+    if (!token) return;
+    setSavingForm(true); setFormSaveMsg(null);
+    try {
+      const res = await fetch('/api/admin/event-forms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ event_slug: event.slug, event_title: event.title, fields: formBuilderFields, is_active: formIsActive }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Save failed');
+      setEventForms(prev => { const idx = prev.findIndex(f => f.event_slug === event.slug); return idx >= 0 ? prev.map((f,i) => i === idx ? d.data : f) : [...prev, d.data]; });
+      setFormSaveMsg({ ok: true, text: 'Form saved!' });
+      setActiveFormSlug(null);
+    } catch (e: any) {
+      setFormSaveMsg({ ok: false, text: e.message });
+    } finally {
+      setSavingForm(false);
+    }
+  };
+
+  const loadFormResponses = async (formId: string) => {
+    if (!token) return;
+    setSelectedFormId(formId); setLoadingEFR(true); setEfResponseData(null);
+    try {
+      const res = await fetch(`/api/admin/event-forms/${formId}/responses`, { headers: { Authorization: `Bearer ${token}` } });
+      const d = await res.json();
+      if (res.ok) setEfResponseData(d);
+    } catch {}
+    finally { setLoadingEFR(false); }
+  };
+
+  const downloadResponsesCSV = () => {
+    if (!efResponseData) return;
+    const { form, responses } = efResponseData;
+    const fields: FormField[] = form.fields || [];
+    const headers = ['Submitted At', 'Name', 'Email', ...fields.map((f: FormField) => f.label)];
+    const rows = responses.map((r: any) => [
+      new Date(r.submitted_at).toLocaleString(),
+      r.respondent_name || '—',
+      r.respondent_email || '—',
+      ...fields.map((f: FormField) => { const a = r.answers?.[f.id]; return Array.isArray(a) ? a.join(', ') : (a ?? ''); }),
+    ]);
+    const csv = [headers, ...rows].map(row => row.map((v: any) => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `${form.event_title}-responses.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const dashboardTitle = isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'CHATO Officer Dashboard' : 'CHATO Editor Dashboard';
   const dashboardSub   = isAdmin ? 'Analytics & user management' : isChatoOfficer ? 'Requests & submissions' : 'LBO & attractions management';
 
@@ -547,6 +641,9 @@ export default function AdminDashboard() {
     { key: 'ratings',            label: 'Ratings',              badge: reviews.length,                                                                               roles: ['officer'] },
     // Editor: LBO + attractions management
     { key: 'attractions',        label: 'Attractions',          badge: attractions.length,                                                                           roles: ['editor'] },
+    { key: 'eventforms',         label: 'Event Forms',          badge: eventForms.length,                                                                            roles: ['editor'] },
+    // Officer: event form responses
+    { key: 'eventresponses',     label: 'Event Responses',      badge: undefined,                                                                                    roles: ['officer'] },
   ];
 
   const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
@@ -2612,6 +2709,228 @@ export default function AdminDashboard() {
             </div>
           );
         })()}
+
+        {/* ── EVENT FORMS (Editor) ─────────────────────────── */}
+        {activeTab === 'eventforms' && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Event Forms</h2>
+              <p className="text-sm text-gray-400 mt-0.5">Build sign-up forms for joinable events.</p>
+            </div>
+
+            {loadingJE ? (
+              <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
+            ) : joinableEvents.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
+                <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-400 text-sm">No joinable events found in Strapi.<br />Enable <strong>is_joinable</strong> on an event first.</p>
+              </div>
+            ) : joinableEvents.map(event => {
+              const form = eventForms.find(f => f.event_slug === event.slug);
+              const isBuilding = activeFormSlug === event.slug;
+              return (
+                <div key={event.slug} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-bold text-gray-900 truncate">{event.title}</p>
+                        {form ? (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${form.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {form.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">No form yet</span>
+                        )}
+                      </div>
+                      {event.date_start && <p className="text-xs text-gray-400 mt-0.5">{new Date(event.date_start).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!isBuilding && (
+                        <button onClick={() => openFormBuilder(event)}
+                          className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90"
+                          style={{ backgroundColor: '#1565C0' }}>
+                          {form ? 'Edit Form' : 'Create Form'}
+                        </button>
+                      )}
+                      {isBuilding && (
+                        <button onClick={() => { setActiveFormSlug(null); setFormSaveMsg(null); }}
+                          className="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Form Builder */}
+                  {isBuilding && (
+                    <div className="border-t border-gray-100 px-6 py-5 space-y-4 bg-gray-50">
+                      <p className="text-sm font-semibold text-gray-700">Form Questions</p>
+
+                      {formBuilderFields.map((field, idx) => (
+                        <div key={field.id} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-1">
+                              <button type="button" disabled={idx === 0} onClick={() => setFormBuilderFields(f => { const a = [...f]; [a[idx-1],a[idx]]=[a[idx],a[idx-1]]; return a; })} className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition"><ArrowUp className="w-3 h-3" /></button>
+                              <button type="button" disabled={idx === formBuilderFields.length-1} onClick={() => setFormBuilderFields(f => { const a = [...f]; [a[idx],a[idx+1]]=[a[idx+1],a[idx]]; return a; })} className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition"><ArrowDown className="w-3 h-3" /></button>
+                            </div>
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <input value={field.label} onChange={e => setFormBuilderFields(f => f.map((x,i) => i===idx ? {...x, label: e.target.value} : x))}
+                                placeholder="Question label *"
+                                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                              <select value={field.type} onChange={e => setFormBuilderFields(f => f.map((x,i) => i===idx ? {...x, type: e.target.value as FieldType, options: []} : x))}
+                                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                {FIELD_TYPES.map(t => <option key={t} value={t}>{FIELD_TYPE_LABELS[t]}</option>)}
+                              </select>
+                            </div>
+                            <label className="flex items-center gap-1.5 text-xs text-gray-500 shrink-0">
+                              <input type="checkbox" checked={field.required} onChange={e => setFormBuilderFields(f => f.map((x,i) => i===idx ? {...x, required: e.target.checked} : x))} className="accent-blue-600" />
+                              Required
+                            </label>
+                            <button onClick={() => setFormBuilderFields(f => f.filter((_,i) => i !== idx))} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Options for choice-based fields */}
+                          {['dropdown','multiple_choice','checkboxes'].includes(field.type) && (
+                            <div className="pl-8 space-y-1.5">
+                              <p className="text-xs font-semibold text-gray-500">Options</p>
+                              {(field.options || []).map((opt, oi) => (
+                                <div key={oi} className="flex items-center gap-2">
+                                  <input value={opt} onChange={e => setFormBuilderFields(f => f.map((x,i) => i===idx ? {...x, options: x.options.map((o,j) => j===oi ? e.target.value : o)} : x))}
+                                    placeholder={`Option ${oi+1}`}
+                                    className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                                  <button onClick={() => setFormBuilderFields(f => f.map((x,i) => i===idx ? {...x, options: x.options.filter((_,j) => j!==oi)} : x))} className="p-1 text-gray-400 hover:text-red-500 transition">
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                              <button onClick={() => setFormBuilderFields(f => f.map((x,i) => i===idx ? {...x, options: [...x.options, '']} : x))}
+                                className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition">
+                                <Plus className="w-3 h-3" /> Add option
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      <button onClick={() => setFormBuilderFields(f => [...f, makeField()])}
+                        className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-400 hover:border-blue-300 hover:text-blue-500 transition flex items-center justify-center gap-2">
+                        <Plus className="w-4 h-4" /> Add Question
+                      </button>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input type="checkbox" checked={formIsActive} onChange={e => setFormIsActive(e.target.checked)} className="w-4 h-4 accent-blue-600" />
+                          <span className="text-sm font-medium text-gray-700">Form is active (users can sign up)</span>
+                        </label>
+                        <div className="flex items-center gap-3">
+                          {formSaveMsg && (
+                            <span className={`text-xs font-semibold flex items-center gap-1 ${formSaveMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                              {formSaveMsg.ok ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                              {formSaveMsg.text}
+                            </span>
+                          )}
+                          <button onClick={() => saveEventForm(event)} disabled={savingForm || formBuilderFields.some(f => !f.label.trim())}
+                            className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
+                            style={{ backgroundColor: '#1565C0' }}>
+                            {savingForm ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                            {savingForm ? 'Saving…' : 'Save Form'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── EVENT RESPONSES (Officer) ──────────────────────── */}
+        {activeTab === 'eventresponses' && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Event Form Responses</h2>
+              <p className="text-sm text-gray-400 mt-0.5">View sign-up responses submitted by users for each event.</p>
+            </div>
+
+            {loadingEF ? (
+              <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
+            ) : eventForms.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
+                <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-400 text-sm">No event forms created yet. Ask the editor to build one first.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {eventForms.map(form => (
+                  <button key={form.id} onClick={() => loadFormResponses(form.id)}
+                    className={`bg-white rounded-2xl border p-5 text-left transition hover:shadow-md ${selectedFormId === form.id ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200'}`}>
+                    <p className="font-bold text-gray-900 text-sm mb-1 line-clamp-2">{form.event_title}</p>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${form.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                        {form.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                      <span className="text-xs text-gray-400">{(form.fields || []).length} questions</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {loadingEFR && <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-gray-300" /></div>}
+
+            {efResponseData && !loadingEFR && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h3 className="font-bold text-gray-900">{efResponseData.form.event_title}</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">{efResponseData.responses.length} response{efResponseData.responses.length !== 1 ? 's' : ''}</p>
+                  </div>
+                  {efResponseData.responses.length > 0 && (
+                    <button onClick={downloadResponsesCSV}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+                      <Download className="w-4 h-4" /> Export CSV
+                    </button>
+                  )}
+                </div>
+
+                {efResponseData.responses.length === 0 ? (
+                  <div className="py-12 text-center text-gray-400 text-sm">No responses yet.</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-100">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Submitted</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Email</th>
+                          {(efResponseData.form.fields as FormField[]).map((f: FormField) => (
+                            <th key={f.id} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{f.label}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {efResponseData.responses.map((r: any) => (
+                          <tr key={r.id} className="hover:bg-gray-50 transition">
+                            <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{new Date(r.submitted_at).toLocaleDateString('en-PH', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' })}</td>
+                            <td className="px-4 py-3 font-medium text-gray-900">{r.respondent_name || '—'}</td>
+                            <td className="px-4 py-3 text-gray-600">{r.respondent_email || '—'}</td>
+                            {(efResponseData.form.fields as FormField[]).map((f: FormField) => {
+                              const ans = r.answers?.[f.id];
+                              return <td key={f.id} className="px-4 py-3 text-gray-700 max-w-xs truncate">{Array.isArray(ans) ? ans.join(', ') : (ans ?? '—')}</td>;
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
 

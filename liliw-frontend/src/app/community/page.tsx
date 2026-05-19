@@ -2,9 +2,158 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, MessageSquare, Users, Briefcase, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MessageSquare, Users, Briefcase, Eye, Calendar, CheckCircle, AlertCircle, Loader2, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import ParticipationModal from '@/components/ParticipationModal';
+
+const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+
+type FormField = { id: string; type: string; label: string; required: boolean; options: string[] };
+
+function EventSignUpModal({ event, onClose }: { event: { id: any; slug: string; title: string; date_start?: string }; onClose: () => void }) {
+  const [form, setForm]   = useState<{ id: string; fields: FormField[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [name, setName]   = useState('');
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [errMsg, setErrMsg] = useState('');
+
+  useEffect(() => {
+    fetch(`/api/event-forms/${event.slug}`)
+      .then(r => r.json())
+      .then(d => setForm(d.form))
+      .catch(() => setForm(null))
+      .finally(() => setLoading(false));
+  }, [event.slug]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form) return;
+    setStatus('submitting'); setErrMsg('');
+    try {
+      const res = await fetch(`/api/event-forms/${event.slug}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ form_id: form.id, respondent_name: name, respondent_email: email, answers }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Submission failed');
+      setStatus('success');
+    } catch (err: any) {
+      setErrMsg(err.message); setStatus('error');
+    }
+  };
+
+  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl z-10">
+          <div>
+            <h2 className="font-bold text-gray-900">Sign Up for Event</h2>
+            <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{event.title}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition"><X className="w-4 h-4 text-gray-500" /></button>
+        </div>
+
+        <div className="px-6 py-5">
+          {loading && <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>}
+
+          {!loading && !form && (
+            <div className="text-center py-10">
+              <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-400 text-sm">The sign-up form for this event hasn&apos;t been set up yet.<br />Check back soon!</p>
+            </div>
+          )}
+
+          {!loading && form && status === 'success' && (
+            <div className="text-center py-10">
+              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+              <h3 className="font-bold text-gray-900 mb-1">You&apos;re signed up!</h3>
+              <p className="text-sm text-gray-400">Your response has been recorded. See you at the event!</p>
+            </div>
+          )}
+
+          {!loading && form && status !== 'success' && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Full Name <span className="text-red-400">*</span></label>
+                  <input required value={name} onChange={e => setName(e.target.value)} placeholder="Your name" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email <span className="text-red-400">*</span></label>
+                  <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" className={inputCls} />
+                </div>
+              </div>
+
+              {form.fields.map(field => (
+                <div key={field.id}>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                    {field.label} {field.required && <span className="text-red-400">*</span>}
+                  </label>
+                  {field.type === 'short_text' && (
+                    <input value={answers[field.id] || ''} onChange={e => setAnswers(a => ({...a, [field.id]: e.target.value}))} className={inputCls} />
+                  )}
+                  {field.type === 'paragraph' && (
+                    <textarea value={answers[field.id] || ''} onChange={e => setAnswers(a => ({...a, [field.id]: e.target.value}))} rows={3} className={`${inputCls} resize-none`} />
+                  )}
+                  {field.type === 'number' && (
+                    <input type="number" value={answers[field.id] || ''} onChange={e => setAnswers(a => ({...a, [field.id]: e.target.value}))} className={inputCls} />
+                  )}
+                  {field.type === 'dropdown' && (
+                    <select value={answers[field.id] || ''} onChange={e => setAnswers(a => ({...a, [field.id]: e.target.value}))} className={`${inputCls} bg-white`}>
+                      <option value="">Select an option</option>
+                      {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  )}
+                  {field.type === 'multiple_choice' && (
+                    <div className="space-y-2">
+                      {field.options.map(opt => (
+                        <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                          <input type="radio" name={field.id} value={opt} checked={answers[field.id] === opt} onChange={() => setAnswers(a => ({...a, [field.id]: opt}))} className="accent-blue-600" />
+                          <span className="text-sm text-gray-700">{opt}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  {field.type === 'checkboxes' && (
+                    <div className="space-y-2">
+                      {field.options.map(opt => (
+                        <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={(answers[field.id] || []).includes(opt)}
+                            onChange={e => setAnswers(a => { const cur: string[] = a[field.id] || []; return {...a, [field.id]: e.target.checked ? [...cur, opt] : cur.filter((x: string) => x !== opt)}; })}
+                            className="accent-blue-600 w-4 h-4" />
+                          <span className="text-sm text-gray-700">{opt}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {status === 'error' && (
+                <div className="flex items-center gap-2 text-sm text-red-600 font-semibold">
+                  <AlertCircle className="w-4 h-4" />{errMsg}
+                </div>
+              )}
+
+              <button type="submit" disabled={status === 'submitting'}
+                className="w-full py-3 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-60 flex items-center justify-center gap-2"
+                style={{ backgroundColor: '#0B3D91' }}>
+                {status === 'submitting' ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : 'Submit Sign-Up'}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -82,6 +231,26 @@ export default function CommunityPage() {
   const [activities, setActivities] = useState<Activity[]>(DEFAULT_ACTIVITIES);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [activeActivity, setActiveActivity] = useState<{ activity: Activity; step: 'detail' | 'form' } | null>(null);
+  const [joinableEvents, setJoinableEvents] = useState<any[]>([]);
+  const [loadingJE, setLoadingJE] = useState(true);
+  const [signUpEvent, setSignUpEvent] = useState<any | null>(null);
+
+  useEffect(() => {
+    fetch(`${STRAPI}/api/events?filters[is_joinable][$eq]=true&fields[0]=title&fields[1]=slug&fields[2]=date_start&fields[3]=category&populate[cover_image][fields][0]=url&sort=date_start:asc&pagination[limit]=50`, {
+      headers: { Authorization: `Bearer ${STRAPI_TOKEN}` },
+    })
+      .then(r => r.json())
+      .then(d => setJoinableEvents((d.data || []).map((e: any) => ({
+        id: e.id,
+        slug: e.slug || e.attributes?.slug,
+        title: e.title || e.attributes?.title,
+        date_start: e.date_start || e.attributes?.date_start,
+        category: e.category || e.attributes?.category,
+        coverUrl: e.cover_image?.url || e.attributes?.cover_image?.data?.attributes?.url,
+      }))))
+      .catch(() => {})
+      .finally(() => setLoadingJE(false));
+  }, []);
 
   useEffect(() => {
     fetch('/api/strapi/participation-options')
@@ -182,6 +351,67 @@ export default function CommunityPage() {
           )}
         </section>
 
+        {/* Joinable Events */}
+        {(loadingJE || joinableEvents.length > 0) && (
+          <section>
+            <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8">
+              <p className="section-label mb-2" style={{ color: '#1565C0' }}>Event Sign-Ups</p>
+              <h2 className="text-3xl font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>Join an Upcoming Event</h2>
+              <div className="w-8 h-0.5 rounded-full mb-3" style={{ backgroundColor: '#F5C518' }} />
+              <p className="text-gray-500 text-sm max-w-lg" style={{ fontFamily: BL }}>
+                Sign up directly for events open to the community.
+              </p>
+            </motion.div>
+
+            {loadingJE ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {[1, 2, 3].map(i => <div key={i} className="rounded-2xl bg-white h-48 animate-pulse border border-gray-100" />)}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {joinableEvents.map((event, idx) => (
+                  <motion.div key={event.slug}
+                    initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: idx * 0.08 }}
+                    className="group flex flex-col rounded-2xl overflow-hidden bg-white shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                    <div className="h-1" style={{ backgroundColor: '#0B3D91' }} />
+                    {event.coverUrl && (
+                      <div className="h-36 overflow-hidden">
+                        <img src={event.coverUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      </div>
+                    )}
+                    <div className="flex flex-col flex-1 p-5">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        {event.category && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 capitalize">{event.category}</span>
+                        )}
+                        {event.date_start && (
+                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(event.date_start).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-bold text-gray-900 mb-4 leading-snug flex-1" style={{ fontFamily: HL }}>{event.title}</h3>
+                      <div className="flex gap-2 mt-auto">
+                        <Link href={`/events/${event.slug}`}
+                          className="flex-1 py-2.5 rounded-xl text-sm font-bold border transition hover:bg-gray-50 flex items-center justify-center gap-1.5"
+                          style={{ borderColor: '#0B3D91', color: '#0B3D91', fontFamily: BL }}>
+                          <Eye className="w-3.5 h-3.5" /> View
+                        </Link>
+                        <button onClick={() => setSignUpEvent(event)}
+                          className="flex-1 py-2.5 rounded-xl text-sm font-bold transition hover:opacity-90 flex items-center justify-center gap-1.5"
+                          style={{ backgroundColor: '#0B3D91', color: '#F5C518', fontFamily: BL }}>
+                          Sign Up <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
         {/* Why It Matters */}
         <section>
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8">
@@ -212,6 +442,10 @@ export default function CommunityPage() {
           initialStep={activeActivity.step}
           onClose={() => setActiveActivity(null)}
         />
+      )}
+
+      {signUpEvent && (
+        <EventSignUpModal event={signUpEvent} onClose={() => setSignUpEvent(null)} />
       )}
     </div>
   );
