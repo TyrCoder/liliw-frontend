@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminAuth } from '@/lib/auth';
+import { requireAdminAuth, requireStaffAuth } from '@/lib/auth';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
@@ -11,7 +11,7 @@ const headers = {
 
 // GET /api/admin/assign-role — list all UP users and roles
 export async function GET(request: NextRequest) {
-  if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!await requireStaffAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const [usersRes, rolesRes] = await Promise.all([
     fetch(`${STRAPI}/api/users?populate=role`, { headers }),
     fetch(`${STRAPI}/api/users-permissions/roles`, { headers }),

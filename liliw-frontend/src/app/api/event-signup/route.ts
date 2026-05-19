@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminAuth } from '@/lib/auth';
+import { requireStaffAuth } from '@/lib/auth';
 import { supabaseServer as supabase } from '@/lib/supabase-server';
 import { logger } from '@/lib/logger';
 
@@ -65,8 +65,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const isAdmin = await requireAdminAuth(request);
-  if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!await requireStaffAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const res = await fetch(
