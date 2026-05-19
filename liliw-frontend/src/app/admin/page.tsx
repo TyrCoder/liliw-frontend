@@ -2318,49 +2318,46 @@ export default function AdminDashboard() {
             return !!(c?.latitude ?? c?.lat);
           });
 
+          const scrapeOne = async (attr: any): Promise<void> => {
+            const c = attr.attributes.coordinates as any;
+            const lat = c?.latitude ?? c?.lat ?? null;
+            const lng = c?.longitude ?? c?.lng ?? null;
+            const authH = { Authorization: `Bearer ${token}` };
+            try {
+              const startRes = await fetch('/api/admin/scrape-reviews', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...authH },
+                body: JSON.stringify({ strapiId: attr.strapiId, attractionName: attr.attributes.name, lat, lng }),
+              });
+              const { runId } = await startRes.json();
+              if (!runId) return;
+              const deadline = Date.now() + 180_000;
+              while (Date.now() < deadline) {
+                await new Promise(r => setTimeout(r, 5000));
+                const poll = await fetch(
+                  `/api/admin/scrape-reviews?runId=${runId}&strapiId=${attr.strapiId}&attractionName=${encodeURIComponent(attr.attributes.name)}`,
+                  { headers: authH }
+                ).then(r => r.json()).catch(() => ({}));
+                if (poll.status === 'SUCCEEDED' || poll.status === 'FAILED' || poll.status === 'ABORTED') break;
+              }
+            } catch {}
+          };
+
           const handleScrapeAll = async () => {
             const unscraped = attractionsWithCoords.filter(a => !cachedMap[a.strapiId]);
             if (unscraped.length === 0) return;
             setScrapeAllActive(true);
             setScrapeAllProgress({ current: 0, total: unscraped.length });
 
-            // Start all runs in parallel
-            const runs = await Promise.all(unscraped.map(async attr => {
-              try {
-                const c = attr.attributes.coordinates;
-                const lat = c?.latitude ?? c?.lat ?? null;
-                const lng = c?.longitude ?? c?.lng ?? null;
-                const allAuthH = { Authorization: `Bearer ${token}` };
-                const res = await fetch('/api/admin/scrape-reviews', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', ...allAuthH },
-                  body: JSON.stringify({ strapiId: attr.strapiId, attractionName: attr.attributes.name, lat, lng }),
-                });
-                const { runId } = await res.json();
-                return { attr, runId: runId || null };
-              } catch { return { attr, runId: null }; }
-            }));
-
-            // Poll all in parallel until each finishes
-            const pollAuthH = { Authorization: `Bearer ${token}` };
+            // Process in batches of 3 to respect Apify concurrency limits
+            const BATCH = 3;
             let completed = 0;
-            await Promise.all(runs.filter(r => r.runId).map(async ({ attr, runId }) => {
-              const deadline = Date.now() + 300_000;
-              while (Date.now() < deadline) {
-                await new Promise(r => setTimeout(r, 5000));
-                try {
-                  const poll = await fetch(
-                    `/api/admin/scrape-reviews?runId=${runId}&strapiId=${attr.strapiId}&attractionName=${encodeURIComponent(attr.attributes.name)}`,
-                    { headers: pollAuthH }
-                  ).then(r => r.json());
-                  if (poll.status === 'SUCCEEDED' || poll.status === 'FAILED' || poll.status === 'ABORTED') {
-                    completed++;
-                    setScrapeAllProgress(p => ({ ...p, current: completed }));
-                    break;
-                  }
-                } catch {}
-              }
-            }));
+            for (let i = 0; i < unscraped.length; i += BATCH) {
+              const batch = unscraped.slice(i, i + BATCH);
+              await Promise.all(batch.map(attr => scrapeOne(attr)));
+              completed = Math.min(i + BATCH, unscraped.length);
+              setScrapeAllProgress({ current: completed, total: unscraped.length });
+            }
 
             fetch('/api/admin/external-reviews', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => setExternalReviews(d.data || []));
             setScrapeAllActive(false);
