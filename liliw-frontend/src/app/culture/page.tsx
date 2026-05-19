@@ -142,8 +142,8 @@ function CultureModal({ item, onClose }: { item: any; onClose: () => void }) {
           )}
 
           {/* Content */}
-          <div className="p-6">
-            <h2 className="text-2xl font-extrabold mb-4" style={{ color: '#1A1A2E', fontFamily: HL }}>{title}</h2>
+          <div className="p-4 sm:p-6">
+            <h2 className="text-xl sm:text-2xl font-extrabold mb-3 sm:mb-4" style={{ color: '#1A1A2E', fontFamily: HL }}>{title}</h2>
             {description && (
               <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line" style={{ fontFamily: BL }}>{description}</p>
             )}
