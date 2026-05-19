@@ -63,15 +63,34 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       className={`${cormorant.variable} ${outfit.variable} ${plusJakarta.variable} h-full antialiased`}
     >
       <head>
-        <meta name="mobile-web-app-capable" content="yes" />
+        {/* PWA core */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0B3D91" />
+
+        {/* Favicons */}
+        <link rel="icon" type="image/png" sizes="48x48"  href="/icons/icon-48x48.png" />
+        <link rel="icon" type="image/png" sizes="96x96"  href="/icons/icon-96x96.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
+
+        {/* Apple / iOS */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Liliw" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-72x72.png" />
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#0B3D91" />
+        <link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128x128.png" />
+        <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
+
+        {/* Windows / Edge */}
+        <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+        <meta name="msapplication-TileColor" content="#0B3D91" />
+        <meta name="msapplication-config" content="none" />
+        <meta name="mobile-web-app-capable" content="yes" />
+
+        {/* Open Graph for share previews */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Liliw Tourism" />
+        <meta property="og:image" content="/icons/icon-512x512.png" />
       </head>
       <body className="min-h-full flex flex-col overflow-x-hidden" style={{ backgroundColor: '#F9F6F0', color: '#1A1A2E' }}>
         <AuthProvider>

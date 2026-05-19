@@ -54,6 +54,13 @@ function isNetworkOnly(pathname) {
   return NETWORK_ONLY_PATHS.some((p) => pathname.startsWith(p));
 }
 
+// ── Skip waiting on demand (allows instant update when user clicks Reload) ────
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // ── Install ───────────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(

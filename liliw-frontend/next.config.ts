@@ -10,10 +10,11 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "worker-src 'self'",
       "img-src 'self' data: blob: https://res.cloudinary.com https://liliw-strapi-backend.onrender.com https://*.tile.openstreetmap.org",
       "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com https://liliw-strapi-backend.onrender.com https://*.algolia.net https://*.algolia.io https://nominatim.openstreetmap.org https://api.mapbox.com https://events.mapbox.com",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://fonts.gstatic.com",
       "frame-ancestors 'none'",
     ].join('; '),
   },
