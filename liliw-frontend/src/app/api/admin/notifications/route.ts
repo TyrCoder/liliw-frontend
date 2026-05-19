@@ -43,11 +43,13 @@ export async function GET(request: NextRequest) {
 
   if (submissions.status === 'fulfilled' && submissions.value.data) {
     for (const r of submissions.value.data) {
+      const subType = (r.type || 'feedback') as string;
+      const typeLabel = subType.charAt(0).toUpperCase() + subType.slice(1);
       items.push({
         id: `sub-${r.id}`,
         type: 'submission',
-        title: r.name || 'New Submission',
-        subtitle: r.type || 'feedback',
+        title: `New ${typeLabel} Submission`,
+        subtitle: `From: ${r.name || 'Unknown'}`,
         status: r.status || 'new',
         createdAt: r.created_at,
       });
@@ -55,11 +57,12 @@ export async function GET(request: NextRequest) {
   }
   if (participation.status === 'fulfilled' && participation.value.data) {
     for (const r of participation.value.data) {
+      const personName = (r as any).full_name || (r as any).name || 'Someone';
       items.push({
         id: `part-${r.id}`,
         type: 'participation',
-        title: (r as any).full_name || (r as any).name || 'Participation Request',
-        subtitle: (r as any).event_name || (r as any).type || '',
+        title: 'New Participation Request',
+        subtitle: `From: ${personName}`,
         status: r.status || 'pending',
         createdAt: r.created_at,
       });
@@ -67,11 +70,12 @@ export async function GET(request: NextRequest) {
   }
   if (lboApps.status === 'fulfilled' && lboApps.value.data) {
     for (const r of lboApps.value.data) {
+      const bizName = (r as any).business_name || (r as any).owner_name || 'Unknown Business';
       items.push({
         id: `lbo-${r.id}`,
         type: 'lbo_application',
-        title: (r as any).business_name || (r as any).owner_name || 'LBO Application',
-        subtitle: (r as any).owner_name || '',
+        title: 'New LBO Application',
+        subtitle: bizName,
         status: r.status || 'pending',
         createdAt: r.created_at,
       });
@@ -79,11 +83,12 @@ export async function GET(request: NextRequest) {
   }
   if (attractionReqs.status === 'fulfilled' && attractionReqs.value.data) {
     for (const r of attractionReqs.value.data) {
+      const attrName = (r as any).attraction_name || 'Unknown Attraction';
       items.push({
         id: `attr-${r.id}`,
         type: 'attraction_request',
-        title: (r as any).attraction_name || 'Attraction Request',
-        subtitle: (r as any).lbo_name || '',
+        title: 'New Attraction Request',
+        subtitle: attrName,
         status: r.status || 'pending',
         createdAt: r.created_at,
       });
