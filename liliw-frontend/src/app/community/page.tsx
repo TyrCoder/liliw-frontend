@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, MessageSquare, Users, Briefcase } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MessageSquare, Users, Briefcase, Eye } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import ParticipationModal from '@/components/ParticipationModal';
 
@@ -81,7 +81,7 @@ type Activity = { type: string; title: string; description: string; items: strin
 export default function CommunityPage() {
   const [activities, setActivities] = useState<Activity[]>(DEFAULT_ACTIVITIES);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
-  const [activeActivity, setActiveActivity] = useState<{ title: string; type: string } | null>(null);
+  const [activeActivity, setActiveActivity] = useState<{ activity: Activity; step: 'detail' | 'form' } | null>(null);
 
   useEffect(() => {
     fetch('/api/strapi/participation-options')
@@ -163,11 +163,18 @@ export default function CommunityPage() {
                         ))}
                       </ul>
                     )}
-                    <button onClick={() => setActiveActivity({ title: act.title, type: act.type })}
-                      className="mt-auto w-full py-2.5 rounded-xl text-sm font-bold transition hover:opacity-90 flex items-center justify-center gap-2"
-                      style={{ backgroundColor: '#0B3D91', color: '#F5C518', fontFamily: BL }}>
-                      {act.cta} <ChevronRight className="w-4 h-4" />
-                    </button>
+                    <div className="mt-auto flex gap-2">
+                      <button onClick={() => setActiveActivity({ activity: act, step: 'detail' })}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-bold border transition hover:bg-gray-50 flex items-center justify-center gap-1.5"
+                        style={{ borderColor: '#0B3D91', color: '#0B3D91', fontFamily: BL }}>
+                        <Eye className="w-3.5 h-3.5" /> View
+                      </button>
+                      <button onClick={() => setActiveActivity({ activity: act, step: 'form' })}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-bold transition hover:opacity-90 flex items-center justify-center gap-1.5"
+                        style={{ backgroundColor: '#0B3D91', color: '#F5C518', fontFamily: BL }}>
+                        Sign Up <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -200,7 +207,11 @@ export default function CommunityPage() {
       </div>
 
       {activeActivity && (
-        <ParticipationModal activityTitle={activeActivity.title} activityType={activeActivity.type} onClose={() => setActiveActivity(null)} />
+        <ParticipationModal
+          activity={activeActivity.activity}
+          initialStep={activeActivity.step}
+          onClose={() => setActiveActivity(null)}
+        />
       )}
     </div>
   );
