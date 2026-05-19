@@ -175,14 +175,14 @@ function RouteOverlay({
                   className="w-4 h-4 border-2 rounded-full animate-spin flex-shrink-0"
                   style={{ borderColor: 'rgba(245,197,24,0.3)', borderTopColor: '#F5C518' }}
                 />
-                <span className="text-white/60 text-sm">Calculating shortest routeâ€¦</span>
+                <span className="text-white/60 text-sm">Calculating shortest route…</span>
               </div>
             )}
 
             {/* Route info */}
             {!routeLoading && routeInfo && (
               <>
-                {/* Origin â†’ Destination visual */}
+                {/* Origin → Destination visual */}
                 <div className="px-4 pt-4 pb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                   <div className="flex items-start gap-3">
                     {/* Dot-line-dot */}
@@ -224,7 +224,7 @@ function RouteOverlay({
                   <Navigation className="w-4 h-4 flex-shrink-0" style={{ color: '#F5C518' }} />
                   <div className="flex-1">
                     <span className="text-white font-bold">{routeInfo.distance} km</span>
-                    <span className="text-white/30 mx-2">Â·</span>
+                    <span className="text-white/30 mx-2">·</span>
                     <span className="text-white/70 text-sm">{routeInfo.duration} min</span>
                   </div>
                   {/* Driving / walking toggle */}
@@ -260,7 +260,7 @@ function RouteOverlay({
                         borderBottom: stepsOpen ? '1px solid rgba(255,255,255,0.08)' : 'none',
                       }}
                     >
-                      <span>Turn-by-turn Â· {routeInfo.steps.length - 1} steps</span>
+                      <span>Turn-by-turn · {routeInfo.steps.length - 1} steps</span>
                       <ChevronDown
                         className={`w-3.5 h-3.5 transition-transform duration-200 ${stepsOpen ? 'rotate-180' : ''}`}
                       />
@@ -552,7 +552,7 @@ export default function MapPage() {
                 className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto mb-3"
                 style={{ borderColor: '#F5C518' }}
               />
-              <p className="text-white/60 text-sm">Loading attractionsâ€¦</p>
+              <p className="text-white/60 text-sm">Loading attractions…</p>
             </div>
           </div>
         ) : (
@@ -783,7 +783,7 @@ export default function MapPage() {
           </Map>
         )}
 
-        {/* Route overlay â€” floats bottom-center on the map */}
+        {/* Route overlay — floats bottom-center on the map */}
         <RouteOverlay
           routeInfo={routeInfo}
           routeLoading={routeLoading}
@@ -793,7 +793,7 @@ export default function MapPage() {
           onModeChange={handleModeChange}
         />
 
-        {/* Legend â€” hidden when route is active to avoid overlap */}
+        {/* Legend — hidden when route is active to avoid overlap */}
         {!routeInfo && !routeLoading && (
           <motion.div
             initial={{ opacity: 0, x: -10 }}
