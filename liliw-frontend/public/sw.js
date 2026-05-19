@@ -1,4 +1,4 @@
-const CACHE_NAME  = 'liliw-v5';
+const CACHE_NAME  = 'liliw-v6';
 const API_CACHE   = 'liliw-api-v2';
 const IMAGE_CACHE = 'liliw-img-v2';
 
@@ -8,8 +8,10 @@ const API_MAX_AGE   = 5 * 60 * 1000;             // 5 minutes
 // Pages to pre-cache on install
 const PRECACHE_URLS = [
   '/',
-  '/attractions', '/map', '/news', '/about', '/faq',
-  '/heritage', '/culture', '/arts', '/stories', '/contact',
+  '/about', '/arts', '/attractions', '/business', '/community',
+  '/contact', '/culture', '/dining', '/faq', '/gallery',
+  '/heritage', '/itineraries', '/lbo', '/news', '/participate',
+  '/profile', '/stories', '/tourist-spots',
   '/offline.html',
 ];
 
