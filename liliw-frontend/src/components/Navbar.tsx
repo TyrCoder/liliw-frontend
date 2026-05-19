@@ -242,7 +242,7 @@ export default function Navbar() {
                   <button onClick={() => notifOpen ? setNotifOpen(false) : openNotif()}
                     className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-blue-50 transition"
                     aria-label="Notifications">
-                    <Bell className="w-4.5 h-4.5" style={{ color: '#374151' }} />
+                    <Bell className="w-5 h-5" style={{ color: '#374151' }} />
                     {newCount > 0 && (
                       <span className="absolute top-1 right-1 w-4 h-4 rounded-full text-white text-[9px] font-bold flex items-center justify-center"
                         style={{ backgroundColor: '#EF4444', lineHeight: 1 }}>
