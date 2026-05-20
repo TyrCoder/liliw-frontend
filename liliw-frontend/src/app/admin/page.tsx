@@ -1773,6 +1773,32 @@ export default function AdminDashboard() {
             setVrExportOpen(false);
           };
 
+          const handleExportCSV = () => {
+            const exportRecords = [...visitorRecords]
+              .filter(r => Number(r.month) === vrExportMonth && Number(r.year) === vrExportYear)
+              .sort((a, b) => (a.attraction_name || '').localeCompare(b.attraction_name || ''));
+            const period = `${MONTHS_FULL[vrExportMonth - 1]} ${vrExportYear}`;
+            const esc = (v: string | number) => {
+              const s = String(v ?? '');
+              return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+            };
+            const rows: (string | number)[][] = [
+              ['Attraction Name','LBO Email','Period','Local Male','Local Female','Local Total','Other City Male','Other City Female','Other City Total','Other Province Male','Other Province Female','Other Province Total','Foreign Male','Foreign Female','Foreign Total','Grand Total'],
+              ...exportRecords.map(r => {
+                const lM=r.local_male||0, lF=r.local_female||0, cM=r.other_city_male||0, cF=r.other_city_female||0;
+                const pM=r.other_province_male||0, pF=r.other_province_female||0, fM=r.foreign_male||0, fF=r.foreign_female||0;
+                return [r.attraction_name||'—', r.lbo_email||'—', period, lM,lF,lM+lF, cM,cF,cM+cF, pM,pF,pM+pF, fM,fF,fM+fF, lM+lF+cM+cF+pM+pF+fM+fF];
+              }),
+            ];
+            const csv = rows.map(r => r.map(esc).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `visitor-records-${MONTHS_FULL[vrExportMonth-1]}-${vrExportYear}.csv`;
+            a.click(); URL.revokeObjectURL(url);
+            setVrExportOpen(false);
+          };
+
           return (
             <>
               {/* Export Modal */}
@@ -1817,13 +1843,18 @@ export default function AdminDashboard() {
                     })()}
                     <div className="flex gap-2">
                       <button onClick={() => setVrExportOpen(false)}
-                        className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
+                        className="py-2.5 px-4 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
                         Cancel
+                      </button>
+                      <button onClick={handleExportCSV}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition hover:opacity-90 border"
+                        style={{ borderColor: '#1565C0', color: '#1565C0', backgroundColor: '#EFF6FF' }}>
+                        <Download className="w-4 h-4" /> .csv
                       </button>
                       <button onClick={handleExportExcel}
                         className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition hover:opacity-90"
                         style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
-                        <Download className="w-4 h-4" /> Export .xlsx
+                        <Download className="w-4 h-4" /> .xlsx
                       </button>
                     </div>
                   </div>
@@ -2296,7 +2327,38 @@ export default function AdminDashboard() {
                   }}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition"
                   style={{ background: 'linear-gradient(135deg,#1565C0,#0B3D91)', boxShadow: '0 4px 14px rgba(21,101,192,.3)' }}>
-                  <Download className="w-4 h-4" /> Export Full Report
+                  <Download className="w-4 h-4" /> Export .xlsx
+                </button>
+                <button
+                  onClick={() => {
+                    const reportDate = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+                    const esc = (v: string | number) => { const s = String(v ?? ''); return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; };
+                    const rows: (string|number)[][] = [
+                      ['LILIW TOURISM — FULL ANALYTICS REPORT'],
+                      [`Generated: ${reportDate}`],
+                      [],
+                      ['Section','Metric','Value'],
+                      ['Analytics','Page Views', analytics?.pageViews ?? 0],
+                      ['Analytics','Unique Visitors', analytics?.uniqueVisitors ?? 0],
+                      ['Analytics','Bounce Rate', analytics?.bounceRate ?? '—'],
+                      ['Ratings','Total Reviews', reviews.length],
+                      ['Ratings','Average Rating', avgRating],
+                      ...ratingsRows.map(r => ['Ratings', r.name, (r.total / r.count).toFixed(2)]),
+                      ['Submissions','Total', submissions.length],
+                      ...Object.entries(subByType).map(([t, c]) => ['Submissions', t, c]),
+                      ['Visitor Records','Total Visitors', totalVisitors],
+                      ...Object.entries(vrByAttr).map(([a, c]) => ['Visitor Records', a, c]),
+                    ];
+                    const csv = rows.map(r => r.map(esc).join(',')).join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `liliw-full-report-${Date.now()}.csv`;
+                    a.click(); URL.revokeObjectURL(url);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition border"
+                  style={{ borderColor: '#1565C0', color: '#1565C0', backgroundColor: '#EFF6FF' }}>
+                  <Download className="w-4 h-4" /> Export .csv
                 </button>
               </div>
 
