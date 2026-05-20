@@ -612,7 +612,7 @@ export default function NewsPage() {
                           onChange={e => setSubEmail(e.target.value)}
                           placeholder="Enter your email"
                           required
-                          className="px-4 py-3 rounded-xl text-gray-900 flex-1 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 shadow-inner"
+                          className="px-4 py-3 rounded-xl bg-white text-gray-900 flex-1 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
                           style={{ fontFamily: BL }}
                         />
                         <button
