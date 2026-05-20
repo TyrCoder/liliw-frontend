@@ -118,7 +118,6 @@ export default function AttractionsPage() {
   const [error, setError]     = useState('');
   const [query, setQuery]     = useState('');
   const [selectedType, setSelectedType]         = useState('all');
-  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
     fetch('/api/strapi/attractions')
@@ -129,13 +128,13 @@ export default function AttractionsPage() {
   }, []);
 
   const applyFilters = useCallback(
-    (base: Attraction[], type: string, cat: string) =>
-      base.filter(a => (type === 'all' || a.type === type) && (cat === 'all' || a.attributes.category === cat)),
+    (base: Attraction[], type: string) =>
+      base.filter(a => type === 'all' || a.type === type),
     [],
   );
 
   useEffect(() => {
-    if (!query.trim()) { setResults(applyFilters(all, selectedType, selectedCategory)); return; }
+    if (!query.trim()) { setResults(applyFilters(all, selectedType)); return; }
     let cancelled = false;
     const timer = setTimeout(async () => {
       setSearching(true);
@@ -149,24 +148,24 @@ export default function AttractionsPage() {
             a.attributes.name.toLowerCase().includes(query.toLowerCase()) ||
             (a.attributes.description ?? '').toLowerCase().includes(query.toLowerCase())
           );
-          setResults(applyFilters(local, selectedType, selectedCategory));
+          setResults(applyFilters(local, selectedType));
         } else {
           const fallback = all.filter(a =>
             a.attributes.name.toLowerCase().includes(query.toLowerCase()) ||
             (a.attributes.description ?? '').toLowerCase().includes(query.toLowerCase()) ||
             (a.attributes.location ?? '').toLowerCase().includes(query.toLowerCase())
           );
-          setResults(applyFilters(fallback, selectedType, selectedCategory));
+          setResults(applyFilters(fallback, selectedType));
         }
       } catch {
-        setResults(applyFilters(all.filter(a => a.attributes.name.toLowerCase().includes(query.toLowerCase())), selectedType, selectedCategory));
+        setResults(applyFilters(all.filter(a => a.attributes.name.toLowerCase().includes(query.toLowerCase())), selectedType));
       } finally { if (!cancelled) setSearching(false); }
     }, 280);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [query, selectedType, selectedCategory, all, applyFilters]);
+  }, [query, selectedType, all, applyFilters]);
 
-  const clearAll = () => { setQuery(''); setSelectedType('all'); setSelectedCategory('all'); };
-  const hasFilters = query || selectedType !== 'all' || selectedCategory !== 'all';
+  const clearAll = () => { setQuery(''); setSelectedType('all'); };
+  const hasFilters = query || selectedType !== 'all';
 
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
@@ -210,15 +209,6 @@ export default function AttractionsPage() {
               <option value="heritage">Heritage Sites</option>
               <option value="spot">Tourist Spots</option>
               <option value="dining">Dining &amp; Food</option>
-            </select>
-            <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 font-semibold text-gray-700 text-sm">
-              <option value="all">All Categories</option>
-              <option value="historical">Historical</option>
-              <option value="cultural">Cultural</option>
-              <option value="natural">Natural</option>
-              <option value="religious">Religious</option>
-              <option value="scenic">Scenic</option>
             </select>
             {hasFilters && (
               <button onClick={clearAll} className="px-4 py-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 font-semibold text-sm transition flex items-center gap-1">

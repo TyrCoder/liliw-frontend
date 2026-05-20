@@ -799,9 +799,12 @@ export default function ImmersiveViewer({
       transition={{ duration: 0.6 }}
       ref={containerRef}
       className="rounded-xl overflow-hidden bg-black border-2 select-none"
-      style={{ borderColor: editMode ? '#FFB400' : '#00BFB3' }}
+      style={{
+        borderColor: editMode ? '#FFB400' : '#00BFB3',
+        ...(isFullscreen ? { height: '100vh', width: '100vw', borderRadius: 0 } : {}),
+      }}
     >
-      <div className="relative w-full" style={{ height: 'clamp(280px, calc(100svh - 120px), 900px)' }}>
+      <div className="relative w-full" style={{ height: isFullscreen ? '100%' : 'clamp(280px, calc(100svh - 120px), 900px)' }}>
 
         {/* Loading */}
         <AnimatePresence>
