@@ -16,5 +16,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, data: [] });
   }
 
-  return NextResponse.json({ success: true, data: data || [] });
+  // Deduplicate rows with identical email + message + date (keeps earliest id)
+  const seen = new Set<string>();
+  const deduped = (data || []).filter(row => {
+    const day = row.created_at ? row.created_at.slice(0, 10) : '';
+    const key = `${row.email}|${row.message}|${day}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return NextResponse.json({ success: true, data: deduped });
 }
