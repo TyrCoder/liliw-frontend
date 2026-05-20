@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { sendRejectionEmail } from '@/lib/email';
-import { requireAdminAuth } from '@/lib/auth';
+import { requireAdminAuth, requireStaffAuth } from '@/lib/auth';
 
 // GET — list all LBO applications
 export async function GET(request: NextRequest) {
-  if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!await requireStaffAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data, error } = await supabaseServer
     .from('lbo_applications')
