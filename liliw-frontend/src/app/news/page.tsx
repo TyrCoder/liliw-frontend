@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar, Bell, X, MapPin, Maximize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Bell, X, MapPin, Maximize2, CheckCircle, Loader2 } from 'lucide-react';
 import PhotoLightbox from '@/components/PhotoLightbox';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -348,6 +348,23 @@ export default function NewsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<NewsItem | null>(null);
+  const [subEmail,  setSubEmail]  = useState('');
+  const [subStatus, setSubStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubStatus('loading');
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: subEmail }),
+      });
+      setSubStatus(res.ok ? 'success' : 'error');
+    } catch {
+      setSubStatus('error');
+    }
+  };
 
   useEffect(() => {
     fetch('/api/strapi/news-events')
@@ -555,20 +572,66 @@ export default function NewsPage() {
 
               {/* Subscribe CTA */}
               {!selectedDay && (
-                <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                  className="mt-10 rounded-2xl p-8 text-white text-center"
-                  style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)' }}>
-                  <h3 className="text-2xl font-bold mb-2" style={{ fontFamily: HL }}>Stay in the Loop</h3>
-                  <p className="mb-6 text-white/70 text-sm" style={{ fontFamily: BL }}>
-                    Subscribe to receive updates on festivals, events, and community initiatives
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                    <input type="email" placeholder="Enter your email"
-                      className="px-4 py-3 rounded-xl text-gray-900 flex-1 text-sm focus:outline-none" style={{ fontFamily: BL }} />
-                    <button className="px-6 py-3 rounded-xl font-semibold text-sm transition hover:opacity-90"
-                      style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: BL }}>
-                      Subscribe
-                    </button>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                  className="mt-10 relative overflow-hidden rounded-2xl p-8 text-white text-center"
+                  style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 60%, #1976D2 100%)' }}
+                >
+                  {/* Decorative rings */}
+                  <span className="absolute -top-10 -right-10 w-44 h-44 rounded-full border-18 border-white/10 pointer-events-none" />
+                  <span className="absolute -bottom-14 -left-10 w-56 h-56 rounded-full border-18 border-white/10 pointer-events-none" />
+                  <span className="absolute top-5 left-6 w-3 h-3 rounded-full bg-yellow-300/30 pointer-events-none" />
+                  <span className="absolute bottom-5 right-8 w-2 h-2 rounded-full bg-yellow-300/40 pointer-events-none" />
+                  <span className="absolute top-1/2 left-3 w-1.5 h-1.5 rounded-full bg-white/20 pointer-events-none" />
+
+                  {/* Icon badge */}
+                  <div className="relative z-10 w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+                    style={{ backgroundColor: 'rgba(245,197,24,0.18)', border: '1.5px solid rgba(245,197,24,0.45)' }}>
+                    <Bell className="w-7 h-7" style={{ color: '#F5C518' }} />
+                  </div>
+
+                  <div className="relative z-10">
+                    <h3 className="text-2xl font-extrabold mb-1" style={{ fontFamily: HL }}>Stay in the Loop</h3>
+                    <p className="mb-6 text-white/65 text-sm max-w-xs mx-auto leading-relaxed" style={{ fontFamily: BL }}>
+                      Get the latest festivals, events, and community updates from Liliw
+                    </p>
+
+                    {subStatus === 'success' ? (
+                      <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl"
+                        style={{ backgroundColor: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)' }}>
+                        <CheckCircle className="w-5 h-5 text-green-400" />
+                        <span className="text-green-300 font-semibold text-sm" style={{ fontFamily: BL }}>You're subscribed!</span>
+                      </motion.div>
+                    ) : (
+                      <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-2 max-w-sm mx-auto">
+                        <input
+                          type="email"
+                          value={subEmail}
+                          onChange={e => setSubEmail(e.target.value)}
+                          placeholder="Enter your email"
+                          required
+                          className="px-4 py-3 rounded-xl text-gray-900 flex-1 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 shadow-inner"
+                          style={{ fontFamily: BL }}
+                        />
+                        <button
+                          type="submit"
+                          disabled={subStatus === 'loading'}
+                          className="px-5 py-3 rounded-xl font-bold text-sm transition hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2 shrink-0 shadow-md"
+                          style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: BL }}>
+                          {subStatus === 'loading'
+                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                            : 'Subscribe'}
+                        </button>
+                      </form>
+                    )}
+
+                    {subStatus === 'error' && (
+                      <p className="mt-2 text-red-300 text-xs" style={{ fontFamily: BL }}>
+                        Something went wrong. Please try again.
+                      </p>
+                    )}
                   </div>
                 </motion.div>
               )}
