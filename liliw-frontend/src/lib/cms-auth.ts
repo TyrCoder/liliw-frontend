@@ -45,19 +45,25 @@ export async function getCmsRole(req: NextRequest): Promise<CmsRole | null> {
 }
 
 export const CMS_TABLES: Record<string, string> = {
-  attractions: 'cms_attractions',
-  events:      'cms_events',
-  news:        'cms_news',
-  'art-forms': 'cms_art_forms',
-  artisans:    'cms_artisans',
-  stories:     'cms_stories',
+  attractions:   'cms_attractions',
+  events:        'cms_events',
+  news:          'cms_news',
+  'art-forms':   'cms_art_forms',
+  artisans:      'cms_artisans',
+  stories:       'cms_stories',
+  'hero-slides': 'cms_hero_slides',
+  faqs:          'cms_faqs',
+  itineraries:   'cms_itineraries',
 };
 
 export const CMS_CONTENT_TYPES: Record<string, string> = {
-  attractions: 'attraction',
-  events:      'event',
-  news:        'news',
-  'art-forms': 'art_form',
-  artisans:    'artisan',
-  stories:     'story',
+  attractions:   'attraction',
+  events:        'event',
+  news:          'news',
+  'art-forms':   'art_form',
+  artisans:      'artisan',
+  stories:       'story',
+  'hero-slides': 'hero_slide',
+  faqs:          'faq',
+  itineraries:   'itinerary',
 };
