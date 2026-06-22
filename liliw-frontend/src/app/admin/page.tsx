@@ -14,6 +14,12 @@ import {
   Download, BarChart2, Plus, Trash2, ArrowUp, ArrowDown, ClipboardList, Send,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import AttractionsTab from '@/components/admin/cms/AttractionsTab';
+import EventsTab      from '@/components/admin/cms/EventsTab';
+import NewsTab        from '@/components/admin/cms/NewsTab';
+import ArtFormsTab    from '@/components/admin/cms/ArtFormsTab';
+import ArtisansTab    from '@/components/admin/cms/ArtisansTab';
+import StoriesTab     from '@/components/admin/cms/StoriesTab';
 import * as XLSX from 'xlsx-js-style';
 
 const STRAPI_URL = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
@@ -27,7 +33,7 @@ interface StrapiActivity { id: string; contentType: string; entryName: string; a
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses';
+type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses' | 'cms-attractions' | 'cms-events' | 'cms-news' | 'cms-art-forms' | 'cms-artisans' | 'cms-stories';
 
 type FieldType = 'short_text' | 'paragraph' | 'number' | 'dropdown' | 'multiple_choice' | 'checkboxes';
 interface FormField { id: string; type: FieldType; label: string; required: boolean; options: string[]; }
@@ -644,6 +650,13 @@ export default function AdminDashboard() {
     { key: 'eventforms',         label: 'Event Forms',          badge: eventForms.length,                                                                            roles: ['editor'] },
     // Officer: event form responses
     { key: 'eventresponses',     label: 'Event Responses',      badge: undefined,                                                                                    roles: ['officer'] },
+    // CMS tabs — Editor creates, Officer approves
+    { key: 'cms-attractions',    label: 'CMS: Attractions',     badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
+    { key: 'cms-events',         label: 'CMS: Events',          badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
+    { key: 'cms-news',           label: 'CMS: News',            badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
+    { key: 'cms-art-forms',      label: 'CMS: Art Forms',       badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
+    { key: 'cms-artisans',       label: 'CMS: Artisans',        badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
+    { key: 'cms-stories',        label: 'CMS: Stories',         badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
   ];
 
   const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
@@ -2992,6 +3005,26 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
+        )}
+
+        {/* ── CMS TABS ──────────────────────────────────────── */}
+        {activeTab === 'cms-attractions' && (
+          <AttractionsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
+        )}
+        {activeTab === 'cms-events' && (
+          <EventsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
+        )}
+        {activeTab === 'cms-news' && (
+          <NewsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
+        )}
+        {activeTab === 'cms-art-forms' && (
+          <ArtFormsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
+        )}
+        {activeTab === 'cms-artisans' && (
+          <ArtisansTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
+        )}
+        {activeTab === 'cms-stories' && (
+          <StoriesTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
         )}
 
       </div>
