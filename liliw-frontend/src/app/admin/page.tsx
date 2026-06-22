@@ -19,7 +19,8 @@ import EventsTab      from '@/components/admin/cms/EventsTab';
 import NewsTab        from '@/components/admin/cms/NewsTab';
 import ArtFormsTab    from '@/components/admin/cms/ArtFormsTab';
 import ArtisansTab    from '@/components/admin/cms/ArtisansTab';
-import StoriesTab     from '@/components/admin/cms/StoriesTab';
+import StoriesTab          from '@/components/admin/cms/StoriesTab';
+import ContentApprovalsTab from '@/components/admin/cms/ContentApprovalsTab';
 import * as XLSX from 'xlsx-js-style';
 
 const STRAPI_URL = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
@@ -33,7 +34,7 @@ interface StrapiActivity { id: string; contentType: string; entryName: string; a
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses' | 'cms-attractions' | 'cms-events' | 'cms-news' | 'cms-art-forms' | 'cms-artisans' | 'cms-stories';
+type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses' | 'cms-attractions' | 'cms-events' | 'cms-news' | 'cms-art-forms' | 'cms-artisans' | 'cms-stories' | 'cms-approvals';
 
 type FieldType = 'short_text' | 'paragraph' | 'number' | 'dropdown' | 'multiple_choice' | 'checkboxes';
 interface FormField { id: string; type: FieldType; label: string; required: boolean; options: string[]; }
@@ -158,6 +159,7 @@ export default function AdminDashboard() {
   const [auditLogs,       setAuditLogs]       = useState<AuditLog[]>([]);
   const [strapiActivity,  setStrapiActivity]  = useState<StrapiActivity[]>([]);
   const [liveVisitors,    setLiveVisitors]    = useState<{ session_id: string; page: string; device: string; last_seen: string }[]>([]);
+  const [pendingCmsCount, setPendingCmsCount] = useState(0);
 
   const [loadingSubs,      setLoadingSubs]      = useState(true);
   const [loadingPart,      setLoadingPart]      = useState(true);
@@ -283,6 +285,11 @@ export default function AdminDashboard() {
         setRoleUsers(d.users || []);
         setAvailRoles(d.roles || []);
       }).catch(() => {}).finally(() => setLoadingRoles(false));
+    }
+
+    // Officer + Admin — pending CMS count for badge
+    if (isChatoOfficer || isAdmin) {
+      fetch('/api/cms/pending', { headers: h }).then(r => r.json()).then(d => setPendingCmsCount(d.total || 0)).catch(() => {});
     }
 
     // Officer — requests & submissions
@@ -650,6 +657,8 @@ export default function AdminDashboard() {
     { key: 'eventforms',         label: 'Event Forms',          badge: eventForms.length,                                                                            roles: ['editor'] },
     // Officer: event form responses
     { key: 'eventresponses',     label: 'Event Responses',      badge: undefined,                                                                                    roles: ['officer'] },
+    // CMS tabs — Officer approval queue
+    { key: 'cms-approvals',      label: 'Content Approvals',    badge: pendingCmsCount,                                                                              roles: ['officer', 'admin'] },
     // CMS tabs — Editor creates, Officer approves
     { key: 'cms-attractions',    label: 'CMS: Attractions',     badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
     { key: 'cms-events',         label: 'CMS: Events',          badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
@@ -3008,6 +3017,9 @@ export default function AdminDashboard() {
         )}
 
         {/* ── CMS TABS ──────────────────────────────────────── */}
+        {activeTab === 'cms-approvals' && (
+          <ContentApprovalsTab token={token} />
+        )}
         {activeTab === 'cms-attractions' && (
           <AttractionsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
         )}
