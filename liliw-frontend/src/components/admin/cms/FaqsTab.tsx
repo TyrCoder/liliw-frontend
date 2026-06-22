@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Plus, Edit2, Trash2, Send, CheckCircle, AlertCircle, X, HelpCircle } from 'lucide-react';
 import StatusBadge from './StatusBadge';
+import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
+
+const STATUS_LABELS: Record<string, string> = { all: 'All', draft: 'Draft', pending: 'Pending Review', approved: 'Published', rejected: 'Rejected' };
 
 interface Entry {
   id: string; question: string; answer: string; category: string;
@@ -26,6 +29,15 @@ export default function FaqsTab({ token, userEmail, isOfficer, isAdmin }: Props)
   const [statusFilter, setStatusFilter] = useState('all');
 
   const h: Record<string, string> = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+
+  const autoSaveStatus = useAutoSaveDraft(
+    editing?.id,
+    JSON.stringify(editing),
+    async () => {
+      if (!editing?.id) return;
+      await fetch(`/api/cms/faqs/${editing.id}`, { method: 'PUT', headers: h, body: JSON.stringify({ ...editing, created_by: userEmail }) });
+    }
+  );
 
   const load = async (status?: string) => {
     setLoading(true);
@@ -82,8 +94,8 @@ export default function FaqsTab({ token, userEmail, isOfficer, isAdmin }: Props)
         <div className="flex items-center gap-2 flex-wrap">
           {['all','draft','pending','approved','rejected'].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition capitalize ${statusFilter === s ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-              style={statusFilter === s ? { backgroundColor: '#00BFB3' } : {}}>{s}</button>
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${statusFilter === s ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              style={statusFilter === s ? { backgroundColor: '#00BFB3' } : {}}>{STATUS_LABELS[s]}</button>
           ))}
           {canEdit && (
             <button onClick={openCreate} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ backgroundColor: '#00BFB3' }}>
@@ -165,11 +177,15 @@ export default function FaqsTab({ token, userEmail, isOfficer, isAdmin }: Props)
               </div>
             </div>
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
-              {msg && <span className={`flex items-center gap-1.5 text-sm font-medium ${msg.ok ? 'text-green-600' : 'text-red-500'}`}>{msg.ok ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />} {msg.text}</span>}
+              <div className="flex items-center gap-3">
+                {msg && <span className={`flex items-center gap-1.5 text-sm font-medium ${msg.ok ? 'text-green-600' : 'text-red-500'}`}>{msg.ok ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />} {msg.text}</span>}
+                {autoSaveStatus === 'saving' && <span className="flex items-center gap-1 text-xs text-gray-400"><Loader2 className="w-3 h-3 animate-spin" /> Saving draft…</span>}
+                {autoSaveStatus === 'saved'  && <span className="flex items-center gap-1 text-xs text-green-500"><CheckCircle className="w-3 h-3" /> Draft saved</span>}
+              </div>
               <div className="flex items-center gap-2 ml-auto">
                 <button onClick={closeForm} className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-100 transition">Cancel</button>
                 <button onClick={save} disabled={saving || !editing.question?.trim() || !editing.answer?.trim()} className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-60" style={{ backgroundColor: '#00BFB3' }}>
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Save
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Save Draft
                 </button>
               </div>
             </div>
