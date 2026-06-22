@@ -168,7 +168,7 @@ export default function ItinerariesTab({ token, userEmail, isOfficer, isAdmin }:
               </div>
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Highlights</label>
-                <RichTextEditor content={editing.highlights || ''} onChange={v => setEditing(p => ({ ...p, highlights: v }))} />
+                <RichTextEditor value={editing.highlights || ''} onChange={v => setEditing(p => ({ ...p, highlights: v }))} />
               </div>
             </div>
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
