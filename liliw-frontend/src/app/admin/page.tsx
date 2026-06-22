@@ -20,6 +20,9 @@ import NewsTab        from '@/components/admin/cms/NewsTab';
 import ArtFormsTab    from '@/components/admin/cms/ArtFormsTab';
 import ArtisansTab    from '@/components/admin/cms/ArtisansTab';
 import StoriesTab          from '@/components/admin/cms/StoriesTab';
+import HeroSlidesTab       from '@/components/admin/cms/HeroSlidesTab';
+import FaqsTab             from '@/components/admin/cms/FaqsTab';
+import ItinerariesTab      from '@/components/admin/cms/ItinerariesTab';
 import ContentApprovalsTab from '@/components/admin/cms/ContentApprovalsTab';
 import * as XLSX from 'xlsx-js-style';
 
@@ -34,7 +37,7 @@ interface StrapiActivity { id: string; contentType: string; entryName: string; a
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses' | 'cms-attractions' | 'cms-events' | 'cms-news' | 'cms-art-forms' | 'cms-artisans' | 'cms-stories' | 'cms-approvals';
+type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses' | 'cms-attractions' | 'cms-events' | 'cms-news' | 'cms-art-forms' | 'cms-artisans' | 'cms-stories' | 'cms-hero-slides' | 'cms-faqs' | 'cms-itineraries' | 'cms-approvals';
 
 type FieldType = 'short_text' | 'paragraph' | 'number' | 'dropdown' | 'multiple_choice' | 'checkboxes';
 interface FormField { id: string; type: FieldType; label: string; required: boolean; options: string[]; }
@@ -666,6 +669,9 @@ export default function AdminDashboard() {
     { key: 'cms-art-forms',      label: 'CMS: Art Forms',       badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
     { key: 'cms-artisans',       label: 'CMS: Artisans',        badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
     { key: 'cms-stories',        label: 'CMS: Stories',         badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
+    { key: 'cms-hero-slides',    label: 'CMS: Hero Slides',     badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
+    { key: 'cms-faqs',           label: 'CMS: FAQs',            badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
+    { key: 'cms-itineraries',    label: 'CMS: Itineraries',     badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
   ];
 
   const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
@@ -3037,6 +3043,15 @@ export default function AdminDashboard() {
         )}
         {activeTab === 'cms-stories' && (
           <StoriesTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
+        )}
+        {activeTab === 'cms-hero-slides' && (
+          <HeroSlidesTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
+        )}
+        {activeTab === 'cms-faqs' && (
+          <FaqsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
+        )}
+        {activeTab === 'cms-itineraries' && (
+          <ItinerariesTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
         )}
 
       </div>

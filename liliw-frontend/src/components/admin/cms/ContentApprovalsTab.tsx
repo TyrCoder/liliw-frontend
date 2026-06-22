@@ -20,6 +20,9 @@ const TYPE_LABELS: Record<string, string> = {
   'art-forms':   'Art Form',
   artisans:      'Artisan',
   stories:       'Story',
+  'hero-slides': 'Hero Slide',
+  faqs:          'FAQ',
+  itineraries:   'Itinerary',
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -29,6 +32,9 @@ const TYPE_COLORS: Record<string, string> = {
   'art-forms':   '#EC4899',
   artisans:      '#10B981',
   stories:       '#F97316',
+  'hero-slides': '#06B6D4',
+  faqs:          '#6366F1',
+  itineraries:   '#84CC16',
 };
 
 interface Props { token: string | null; }
