@@ -1,20 +1,25 @@
 import { NextResponse } from 'next/server';
-
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+import { fetchApprovedWithMedia, mediaToPhotos } from '@/lib/supabase-cms';
 
 export async function GET() {
   try {
-    const h = { Authorization: `Bearer ${TOKEN}` };
-    const opts = { headers: h, next: { revalidate: 300 } } as const;
-
-    const [artFormsRes, artisansRes] = await Promise.allSettled([
-      fetch(`${STRAPI}/api/art-forms?populate=*&sort=sort_order:asc`, opts),
-      fetch(`${STRAPI}/api/artisans?populate=*`, opts),
+    const [artFormItems, artisanItems] = await Promise.all([
+      fetchApprovedWithMedia('cms_art_forms', 'art_form', q => q.order('sort_order', { ascending: true })),
+      fetchApprovedWithMedia('cms_artisans', 'artisan'),
     ]);
 
-    const artForms = artFormsRes.status === 'fulfilled' && artFormsRes.value.ok ? await artFormsRes.value.json() : null;
-    const artisans = artisansRes.status === 'fulfilled' && artisansRes.value.ok ? await artisansRes.value.json() : null;
+    const artForms = {
+      data: artFormItems.map((item: any) => ({
+        ...item,
+        photos: mediaToPhotos(item._media),
+      })),
+    };
+    const artisans = {
+      data: artisanItems.map((item: any) => ({
+        ...item,
+        photos: mediaToPhotos(item._media),
+      })),
+    };
 
     return NextResponse.json({ artForms, artisans }, {
       headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' },

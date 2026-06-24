@@ -68,7 +68,8 @@ function mediaUrl(url: string | undefined): string {
 
 function extractExcerpt(richText: any, fallback = ''): string {
   if (!richText) return fallback;
-  if (typeof richText === 'string') return richText;
+  if (typeof richText === 'string')
+    return richText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
   if (Array.isArray(richText))
     return richText.flatMap((b: any) => b?.children ?? []).map((c: any) => c?.text ?? '').join(' ').slice(0, 200);
   return fallback;

@@ -1,16 +1,24 @@
 import { NextResponse } from 'next/server';
-
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+import { fetchApprovedWithMedia } from '@/lib/supabase-cms';
 
 export async function GET() {
   try {
-    const res = await fetch(
-      `${STRAPI}/api/hero-slides?populate=*&sort=sort_order:asc&filters[is_active][$eq]=true`,
-      { headers: { Authorization: `Bearer ${TOKEN}` }, next: { revalidate: 300 } },
+    const items = await fetchApprovedWithMedia(
+      'cms_hero_slides', 'hero_slide',
+      q => q.order('sort_order', { ascending: true }),
     );
-    if (!res.ok) return NextResponse.json({ data: [] });
-    return NextResponse.json(await res.json(), {
+
+    const data = items.map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      subtitle: item.subtitle,
+      button_text: item.button_text,
+      button_link: item.button_link,
+      sort_order: item.sort_order,
+      image: { url: item._media[0]?.url ?? null },
+    }));
+
+    return NextResponse.json({ data }, {
       headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' },
     });
   } catch {

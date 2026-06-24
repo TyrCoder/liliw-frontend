@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+import { supabaseServer } from '@/lib/supabase-server';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await params;
     if (!slug) return NextResponse.json({ data: [] });
-    const res = await fetch(
-      `${STRAPI}/api/events?filters[slug][$eq]=${slug}&populate=cover_image,photos&status=published`,
-      { headers: { Authorization: `Bearer ${TOKEN}` }, next: { revalidate: 60 } },
-    );
-    if (!res.ok) return NextResponse.json({ data: [] });
-    return NextResponse.json(await res.json());
+
+    const { data } = await supabaseServer
+      .from('cms_events')
+      .select('*')
+      .eq('slug', slug)
+      .eq('status', 'approved')
+      .limit(1);
+
+    return NextResponse.json({ data: data ?? [] }, {
+      headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=30' },
+    });
   } catch {
     return NextResponse.json({ data: [] });
   }

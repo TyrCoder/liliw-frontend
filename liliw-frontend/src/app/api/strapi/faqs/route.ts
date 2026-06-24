@@ -1,16 +1,10 @@
 import { NextResponse } from 'next/server';
-
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+import { fetchApproved } from '@/lib/supabase-cms';
 
 export async function GET() {
   try {
-    const res = await fetch(
-      `${STRAPI}/api/faqs?populate=*&pagination[pageSize]=100&sort=createdAt:asc`,
-      { headers: { Authorization: `Bearer ${TOKEN}` }, next: { revalidate: 300 } },
-    );
-    if (!res.ok) return NextResponse.json({ data: [] });
-    return NextResponse.json(await res.json(), {
+    const data = await fetchApproved('cms_faqs', q => q.order('sort_order', { ascending: true }));
+    return NextResponse.json({ data }, {
       headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' },
     });
   } catch {

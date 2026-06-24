@@ -11,13 +11,8 @@ import type {
   StrapiBlocksContent,
 } from './types';
 
-const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
+const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL ?? '';
 const strapiToken = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
-
-// Validate required environment variables
-if (!strapiUrl) {
-  throw new Error('NEXT_PUBLIC_STRAPI_URL environment variable is not set');
-}
 
 // Simple in-memory cache for API responses
 const apiCache = new Map<string, { data: any; timestamp: number }>();
@@ -38,11 +33,9 @@ const setCachedResponse = (key: string, data: any) => {
 };
 
 const strapiApi = axios.create({
-  baseURL: `${strapiUrl}/api`,
-  headers: {
-    Authorization: `Bearer ${strapiToken}`,
-  },
-  timeout: 60000, // Render cold starts can take >10s on free tier
+  baseURL: strapiUrl ? `${strapiUrl}/api` : 'http://localhost:1337/api',
+  headers: { Authorization: `Bearer ${strapiToken}` },
+  timeout: 60000,
 });
 
 const fetchWithRetry = async <T>(path: string): Promise<T> => {

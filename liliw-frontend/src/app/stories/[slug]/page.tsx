@@ -271,7 +271,7 @@ export default function StoryDetailPage() {
             id:       found.id,
             title:    a?.title ?? '',
             excerpt:  typeof a?.excerpt === 'string' ? a.excerpt : '',
-            content:  Array.isArray(a?.content) ? a.content : [],
+            content:  Array.isArray(a?.content) ? a.content : (typeof a?.content === 'string' ? a.content : []),
             category: a?.category ?? 'history',
             author:   a?.author ?? 'Liliw Tourism Office',
             coverUrl: found._coverUrl ?? '',
@@ -409,9 +409,13 @@ export default function StoryDetailPage() {
 
               {/* Rich text content */}
               <div>
-                {story.content.length > 0
-                  ? story.content.map((block: any, i: number) => <RichTextBlock key={i} block={block} />)
-                  : <p className="text-gray-400 italic" style={{ fontFamily: BL }}>No content yet.</p>
+                {typeof story.content === 'string'
+                  ? story.content
+                    ? <div className="prose max-w-none" style={{ fontFamily: BL }} dangerouslySetInnerHTML={{ __html: story.content }} />
+                    : <p className="text-gray-400 italic" style={{ fontFamily: BL }}>No content yet.</p>
+                  : story.content.length > 0
+                    ? story.content.map((block: any, i: number) => <RichTextBlock key={i} block={block} />)
+                    : <p className="text-gray-400 italic" style={{ fontFamily: BL }}>No content yet.</p>
                 }
               </div>
             </div>

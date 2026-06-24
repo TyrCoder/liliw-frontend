@@ -1,73 +1,44 @@
 import { NextResponse } from 'next/server';
+import { fetchApprovedWithMedia, mediaToPhotos } from '@/lib/supabase-cms';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
-const OPTS   = { headers: { Authorization: `Bearer ${TOKEN}` }, next: { revalidate: 120 } } as const;
-
-function extractText(richText: any): string {
-  if (!richText) return '';
-  if (typeof richText === 'string') return richText;
-  if (Array.isArray(richText)) {
-    return richText.filter(Boolean)
-      .map((block: any) => (block?.children ?? []).map((c: any) => c?.text ?? '').join(' '))
-      .filter(Boolean).join(' ');
-  }
-  return '';
-}
-
-function normalizePhotos(attrs: any): any[] {
-  const raw = attrs?.photos ?? attrs?.images ?? [];
-  const arr: any[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data.map((d: any) => d?.attributes ?? d) : [];
-  return arr
-    .map((p: any) => ({ id: p?.id, name: p?.name, url: p?.url, width: p?.width, height: p?.height, formats: p?.formats, mime: p?.mime }))
-    .filter((p: any) => p?.url);
-}
-
-function transform(item: any, type: 'heritage' | 'spot' | 'dining') {
-  if (!item) return null;
-  const a = item.attributes ?? item;
-  return {
-    id: `${type}-${item.id}`,
-    strapiId: String(item.id),
-    attributes: {
-      name: a.name || 'Unnamed',
-      description: extractText(a.description),
-      location: a.location || '',
-      category: a.category || type,
-      rating: a.rating || 0,
-      phone: a.phone || '',
-      hours: a.hours || '',
-      website: a.website || '',
-      best_for: a.best_for || '',
-      google_place_id: a.google_place_id ?? undefined,
-      coordinates: a.coordinates ?? undefined,
-      has_virtual_tour: a.has_virtual_tour || false,
-      hotspots: a.hotspots || [],
-      virtual_tour_photos: a.virtual_tour_photos || [],
-      photos: normalizePhotos(a),
-    },
-    type,
-  };
-}
+const CAT_MAP: Record<string, 'heritage' | 'spot' | 'dining'> = {
+  heritage:     'heritage',
+  tourist_spot: 'spot',
+  dining:       'dining',
+  other:        'spot',
+};
 
 export async function GET() {
   try {
-    const [hRes, sRes, dRes] = await Promise.allSettled([
-      fetch(`${STRAPI}/api/heritage-sites?populate=*&pagination[pageSize]=100`, OPTS),
-      fetch(`${STRAPI}/api/tourist-spots?populate=*&pagination[pageSize]=100`, OPTS),
-      fetch(`${STRAPI}/api/dining-and-foods?populate=*&pagination[pageSize]=100`, OPTS),
-    ]);
+    const items = await fetchApprovedWithMedia(
+      'cms_attractions', 'attraction',
+      q => q.order('sort_order', { ascending: true }),
+    );
 
-    const pick = async (r: PromiseSettledResult<Response>) =>
-      r.status === 'fulfilled' && r.value.ok ? (await r.value.json()).data ?? [] : [];
-
-    const [heritage, spots, dining] = await Promise.all([pick(hRes), pick(sRes), pick(dRes)]);
-
-    const data = [
-      ...heritage.map((h: any) => transform(h, 'heritage')).filter(Boolean),
-      ...spots.map((s: any)   => transform(s, 'spot')).filter(Boolean),
-      ...dining.map((d: any)  => transform(d, 'dining')).filter(Boolean),
-    ];
+    const data = items.map((item: any) => {
+      const type = CAT_MAP[item.category] ?? 'spot';
+      const photos = mediaToPhotos(item._media);
+      return {
+        id: `${type}-${item.id}`,
+        strapiId: item.id,
+        attributes: {
+          name: item.name,
+          description: item.description ?? '',
+          location: item.location ?? '',
+          category: item.category,
+          rating: 0,
+          google_place_id: undefined,
+          coordinates: (item.map_lat != null && item.map_lng != null)
+            ? { latitude: Number(item.map_lat), longitude: Number(item.map_lng) }
+            : undefined,
+          has_virtual_tour: false,
+          hotspots: [],
+          virtual_tour_photos: [],
+          photos,
+        },
+        type,
+      };
+    });
 
     return NextResponse.json({ data }, {
       headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=60' },
