@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/ratelimit';
-
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
+import { supabaseServer } from '@/lib/supabase-server';
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
@@ -13,32 +12,44 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
+    const { username, email, password } = await request.json();
+    if (!email || !password) {
+      return NextResponse.json({ error: { message: 'Email and password are required.' } }, { status: 400 });
+    }
 
-    const res = await fetch(`${STRAPI}/api/auth/local/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    const { data, error } = await supabaseServer.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { username: username || email.split('@')[0], role: 'authenticated' },
     });
 
-    let data: any;
-    try {
-      data = await res.json();
-    } catch {
+    if (error || !data.user) {
       return NextResponse.json(
-        { error: { message: 'Server is starting up, please try again in a moment.' } },
-        { status: 503 },
+        { error: { message: error?.message || 'Registration failed.' } },
+        { status: 400 },
       );
     }
 
-    if (!res.ok) return NextResponse.json(data, { status: res.status });
+    // Insert profile row explicitly (trigger may not run in time for immediate signIn)
+    await supabaseServer.from('profiles').upsert({
+      id: data.user.id, email, username: username || email.split('@')[0], role: 'authenticated',
+    }, { onConflict: 'id' });
 
-    const meRes = await fetch(`${STRAPI}/api/users/me?populate=role`, {
-      headers: { Authorization: `Bearer ${data.jwt}` },
-    });
-    const user = await meRes.json();
+    // Sign in to get JWT
+    const { data: session, error: signInErr } = await supabaseServer.auth.signInWithPassword({ email, password });
+    if (signInErr || !session) {
+      return NextResponse.json({ error: { message: 'Account created but could not log in automatically.' } }, { status: 201 });
+    }
 
-    return NextResponse.json({ jwt: data.jwt, user });
+    const user = {
+      id: data.user.id,
+      username: username || email.split('@')[0],
+      email,
+      role: { id: 0, name: 'authenticated', type: 'authenticated' },
+    };
+
+    return NextResponse.json({ jwt: session.session?.access_token, user });
   } catch {
     return NextResponse.json(
       { error: { message: 'Registration failed. Please try again.' } },

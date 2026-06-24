@@ -3,8 +3,6 @@ import { regOtpStore } from '@/lib/regOtpStore';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { supabaseServer } from '@/lib/supabase-server';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
   if (!checkRateLimit(ip, 5, 60_000)) {
@@ -25,47 +23,48 @@ export async function POST(req: NextRequest) {
 
     const key   = email.toLowerCase();
     const entry = regOtpStore.get(key);
-    if (!entry) {
-      return NextResponse.json({ error: 'No verification code found. Please request a new one.' }, { status: 400 });
-    }
-    if (Date.now() > entry.expiry) {
-      regOtpStore.delete(key);
-      return NextResponse.json({ error: 'Code has expired. Please go back and request a new one.' }, { status: 400 });
-    }
-    if (entry.otp !== otp) {
-      return NextResponse.json({ error: 'Incorrect code. Please check your email and try again.' }, { status: 400 });
-    }
+    if (!entry)                     return NextResponse.json({ error: 'No verification code found. Please request a new one.' }, { status: 400 });
+    if (Date.now() > entry.expiry)  { regOtpStore.delete(key); return NextResponse.json({ error: 'Code has expired. Please go back and request a new one.' }, { status: 400 }); }
+    if (entry.otp !== otp)          return NextResponse.json({ error: 'Incorrect code. Please check your email and try again.' }, { status: 400 });
 
-    // OTP valid — consume it and register
     regOtpStore.delete(key);
 
-    const regRes = await fetch(`${STRAPI}/api/auth/local/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password }),
+    // Create Supabase auth user (email_confirm: true bypasses confirmation email since we already verified via OTP)
+    const { data: created, error: createErr } = await supabaseServer.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { username, role: 'authenticated' },
     });
-    const regData = await regRes.json();
-    if (!regRes.ok) {
+
+    if (createErr || !created.user) {
       return NextResponse.json(
-        { error: regData?.error?.message || 'Registration failed. The email may already be taken.' },
-        { status: regRes.status }
+        { error: createErr?.message || 'Registration failed. The email may already be taken.' },
+        { status: 400 },
       );
     }
 
-    const meRes = await fetch(`${STRAPI}/api/users/me?populate=role`, {
-      headers: { Authorization: `Bearer ${regData.jwt}` },
-    });
-    const user = await meRes.json();
+    // Explicit profile row (trigger may lag)
+    await supabaseServer.from('profiles').upsert({
+      id: created.user.id, email, username, role: 'authenticated',
+    }, { onConflict: 'id' });
 
-    // Store profile in Supabase (fire-and-forget)
-    void supabaseServer
-      .from('tourist_profiles')
-      .upsert(
-        { email: key, username, full_name: fullName, user_type: userType || null },
-        { onConflict: 'email' }
-      );
+    // Store tourist profile (fire-and-forget)
+    void supabaseServer.from('tourist_profiles').upsert(
+      { email: key, username, full_name: fullName, user_type: userType || null },
+      { onConflict: 'email' },
+    );
 
-    return NextResponse.json({ jwt: regData.jwt, user });
+    // Sign in to get JWT
+    const { data: session } = await supabaseServer.auth.signInWithPassword({ email, password });
+    const user = {
+      id: created.user.id,
+      username,
+      email,
+      role: { id: 0, name: 'authenticated', type: 'authenticated' },
+    };
+
+    return NextResponse.json({ jwt: session?.session?.access_token, user });
   } catch (err) {
     console.error('[verify-reg-otp]', err);
     return NextResponse.json({ error: 'Server error. Please try again.' }, { status: 500 });

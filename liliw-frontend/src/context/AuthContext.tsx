@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { toast } from 'sonner';
 
 export interface StrapiUser {
-  id: number;
+  id: string;
   username: string;
   email: string;
   role?: { id: number; name: string; type: string };
@@ -35,7 +35,6 @@ const AuthContext = createContext<AuthCtx | null>(null);
 
 const TOKEN_KEY     = 'liliw-jwt';
 const USER_KEY      = 'liliw-user';
-const STRAPI        = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const ADMIN_EMAILS  = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
 
 // Compute the normalized role value to store in the liliw-session cookie.
