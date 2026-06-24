@@ -14,16 +14,6 @@ import {
   Download, BarChart2, Plus, Trash2, ArrowUp, ArrowDown, ClipboardList, Send,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import AttractionsTab from '@/components/admin/cms/AttractionsTab';
-import EventsTab      from '@/components/admin/cms/EventsTab';
-import NewsTab        from '@/components/admin/cms/NewsTab';
-import ArtFormsTab    from '@/components/admin/cms/ArtFormsTab';
-import ArtisansTab    from '@/components/admin/cms/ArtisansTab';
-import StoriesTab          from '@/components/admin/cms/StoriesTab';
-import HeroSlidesTab       from '@/components/admin/cms/HeroSlidesTab';
-import FaqsTab             from '@/components/admin/cms/FaqsTab';
-import ItinerariesTab      from '@/components/admin/cms/ItinerariesTab';
-import ContentApprovalsTab from '@/components/admin/cms/ContentApprovalsTab';
 import * as XLSX from 'xlsx-js-style';
 
 const STRAPI_URL = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
@@ -37,7 +27,7 @@ interface StrapiActivity { id: string; contentType: string; entryName: string; a
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses' | 'cms-attractions' | 'cms-events' | 'cms-news' | 'cms-art-forms' | 'cms-artisans' | 'cms-stories' | 'cms-hero-slides' | 'cms-faqs' | 'cms-itineraries' | 'cms-approvals';
+type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses';
 
 type FieldType = 'short_text' | 'paragraph' | 'number' | 'dropdown' | 'multiple_choice' | 'checkboxes';
 interface FormField { id: string; type: FieldType; label: string; required: boolean; options: string[]; }
@@ -162,7 +152,6 @@ export default function AdminDashboard() {
   const [auditLogs,       setAuditLogs]       = useState<AuditLog[]>([]);
   const [strapiActivity,  setStrapiActivity]  = useState<StrapiActivity[]>([]);
   const [liveVisitors,    setLiveVisitors]    = useState<{ session_id: string; page: string; device: string; last_seen: string }[]>([]);
-  const [pendingCmsCount, setPendingCmsCount] = useState(0);
 
   const [loadingSubs,      setLoadingSubs]      = useState(true);
   const [loadingPart,      setLoadingPart]      = useState(true);
@@ -290,11 +279,6 @@ export default function AdminDashboard() {
       }).catch(() => {}).finally(() => setLoadingRoles(false));
     }
 
-    // Officer + Admin — pending CMS count for badge
-    if (isChatoOfficer || isAdmin) {
-      fetch('/api/cms/pending', { headers: h }).then(r => r.json()).then(d => setPendingCmsCount(d.total || 0)).catch(() => {});
-    }
-
     // Officer — requests & submissions
     if (isChatoOfficer) {
       fetch('/api/admin/submissions',   { headers: h }).then(r => r.json()).then(d => setSubmissions(d.data || [])).catch(() => {}).finally(() => setLoadingSubs(false));
@@ -326,7 +310,7 @@ export default function AdminDashboard() {
       setLoadingEF(true);
       setLoadingJE(true);
       fetch('/api/admin/event-forms', { headers: h }).then(r => r.json()).then(d => setEventForms(d.data || [])).catch(() => {}).finally(() => setLoadingEF(false));
-      fetch(`${STRAPI_URL}/api/events?filters[is_joinable][$eq]=true&fields[0]=title&fields[1]=slug&fields[2]=date_start&pagination[limit]=100`, { headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || ''}` } }).then(r => r.json()).then(d => setJoinableEvents((d.data || []).map((e: any) => ({ id: e.id, slug: e.slug || e.attributes?.slug, title: e.title || e.attributes?.title, date_start: e.date_start || e.attributes?.date_start })))).catch(() => {}).finally(() => setLoadingJE(false));
+      fetch('/api/strapi/events').then(r => r.json()).then(d => setJoinableEvents((d.data || []).filter((e: any) => e.attributes?.is_joinable || e.is_joinable).map((e: any) => ({ id: e.id, slug: e.attributes?.slug || e.slug, title: e.attributes?.title || e.title, date_start: e.attributes?.date_start || e.date_start })))).catch(() => {}).finally(() => setLoadingJE(false));
     }
 
     // Officer — event form list for responses viewer
@@ -660,18 +644,6 @@ export default function AdminDashboard() {
     { key: 'eventforms',         label: 'Event Forms',          badge: eventForms.length,                                                                            roles: ['editor'] },
     // Officer: event form responses
     { key: 'eventresponses',     label: 'Event Responses',      badge: undefined,                                                                                    roles: ['officer'] },
-    // CMS tabs — Officer approval queue
-    { key: 'cms-approvals',      label: 'Content Approvals',    badge: pendingCmsCount,                                                                              roles: ['officer', 'admin'] },
-    // CMS tabs — Editor creates, Officer approves
-    { key: 'cms-attractions',    label: 'CMS: Attractions',     badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
-    { key: 'cms-events',         label: 'CMS: Events',          badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
-    { key: 'cms-news',           label: 'CMS: News',            badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
-    { key: 'cms-art-forms',      label: 'CMS: Art Forms',       badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
-    { key: 'cms-artisans',       label: 'CMS: Artisans',        badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
-    { key: 'cms-stories',        label: 'CMS: Stories',         badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
-    { key: 'cms-hero-slides',    label: 'CMS: Hero Slides',     badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
-    { key: 'cms-faqs',           label: 'CMS: FAQs',            badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
-    { key: 'cms-itineraries',    label: 'CMS: Itineraries',     badge: undefined,                                                                                    roles: ['editor', 'officer', 'admin'] },
   ];
 
   const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
@@ -702,11 +674,11 @@ export default function AdminDashboard() {
                 <p className="text-gray-400 text-sm">Welcome back, <span className="text-gray-300 font-medium">{user.username}</span> · {dashboardSub}</p>
               </div>
             </div>
-            <a href={`${STRAPI_URL}/admin`} target="_blank" rel="noopener noreferrer"
+            <Link href="/cms"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold text-sm transition hover:opacity-90"
               style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)', boxShadow: '0 4px 14px rgba(0,191,179,.3)' }}>
-              <ExternalLink className="w-4 h-4" /> Open Strapi
-            </a>
+              <Edit className="w-4 h-4" /> Content Management
+            </Link>
           </div>
         </div>
       </div>
@@ -1425,18 +1397,18 @@ export default function AdminDashboard() {
         {/* ── ATTRACTIONS ────────────────────────────────────── */}
         {activeTab === 'attractions' && (
           <div className="space-y-4">
-            {/* CHATO Editor — prominent Strapi button */}
+            {/* CHATO Editor — Content Management link */}
             {isChatoEditor && (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-center justify-between gap-4 flex-wrap">
                 <div>
                   <p className="font-bold text-gray-900">Content Management</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Use Strapi to create, update, or delete attraction entries</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Create, update, or publish content for the Liliw Tourism website</p>
                 </div>
-                <a href={`${STRAPI_URL}/admin`} target="_blank" rel="noopener noreferrer"
+                <Link href="/cms"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90"
                   style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)', boxShadow: '0 4px 16px rgba(0,191,179,.35)' }}>
-                  <ExternalLink className="w-4 h-4" /> Open Strapi CMS
-                </a>
+                  <Edit className="w-4 h-4" /> Open CMS
+                </Link>
               </div>
             )}
 
@@ -3022,37 +2994,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ── CMS TABS ──────────────────────────────────────── */}
-        {activeTab === 'cms-approvals' && (
-          <ContentApprovalsTab token={token} />
-        )}
-        {activeTab === 'cms-attractions' && (
-          <AttractionsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
-        )}
-        {activeTab === 'cms-events' && (
-          <EventsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
-        )}
-        {activeTab === 'cms-news' && (
-          <NewsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
-        )}
-        {activeTab === 'cms-art-forms' && (
-          <ArtFormsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
-        )}
-        {activeTab === 'cms-artisans' && (
-          <ArtisansTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
-        )}
-        {activeTab === 'cms-stories' && (
-          <StoriesTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
-        )}
-        {activeTab === 'cms-hero-slides' && (
-          <HeroSlidesTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
-        )}
-        {activeTab === 'cms-faqs' && (
-          <FaqsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
-        )}
-        {activeTab === 'cms-itineraries' && (
-          <ItinerariesTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
-        )}
 
       </div>
 
