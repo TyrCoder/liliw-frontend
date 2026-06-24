@@ -37,6 +37,15 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // ── Protect /cms page ──
+  if (pathname.startsWith('/cms')) {
+    const role = getSessionRole(req);
+    if (!role || !STAFF_ROLES.includes(role)) {
+      return NextResponse.redirect(new URL('/', req.url));
+    }
+    return NextResponse.next();
+  }
+
   // ── Protect /lbo page ──
   if (pathname.startsWith('/lbo')) {
     const role = getSessionRole(req);
@@ -50,5 +59,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/lbo/:path*', '/api/admin/:path*'],
+  matcher: ['/admin/:path*', '/cms/:path*', '/lbo/:path*', '/api/admin/:path*'],
 };
