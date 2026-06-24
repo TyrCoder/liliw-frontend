@@ -3,10 +3,10 @@ import nodemailer from 'nodemailer';
 import { requireAuth } from '@/lib/auth';
 import { profileOtpStore, generateOtp } from '@/lib/profileOtpStore';
 import { checkRateLimit } from '@/lib/ratelimit';
+import { supabaseServer } from '@/lib/supabase-server';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const SITE   = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
-const LOGO   = `${SITE}/icon-192x192.png`;
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
+const LOGO = `${SITE}/icon-192x192.png`;
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -23,17 +23,14 @@ export async function POST(req: NextRequest) {
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const token = req.headers.get('authorization')?.slice(7) ?? '';
-  const meRes = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-  if (!meRes.ok) return NextResponse.json({ error: 'Could not fetch user' }, { status: 401 });
-  const me = await meRes.json();
+  const { data: { user } } = await supabaseServer.auth.getUser(token);
+  if (!user) return NextResponse.json({ error: 'Could not fetch user' }, { status: 401 });
 
   const { purpose, newEmail } = await req.json();
-  // purpose: 'password' | 'email_old' | 'email_new'
-
-  const targetEmail = purpose === 'email_new' ? (newEmail ?? '') : me.email;
+  const targetEmail = purpose === 'email_new' ? (newEmail ?? '') : user.email!;
   if (!targetEmail) return NextResponse.json({ error: 'Missing email' }, { status: 400 });
 
-  const key = `${me.id}-${purpose}`;
+  const key = `${user.id}-${purpose}`;
   const otp = generateOtp();
   profileOtpStore.set(key, { otp, expiry: Date.now() + 10 * 60 * 1000 });
 
@@ -57,17 +54,16 @@ export async function POST(req: NextRequest) {
     from: `"Liliw Tourism" <${process.env.EMAIL_USER}>`,
     to: targetEmail,
     subject: subjectMap[purpose] ?? 'Liliw Tourism — Verification Code',
-    html: `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+    html: `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#EFF6FF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
   <div style="max-width:600px;margin:0 auto;padding:32px 16px 48px">
     <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(11,61,145,.14)">
       <div style="background:linear-gradient(145deg,#0B3D91,#1565C0);padding:36px 40px 32px">
         <table cellpadding="0" cellspacing="0" style="margin-bottom:24px"><tr>
           <td style="padding-right:14px"><img src="${LOGO}" width="52" height="52" style="border-radius:14px;border:2px solid rgba(245,197,24,.5);display:block"/></td>
-          <td><p style="margin:0;font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#F5C518">Liliw Tourism</p><p style="margin:3px 0 0;font-size:12px;color:rgba(255,255,255,.45)">Laguna, Philippines</p></td>
+          <td><p style="margin:0;font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#F5C518">Liliw Tourism</p></td>
         </tr></table>
         <h1 style="margin:0;color:#fff;font-size:24px;font-weight:800">${headingMap[purpose] ?? 'Verification Code'}</h1>
-        <div style="margin-top:16px;height:3px;border-radius:2px;background:linear-gradient(90deg,#F5C518,rgba(245,197,24,.1))"></div>
       </div>
       <div style="padding:36px 40px 32px">
         <p style="color:#475569;font-size:14px;margin:0 0 20px">${bodyMap[purpose] ?? 'Use the code below.'}</p>

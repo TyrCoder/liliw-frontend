@@ -1,85 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth, requireStaffAuth } from '@/lib/auth';
+import { supabaseServer } from '@/lib/supabase-server';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+const ROLES = [
+  { id: 1, name: 'Authenticated', type: 'authenticated' },
+  { id: 2, name: 'CHATO Editor', type: 'chatoeditor' },
+  { id: 3, name: 'CHATO Officer', type: 'chatoofficer' },
+  { id: 4, name: 'Admin', type: 'admin' },
+];
 
-const headers = {
-  'Content-Type': 'application/json',
-  Authorization: `Bearer ${TOKEN}`,
-};
-
-// GET /api/admin/assign-role — list all UP users and roles
+// GET — list all users and available roles
 export async function GET(request: NextRequest) {
   if (!await requireStaffAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const [usersRes, rolesRes] = await Promise.all([
-    fetch(`${STRAPI}/api/users?populate=role`, { headers }),
-    fetch(`${STRAPI}/api/users-permissions/roles`, { headers }),
-  ]);
 
-  const users = usersRes.ok ? await usersRes.json() : [];
-  const roles = rolesRes.ok ? await rolesRes.json() : {};
+  const { data: profiles } = await supabaseServer
+    .from('profiles')
+    .select('id, email, username, role, created_at')
+    .order('created_at', { ascending: false });
 
   return NextResponse.json({
-    users: users.map((u: any) => ({
-      id: u.id,
-      username: u.username,
-      email: u.email,
-      role: u.role?.name,
-      roleId: u.role?.id,
+    users: (profiles ?? []).map(p => ({
+      id: p.id, username: p.username || p.email, email: p.email,
+      role: p.role, roleId: ROLES.find(r => r.type === p.role)?.id ?? 1,
     })),
-    roles: (roles.roles ?? []).map((r: any) => ({
-      id: r.id,
-      name: r.name,
-      type: r.type,
-    })),
+    roles: ROLES,
   });
 }
 
-// POST /api/admin/assign-role — { userId, roleId }
+// POST — { userId, roleId } assign role by roleId
 export async function POST(request: NextRequest) {
   if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { userId, roleId } = await request.json();
-  if (!userId || !roleId) {
-    return NextResponse.json({ error: 'userId and roleId are required' }, { status: 400 });
-  }
 
-  const res = await fetch(`${STRAPI}/api/users/${userId}`, {
-    method: 'PUT',
-    headers,
-    body: JSON.stringify({ role: roleId }),
-  });
+  const { userId, roleId, role: roleType } = await request.json();
+  const newRole = roleType ?? ROLES.find(r => r.id === roleId)?.type;
+  if (!userId || !newRole) return NextResponse.json({ error: 'userId and role are required' }, { status: 400 });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    return NextResponse.json({ error: 'Failed to update role', detail: err }, { status: res.status });
-  }
+  const { error } = await supabaseServer.from('profiles').update({ role: newRole }).eq('id', userId);
+  if (error) return NextResponse.json({ error: 'Failed to update role', detail: error.message }, { status: 500 });
 
-  const updated = await res.json();
-  return NextResponse.json({
-    success: true,
-    user: { id: updated.id, email: updated.email, username: updated.username },
-  });
+  return NextResponse.json({ success: true });
 }
 
-// PATCH /api/admin/assign-role — { userId, password }
+// PATCH — { userId, password } reset a user's password
 export async function PATCH(request: NextRequest) {
   if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { userId, password } = await request.json();
   if (!userId || !password || password.length < 6) {
     return NextResponse.json({ error: 'userId and password (min 6 chars) are required' }, { status: 400 });
   }
 
-  const res = await fetch(`${STRAPI}/api/users/${userId}`, {
-    method: 'PUT',
-    headers,
-    body: JSON.stringify({ password }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    return NextResponse.json({ error: 'Failed to reset password', detail: err }, { status: res.status });
-  }
+  const { error } = await supabaseServer.auth.admin.updateUserById(userId, { password });
+  if (error) return NextResponse.json({ error: 'Failed to reset password', detail: error.message }, { status: 500 });
 
   return NextResponse.json({ success: true });
 }
