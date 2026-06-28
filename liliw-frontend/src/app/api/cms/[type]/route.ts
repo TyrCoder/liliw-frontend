@@ -12,10 +12,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const role = await getCmsRole(req);
   const isStaff = !!role;
 
-  const query = supabaseServer.from(table).select(`
-    *,
-    media:cms_media(id, url, public_id, alt_text, sort_order)
-  `).order('created_at', { ascending: false });
+  const query = supabaseServer.from(table).select('*').order('created_at', { ascending: false });
 
   if (!isStaff) {
     query.eq('status', 'approved');

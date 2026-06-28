@@ -1,9 +1,8 @@
 import { NextRequest } from 'next/server';
 import { verifySession, SESSION_COOKIE } from './session';
+import { supabaseServer } from './supabase-server';
 
 export type CmsRole = 'admin' | 'officer' | 'editor';
-
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
 /** Returns the caller's CMS role, or null if not staff. Fast path uses signed session cookie. */
 export async function getCmsRole(req: NextRequest): Promise<CmsRole | null> {
@@ -11,33 +10,38 @@ export async function getCmsRole(req: NextRequest): Promise<CmsRole | null> {
   if (cookie) {
     const session = verifySession(cookie);
     if (session) {
-      if (session.role === 'admin')       return 'admin';
+      if (session.role === 'admin')        return 'admin';
       if (session.role === 'chatoofficer') return 'officer';
       if (session.role === 'chatoeditor')  return 'editor';
       return null;
     }
   }
 
-  // Fallback: Strapi bearer token
+  // Fallback: Supabase bearer token
   const auth = req.headers.get('authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return null;
 
   try {
-    const res = await fetch(`${STRAPI}/api/users/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    const user = await res.json();
+    const { data: { user } } = await supabaseServer.auth.getUser(token);
+    if (!user) return null;
+
     const adminEmails = [
       ...(process.env.ADMIN_EMAILS || '').split(','),
       ...(process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(','),
     ].map(e => e.trim().toLowerCase()).filter(Boolean);
     if (adminEmails.includes((user.email || '').toLowerCase())) return 'admin';
-    const role = (user.role?.name || '').toLowerCase().replace(/[\s_-]/g, '');
-    if (role.includes('chatoofficer') || role.includes('officer')) return 'officer';
-    if (role.includes('chatoeditor')  || role.includes('editor'))  return 'editor';
-    if (role.includes('admin')) return 'admin';
+
+    const { data: profile } = await supabaseServer
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const role = profile?.role ?? '';
+    if (role === 'admin')        return 'admin';
+    if (role === 'chatoofficer') return 'officer';
+    if (role === 'chatoeditor')  return 'editor';
     return null;
   } catch {
     return null;
