@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { verifySession, SESSION_COOKIE } from '@/lib/session';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-
 async function getUser(req: NextRequest): Promise<{ email: string; username?: string } | null> {
   const cookie = req.cookies.get(SESSION_COOKIE)?.value;
   const session = cookie ? verifySession(cookie) : null;

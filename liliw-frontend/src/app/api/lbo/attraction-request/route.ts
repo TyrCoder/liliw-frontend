@@ -3,8 +3,6 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { sendAttractionRequestNotification } from '@/lib/email';
 import { verifySession, SESSION_COOKIE } from '@/lib/session';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-
 async function getEmail(req: NextRequest): Promise<string | null> {
   const cookie = req.cookies.get(SESSION_COOKIE)?.value;
   const session = cookie ? verifySession(cookie) : null;

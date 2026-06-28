@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import algoliasearch from 'algoliasearch';
 import { requireAdminAuth } from '@/lib/auth';
+import { supabaseServer } from '@/lib/supabase-server';
 
 const client = algoliasearch(
   process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || '',
@@ -10,24 +11,6 @@ const client = algoliasearch(
 
 const index = client.initIndex(process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME || 'liliw-items');
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
-const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
-
-async function fetchFromStrapi(endpoint: string) {
-  try {
-    const response = await fetch(`${STRAPI_URL}/api${endpoint}?populate=*`, {
-      headers: {
-        Authorization: `Bearer ${STRAPI_TOKEN}`,
-      },
-    });
-    if (!response.ok) throw new Error(`Failed to fetch ${endpoint}`);
-    return await response.json();
-  } catch (error) {
-    logger.error(`Error fetching ${endpoint}:`, error);
-    return { data: [] };
-  }
-}
-
 export async function POST(req: NextRequest) {
   const isAdmin = await requireAdminAuth(req);
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -35,104 +18,130 @@ export async function POST(req: NextRequest) {
   try {
     const objects: any[] = [];
 
-    // Fetch and index heritage sites
-    const heritageSites = await fetchFromStrapi('/heritage-sites');
-    heritageSites.data?.forEach((item: any) => {
+    const [attractions, events, faqs, itineraries, artForms, artisans, stories, news] =
+      await Promise.all([
+        supabaseServer.from('cms_attractions').select('id,name,category,description,location').eq('status','approved'),
+        supabaseServer.from('cms_events').select('id,title,category,description,venue').eq('status','approved'),
+        supabaseServer.from('cms_faqs').select('id,question,answer,category').eq('status','approved'),
+        supabaseServer.from('cms_itineraries').select('id,title,description,category,duration_days').eq('status','approved'),
+        supabaseServer.from('cms_art_forms').select('id,name,description').eq('status','approved'),
+        supabaseServer.from('cms_artisans').select('id,name,craft_type,description,location').eq('status','approved'),
+        supabaseServer.from('cms_stories').select('id,title,category,content,author').eq('status','approved'),
+        supabaseServer.from('cms_news').select('id,title,category,content').eq('status','approved'),
+      ]);
+
+    (attractions.data || []).forEach((item: any) => {
       objects.push({
-        objectID: `heritage-${item.id}`,
-        name: item.attributes?.name || 'Unknown Heritage Site',
-        description: item.attributes?.description || '',
-        type: 'heritage',
-        category: item.attributes?.category,
-        location: item.attributes?.location,
-        rating: item.attributes?.rating,
-        url: `/attractions/heritage-${item.id}`,
+        objectID:    `attraction-${item.id}`,
+        name:        item.name,
+        description: item.description || '',
+        type:        'attraction',
+        category:    item.category,
+        location:    item.location,
+        url:         `/attractions/${item.id}`,
       });
     });
 
-    // Fetch and index tourist spots
-    const touristSpots = await fetchFromStrapi('/tourist-spots');
-    touristSpots.data?.forEach((item: any) => {
+    (events.data || []).forEach((item: any) => {
       objects.push({
-        objectID: `spot-${item.id}`,
-        name: item.attributes?.name || 'Unknown Tourist Spot',
-        description: item.attributes?.description || '',
-        type: 'spot',
-        category: item.attributes?.category,
-        location: item.attributes?.location,
-        rating: item.attributes?.rating,
-        url: `/attractions/spot-${item.id}`,
+        objectID:    `event-${item.id}`,
+        name:        item.title,
+        description: item.description || '',
+        type:        'event',
+        category:    item.category,
+        url:         `/news`,
       });
     });
 
-    // Fetch and index FAQs
-    const faqs = await fetchFromStrapi('/faqs');
-    faqs.data?.forEach((item: any) => {
+    (faqs.data || []).forEach((item: any) => {
       objects.push({
-        objectID: `faq-${item.id}`,
-        name: item.attributes?.question || 'FAQ',
-        description: item.attributes?.answer || '',
-        type: 'faq',
-        category: item.attributes?.category,
-        url: `/faq#faq-${item.id}`,
+        objectID:    `faq-${item.id}`,
+        name:        item.question,
+        description: item.answer || '',
+        type:        'faq',
+        category:    item.category,
+        url:         `/faq#faq-${item.id}`,
       });
     });
 
-    // Fetch and index events
-    const events = await fetchFromStrapi('/events');
-    events.data?.forEach((item: any) => {
+    (itineraries.data || []).forEach((item: any) => {
       objects.push({
-        objectID: `event-${item.id}`,
-        name: item.attributes?.title || 'Unknown Event',
-        description: item.attributes?.description || '',
-        type: 'event',
-        category: item.attributes?.category,
-        url: `/news`,
+        objectID:    `itinerary-${item.id}`,
+        name:        item.title,
+        description: item.description || '',
+        type:        'itinerary',
+        category:    item.category,
+        url:         `/itineraries`,
       });
     });
 
-    // Fetch and index itineraries
-    const itineraries = await fetchFromStrapi('/itineraries');
-    itineraries.data?.forEach((item: any) => {
+    (artForms.data || []).forEach((item: any) => {
       objects.push({
-        objectID: `itinerary-${item.id}`,
-        name: item.attributes?.name || 'Unknown Itinerary',
-        description: item.attributes?.description || '',
-        type: 'itinerary',
-        url: `/itineraries`,
+        objectID:    `art-form-${item.id}`,
+        name:        item.name,
+        description: item.description || '',
+        type:        'art_form',
+        url:         `/arts`,
+      });
+    });
+
+    (artisans.data || []).forEach((item: any) => {
+      objects.push({
+        objectID:    `artisan-${item.id}`,
+        name:        item.name,
+        description: item.description || '',
+        type:        'artisan',
+        category:    item.craft_type,
+        location:    item.location,
+        url:         `/arts`,
+      });
+    });
+
+    (stories.data || []).forEach((item: any) => {
+      objects.push({
+        objectID:    `story-${item.id}`,
+        name:        item.title,
+        description: item.content?.slice(0, 200) || '',
+        type:        'story',
+        category:    item.category,
+        url:         `/stories/${item.id}`,
+      });
+    });
+
+    (news.data || []).forEach((item: any) => {
+      objects.push({
+        objectID:    `news-${item.id}`,
+        name:        item.title,
+        description: item.content?.slice(0, 200) || '',
+        type:        'news',
+        category:    item.category,
+        url:         `/news`,
       });
     });
 
     if (objects.length === 0) {
-      return NextResponse.json(
-        { error: 'No data found to index', count: 0 },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No approved content found to index', count: 0 }, { status: 400 });
     }
 
-    // Index to Algolia
     await index.saveObjects(objects);
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: `Successfully indexed ${objects.length} items to Algolia`,
-        count: objects.length,
-        breakdown: {
-          heritage: objects.filter((o) => o.type === 'heritage').length,
-          spots: objects.filter((o) => o.type === 'spot').length,
-          faqs: objects.filter((o) => o.type === 'faq').length,
-          events: objects.filter((o) => o.type === 'event').length,
-          itineraries: objects.filter((o) => o.type === 'itinerary').length,
-        },
+    return NextResponse.json({
+      success: true,
+      message: `Successfully indexed ${objects.length} items to Algolia`,
+      count: objects.length,
+      breakdown: {
+        attractions: objects.filter(o => o.type === 'attraction').length,
+        events:      objects.filter(o => o.type === 'event').length,
+        faqs:        objects.filter(o => o.type === 'faq').length,
+        itineraries: objects.filter(o => o.type === 'itinerary').length,
+        art_forms:   objects.filter(o => o.type === 'art_form').length,
+        artisans:    objects.filter(o => o.type === 'artisan').length,
+        stories:     objects.filter(o => o.type === 'story').length,
+        news:        objects.filter(o => o.type === 'news').length,
       },
-      { status: 200 }
-    );
+    });
   } catch (error) {
     logger.error('Algolia indexing error:', error);
-    return NextResponse.json(
-      { error: 'Failed to index to Algolia', details: String(error) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to index to Algolia', details: String(error) }, { status: 500 });
   }
 }

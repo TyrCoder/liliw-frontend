@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { logger } from '@/lib/logger';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
-
 export async function POST(req: NextRequest) {
   try {
     const { full_name, email, phone, type, message } = await req.json();

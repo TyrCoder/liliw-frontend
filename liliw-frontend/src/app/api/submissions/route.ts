@@ -3,9 +3,6 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { logger } from '@/lib/logger';
 import { sendContactNotification } from '@/lib/email';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
-
 export async function POST(request: NextRequest) {
   try {
     const { name, email, phone, message, type } = await request.json();
