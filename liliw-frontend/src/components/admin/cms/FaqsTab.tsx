@@ -132,13 +132,13 @@ export default function FaqsTab({ token, userEmail, isOfficer, isAdmin }: Props)
                     <td className="px-5 py-4"><StatusBadge status={e.status} /></td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {canEdit && ['draft','rejected'].includes(e.status) && <button onClick={() => openEdit(e)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:border-teal-300 hover:text-teal-600 transition"><Edit2 className="w-3 h-3" /> Edit</button>}
+                        {canEdit && ['draft','rejected','approved'].includes(e.status) && <button onClick={() => openEdit(e)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:border-teal-300 hover:text-teal-600 transition"><Edit2 className="w-3 h-3" /> Edit</button>}
                         {canEdit && ['draft','rejected'].includes(e.status) && <button onClick={() => submit(e.id)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition"><Send className="w-3 h-3" /> Submit</button>}
                         {(isOfficer || isAdmin) && e.status === 'pending' && <>
                           <button onClick={() => approve(e.id)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-green-200 text-green-700 hover:bg-green-50 transition"><CheckCircle className="w-3 h-3" /> Approve</button>
                           <button onClick={() => reject(e.id)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-red-200 text-red-600 hover:bg-red-50 transition"><AlertCircle className="w-3 h-3" /> Reject</button>
                         </>}
-                        {canEdit && ['draft','rejected'].includes(e.status) && <button onClick={() => del(e.id)} disabled={deleting === e.id} className="p-1 rounded-lg text-gray-300 hover:text-red-500 transition disabled:opacity-50">{deleting === e.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}</button>}
+                        {canEdit && ['draft','rejected','approved'].includes(e.status) && <button onClick={() => del(e.id)} disabled={deleting === e.id} className="p-1 rounded-lg text-gray-300 hover:text-red-500 transition disabled:opacity-50">{deleting === e.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}</button>}
                       </div>
                     </td>
                   </tr>

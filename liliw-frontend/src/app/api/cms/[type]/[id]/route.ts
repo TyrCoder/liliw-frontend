@@ -35,11 +35,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (!role) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (role === 'officer') return NextResponse.json({ error: 'Officers cannot edit content' }, { status: 403 });
 
-  // Only editable in draft or rejected state
   const { data: existing } = await supabaseServer.from(table).select('status').eq('id', id).single();
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (!['draft', 'rejected'].includes(existing.status)) {
-    return NextResponse.json({ error: 'Only draft or rejected entries can be edited' }, { status: 409 });
+  if (existing.status === 'pending') {
+    return NextResponse.json({ error: 'Pending entries cannot be edited' }, { status: 409 });
   }
 
   const body = await req.json();
@@ -88,8 +87,8 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
   const { data: existing } = await supabaseServer.from(table).select('status, name, title, question').eq('id', id).single();
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (!['draft', 'rejected'].includes(existing.status)) {
-    return NextResponse.json({ error: 'Only draft or rejected entries can be deleted' }, { status: 409 });
+  if (existing.status === 'pending') {
+    return NextResponse.json({ error: 'Pending entries cannot be deleted' }, { status: 409 });
   }
 
   const entryTitle = existing.name || existing.title || existing.question || id;
