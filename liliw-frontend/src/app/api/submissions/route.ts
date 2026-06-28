@@ -32,13 +32,6 @@ export async function POST(request: NextRequest) {
     sendContactNotification({ name, email, phone, type: type || 'feedback', message })
       .catch(err => logger.error('[Email] contact notification:', err));
 
-    // Secondary: Strapi (fire-and-forget)
-    fetch(`${STRAPI}/api/submissions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
-      body: JSON.stringify({ data: { name, email, phone: phone || '', message, type: type || 'feedback' } }),
-    }).catch(() => {});
-
     return NextResponse.json({ success: true, message: 'Thank you for your submission! We will be in touch shortly.' });
   } catch (err) {
     logger.error('Submission error:', err);

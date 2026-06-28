@@ -38,13 +38,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Persist page view to Strapi (fire-and-forget)
-    fetch(`${STRAPI}/api/page-views`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
-      body: JSON.stringify({ data: { path } }),
-    }).catch(() => {});
-
     // Upsert live session into Supabase — must await before returning or Vercel kills the write
     if (sessionId) {
       const d: Device = ['desktop', 'mobile', 'tablet'].includes(device) ? device : 'desktop';
@@ -64,29 +57,6 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    const res = await fetch(
-      `${STRAPI}/api/page-views?pagination[limit]=500&sort=createdAt:desc`,
-      { headers: { Authorization: `Bearer ${TOKEN}` }, next: { revalidate: 0 } },
-    );
-
-    let topPages: { path: string; views: number }[] = [];
-    let totalViews = 0;
-
-    if (res.ok) {
-      const data = await res.json();
-      const entries: any[] = data.data || [];
-      totalViews = data.meta?.pagination?.total || entries.length;
-
-      const map: Record<string, number> = {};
-      entries.forEach((e: any) => {
-        const p = e.attributes?.path || e.path || '/';
-        map[p] = (map[p] || 0) + 1;
-      });
-      topPages = Object.entries(map)
-        .map(([path, views]) => ({ path, views }))
-        .sort((a, b) => b.views - a.views);
-    }
-
     const sessions = Array.from(sessionStore.values());
     const uniqueVisitors = sessions.length;
     const bounceCount = sessions.filter(s => s.pageViews <= 1).length;
@@ -99,7 +69,7 @@ export async function GET() {
       tablet:  { count: deviceCounts.tablet,  pct: Math.round((deviceCounts.tablet  / total) * 100) },
     };
 
-    return NextResponse.json({ pageViews: totalViews, uniqueVisitors, bounceRate, avgSessionTime: '—', topPages, devices });
+    return NextResponse.json({ pageViews: uniqueVisitors, uniqueVisitors, bounceRate, avgSessionTime: '—', topPages: [], devices });
   } catch {
     return NextResponse.json({ pageViews: 0, uniqueVisitors: 0, bounceRate: '—', avgSessionTime: '—', topPages: [], devices: { desktop: { count: 0, pct: 0 }, mobile: { count: 0, pct: 0 }, tablet: { count: 0, pct: 0 } } });
   }

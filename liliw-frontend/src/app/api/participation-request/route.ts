@@ -28,13 +28,6 @@ export async function POST(req: NextRequest) {
       console.error('[participation-request] Supabase error:', sbError.code, sbError.message);
     }
 
-    // Secondary: also save to Strapi (fire-and-forget — Render may be sleeping)
-    fetch(`${STRAPI}/api/participation-requests`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
-      body: JSON.stringify({ data: { full_name, email, type: type || null, message: message || '' } }),
-    }).catch(() => {});
-
     return NextResponse.json({ success: true });
   } catch (err) {
     logger.error('participation-request route error:', err);

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const TOKEN  = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
+import { supabaseServer } from '@/lib/supabase-server';
 
 export type PublicNotifItem = {
   id: string;
@@ -17,46 +15,37 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const headers = { Authorization: `Bearer ${TOKEN}` };
-
   const [eventsRes, newsRes] = await Promise.allSettled([
-    fetch(`${STRAPI}/api/events?sort=createdAt:desc&pagination[limit]=8&fields[0]=title&fields[1]=createdAt&fields[2]=date`, { headers }),
-    fetch(`${STRAPI}/api/newses?sort=createdAt:desc&pagination[limit]=8&fields[0]=title&fields[1]=createdAt`, { headers }),
+    supabaseServer.from('cms_events').select('id, title, date_start, created_at').eq('status', 'approved').order('created_at', { ascending: false }).limit(8),
+    supabaseServer.from('cms_news').select('id, title, created_at').eq('status', 'approved').order('created_at', { ascending: false }).limit(8),
   ]);
 
   const items: PublicNotifItem[] = [];
 
-  if (eventsRes.status === 'fulfilled' && eventsRes.value.ok) {
-    const d = await eventsRes.value.json();
-    const entries: any[] = d.data || [];
-    for (const e of entries) {
-      const attrs = e.attributes || e;
+  if (eventsRes.status === 'fulfilled' && !eventsRes.value.error) {
+    for (const e of eventsRes.value.data ?? []) {
       items.push({
-        id: `event-${e.id || e.documentId}`,
+        id: `event-${e.id}`,
         type: 'event',
-        title: attrs.title || 'New Event',
-        subtitle: attrs.date ? `Happening ${new Date(attrs.date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}` : 'Upcoming event in Liliw',
-        createdAt: attrs.createdAt || new Date().toISOString(),
+        title: e.title || 'New Event',
+        subtitle: e.date_start ? `Happening ${new Date(e.date_start).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}` : 'Upcoming event in Liliw',
+        createdAt: e.created_at || new Date().toISOString(),
       });
     }
   }
 
-  if (newsRes.status === 'fulfilled' && newsRes.value.ok) {
-    const d = await newsRes.value.json();
-    const entries: any[] = d.data || [];
-    for (const e of entries) {
-      const attrs = e.attributes || e;
+  if (newsRes.status === 'fulfilled' && !newsRes.value.error) {
+    for (const e of newsRes.value.data ?? []) {
       items.push({
-        id: `news-${e.id || e.documentId}`,
+        id: `news-${e.id}`,
         type: 'news',
-        title: attrs.title || 'News Update',
+        title: e.title || 'News Update',
         subtitle: 'Liliw Tourism News',
-        createdAt: attrs.createdAt || new Date().toISOString(),
+        createdAt: e.created_at || new Date().toISOString(),
       });
     }
   }
 
   items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
   return NextResponse.json({ success: true, data: items.slice(0, 15) });
 }
