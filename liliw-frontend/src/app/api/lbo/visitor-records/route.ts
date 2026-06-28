@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { verifySession, SESSION_COOKIE } from '@/lib/session';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-
 async function getEmail(req: NextRequest): Promise<string | null> {
   const cookie = req.cookies.get(SESSION_COOKIE)?.value;
   const session = cookie ? verifySession(cookie) : null;
@@ -12,10 +10,8 @@ async function getEmail(req: NextRequest): Promise<string | null> {
   const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
   if (!token) return null;
   try {
-    const res = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return null;
-    const user = await res.json();
-    return user.email ?? null;
+    const { data: { user } } = await supabaseServer.auth.getUser(token);
+    return user?.email ?? null;
   } catch {
     return null;
   }
