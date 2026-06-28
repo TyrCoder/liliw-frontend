@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
-import { getCmsRole, CMS_TABLES } from '@/lib/cms-auth';
+import { getCmsIdentity, CMS_TABLES } from '@/lib/cms-auth';
+import { logCmsAction } from '@/lib/cms-audit';
 
 type Params = { params: Promise<{ type: string; id: string }> };
 
@@ -9,11 +10,11 @@ export async function POST(req: NextRequest, { params }: Params) {
   const table = CMS_TABLES[type];
   if (!table) return NextResponse.json({ error: 'Invalid content type' }, { status: 400 });
 
-  const role = await getCmsRole(req);
+  const { role, email } = await getCmsIdentity(req);
   if (!role) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (role === 'officer') return NextResponse.json({ error: 'Officers cannot submit content for approval' }, { status: 403 });
 
-  const { data: existing } = await supabaseServer.from(table).select('status').eq('id', id).single();
+  const { data: existing } = await supabaseServer.from(table).select('status, name, title, question').eq('id', id).single();
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!['draft', 'rejected'].includes(existing.status)) {
     return NextResponse.json({ error: 'Only draft or rejected entries can be submitted' }, { status: 409 });
@@ -25,5 +26,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     .eq('id', id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const entryTitle = existing.name || existing.title || existing.question || id;
+  logCmsAction({ table, entryId: id, entryTitle: String(entryTitle), event: 'entry.submit', performedBy: email, role });
   return NextResponse.json({ success: true });
 }
