@@ -18,6 +18,8 @@ export async function GET() {
     const data = items.map((item: any) => {
       const type = CAT_MAP[item.category] ?? 'spot';
       const photos = mediaToPhotos(item._media);
+      const vtPhotos: any[] = Array.isArray(item.virtual_tour_photos) ? item.virtual_tour_photos : [];
+      const hotspots: any[] = Array.isArray(item.hotspots) ? item.hotspots : [];
       return {
         id: `${type}-${item.id}`,
         strapiId: item.id,
@@ -31,9 +33,9 @@ export async function GET() {
           coordinates: (item.map_lat != null && item.map_lng != null)
             ? { latitude: Number(item.map_lat), longitude: Number(item.map_lng) }
             : undefined,
-          has_virtual_tour: false,
-          hotspots: [],
-          virtual_tour_photos: [],
+          has_virtual_tour: vtPhotos.length > 0,
+          hotspots,
+          virtual_tour_photos: vtPhotos,
           photos,
         },
         type,
