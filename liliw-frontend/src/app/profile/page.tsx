@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, BookmarkCheck, Heart, Trash2, ChevronDown, MapPin, Calendar, Lightbulb, Trophy, Star, Lock } from 'lucide-react';
+import { ChevronLeft, BookmarkCheck, Heart, Trash2, ChevronDown, MapPin, Calendar, Lightbulb, Trophy, Star } from 'lucide-react';
+import BadgeSVG from '@/components/BadgeSVG';
 import { useAuth } from '@/context/AuthContext';
 import { useFavorites } from '@/context/FavoritesContext';
 
@@ -266,34 +267,31 @@ export default function ProfilePage() {
             {/* Badge grid */}
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3" style={{ fontFamily: HL }}>All Badges</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {(achievementsData?.achievements ?? []).map((a: any) => (
-                  <div key={a.id} className={`flex items-center gap-3 rounded-2xl border p-4 transition ${a.earned ? 'bg-white border-gray-200 shadow-sm' : 'bg-gray-50 border-gray-100 opacity-60'}`}>
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0"
-                      style={{ backgroundColor: a.earned ? `${a.badge_color}20` : '#f3f4f6' }}>
-                      {a.earned ? a.icon : <Lock className="w-5 h-5 text-gray-300" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 text-sm" style={{ fontFamily: HL }}>{a.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-1" style={{ fontFamily: BL }}>{a.description}</p>
-                      {a.earned && a.earned_at && (
-                        <p className="text-[10px] mt-0.5 font-semibold" style={{ color: a.badge_color }}>
-                          Earned {new Date(a.earned_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-xs font-bold" style={{ color: a.earned ? '#1565C0' : '#9CA3AF', fontFamily: HL }}>+{a.points_reward} pts</p>
-                      {!a.earned && (
-                        <p className="text-[10px] text-gray-400 mt-0.5" style={{ fontFamily: BL }}>
-                          {a.trigger_type === 'event_count' ? `${a.trigger_value} event${a.trigger_value > 1 ? 's' : ''}` : a.trigger_type === 'review_count' ? `${a.trigger_value} review${a.trigger_value > 1 ? 's' : ''}` : `${a.trigger_value} pts`}
-                        </p>
-                      )}
-                    </div>
+                  <div key={a.id} className={`flex flex-col items-center text-center rounded-2xl border p-4 transition ${a.earned ? 'bg-white border-gray-200 shadow-sm' : 'bg-gray-50 border-gray-100'}`}>
+                    <BadgeSVG icon={a.icon} color={a.badge_color} earned={a.earned} size={80} />
+                    <p className="font-bold text-gray-900 text-sm mt-3 leading-tight" style={{ fontFamily: HL }}>{a.name}</p>
+                    <p className="text-[11px] text-gray-400 mt-1 line-clamp-2" style={{ fontFamily: BL }}>{a.description}</p>
+                    {a.earned && a.earned_at ? (
+                      <p className="text-[10px] mt-2 font-semibold" style={{ color: a.badge_color }}>
+                        {new Date(a.earned_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-gray-400 mt-2" style={{ fontFamily: BL }}>
+                        {a.trigger_type === 'event_count'  ? `${a.trigger_value} event${a.trigger_value > 1 ? 's' : ''}` :
+                         a.trigger_type === 'review_count' ? `${a.trigger_value} review${a.trigger_value > 1 ? 's' : ''}` :
+                         `${a.trigger_value} pts needed`}
+                      </p>
+                    )}
+                    <span className="mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: a.earned ? `${a.badge_color}20` : '#F3F4F6', color: a.earned ? a.badge_color : '#9CA3AF', fontFamily: HL }}>
+                      +{a.points_reward} pts
+                    </span>
                   </div>
                 ))}
                 {(!achievementsData || achievementsData.achievements.length === 0) && (
-                  <div className="col-span-2 text-center py-12">
+                  <div className="col-span-3 text-center py-12">
                     <Trophy className="w-10 h-10 mx-auto mb-3 text-gray-300" />
                     <p className="font-semibold text-gray-500" style={{ fontFamily: HL }}>No achievements loaded</p>
                   </div>
