@@ -21,12 +21,12 @@ export async function logCmsAction(opts: {
   role:        string;
 }) {
   const model = TYPE_LABELS[opts.table] ?? opts.table;
-  await supabaseServer.from('audit_logs').insert({
+  void supabaseServer.from('audit_logs').insert({
     event:        opts.event,
     model,
     entry_id:     opts.entryId,
     entry_title:  opts.entryTitle.slice(0, 120),
     performed_by: opts.performedBy,
     changes:      { role: opts.role },
-  }).catch(() => {}); // fire-and-forget, never block the main response
+  }).then(null, () => {}); // fire-and-forget, never block the main response
 }
