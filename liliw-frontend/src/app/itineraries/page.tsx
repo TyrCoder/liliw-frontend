@@ -437,7 +437,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
         .slice(0, 4)
         .map(a => {
           const rawUrl = a.attributes?.photos?.[0]?.url;
-          const photo = rawUrl ? (rawUrl.startsWith('/') ? `${STRAPI_BASE}${rawUrl}` : rawUrl) : null;
+          const photo = rawUrl?.startsWith('http') ? rawUrl : null;
           return { id: a.id, name: a.attributes?.name || '', category: a.attributes?.category || a.type || '', location: a.attributes?.location || '', photo };
         });
       setSuggestions(filtered);
