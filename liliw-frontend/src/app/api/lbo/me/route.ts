@@ -17,12 +17,9 @@ export async function GET(request: NextRequest) {
     if (!userToken) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {
-      const meRes = await fetch(`${STRAPI}/api/users/me`, {
-        headers: { Authorization: `Bearer ${userToken}` },
-      });
-      if (!meRes.ok) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-      strapiUser = await meRes.json();
-      email = strapiUser?.email ?? null;
+      const { data: { user } } = await supabaseServer.auth.getUser(userToken);
+      if (!user) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      email = user.email ?? null;
     } catch {
       return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
     }

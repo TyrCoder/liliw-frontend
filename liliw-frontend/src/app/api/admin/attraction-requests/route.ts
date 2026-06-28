@@ -10,18 +10,13 @@ async function getStaffRole(req: NextRequest): Promise<'admin' | 'officer' | 'ed
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return null;
   try {
-    const res = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return null;
-    const user = await res.json();
-    const adminEmails = [
-      ...(process.env.ADMIN_EMAILS || '').split(','),
-      ...(process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(','),
-    ].map(e => e.trim().toLowerCase()).filter(Boolean);
-    if (adminEmails.includes((user.email || '').toLowerCase())) return 'admin';
-    const role = (user.role?.name || '').toLowerCase().replace(/[\s_-]/g, '');
-    if (role.includes('officer')) return 'officer';
-    if (role.includes('editor') || role.includes('chato')) return 'editor';
-    if (role.includes('admin')) return 'admin';
+    const { data: { user } } = await supabaseServer.auth.getUser(token);
+    if (!user) return null;
+    const { data: profile } = await supabaseServer.from('profiles').select('role').eq('id', user.id).single();
+    const role = profile?.role ?? '';
+    if (role === 'admin') return 'admin';
+    if (role === 'chatoofficer') return 'officer';
+    if (role === 'chatoeditor') return 'editor';
     return null;
   } catch {
     return null;

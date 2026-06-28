@@ -19,10 +19,8 @@ async function getEmail(req: NextRequest): Promise<string | null> {
   const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
   if (!token) return null;
   try {
-    const res = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return null;
-    const user = await res.json();
-    return user.email ?? null;
+    const { data: { user } } = await supabaseServer.auth.getUser(token);
+    return user?.email ?? null;
   } catch {
     return null;
   }

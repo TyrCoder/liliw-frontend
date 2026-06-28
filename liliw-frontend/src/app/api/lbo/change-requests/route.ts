@@ -12,9 +12,8 @@ async function getUser(req: NextRequest): Promise<{ email: string; username?: st
   const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
   if (!token) return null;
   try {
-    const res = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return null;
-    return res.json();
+    const { data: { user } } = await supabaseServer.auth.getUser(token);
+    return user ? { email: user.email ?? '' } : null;
   } catch {
     return null;
   }

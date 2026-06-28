@@ -8,12 +8,8 @@ export async function GET(req: NextRequest) {
   const token = auth.replace('Bearer ', '').trim();
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Verify JWT with Strapi
-  const meRes = await fetch(`${STRAPI}/api/users/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!meRes.ok) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-  const me = await meRes.json();
+  const { data: { user: me } } = await supabaseServer.auth.getUser(token);
+  if (!me) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
 
   const { data } = await supabaseServer
     .from('tourist_profiles')
