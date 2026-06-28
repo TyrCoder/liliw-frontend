@@ -10,7 +10,6 @@ import { MapPin, Navigation, X, Layers, ChevronLeft, Eye, Star, ChevronDown, Plu
 
 const LILIW_CENTER = { longitude: 121.43605859033404, latitude: 14.130301377593792 };
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || '';
 
 const LILIW_BOUNDARY_URL =
   'https://nominatim.openstreetmap.org/search?q=Liliw%2CLaguna%2CPhilippines&format=geojson&limit=1&polygon_geojson=1';
@@ -414,7 +413,7 @@ export default function MapPage() {
             const photos = rawPhotos.map((p: any) => {
               const url = p?.url ?? p?.formats?.medium?.url ?? p?.formats?.small?.url;
               if (!url) return null;
-              return url.startsWith('http') ? url : `${STRAPI_URL}${url}`;
+              return url.startsWith('http') ? url : null;
             }).filter(Boolean) as string[];
             return {
               id: String(a.id),

@@ -7,16 +7,17 @@ export async function POST(req: NextRequest) {
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { attractionId, photos } = await req.json();
+    const { attractionId, strapiId, photos } = await req.json();
+    const id = attractionId || strapiId;
 
-    if (!attractionId) {
+    if (!id) {
       return NextResponse.json({ error: 'attractionId is required' }, { status: 400 });
     }
 
     const { error } = await supabaseServer
       .from('cms_attractions')
       .update({ virtual_tour_photos: photos })
-      .eq('id', attractionId);
+      .eq('id', id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

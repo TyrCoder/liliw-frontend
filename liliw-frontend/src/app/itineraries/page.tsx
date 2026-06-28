@@ -48,13 +48,10 @@ function Bunting({ flip = false }: { flip?: boolean }) {
 
 /* â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ shared helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 
-const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-
 function getPhotoUrl(p: any): string | null {
   if (!p) return null;
   const raw = p.url || p.data?.attributes?.url || p.attributes?.url || null;
-  if (!raw) return null;
-  if (raw.startsWith('/')) return `${STRAPI_BASE}${raw}`;
+  if (!raw || raw.startsWith('/')) return null;
   return raw;
 }
 
