@@ -2,15 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { verifySession, SESSION_COOKIE } from '@/lib/session';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-
 export async function GET(request: NextRequest) {
   // Fast path: signed session cookie
   const cookie = request.cookies.get(SESSION_COOKIE)?.value;
   const session = cookie ? verifySession(cookie) : null;
 
   let email: string | null = session?.email ?? null;
-  let strapiUser: { id?: number; email: string; username?: string } | null = null;
 
   if (!email) {
     const userToken = (request.headers.get('Authorization') || '').replace('Bearer ', '');
@@ -57,6 +54,6 @@ export async function GET(request: NextRequest) {
       strapi_attraction_id:   data.strapi_attraction_id ?? null,
       strapi_attraction_type: data.strapi_attraction_type ?? null,
     },
-    user: { id: strapiUser?.id, email, username: strapiUser?.username },
+    user: { email },
   });
 }
