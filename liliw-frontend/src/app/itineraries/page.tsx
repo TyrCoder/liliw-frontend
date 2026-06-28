@@ -305,8 +305,8 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
       map.on('load', async () => {
         if (cancelled) return;
         const coords: [number, number][] = [];
+        // Show user location pin but don't include in route — route goes Stop 1 → 2 → 3
         if (userLocation) {
-          coords.push(userLocation);
           new mapboxgl.Marker({ color: '#1565C0' }).setLngLat(userLocation).setPopup(new mapboxgl.Popup({ offset: 25 }).setText('Your Location')).addTo(map);
         }
         const allStops = localPlan.days.flatMap((d: any) =>
@@ -364,12 +364,18 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
           const stop = allStops[i];
           const stopNum = i + 1;
           const strapiCoord = findCoord(stop.place);
+          const addHoverMarker = (coord: [number, number]) => {
+            const el = makeMarkerEl(stopNum);
+            new mapboxgl.Marker({ element: el }).setLngLat(coord).addTo(map);
+            const popup = new mapboxgl.Popup({ offset: 20, maxWidth: '280px', closeButton: false, closeOnClick: false })
+              .setHTML(makePopupHtml(stop, stopNum));
+            el.addEventListener('mouseenter', () => popup.setLngLat(coord).addTo(map));
+            el.addEventListener('mouseleave', () => popup.remove());
+          };
+
           if (strapiCoord) {
             coords.push(strapiCoord);
-            new mapboxgl.Marker({ element: makeMarkerEl(stopNum) })
-              .setLngLat(strapiCoord)
-              .setPopup(new mapboxgl.Popup({ offset: 20, maxWidth: '280px' }).setHTML(makePopupHtml(stop, stopNum)))
-              .addTo(map);
+            addHoverMarker(strapiCoord);
           } else {
             try {
               const q = encodeURIComponent(`${stop.place}, Liliw, Laguna, Philippines`);
@@ -378,10 +384,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
               const coord = d?.features?.[0]?.center as [number, number] | undefined;
               if (coord) {
                 coords.push(coord);
-                new mapboxgl.Marker({ element: makeMarkerEl(stopNum) })
-                  .setLngLat(coord)
-                  .setPopup(new mapboxgl.Popup({ offset: 20, maxWidth: '280px' }).setHTML(makePopupHtml(stop, stopNum)))
-                  .addTo(map);
+                addHoverMarker(coord);
               }
             } catch {}
           }
