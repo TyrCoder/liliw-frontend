@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, BookmarkCheck, Heart, Trash2, ChevronDown, MapPin, Calendar, Lightbulb } from 'lucide-react';
+import { ChevronLeft, BookmarkCheck, Heart, Trash2, ChevronDown, MapPin, Calendar, Lightbulb, Trophy, Star, Lock } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useFavorites } from '@/context/FavoritesContext';
 
@@ -31,7 +31,8 @@ export default function ProfilePage() {
 
   const [trips, setTrips]           = useState<SavedTrip[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [activeTab, setActiveTab]   = useState<'trips' | 'favorites'>('trips');
+  const [activeTab, setActiveTab]   = useState<'trips' | 'favorites' | 'achievements'>('trips');
+  const [achievementsData, setAchievementsData] = useState<{ totalPoints: number; achievements: any[]; recentActivity: any[] } | null>(null);
   const [profile, setProfile]       = useState<{ user_type: string | null; full_name: string | null } | null>(null);
 
   useEffect(() => {
@@ -62,6 +63,14 @@ export default function ProfilePage() {
     fetch('/api/user/profile', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setProfile(d); })
+      .catch(() => {});
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch('/api/user/achievements', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setAchievementsData(d); })
       .catch(() => {});
   }, [token]);
 
@@ -119,6 +128,16 @@ export default function ProfilePage() {
                 <p className="text-xl font-bold text-white">{favorites.length}</p>
                 <p className="text-xs text-white/50" style={{ fontFamily: BL }}>Favorites</p>
               </div>
+              <div className="w-px bg-white/10" />
+              <div className="text-center">
+                <p className="text-xl font-bold" style={{ color: '#F5C518' }}>{achievementsData?.totalPoints ?? 0}</p>
+                <p className="text-xs text-white/50" style={{ fontFamily: BL }}>Points</p>
+              </div>
+              <div className="w-px bg-white/10" />
+              <div className="text-center">
+                <p className="text-xl font-bold" style={{ color: '#F5C518' }}>{achievementsData?.achievements.filter((a: any) => a.earned).length ?? 0}</p>
+                <p className="text-xs text-white/50" style={{ fontFamily: BL }}>Badges</p>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -129,8 +148,9 @@ export default function ProfilePage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
           <div className="flex border-b border-gray-100">
             {([
-              { key: 'trips',     label: 'Saved Itineraries', icon: BookmarkCheck, count: trips.length },
-              { key: 'favorites', label: 'Favorites',         icon: Heart,         count: favorites.length },
+              { key: 'trips',        label: 'Saved Itineraries', icon: BookmarkCheck, count: trips.length },
+              { key: 'favorites',    label: 'Favorites',         icon: Heart,         count: favorites.length },
+              { key: 'achievements', label: 'Achievements',      icon: Trophy,        count: achievementsData?.achievements.filter((a: any) => a.earned).length ?? 0 },
             ] as const).map(({ key, label, icon: Icon, count }) => (
               <button key={key} id={key === 'trips' ? 'saved' : undefined}
                 onClick={() => setActiveTab(key)}
@@ -225,6 +245,85 @@ export default function ProfilePage() {
                 </AnimatePresence>
               </div>
             ))}
+          </motion.div>
+        )}
+
+        {/* Achievements */}
+        {activeTab === 'achievements' && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 pb-16">
+            {/* Points summary */}
+            <div className="bg-gradient-to-r from-[#0B3D91] to-[#1565C0] rounded-2xl p-5 text-white flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest opacity-60 mb-1" style={{ fontFamily: HL }}>Total Points</p>
+                <p className="text-4xl font-bold" style={{ color: '#F5C518' }}>{achievementsData?.totalPoints ?? 0}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-bold uppercase tracking-widest opacity-60 mb-1" style={{ fontFamily: HL }}>Badges Earned</p>
+                <p className="text-4xl font-bold">{achievementsData?.achievements.filter((a: any) => a.earned).length ?? 0} <span className="text-lg opacity-50">/ {achievementsData?.achievements.length ?? 0}</span></p>
+              </div>
+            </div>
+
+            {/* Badge grid */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3" style={{ fontFamily: HL }}>All Badges</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(achievementsData?.achievements ?? []).map((a: any) => (
+                  <div key={a.id} className={`flex items-center gap-3 rounded-2xl border p-4 transition ${a.earned ? 'bg-white border-gray-200 shadow-sm' : 'bg-gray-50 border-gray-100 opacity-60'}`}>
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0"
+                      style={{ backgroundColor: a.earned ? `${a.badge_color}20` : '#f3f4f6' }}>
+                      {a.earned ? a.icon : <Lock className="w-5 h-5 text-gray-300" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-gray-900 text-sm" style={{ fontFamily: HL }}>{a.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-1" style={{ fontFamily: BL }}>{a.description}</p>
+                      {a.earned && a.earned_at && (
+                        <p className="text-[10px] mt-0.5 font-semibold" style={{ color: a.badge_color }}>
+                          Earned {new Date(a.earned_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-bold" style={{ color: a.earned ? '#1565C0' : '#9CA3AF', fontFamily: HL }}>+{a.points_reward} pts</p>
+                      {!a.earned && (
+                        <p className="text-[10px] text-gray-400 mt-0.5" style={{ fontFamily: BL }}>
+                          {a.trigger_type === 'event_count' ? `${a.trigger_value} event${a.trigger_value > 1 ? 's' : ''}` : a.trigger_type === 'review_count' ? `${a.trigger_value} review${a.trigger_value > 1 ? 's' : ''}` : `${a.trigger_value} pts`}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {(!achievementsData || achievementsData.achievements.length === 0) && (
+                  <div className="col-span-2 text-center py-12">
+                    <Trophy className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                    <p className="font-semibold text-gray-500" style={{ fontFamily: HL }}>No achievements loaded</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recent activity */}
+            {achievementsData && achievementsData.recentActivity.length > 0 && (
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3" style={{ fontFamily: HL }}>Recent Activity</p>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  {achievementsData.recentActivity.map((r: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between px-5 py-3 border-b border-gray-50 last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                          style={{ backgroundColor: r.action === 'event_signup' ? '#EFF6FF' : r.action === 'review' ? '#FEF9C3' : '#F0FDF4' }}>
+                          {r.action === 'event_signup' ? <Calendar className="w-3.5 h-3.5 text-blue-500" /> : r.action === 'review' ? <Star className="w-3.5 h-3.5 text-yellow-500" /> : <Trophy className="w-3.5 h-3.5 text-green-500" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800" style={{ fontFamily: HL }}>{r.reference_name || (r.action === 'event_signup' ? 'Event Sign-up' : r.action === 'review' ? 'Review Written' : 'Achievement Bonus')}</p>
+                          <p className="text-xs text-gray-400" style={{ fontFamily: BL }}>{new Date(r.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold" style={{ color: '#1565C0', fontFamily: HL }}>+{r.points} pts</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 

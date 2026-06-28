@@ -2,16 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { requireStaffAuth } from '@/lib/auth';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-
 async function getEditorEmail(req: NextRequest): Promise<string | null> {
   const token = (req.headers.get('authorization') || '').replace('Bearer ', '');
   if (!token) return null;
   try {
-    const res = await fetch(`${STRAPI}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return null;
-    const user = await res.json();
-    return user.email ?? null;
+    const { data: { user } } = await supabaseServer.auth.getUser(token);
+    return user?.email ?? null;
   } catch {
     return null;
   }

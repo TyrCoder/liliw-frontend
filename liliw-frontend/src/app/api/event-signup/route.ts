@@ -1,61 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireStaffAuth } from '@/lib/auth';
 import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { verifyToken } from '@/lib/verifyToken';
+import { awardPoints } from '@/lib/achievements';
 import { logger } from '@/lib/logger';
-
-const STRAPI       = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, event_title, full_name, email, phone, notes, strapi_user_id, username } = await request.json();
+    const { eventId, event_title, full_name, email, phone, notes, username } = await request.json();
 
     if (!eventId || !full_name || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Save to Strapi
-    const strapiRes = await fetch(`${STRAPI}/api/event-signups`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${STRAPI_TOKEN}`,
-      },
-      body: JSON.stringify({
-        data: {
-          event: eventId,
-          full_name,
-          email,
-          phone: phone || '',
-          notes: notes || '',
-          strapi_user_id: strapi_user_id || null,
-          username: username || '',
-          status: 'pending',
-        },
-      }),
-    });
-
-    if (!strapiRes.ok) {
-      const err = await strapiRes.text();
-      logger.error('Strapi event-signup error:', err);
-    }
-
-    // Save to Supabase
     const { error: sbError } = await supabase
       .from('event_signups')
       .insert({
-        event_id: eventId,
+        event_id:    eventId,
         event_title: event_title || '',
         full_name,
         email,
-        phone: phone || '',
-        notes: notes || '',
-        strapi_user_id: strapi_user_id || null,
+        phone:    phone    || '',
+        notes:    notes    || '',
         username: username || '',
-        status: 'pending',
+        status:   'pending',
       });
 
     if (sbError) logger.error('Supabase event-signup error:', sbError);
+
+    // Award points if user is logged in
+    const auth = await verifyToken(request);
+    if (auth?.userId && eventId) {
+      awardPoints(auth.userId, 'event_signup', String(eventId), event_title || 'Event').catch(() => {});
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -68,13 +45,33 @@ export async function GET(request: NextRequest) {
   if (!await requireStaffAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const res = await fetch(
-      `${STRAPI}/api/event-signups?populate=event&sort=createdAt:desc&pagination[limit]=200`,
-      { headers: { Authorization: `Bearer ${STRAPI_TOKEN}` }, next: { revalidate: 0 } }
-    );
-    if (!res.ok) throw new Error('Strapi error');
-    const data = await res.json();
-    return NextResponse.json({ success: true, data: data.data || [] });
+    const { data } = await supabase
+      .from('event_signups')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    // Shape into the format the admin page expects (Strapi v4-compatible)
+    const shaped = (data ?? []).map(row => ({
+      id: row.id,
+      attributes: {
+        full_name:  row.full_name,
+        email:      row.email,
+        phone:      row.phone  || '',
+        notes:      row.notes  || '',
+        username:   row.username || '',
+        status:     row.status,
+        createdAt:  row.created_at,
+        event: {
+          data: {
+            id: row.event_id,
+            attributes: { title: row.event_title, date_start: '' },
+          },
+        },
+      },
+    }));
+
+    return NextResponse.json({ success: true, data: shaped });
   } catch {
     return NextResponse.json({ success: false, data: [] });
   }
