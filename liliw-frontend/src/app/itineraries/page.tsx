@@ -176,7 +176,7 @@ function AttractionQuickModal({ placeName, onClose }: { placeName: string; onClo
 
   const attr = attraction?.attributes;
   const rawUrl = attr?.photos?.[0]?.url || null;
-  const photoUrl = rawUrl ? (rawUrl.startsWith('/') ? `${STRAPI_BASE}${rawUrl}` : rawUrl) : null;
+  const photoUrl = rawUrl?.startsWith('http') ? rawUrl : null;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
