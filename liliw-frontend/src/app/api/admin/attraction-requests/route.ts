@@ -3,8 +3,6 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { requireStaffAuth } from '@/lib/auth';
 import { sendAttractionRequestUpdate } from '@/lib/email';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-
 async function getStaffRole(req: NextRequest): Promise<'admin' | 'officer' | 'editor' | null> {
   const auth = req.headers.get('authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;

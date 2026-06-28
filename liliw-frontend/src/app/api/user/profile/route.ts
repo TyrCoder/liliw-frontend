@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 
-const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-
 export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization') ?? '';
   const token = auth.replace('Bearer ', '').trim();

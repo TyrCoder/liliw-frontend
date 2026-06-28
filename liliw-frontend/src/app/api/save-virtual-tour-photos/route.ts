@@ -1,49 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/auth';
-
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL;
-const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
-
-const ENDPOINTS: Record<string, string> = {
-  heritage: 'heritage-sites',
-  spot: 'tourist-spots',
-  dining: 'dining-and-foods',
-};
+import { supabaseServer } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
   const isAdmin = await requireAdminAuth(req);
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { attractionType, strapiId, photos } = await req.json();
+    const { attractionId, photos } = await req.json();
 
-    const endpoint = ENDPOINTS[attractionType];
-    if (!endpoint) {
-      return NextResponse.json({ error: 'Invalid attraction type' }, { status: 400 });
+    if (!attractionId) {
+      return NextResponse.json({ error: 'attractionId is required' }, { status: 400 });
     }
 
-    const baseUrl = `${STRAPI_URL}/api/${endpoint}/${strapiId}`;
-    const headers = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${STRAPI_TOKEN}`,
-    };
+    const { error } = await supabaseServer
+      .from('cms_attractions')
+      .update({ virtual_tour_photos: photos })
+      .eq('id', attractionId);
 
-    const putRes = await fetch(baseUrl, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({ data: { virtual_tour_photos: photos } }),
-    });
-
-    if (!putRes.ok) {
-      const text = await putRes.text();
-      return NextResponse.json({ error: `PUT failed (${putRes.status}): ${text}` }, { status: putRes.status });
-    }
-
-    const pubRes = await fetch(`${baseUrl}/actions/publish`, { method: 'POST', headers });
-    if (!pubRes.ok && pubRes.status !== 405) {
-      const text = await pubRes.text();
-      return NextResponse.json({ error: `Publish failed (${pubRes.status}): ${text}` }, { status: pubRes.status });
-    }
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ ok: true });
   } catch (err) {
