@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
-import { getCmsRole, CMS_TABLES } from '@/lib/cms-auth';
+import { getCmsIdentity, getCmsRole, CMS_TABLES } from '@/lib/cms-auth';
+import { logCmsAction } from '@/lib/cms-audit';
 
 type Params = { params: Promise<{ type: string; id: string }> };
 
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const { data, error } = await supabaseServer
     .from(table)
-    .select(`*, media:cms_media(id, url, public_id, alt_text, sort_order)`)
+    .select('*')
     .eq('id', id)
     .single();
 
@@ -30,7 +31,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const table = CMS_TABLES[type];
   if (!table) return NextResponse.json({ error: 'Invalid content type' }, { status: 400 });
 
-  const role = await getCmsRole(req);
+  const { role, email } = await getCmsIdentity(req);
   if (!role) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (role === 'officer') return NextResponse.json({ error: 'Officers cannot edit content' }, { status: 403 });
 
@@ -52,6 +53,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const title = data?.name || data?.title || data?.question || id;
+  logCmsAction({ table, entryId: id, entryTitle: String(title), event: 'entry.update', performedBy: email, role });
 
   // Replace media if provided
   if (Array.isArray(media)) {
@@ -78,19 +82,21 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const table = CMS_TABLES[type];
   if (!table) return NextResponse.json({ error: 'Invalid content type' }, { status: 400 });
 
-  const role = await getCmsRole(req);
+  const { role, email } = await getCmsIdentity(req);
   if (!role) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (role === 'officer') return NextResponse.json({ error: 'Officers cannot delete content' }, { status: 403 });
 
-  const { data: existing } = await supabaseServer.from(table).select('status').eq('id', id).single();
+  const { data: existing } = await supabaseServer.from(table).select('status, name, title, question').eq('id', id).single();
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!['draft', 'rejected'].includes(existing.status)) {
     return NextResponse.json({ error: 'Only draft or rejected entries can be deleted' }, { status: 409 });
   }
 
+  const entryTitle = existing.name || existing.title || existing.question || id;
   await supabaseServer.from('cms_media').delete().eq('content_id', id);
   const { error } = await supabaseServer.from(table).delete().eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  logCmsAction({ table, entryId: id, entryTitle: String(entryTitle), event: 'entry.delete', performedBy: email, role });
   return NextResponse.json({ success: true });
 }

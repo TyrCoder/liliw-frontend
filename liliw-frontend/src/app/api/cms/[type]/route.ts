@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
-import { getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES } from '@/lib/cms-auth';
+import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES } from '@/lib/cms-auth';
+import { logCmsAction } from '@/lib/cms-audit';
 
 type Params = { params: Promise<{ type: string }> };
 
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const table = CMS_TABLES[type];
   if (!table) return NextResponse.json({ error: 'Invalid content type' }, { status: 400 });
 
-  const role = await getCmsRole(req);
+  const { role, email } = await getCmsIdentity(req);
   if (!role) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (role === 'officer') return NextResponse.json({ error: 'Officers cannot create content' }, { status: 403 });
 
@@ -55,6 +56,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  logCmsAction({ table, entryId: data.id, entryTitle: label, event: 'entry.create', performedBy: email, role });
 
   // Attach media if provided
   if (Array.isArray(body.media) && body.media.length > 0) {

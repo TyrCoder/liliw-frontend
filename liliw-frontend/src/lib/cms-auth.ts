@@ -4,6 +4,39 @@ import { supabaseServer } from './supabase-server';
 
 export type CmsRole = 'admin' | 'officer' | 'editor';
 
+/** Returns the caller's CMS role + email. Fast path uses signed session cookie. */
+export async function getCmsIdentity(req: NextRequest): Promise<{ role: CmsRole | null; email: string }> {
+  const cookie = req.cookies.get(SESSION_COOKIE)?.value;
+  if (cookie) {
+    const session = verifySession(cookie);
+    if (session) {
+      let role: CmsRole | null = null;
+      if (session.role === 'admin')        role = 'admin';
+      if (session.role === 'chatoofficer') role = 'officer';
+      if (session.role === 'chatoeditor')  role = 'editor';
+      return { role, email: session.email || 'unknown' };
+    }
+  }
+  const auth = req.headers.get('authorization') || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return { role: null, email: 'unknown' };
+  try {
+    const { data: { user } } = await supabaseServer.auth.getUser(token);
+    if (!user) return { role: null, email: 'unknown' };
+    const adminEmails = [
+      ...(process.env.ADMIN_EMAILS || '').split(','),
+      ...(process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(','),
+    ].map(e => e.trim().toLowerCase()).filter(Boolean);
+    if (adminEmails.includes((user.email || '').toLowerCase())) return { role: 'admin', email: user.email! };
+    const { data: profile } = await supabaseServer.from('profiles').select('role').eq('id', user.id).single();
+    const r = profile?.role ?? '';
+    const role: CmsRole | null = r === 'admin' ? 'admin' : r === 'chatoofficer' ? 'officer' : r === 'chatoeditor' ? 'editor' : null;
+    return { role, email: user.email || 'unknown' };
+  } catch {
+    return { role: null, email: 'unknown' };
+  }
+}
+
 /** Returns the caller's CMS role, or null if not staff. Fast path uses signed session cookie. */
 export async function getCmsRole(req: NextRequest): Promise<CmsRole | null> {
   const cookie = req.cookies.get(SESSION_COOKIE)?.value;
