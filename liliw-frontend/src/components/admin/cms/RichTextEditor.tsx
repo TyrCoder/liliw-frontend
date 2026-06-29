@@ -31,7 +31,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: Props) 
     <button
       type="button"
       onMouseDown={e => { e.preventDefault(); onClick(); }}
-      className={`p-1.5 rounded transition ${active ? 'bg-teal-100 text-teal-700' : 'text-gray-500 hover:bg-gray-100'}`}>
+      className={`p-1.5 rounded transition ${active ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-100'}`}>
       {children}
     </button>
   );
