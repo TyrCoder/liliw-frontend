@@ -1439,7 +1439,7 @@ export default function AdminDashboard() {
                   {filteredAttractions.map(a => (
                     <tr key={a.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-4">
-                        <Link href={`/attractions/${a.id}`} target="_blank" className="font-semibold text-gray-900 hover:text-teal-600 transition flex items-center gap-1">
+                        <Link href={`/attractions/${a.id}`} target="_blank" className="font-semibold text-gray-900 hover:text-blue-600 transition flex items-center gap-1">
                           {a.attributes.name}
                           <ExternalLink className="w-3 h-3 opacity-40" />
                         </Link>
@@ -1825,7 +1825,7 @@ export default function AdminDashboard() {
                           No records found for {MONTHS_FULL[vrExportMonth - 1]} {vrExportYear}.
                         </p>
                       ) : (
-                        <p className="text-xs text-teal-700 bg-teal-50 border border-teal-100 rounded-xl px-3 py-2 mb-4">
+                        <p className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 mb-4">
                           {previewCount} record{previewCount > 1 ? 's' : ''} will be exported for {MONTHS_FULL[vrExportMonth - 1]} {vrExportYear}.
                         </p>
                       );
@@ -1951,7 +1951,7 @@ export default function AdminDashboard() {
                               const t = filtered.reduce((s,r) => s+(r[`${key}_male`]||0)+(r[`${key}_female`]||0),0);
                               return <td key={key} className="px-4 py-3 text-right font-bold text-blue-900">{t.toLocaleString()}</td>;
                             })}
-                            <td className="px-4 py-3 text-right font-black text-teal-600 text-base">{grandTotal.toLocaleString()}</td>
+                            <td className="px-4 py-3 text-right font-black text-blue-700 text-base">{grandTotal.toLocaleString()}</td>
                           </tr>
                         </tfoot>
                       </table>
@@ -3033,7 +3033,7 @@ export default function AdminDashboard() {
                         {results.map(attr => (
                           <button key={attr.id} type="button"
                             onClick={() => { setPickedAttraction(attr); setAttrPickerQuery(attr.attributes.name); setAttrPickerOpen(false); }}
-                            className="w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5 transition">
+                            className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 flex items-center gap-2.5 transition">
                             <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white shrink-0"
                               style={{ backgroundColor: TYPE_COLORS[attr.type] }}>{TYPE_LABELS[attr.type]}</span>
                             {attr.attributes.name}
@@ -3384,7 +3384,7 @@ export default function AdminDashboard() {
                   <input
                     value={replySubject}
                     onChange={e => setReplySubject(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-300 transition"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
                   />
                 </div>
 
@@ -3395,7 +3395,7 @@ export default function AdminDashboard() {
                     value={replyMessage}
                     onChange={e => setReplyMessage(e.target.value)}
                     placeholder={`Hi ${subDetailModal.data.name || subDetailModal.data.full_name || ''},\n\nThank you for reaching out to us. We appreciate your ${subDetailModal.data.type || 'inquiry'}.\n\n`}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-300 resize-none transition"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none transition"
                   />
                 </div>
 

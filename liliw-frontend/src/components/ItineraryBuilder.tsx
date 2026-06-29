@@ -241,7 +241,7 @@ export default function ItineraryBuilder({
   return (
     <>
       <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-        className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-6 md:p-8 border-l-4"
+        className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 md:p-8 border-l-4"
         style={{ borderColor: '#1565C0' }}>
 
         <h3 className="text-2xl font-bold mb-6" style={{ color: '#0F1F3C', fontFamily: HL }}>
@@ -256,7 +256,7 @@ export default function ItineraryBuilder({
               <label className="block text-sm font-medium mb-1" style={{ color: '#0F1F3C', fontFamily: BL }}>Full Name *</label>
               <input type="text" name="name" value={guestInfo.name} onChange={handleGuestChange}
                 placeholder="Your name"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 text-sm" />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" />
             </div>
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
@@ -265,7 +265,7 @@ export default function ItineraryBuilder({
                 </label>
                 <input type="email" name="email" value={guestInfo.email} onChange={handleGuestChange}
                   placeholder="your@email.com"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 text-sm" />
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1 flex items-center gap-2" style={{ color: '#0F1F3C', fontFamily: BL }}>
@@ -273,7 +273,7 @@ export default function ItineraryBuilder({
                 </label>
                 <input type="tel" name="phone" value={guestInfo.phone} onChange={handleGuestChange}
                   placeholder="+63 (555) 000-0000"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 text-sm" />
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" />
               </div>
             </div>
             <div>
@@ -281,7 +281,7 @@ export default function ItineraryBuilder({
                 <Users size={14} style={{ color: '#1565C0' }} /> Number of Participants
               </label>
               <select name="participants" value={guestInfo.participants} onChange={handleGuestChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 text-sm">
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm">
                 {[...Array(maxParticipants)].map((_, i) => (
                   <option key={i + 1} value={i + 1}>{i + 1} {i + 1 === 1 ? 'person' : 'people'}</option>
                 ))}
@@ -324,7 +324,7 @@ export default function ItineraryBuilder({
                       <input type="text" value={item.name}
                         onChange={e => handleItemChange(item.id, 'name', e.target.value)}
                         placeholder="e.g., Liliw Church"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 text-sm" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium mb-1 flex items-center gap-1" style={{ color: '#0F1F3C', fontFamily: BL }}>
@@ -332,7 +332,7 @@ export default function ItineraryBuilder({
                       </label>
                       <input type="date" value={item.date} min={minDate}
                         onChange={e => handleItemChange(item.id, 'date', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 text-sm" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" />
                     </div>
                   </div>
                   <div className="grid md:grid-cols-2 gap-3">
@@ -341,14 +341,14 @@ export default function ItineraryBuilder({
                       <input type="text" value={item.duration}
                         onChange={e => handleItemChange(item.id, 'duration', e.target.value)}
                         placeholder="e.g., 2-3 hours"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 text-sm" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium mb-1" style={{ color: '#0F1F3C', fontFamily: BL }}>Notes</label>
                       <input type="text" value={item.notes}
                         onChange={e => handleItemChange(item.id, 'notes', e.target.value)}
                         placeholder="Special requests..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 text-sm" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" />
                     </div>
                   </div>
                 </motion.div>
@@ -475,10 +475,10 @@ export default function ItineraryBuilder({
                   <div className="space-y-2">
                     {suggestions.map(s => (
                       <button key={s.id} onClick={() => swapWithSuggestion(s)}
-                        className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-teal-300 hover:bg-teal-50 transition group">
+                        className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition group">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-semibold text-sm text-gray-800 group-hover:text-teal-700" style={{ fontFamily: HL }}>
+                            <p className="font-semibold text-sm text-gray-800 group-hover:text-blue-700" style={{ fontFamily: HL }}>
                               {s.name}
                             </p>
                             <div className="flex items-center gap-1 mt-0.5">
