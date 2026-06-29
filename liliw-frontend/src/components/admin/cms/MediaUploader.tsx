@@ -98,7 +98,7 @@ export default function MediaUploader({ value, onChange, maxFiles = 10 }: Props)
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-500 hover:border-teal-300 hover:text-teal-600 transition disabled:opacity-60 w-full justify-center">
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-500 hover:border-blue-300 hover:text-blue-600 transition disabled:opacity-60 w-full justify-center">
             {uploading
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
               : <><Upload className="w-4 h-4" /> Add Photos ({value.length}/{maxFiles})</>}

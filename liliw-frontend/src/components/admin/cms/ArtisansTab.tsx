@@ -165,7 +165,7 @@ export default function ArtisansTab({ token, userEmail, isOfficer, isAdmin }: Pr
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2 flex-wrap">
                         {canEdit && ['draft','rejected','approved'].includes(e.status) && (
-                          <button onClick={() => openEdit(e)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:border-teal-300 hover:text-teal-600 transition">
+                          <button onClick={() => openEdit(e)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600 transition">
                             <Edit2 className="w-3 h-3" /> Edit
                           </button>
                         )}
@@ -211,39 +211,39 @@ export default function ArtisansTab({ token, userEmail, isOfficer, isAdmin }: Pr
                 <div className="col-span-2">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Name *</label>
                   <input value={editing.name || ''} onChange={e => setEditing(p => ({ ...p, name: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300" />
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Craft Type</label>
                   <input value={editing.craft_type || ''} onChange={e => setEditing(p => ({ ...p, craft_type: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                     placeholder="e.g. Shoemaking, Weaving" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Location</label>
                   <input value={editing.location || ''} onChange={e => setEditing(p => ({ ...p, location: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300" />
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Contact Number</label>
                   <input value={editing.contact_number || ''} onChange={e => setEditing(p => ({ ...p, contact_number: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300" />
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Rating (0–5)</label>
                   <input type="number" min="0" max="5" step="0.1" value={editing.rating ?? 0} onChange={e => setEditing(p => ({ ...p, rating: Number(e.target.value) }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300" />
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Description</label>
                 <textarea rows={4} value={editing.description || ''} onChange={e => setEditing(p => ({ ...p, description: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300 resize-none" />
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
               </div>
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Facebook URL</label>
                 <input value={(editing.social_media as any)?.facebook || ''} onChange={e => setEditing(p => p ? ({ ...p, social_media: { ...(p.social_media || {}), facebook: e.target.value } }) : p)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300" />
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
               </div>
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Photos</label>

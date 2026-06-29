@@ -1084,7 +1084,7 @@ export default function AdminDashboard() {
                               defaultValue={u.roleId || ''}
                               onChange={e => handleAssignRole(u.id, Number(e.target.value))}
                               disabled={savingRole === u.id}
-                              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50">
+                              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50">
                               <option value="" disabled>Select role…</option>
                               {availRoles.map((r: any) => (
                                 <option key={r.id} value={r.id}>{r.name}</option>
@@ -1287,7 +1287,7 @@ export default function AdminDashboard() {
                 {submissions.map(s => {
                   const a = s.attributes;
                   return (
-                    <tr key={s.id} className="hover:bg-teal-50/40 transition-colors cursor-pointer group"
+                    <tr key={s.id} className="hover:bg-blue-50/40 transition-colors cursor-pointer group"
                         onClick={() => openSubDetail('submission', { name: a.name, email: a.email, phone: a.phone, type: a.type, message: a.message, status: a.status, createdAt: a.createdAt })}>
                       <td className="px-5 py-4 font-semibold text-gray-900">{a.name}</td>
                       <td className="px-5 py-4">
@@ -1331,7 +1331,7 @@ export default function AdminDashboard() {
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {participation.map(p => (
-                  <tr key={p.id} className="hover:bg-teal-50/40 transition-colors cursor-pointer group"
+                  <tr key={p.id} className="hover:bg-blue-50/40 transition-colors cursor-pointer group"
                       onClick={() => openSubDetail('participation', { full_name: p.full_name, email: p.email, phone: p.phone, type: p.type, message: p.message, created_at: p.created_at })}>
                     <td className="px-5 py-4 font-semibold text-gray-900">{p.full_name}</td>
                     <td className="px-5 py-4">
@@ -1421,13 +1421,13 @@ export default function AdminDashboard() {
                   placeholder="Search attractions…"
                   value={attrSearch}
                   onChange={e => setAttrSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
               <select
                 value={attrType}
                 onChange={e => setAttrType(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400">
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
                 <option value="all">All Types</option>
                 <option value="heritage">Heritage Sites</option>
                 <option value="spot">Tourist Spots</option>
@@ -1817,14 +1817,14 @@ export default function AdminDashboard() {
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Month</label>
                         <select value={vrExportMonth} onChange={e => setVrExportMonth(Number(e.target.value))}
-                          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-400">
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
                           {MONTHS_FULL.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
                         </select>
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Year</label>
                         <select value={vrExportYear} onChange={e => setVrExportYear(Number(e.target.value))}
-                          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-400">
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
                           {exportYears.map(y => <option key={y} value={Number(y)}>{y}</option>)}
                         </select>
                       </div>
@@ -1874,10 +1874,10 @@ export default function AdminDashboard() {
                   <div className="relative flex-1 min-w-[180px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input type="text" placeholder="Search attraction or LBO…" value={vrSearch} onChange={e => setVrSearch(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                   </div>
                   <select value={vrYear} onChange={e => setVrYear(e.target.value)}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400">
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
                     <option value="all">All Years</option>
                     {years.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -3027,7 +3027,7 @@ export default function AdminDashboard() {
                     onChange={e => { setAttrPickerQuery(e.target.value); setPickedAttraction(null); setAttrPickerOpen(true); }}
                     onFocus={() => setAttrPickerOpen(true)}
                     placeholder="Search attractions…"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                   {pickedAttraction && (
                     <button type="button" onClick={() => { setPickedAttraction(null); setAttrPickerQuery(''); setAttrPickerOpen(false); }}
@@ -3077,14 +3077,14 @@ export default function AdminDashboard() {
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Username</label>
                   <input type="text" value={lboRegForm.username}
                     onChange={e => setLboRegForm(f => ({ ...f, username: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     placeholder="Username for login" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Password</label>
                   <input type="password" value={lboRegForm.password}
                     onChange={e => setLboRegForm(f => ({ ...f, password: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     placeholder="Minimum 6 characters" />
                 </div>
               </div>
@@ -3175,7 +3175,7 @@ export default function AdminDashboard() {
             <div className="mb-5">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Editor Notes (optional)</label>
               <textarea value={crNotes} onChange={e => setCrNotes(e.target.value)} rows={3}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
                 placeholder={crActionModal.action === 'done' ? 'e.g. Updated in Strapi CMS' : 'e.g. Insufficient information provided'} />
             </div>
 
@@ -3227,7 +3227,7 @@ export default function AdminDashboard() {
                 {arActionModal.action === 'editor_reviewed' || (!isChatoOfficer && isAdmin) ? 'Editor Notes' : 'Officer Notes'} (optional)
               </label>
               <textarea value={arNotes} onChange={e => setArNotes(e.target.value)} rows={3}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
                 placeholder={arActionModal.action === 'approved' ? 'e.g. Will create the listing in Strapi shortly' : arActionModal.action === 'editor_reviewed' ? 'e.g. Verified business registration' : 'e.g. Insufficient documentation'} />
             </div>
 
@@ -3263,7 +3263,7 @@ export default function AdminDashboard() {
               value={pwdInput}
               onChange={e => setPwdInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleResetPassword()}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 mb-3"
+              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 mb-3"
             />
 
             {pwdMsg && (
