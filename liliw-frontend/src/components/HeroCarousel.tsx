@@ -13,17 +13,15 @@ export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
-    const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL || '';
     fetch('/api/strapi/hero-slides')
       .then(r => r.json())
       .then(data => {
         if (data?.data?.length) {
-          setSlides(data.data.map((item: any, i: number) => {
-            const a = item.attributes || item;
-            const imgUrl = a.image?.data?.attributes?.url || a.image?.url;
-            const fullImg = imgUrl ? (imgUrl.startsWith('http') ? imgUrl : `${strapiUrl}${imgUrl}`) : null;
-            return { ...a, gradient: GRADIENTS[i % GRADIENTS.length], image: fullImg };
-          }));
+          setSlides(data.data.map((item: any, i: number) => ({
+            ...item,
+            gradient: GRADIENTS[i % GRADIENTS.length],
+            image: item.image?.url ?? null,
+          })));
         }
       }).catch(() => {})
       .finally(() => setLoading(false));
@@ -125,10 +123,10 @@ export default function HeroCarousel() {
               whileTap={{ scale: 0.95 }}
             >
               <Link
-                href={(slide as any).cta_link || (slide as any).link || '/'}
+                href={slide.button_link || '/'}
                 className="inline-flex items-center bg-white hover:bg-blue-50 font-bold py-4 px-8 rounded-full transition-all duration-300 shadow-xl hover:shadow-2xl group" style={{ color: '#0B3D91' }}
               >
-                {slide.cta_text || (slide as any).cta}
+                {slide.button_text}
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition" />
               </Link>
             </motion.div>

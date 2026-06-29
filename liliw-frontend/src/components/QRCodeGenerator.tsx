@@ -19,7 +19,7 @@ export default function QRCodeGenerator({
   const [isOpen, setIsOpen] = useState(false);
 
   // Build the URL to encode
-  const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:3000';
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
   const itemUrl = `${baseUrl}/attractions/${itemId}`;
 
   // QR Code API endpoint (using qr-server.com free service)
