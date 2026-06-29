@@ -66,9 +66,10 @@ export default function ImmersivePage() {
       .then(r => r.json())
       .then(json => {
         const all: Attraction[] = json.data || [];
-        const virtualTourAttractions = all.filter(a => a.attributes.has_virtual_tour === true);
-        setAttractions(virtualTourAttractions);
-        if (virtualTourAttractions.length > 0) setSelectedAttractionId(virtualTourAttractions[0].id);
+        setAttractions(all);
+        const firstWithTour = all.find(a => a.attributes.has_virtual_tour);
+        if (firstWithTour) setSelectedAttractionId(firstWithTour.id);
+        else if (all.length > 0) setSelectedAttractionId(all[0].id);
       })
       .catch(err => logger.error('Error fetching attractions:', err))
       .finally(() => setLoading(false));
@@ -416,6 +417,13 @@ export default function ImmersivePage() {
                   <p className="text-white font-bold text-lg mb-2">No 360° photos yet</p>
                   <p className="text-gray-400 text-sm">Upload photos using the panel on the right</p>
                 </div>
+              ) : selectedAttraction && scenes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-24 text-center"
+                  style={{ borderColor: 'rgba(245,197,24,0.3)', backgroundColor: 'rgba(245,197,24,0.03)' }}>
+                  <Layers className="w-16 h-16 mb-4 opacity-30" style={{ color: '#F5C518' }} />
+                  <p className="text-gray-300 font-bold text-lg mb-2">No 3D tour available</p>
+                  <p className="text-gray-500 text-sm">Select a tour from the list to explore</p>
+                </div>
               ) : null}
             </motion.div>
 
@@ -429,9 +437,11 @@ export default function ImmersivePage() {
               {/* Attraction List */}
               <div className="sticky top-24 space-y-4">
                 <div className="bg-gray-900 rounded-xl p-4 border-2" style={{ borderColor: 'rgba(245,197,24,0.3)' }}>
-                  <h2 className="text-white font-bold mb-4">Available Tours</h2>
+                  <h2 className="text-white font-bold mb-4">
+                    {editMode ? 'All Attractions' : 'Available Tours'}
+                  </h2>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {attractions.map((attraction, index) => (
+                    {(editMode ? attractions : attractions.filter(a => a.attributes.has_virtual_tour)).map((attraction, index) => (
                       <motion.button
                         key={attraction.id}
                         initial={{ y: 10, opacity: 0 }}
