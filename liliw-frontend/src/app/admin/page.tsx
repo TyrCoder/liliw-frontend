@@ -16,8 +16,6 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import * as XLSX from 'xlsx-js-style';
 
-const STRAPI_URL = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
-
 /* ─── types ──────────────────────────────────────────────── */
 interface Submission { id: any; attributes: { name: string; email: string; phone: string; message: string; type: string; status: string; createdAt: string }; }
 interface EventSignup { id: any; attributes: { full_name: string; email: string; phone: string; notes: string; username: string; status: string; createdAt: string; event: { data: { id: number; attributes: { title: string; date_start: string } } } }; }
@@ -82,17 +80,8 @@ const EVENT_COLOR: Record<string, string> = {
   'entry.unpublish': 'bg-yellow-50 text-yellow-700',
 };
 
-const TYPE_STRAPI_UID: Record<string, string> = {
-  heritage: 'api::heritage-site.heritage-site',
-  spot:     'api::tourist-spot.tourist-spot',
-  dining:   'api::dining-and-food.dining-and-food',
-};
 const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage', spot: 'Spot', dining: 'Dining' };
 const TYPE_COLORS: Record<string, string> = { heritage: '#F59E0B', spot: '#3B82F6', dining: '#EF4444' };
-
-function strapiEditUrl(type: string, strapiId: string) {
-  return `${STRAPI_URL}/admin/content-manager/collection-types/${TYPE_STRAPI_UID[type]}/${strapiId}`;
-}
 
 function fmt(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -3059,10 +3048,10 @@ export default function AdminDashboard() {
                   })()}
                 </div>
                 {pickedAttraction && (
-                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-teal-50 rounded-lg border border-teal-100">
-                    <CheckCircle className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-                    <span className="text-xs text-teal-700 font-semibold">{pickedAttraction.attributes.name}</span>
-                    <span className="text-xs text-teal-500">({TYPE_LABELS[pickedAttraction.type]})</span>
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-100">
+                    <CheckCircle className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span className="text-xs text-blue-700 font-semibold">{pickedAttraction.attributes.name}</span>
+                    <span className="text-xs text-blue-500">({TYPE_LABELS[pickedAttraction.type]})</span>
                   </div>
                 )}
               </div>
