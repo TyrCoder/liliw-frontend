@@ -105,8 +105,8 @@ export default function EventCalendar({ attractionName, events: propEvents }: Ev
               const isSelected = dateStr === selectedDate;
               return (
                 <button key={idx} onClick={() => day && setSelectedDate(dateStr)}
-                  className={`aspect-square rounded-lg flex items-center justify-center relative transition ${day ? 'hover:bg-gray-100 cursor-pointer' : ''} ${isSelected ? 'ring-2 ring-teal-500' : ''}`}
-                  style={isSelected ? { backgroundColor: '#e0f9f7' } : {}}>
+                  className={`aspect-square rounded-lg flex items-center justify-center relative transition ${day ? 'hover:bg-gray-100 cursor-pointer' : ''} ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+                  style={isSelected ? { backgroundColor: '#EFF6FF' } : {}}>
                   {day && (
                     <>
                       <span className="text-sm font-medium">{day}</span>

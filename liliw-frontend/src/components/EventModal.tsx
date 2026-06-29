@@ -52,7 +52,7 @@ export default function EventModal({ event, onClose, defaultStep = 'details' }: 
     (a.is_free ? 'Free entry' : a.price ? `Starting at ₱${a.price}` : '');
 
   const pricingColor =
-    pricingLabel.toLowerCase().includes('free')    ? 'bg-teal-50 text-teal-700 border border-teal-200' :
+    pricingLabel.toLowerCase().includes('free')    ? 'bg-green-50 text-green-700 border border-green-200' :
     pricingLabel.toLowerCase().includes('limited') ? 'bg-orange-50 text-orange-700 border border-orange-200' :
     pricingLabel ? 'bg-purple-50 text-purple-700 border border-purple-200' : '';
 
@@ -128,8 +128,8 @@ export default function EventModal({ event, onClose, defaultStep = 'details' }: 
             <div className="p-6">
               {/* Badges */}
               <div className="flex items-center gap-2 flex-wrap mb-4">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500 inline-block" />
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
                   Open
                 </span>
                 {pricingLabel && (
@@ -235,22 +235,22 @@ export default function EventModal({ event, onClose, defaultStep = 'details' }: 
                 <input
                   name="full_name" required placeholder="Full Name"
                   value={form.full_name} onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
                 <input
                   name="email" type="email" required placeholder="Email Address"
                   value={form.email} onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
                 <input
                   name="phone" type="tel" placeholder="Phone Number (optional)"
                   value={form.phone} onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
                 <textarea
                   name="notes" rows={3} placeholder="Any notes or questions? (optional)"
                   value={form.notes} onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
                 />
 
                 <div className="flex gap-3 pt-1">

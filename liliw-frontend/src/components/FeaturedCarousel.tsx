@@ -50,7 +50,7 @@ export default function FeaturedCarousel({ attractions }: Props) {
     : null;
   const color = TYPE_COLORS[a.type] ?? '#1565C0';
   const label = TYPE_LABELS[a.type] ?? a.type;
-  const gradient = TYPE_GRADIENTS[a.type] ?? 'from-teal-700 to-teal-900';
+  const gradient = TYPE_GRADIENTS[a.type] ?? 'from-blue-700 to-blue-900';
 
   return (
     <div
