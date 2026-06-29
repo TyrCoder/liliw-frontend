@@ -40,7 +40,7 @@ export default function SearchBar({
             placeholder={placeholder}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full pl-10 pr-10 py-2.5 rounded-full border border-gray-300 bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all" style={{ '--tw-ring-color': '#00BFB3' } as any}
+            className="w-full pl-10 pr-10 py-2.5 rounded-full border border-gray-300 bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all" style={{ '--tw-ring-color': '#1565C0' } as any}
           />
           {value && (
             <button
@@ -64,8 +64,8 @@ export default function SearchBar({
       className="space-y-2"
     >
       <div className="relative group">
-        <div className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity duration-300" style={{ backgroundImage: 'linear-gradient(to right, #00BFB3, #00CED1)' }} />
-        <div className="relative bg-white rounded-xl border-2 border-gray-200 group-focus-within:border-teal-500 transition-colors duration-300" style={{ borderColor: 'currentColor' }} onFocus={(e) => (e.currentTarget.style.borderColor = '#00BFB3')} onBlur={(e) => (e.currentTarget.style.borderColor = 'rgb(229, 231, 235)')}>
+        <div className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity duration-300" style={{ backgroundImage: 'linear-gradient(to right, #1565C0, #00CED1)' }} />
+        <div className="relative bg-white rounded-xl border-2 border-gray-200 group-focus-within:border-teal-500 transition-colors duration-300" style={{ borderColor: 'currentColor' }} onFocus={(e) => (e.currentTarget.style.borderColor = '#1565C0')} onBlur={(e) => (e.currentTarget.style.borderColor = 'rgb(229, 231, 235)')}>
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400 group-focus-within:text-teal-500 transition-colors" style={{ color: 'rgb(156, 163, 175)' }} />
           <input
             type="text"

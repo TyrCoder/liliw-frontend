@@ -164,7 +164,7 @@ export default function LBOApplyPage() {
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)' }} className="py-12">
         <div className="max-w-2xl mx-auto px-4">
-          <Link href="/" className="inline-flex items-center text-sm font-semibold mb-6 opacity-80 hover:opacity-100 transition" style={{ color: '#00BFB3' }}>
+          <Link href="/" className="inline-flex items-center text-sm font-semibold mb-6 opacity-80 hover:opacity-100 transition" style={{ color: '#1565C0' }}>
             <ChevronLeft className="w-4 h-4 mr-1" /> Back to Liliw Tourism
           </Link>
           <div className="flex items-center gap-4">

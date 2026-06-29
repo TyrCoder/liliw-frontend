@@ -47,19 +47,19 @@ export async function POST(req: NextRequest) {
                 style="border-radius:12px;border:2px solid rgba(0,191,179,.4);display:block" />
             </td>
             <td style="vertical-align:middle">
-              <p style="margin:0;font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#00BFB3">Liliw Tourism</p>
+              <p style="margin:0;font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#1565C0">Liliw Tourism</p>
               <p style="margin:3px 0 0;font-size:11px;color:rgba(255,255,255,.4)">CHATO Office · Laguna, Philippines</p>
             </td>
           </tr>
         </table>
         <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:800;line-height:1.3">${safeSubject}</h1>
-        <div style="margin-top:16px;height:2px;border-radius:2px;background:linear-gradient(90deg,#00BFB3 0%,rgba(0,191,179,.1) 100%)"></div>
+        <div style="margin-top:16px;height:2px;border-radius:2px;background:linear-gradient(90deg,#1565C0 0%,rgba(0,191,179,.1) 100%)"></div>
       </div>
 
       <!-- Body -->
       <div style="padding:32px 40px 28px">
         <p style="color:#374151;font-size:15px;margin:0 0 20px">Dear <strong>${safeName}</strong>,</p>
-        <div style="color:#4B5563;font-size:14px;line-height:1.75;background:#F8FAFC;border-left:3px solid #00BFB3;border-radius:0 12px 12px 0;padding:20px 24px;margin:0 0 24px">
+        <div style="color:#4B5563;font-size:14px;line-height:1.75;background:#F8FAFC;border-left:3px solid #1565C0;border-radius:0 12px 12px 0;padding:20px 24px;margin:0 0 24px">
           ${messageHtml}
         </div>
         <p style="color:#94A3B8;font-size:13px;margin:0">

@@ -149,7 +149,7 @@ function HotspotMarker({
   const btnSize = Math.round(88 * size);
   const iconSize = Math.round(30 * size);
 
-  const accentColor = isRepositioning ? '#a78bfa' : (isNav ? '#00BFB3' : '#FFB400');
+  const accentColor = isRepositioning ? '#a78bfa' : (isNav ? '#1565C0' : '#FFB400');
   const bgColor = isRepositioning ? 'rgba(167,139,250,0.25)' : (isNav ? 'rgba(0,191,179,0.18)' : 'rgba(255,180,0,0.18)');
   const borderColor = isRepositioning ? 'rgba(167,139,250,0.9)' : (isNav ? 'rgba(0,191,179,0.85)' : 'rgba(255,180,0,0.85)');
   const glowColor = isRepositioning ? 'rgba(167,139,250,0.5)' : (isNav ? 'rgba(0,191,179,0.5)' : 'rgba(255,180,0,0.5)');
@@ -480,14 +480,14 @@ function HotspotDialog({
     >
       <div className="bg-gray-900 rounded-xl p-5 w-80 border border-teal-500 shadow-2xl max-h-[90vh] overflow-y-auto mx-4">
         <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-          <PenLine className="w-4 h-4" style={{ color: '#00BFB3' }} />
+          <PenLine className="w-4 h-4" style={{ color: '#1565C0' }} />
           Place Hotspot
         </h3>
 
         <div className="flex gap-2 mb-4">
           <button onClick={() => setType('navigate')}
             className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition"
-            style={{ backgroundColor: type === 'navigate' ? '#00BFB3' : 'rgba(255,255,255,0.1)', color: type === 'navigate' ? '#0F1F3C' : 'white' }}>
+            style={{ backgroundColor: type === 'navigate' ? '#1565C0' : 'rgba(255,255,255,0.1)', color: type === 'navigate' ? '#0F1F3C' : 'white' }}>
             <Navigation className="w-4 h-4 inline mr-1" /> Navigate
           </button>
           <button onClick={() => setType('info')}
@@ -574,7 +574,7 @@ function HotspotDialog({
             onClick={confirm}
             disabled={!label.trim() || uploadingScene}
             className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition disabled:opacity-40"
-            style={{ backgroundColor: '#00BFB3', color: '#0F1F3C' }}
+            style={{ backgroundColor: '#1565C0', color: '#0F1F3C' }}
           >
             <Check className="w-4 h-4 inline mr-1" /> Place
           </button>
@@ -800,7 +800,7 @@ export default function ImmersiveViewer({
       ref={containerRef}
       className="rounded-xl overflow-hidden bg-black border-2 select-none"
       style={{
-        borderColor: editMode ? '#FFB400' : '#00BFB3',
+        borderColor: editMode ? '#FFB400' : '#1565C0',
         ...(isFullscreen ? { height: '100vh', width: '100vw', borderRadius: 0 } : {}),
       }}
     >
@@ -815,7 +815,7 @@ export default function ImmersiveViewer({
               <div className="text-center">
                 <div className="relative w-16 h-16 mx-auto mb-4">
                   <div className="absolute inset-0 rounded-full border-2 border-teal-500/20" />
-                  <div className="absolute inset-0 rounded-full border-t-2 animate-spin" style={{ borderColor: '#00BFB3' }} />
+                  <div className="absolute inset-0 rounded-full border-t-2 animate-spin" style={{ borderColor: '#1565C0' }} />
                 </div>
                 <p className="text-white/70 text-sm">Loading panorama...</p>
               </div>
@@ -921,7 +921,7 @@ export default function ImmersiveViewer({
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: editMode ? '#FFB400' : '#00BFB3' }} />
+                <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: editMode ? '#FFB400' : '#1565C0' }} />
                 <span className="text-white font-bold text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{current.title}</span>
               </div>
             </motion.div>
@@ -1020,9 +1020,9 @@ export default function ImmersiveViewer({
                           className="shrink-0 relative rounded-xl overflow-hidden border-2 transition-all"
                           style={{
                             width: 'clamp(52px, 14vw, 70px)', height: 'clamp(34px, 9vw, 46px)',
-                            borderColor: idx === sceneIndex ? (editMode ? '#FFB400' : '#00BFB3') : 'rgba(255,255,255,0.2)',
+                            borderColor: idx === sceneIndex ? (editMode ? '#FFB400' : '#1565C0') : 'rgba(255,255,255,0.2)',
                             opacity: idx === sceneIndex ? 1 : 0.5,
-                            boxShadow: idx === sceneIndex ? `0 0 12px ${editMode ? '#FFB400' : '#00BFB3'}90` : 'none',
+                            boxShadow: idx === sceneIndex ? `0 0 12px ${editMode ? '#FFB400' : '#1565C0'}90` : 'none',
                           }}>
                           <img src={scene.thumbUrl || scene.imageUrl} alt={scene.title} className="w-full h-full object-cover" />
                         </motion.button>
@@ -1078,7 +1078,7 @@ export default function ImmersiveViewer({
                     onClick={() => xrStore.enterVR()}
                     whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                     className="p-3 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition"
-                    style={{ backgroundColor: '#00BFB3', color: '#0F1F3C', minWidth: 46, minHeight: 46 }}>
+                    style={{ backgroundColor: '#1565C0', color: '#0F1F3C', minWidth: 46, minHeight: 46 }}>
                     <Headphones className="w-5 h-5" />
                     <span className="hidden sm:inline">VR</span>
                   </motion.button>

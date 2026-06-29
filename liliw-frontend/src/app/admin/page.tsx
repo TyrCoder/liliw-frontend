@@ -124,7 +124,7 @@ function TableWrap({ title, count, loading, empty, emptyIcon, children }: { titl
         <span className="text-sm text-gray-400">{count} total</span>
       </div>
       {loading ? (
-        <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+        <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
       ) : empty ? (
         <div className="flex flex-col items-center py-16 text-center text-gray-400">
           <div className="opacity-20 mb-3">{emptyIcon}</div>
@@ -546,7 +546,7 @@ export default function AdminDashboard() {
     setReplySubject(`Re: Your ${data.type || type} inquiry to Liliw Tourism`);
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1565C0' }} /></div>;
   if (!user || !isStaff) return null;
 
   const newCount      = submissions.filter(s => s.attributes?.status === 'new').length;
@@ -656,18 +656,18 @@ export default function AdminDashboard() {
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg,#0F1F3C 0%,#1a3a5c 100%)' }} className="py-7">
         <div className="max-w-7xl mx-auto px-4">
-          <Link href="/" className="inline-flex items-center text-xs font-semibold mb-5 group opacity-70 hover:opacity-100 transition" style={{ color: '#00BFB3' }}>
+          <Link href="/" className="inline-flex items-center text-xs font-semibold mb-5 group opacity-70 hover:opacity-100 transition" style={{ color: '#1565C0' }}>
             <ChevronLeft className="w-3.5 h-3.5 mr-1 group-hover:-translate-x-1 transition" /> Back to Site
           </Link>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'rgba(0,191,179,0.15)', border: '1px solid rgba(0,191,179,0.3)' }}>
-                <Shield className="w-6 h-6" style={{ color: '#00BFB3' }} />
+                <Shield className="w-6 h-6" style={{ color: '#1565C0' }} />
               </div>
               <div>
                 <div className="flex items-center gap-2.5 mb-0.5">
                   <h1 className="text-2xl font-bold text-white">{dashboardTitle}</h1>
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold border" style={{ color: '#00BFB3', borderColor: 'rgba(0,191,179,0.4)', background: 'rgba(0,191,179,0.1)' }}>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold border" style={{ color: '#1565C0', borderColor: 'rgba(0,191,179,0.4)', background: 'rgba(0,191,179,0.1)' }}>
                     {roleBadge}
                   </span>
                 </div>
@@ -676,7 +676,7 @@ export default function AdminDashboard() {
             </div>
             <Link href="/cms"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold text-sm transition hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)', boxShadow: '0 4px 14px rgba(0,191,179,.3)' }}>
+              style={{ background: 'linear-gradient(135deg,#1565C0,#009E99)', boxShadow: '0 4px 14px rgba(0,191,179,.3)' }}>
               <Edit className="w-4 h-4" /> Content Management
             </Link>
           </div>
@@ -693,7 +693,7 @@ export default function AdminDashboard() {
                   ? 'text-white shadow-sm'
                   : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
               }`}
-              style={activeTab === key ? { backgroundColor: '#00BFB3' } : undefined}>
+              style={activeTab === key ? { backgroundColor: '#1565C0' } : undefined}>
               {label}
               {badge !== undefined && badge > 0 && (
                 <span className={`px-1.5 rounded-full text-[10px] font-bold leading-[18px] ${
@@ -713,7 +713,7 @@ export default function AdminDashboard() {
         {activeTab === 'overview' && (
           <div className="space-y-8">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={<Eye className="w-5 h-5" />}       label="Page Views"       value={loadingStats ? '—' : (analytics?.pageViews ?? 0).toLocaleString()} color="#00BFB3" />
+              <StatCard icon={<Eye className="w-5 h-5" />}       label="Page Views"       value={loadingStats ? '—' : (analytics?.pageViews ?? 0).toLocaleString()} color="#1565C0" />
               <StatCard icon={<Users className="w-5 h-5" />}     label="Unique Visitors"  value={loadingStats ? '—' : (analytics?.uniqueVisitors ?? 0).toLocaleString()} color="#3B82F6" />
               <StatCard icon={<MapPin className="w-5 h-5" />}    label="Attractions"       value={loadingAttr ? '—' : attractions.length} sub="in Strapi" color="#F59E0B" />
               <StatCard icon={<Activity className="w-5 h-5" />}  label="CMS Changes"       value={loadingActivity ? '—' : strapiActivity.length} sub="content edits tracked" color="#6366F1" />
@@ -735,7 +735,7 @@ export default function AdminDashboard() {
               </div>
               <button onClick={handleSyncSearch} disabled={syncStatus === 'syncing'}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-60"
-                style={{ backgroundColor: syncStatus === 'error' ? '#EF4444' : syncStatus === 'done' ? '#10B981' : '#00BFB3' }}>
+                style={{ backgroundColor: syncStatus === 'error' ? '#EF4444' : syncStatus === 'done' ? '#10B981' : '#1565C0' }}>
                 {syncStatus === 'syncing' ? <><Loader2 className="w-4 h-4 animate-spin" /> Syncing…</>
                  : syncStatus === 'done' ? <><CheckCircle className="w-4 h-4" /> Synced</>
                  : syncStatus === 'error' ? <><AlertCircle className="w-4 h-4" /> Retry Sync</>
@@ -748,7 +748,7 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
                   <div className="relative">
-                    <Wifi className="w-5 h-5" style={{ color: '#00BFB3' }} />
+                    <Wifi className="w-5 h-5" style={{ color: '#1565C0' }} />
                     <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                   </div>
                   <div>
@@ -766,7 +766,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-3 gap-3 mb-5">
                 {[
                   { label: 'Desktop', icon: <Monitor className="w-4 h-4" />, count: liveVisitors.filter(v => v.device === 'desktop').length, color: '#3B82F6' },
-                  { label: 'Mobile',  icon: <Smartphone className="w-4 h-4" />, count: liveVisitors.filter(v => v.device === 'mobile').length,  color: '#00BFB3' },
+                  { label: 'Mobile',  icon: <Smartphone className="w-4 h-4" />, count: liveVisitors.filter(v => v.device === 'mobile').length,  color: '#1565C0' },
                   { label: 'Tablet',  icon: <Tablet className="w-4 h-4" />,     count: liveVisitors.filter(v => v.device === 'tablet').length,  color: '#8B5CF6' },
                 ].map(({ label, icon, count, color }) => (
                   <div key={label} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50">
@@ -797,7 +797,7 @@ export default function AdminDashboard() {
                     const secsAgo = Math.floor((Date.now() - new Date(v.last_seen).getTime()) / 1000);
                     const timeAgo = secsAgo < 60 ? 'just now' : secsAgo < 3600 ? `${Math.floor(secsAgo / 60)}m ago` : `${Math.floor(secsAgo / 3600)}h ago`;
                     const DeviceIcon = v.device === 'mobile' ? Smartphone : v.device === 'tablet' ? Tablet : Monitor;
-                    const deviceColor = v.device === 'mobile' ? '#00BFB3' : v.device === 'tablet' ? '#8B5CF6' : '#3B82F6';
+                    const deviceColor = v.device === 'mobile' ? '#1565C0' : v.device === 'tablet' ? '#8B5CF6' : '#3B82F6';
                     const staticLabels: Record<string, string> = {
                       '/': 'Home', '/attractions': 'Attractions', '/map': 'Map',
                       '/about': 'About', '/heritage': 'Heritage Sites', '/dining': 'Dining',
@@ -831,7 +831,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
                   { label: 'Feedback',    count: feedbackCount,                                                      icon: <MessageSquare className="w-5 h-5" />, color: '#8B5CF6' },
-                  { label: 'Volunteer',   count: volunteerCount,                                                     icon: <Users className="w-5 h-5" />,         color: '#00BFB3' },
+                  { label: 'Volunteer',   count: volunteerCount,                                                     icon: <Users className="w-5 h-5" />,         color: '#1565C0' },
                   { label: 'Partnership', count: submissions.filter(s => s.attributes?.type === 'partnership').length, icon: <BarChart3 className="w-5 h-5" />,    color: '#F59E0B' },
                 ].map(({ label, count, icon, color }) => (
                   <div key={label} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100">
@@ -850,7 +850,7 @@ export default function AdminDashboard() {
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-base font-bold text-gray-900">Recent CMS Activity</h2>
-                  <button onClick={() => setActiveTab('audit')} className="text-xs font-semibold" style={{ color: '#00BFB3' }}>View all →</button>
+                  <button onClick={() => setActiveTab('audit')} className="text-xs font-semibold" style={{ color: '#1565C0' }}>View all →</button>
                 </div>
                 <div className="space-y-3">
                   {strapiActivity.slice(0, 5).map(act => (
@@ -895,7 +895,7 @@ export default function AdminDashboard() {
                       <div key={path} className="flex items-center gap-3">
                         <span className="text-sm text-gray-600 w-40 shrink-0 truncate">{getLabel(path)}</span>
                         <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${(views / max) * 100}%`, backgroundColor: '#00BFB3' }} />
+                          <div className="h-full rounded-full" style={{ width: `${(views / max) * 100}%`, backgroundColor: '#1565C0' }} />
                         </div>
                         <span className="text-sm font-semibold text-gray-700 w-12 text-right">{views}</span>
                       </div>
@@ -991,7 +991,7 @@ export default function AdminDashboard() {
                     : isOfficer   ? { bg: 'bg-[#0F1F3C] text-white',                     avatar: '#0F1F3C' }
                     : isEditor    ? { bg: 'bg-purple-50 text-purple-700',                 avatar: '#8B5CF6' }
                     : userIsLbo   ? { bg: 'bg-orange-50 text-orange-700',                avatar: '#EA580C' }
-                    : isTourist   ? { bg: 'bg-teal-50 text-teal-700',                    avatar: '#00BFB3' }
+                    : isTourist   ? { bg: 'bg-teal-50 text-teal-700',                    avatar: '#1565C0' }
                     :               { bg: 'bg-gray-100 text-gray-700',                   avatar: '#6B7280' };
                   const RoleIcon = isSuperAdmin ? Shield : isOfficer ? Shield : isEditor ? Edit : userIsLbo ? Building2 : UserCheck;
                   return (
@@ -1047,7 +1047,7 @@ export default function AdminDashboard() {
             </div>
 
             {loadingRoles ? (
-              <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+              <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -1067,7 +1067,7 @@ export default function AdminDashboard() {
                         <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#00BFB3' }}>
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#1565C0' }}>
                                 {(u.username || u.email || '?')[0].toUpperCase()}
                               </div>
                               <span className="font-semibold text-gray-900">{u.username || '—'}</span>
@@ -1135,7 +1135,7 @@ export default function AdminDashboard() {
                 <span className="text-sm text-gray-400">{lboApps.length} total</span>
               </div>
               {loadingLbo ? (
-                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
               ) : lboApps.length === 0 ? (
                 <div className="flex flex-col items-center py-16 text-center text-gray-400">
                   <Building2 className="w-12 h-12 opacity-20 mb-3" />
@@ -1307,7 +1307,7 @@ export default function AdminDashboard() {
                         <Clock className="w-3 h-3 inline mr-1" />{new Date(a.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </td>
                       <td className="px-4 py-4 text-right">
-                        <span className="text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity px-2.5 py-1 rounded-lg" style={{ color: '#00BFB3', backgroundColor: '#00BFB310' }}>View →</span>
+                        <span className="text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity px-2.5 py-1 rounded-lg" style={{ color: '#1565C0', backgroundColor: '#1565C010' }}>View →</span>
                       </td>
                     </tr>
                   );
@@ -1346,7 +1346,7 @@ export default function AdminDashboard() {
                       <Clock className="w-3 h-3 inline mr-1" />{new Date(p.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>
                     <td className="px-4 py-4 text-right">
-                      <span className="text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity px-2.5 py-1 rounded-lg" style={{ color: '#00BFB3', backgroundColor: '#00BFB310' }}>View →</span>
+                      <span className="text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity px-2.5 py-1 rounded-lg" style={{ color: '#1565C0', backgroundColor: '#1565C010' }}>View →</span>
                     </td>
                   </tr>
                 ))}
@@ -1406,7 +1406,7 @@ export default function AdminDashboard() {
                 </div>
                 <Link href="/cms"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)', boxShadow: '0 4px 16px rgba(0,191,179,.35)' }}>
+                  style={{ background: 'linear-gradient(135deg,#1565C0,#009E99)', boxShadow: '0 4px 16px rgba(0,191,179,.35)' }}>
                   <Edit className="w-4 h-4" /> Open CMS
                 </Link>
               </div>
@@ -1475,11 +1475,11 @@ export default function AdminDashboard() {
                         ) : <span className="text-gray-300 text-xs">No rating</span>}
                       </td>
                       <td className="px-5 py-4">
-                        <a href={strapiEditUrl(a.type, a.strapiId)} target="_blank" rel="noopener noreferrer"
+                        <Link href={`/attractions/${a.id}`} target="_blank"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:opacity-90 text-white"
-                          style={{ backgroundColor: '#00BFB3' }}>
-                          <Edit className="w-3 h-3" /> Edit in Strapi
-                        </a>
+                          style={{ backgroundColor: '#1565C0' }}>
+                          <ExternalLink className="w-3 h-3" /> View Page
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -1549,7 +1549,7 @@ export default function AdminDashboard() {
               </div>
 
               {loadingCR ? (
-                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
               ) : changeRequests.length === 0 ? (
                 <div className="flex flex-col items-center py-16 text-center text-gray-400">
                   <Inbox className="w-12 h-12 opacity-20 mb-3" />
@@ -1863,7 +1863,7 @@ export default function AdminDashboard() {
 
               <div className="space-y-4">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <StatCard icon={<Users className="w-5 h-5" />}       label="Total Visitors"  value={grandTotal.toLocaleString()} color="#00BFB3" />
+                  <StatCard icon={<Users className="w-5 h-5" />}       label="Total Visitors"  value={grandTotal.toLocaleString()} color="#1565C0" />
                   <StatCard icon={<FileText className="w-5 h-5" />}    label="Records"          value={filtered.length}             color="#3B82F6" />
                   <StatCard icon={<Building2 className="w-5 h-5" />}   label="Attractions"      value={new Set(filtered.map(r => r.attraction_name)).size} color="#F59E0B" />
                   <StatCard icon={<MapPin className="w-5 h-5" />}      label="LBOs Reporting"   value={new Set(filtered.map(r => r.lbo_email)).size}       color="#8B5CF6" />
@@ -1895,7 +1895,7 @@ export default function AdminDashboard() {
                     <span className="text-sm text-gray-400">{grandTotal.toLocaleString()} total visitors</span>
                   </div>
                   {loadingVR ? (
-                    <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+                    <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
                   ) : filtered.length === 0 ? (
                     <div className="flex flex-col items-center py-16 text-center text-gray-400">
                       <Users className="w-12 h-12 opacity-20 mb-3" />
@@ -2007,7 +2007,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               {loadingAR ? (
-                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
               ) : attractionReqs.length === 0 ? (
                 <div className="flex flex-col items-center py-16 text-center text-gray-400">
                   <MapPin className="w-12 h-12 opacity-20 mb-3" />
@@ -2193,7 +2193,7 @@ export default function AdminDashboard() {
                           <td className="px-5 py-4">
                             {log.performed_by ? (
                               <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#00BFB3' }}>
+                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: '#1565C0' }}>
                                   {log.performed_by[0].toUpperCase()}
                                 </div>
                                 <span className="text-sm text-gray-700 truncate max-w-[140px]">{log.performed_by}</span>
@@ -2372,7 +2372,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <ReportCard title="Total Visitors"   sub="From LBO visitor logs" value={totalVisitors.toLocaleString()} color="#8B5CF6" />
                 <ReportCard title="Submissions"      sub="Inquiries & feedback"  value={submissions.length} color="#EC4899" />
-                <ReportCard title="Participations"   sub="Community engagements" value={participation.length} color="#00BFB3" />
+                <ReportCard title="Participations"   sub="Community engagements" value={participation.length} color="#1565C0" />
                 <ReportCard title="Event Sign-ups"   sub="Event registrations"   value={signups.length} color="#F97316" />
               </div>
 
@@ -2648,7 +2648,7 @@ export default function AdminDashboard() {
 
               {loadingAttr || loadingExternal ? (
                 <div className="flex items-center justify-center py-20">
-                  <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} />
+                  <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1565C0' }} />
                 </div>
               ) : attractionsWithCoords.length === 0 ? (
                 <div className="flex flex-col items-center py-20 text-center text-gray-400">
@@ -3280,7 +3280,7 @@ export default function AdminDashboard() {
               </button>
               <button onClick={handleResetPassword} disabled={savingPwd || pwdInput.length < 6}
                 className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-50"
-                style={{ backgroundColor: '#00BFB3' }}>
+                style={{ backgroundColor: '#1565C0' }}>
                 {savingPwd ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Save Password'}
               </button>
             </div>
@@ -3370,7 +3370,7 @@ export default function AdminDashboard() {
                     <button
                       onClick={() => { setReplyCompose(true); setReplyResult(null); }}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90"
-                      style={{ backgroundColor: '#00BFB3' }}>
+                      style={{ backgroundColor: '#1565C0' }}>
                       <Mail className="w-4 h-4" /> Reply via Email
                     </button>
                     <button onClick={() => setSubDetailModal(null)}
@@ -3422,7 +3422,7 @@ export default function AdminDashboard() {
                     onClick={handleSendReply}
                     disabled={sendingReply || !replyMessage.trim()}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition disabled:opacity-60 hover:opacity-90"
-                    style={{ backgroundColor: '#00BFB3' }}>
+                    style={{ backgroundColor: '#1565C0' }}>
                     {sendingReply ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
                     {sendingReply ? 'Sending…' : 'Send Email'}
                   </button>

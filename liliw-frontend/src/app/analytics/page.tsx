@@ -55,7 +55,7 @@ export default function AnalyticsDashboard() {
   const statCards = [
     { icon: Eye,        label: 'Page Views',       value: analytics?.pageViews.toLocaleString() ?? '—',   color: '#1565C0' },
     { icon: Users,      label: 'Unique Visitors',   value: analytics?.uniqueVisitors.toLocaleString() ?? '—', color: '#0B3D91' },
-    { icon: Clock,      label: 'Avg Session Time',  value: analytics?.avgSessionTime ?? '—',               color: '#00BFB3' },
+    { icon: Clock,      label: 'Avg Session Time',  value: analytics?.avgSessionTime ?? '—',               color: '#1565C0' },
     { icon: TrendingUp, label: 'Bounce Rate',       value: analytics?.bounceRate ?? '—',                   color: '#F5C518' },
   ];
 
@@ -149,7 +149,7 @@ export default function AnalyticsDashboard() {
                         <p className="text-sm font-semibold text-gray-700" style={{ fontFamily: BL }}>{ref.source}</p>
                         <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1.5">
                           <div className="h-1.5 rounded-full"
-                            style={{ width: `${(ref.count / (analytics.referrers[0]?.count || 1)) * 100}%`, backgroundColor: '#00BFB3' }} />
+                            style={{ width: `${(ref.count / (analytics.referrers[0]?.count || 1)) * 100}%`, backgroundColor: '#1565C0' }} />
                         </div>
                       </div>
                       <span className="text-sm text-gray-600 font-bold shrink-0" style={{ fontFamily: HL }}>{ref.count}</span>

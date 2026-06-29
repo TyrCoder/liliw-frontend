@@ -242,7 +242,7 @@ export default function ItineraryBuilder({
     <>
       <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
         className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-6 md:p-8 border-l-4"
-        style={{ borderColor: '#00BFB3' }}>
+        style={{ borderColor: '#1565C0' }}>
 
         <h3 className="text-2xl font-bold mb-6" style={{ color: '#0F1F3C', fontFamily: HL }}>
           Build Your Itinerary
@@ -261,7 +261,7 @@ export default function ItineraryBuilder({
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium mb-1 flex items-center gap-2" style={{ color: '#0F1F3C', fontFamily: BL }}>
-                  <Mail size={14} style={{ color: '#00BFB3' }} /> Email *
+                  <Mail size={14} style={{ color: '#1565C0' }} /> Email *
                 </label>
                 <input type="email" name="email" value={guestInfo.email} onChange={handleGuestChange}
                   placeholder="your@email.com"
@@ -269,7 +269,7 @@ export default function ItineraryBuilder({
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1 flex items-center gap-2" style={{ color: '#0F1F3C', fontFamily: BL }}>
-                  <Phone size={14} style={{ color: '#00BFB3' }} /> Phone *
+                  <Phone size={14} style={{ color: '#1565C0' }} /> Phone *
                 </label>
                 <input type="tel" name="phone" value={guestInfo.phone} onChange={handleGuestChange}
                   placeholder="+63 (555) 000-0000"
@@ -278,7 +278,7 @@ export default function ItineraryBuilder({
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 flex items-center gap-2" style={{ color: '#0F1F3C', fontFamily: BL }}>
-                <Users size={14} style={{ color: '#00BFB3' }} /> Number of Participants
+                <Users size={14} style={{ color: '#1565C0' }} /> Number of Participants
               </label>
               <select name="participants" value={guestInfo.participants} onChange={handleGuestChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 text-sm">
@@ -295,7 +295,7 @@ export default function ItineraryBuilder({
               <h4 className="font-bold" style={{ color: '#0F1F3C', fontFamily: HL }}>Destinations</h4>
               <button type="button" onClick={addActivity}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg font-semibold transition hover:opacity-80"
-                style={{ backgroundColor: '#00BFB3', color: 'white', fontFamily: BL }}>
+                style={{ backgroundColor: '#1565C0', color: 'white', fontFamily: BL }}>
                 <Plus size={15} /> Add Stop
               </button>
             </div>
@@ -304,11 +304,11 @@ export default function ItineraryBuilder({
               {items.map((item, idx) => (
                 <motion.div key={item.id}
                   initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                  className="bg-white p-4 rounded-lg mb-3 border-l-4" style={{ borderColor: '#00BFB3' }}>
+                  className="bg-white p-4 rounded-lg mb-3 border-l-4" style={{ borderColor: '#1565C0' }}>
                   <div className="flex justify-between items-center mb-3">
                     <span className="flex items-center gap-2 font-semibold text-sm" style={{ color: '#0F1F3C', fontFamily: HL }}>
                       <span className="w-6 h-6 rounded-full text-white text-xs flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: '#00BFB3' }}>{idx + 1}</span>
+                        style={{ backgroundColor: '#1565C0' }}>{idx + 1}</span>
                       Stop {idx + 1}
                     </span>
                     {items.length > 1 && (
@@ -362,7 +362,7 @@ export default function ItineraryBuilder({
             <div className="flex justify-between"><span className="text-gray-600">Participants:</span><span className="font-semibold">× {guestInfo.participants}</span></div>
             <div className="border-t pt-2 flex justify-between font-bold text-base" style={{ color: '#0F1F3C' }}>
               <span>Estimated Total:</span>
-              <span style={{ color: '#00BFB3' }}>₱{estimatedCost.toLocaleString()}</span>
+              <span style={{ color: '#1565C0' }}>₱{estimatedCost.toLocaleString()}</span>
             </div>
           </div>
 
@@ -379,12 +379,12 @@ export default function ItineraryBuilder({
           <div className="flex gap-2">
             <button type="submit" disabled={status === 'loading'}
               className="flex-1 px-6 py-3 rounded-lg font-bold transition flex items-center justify-center gap-2 disabled:opacity-60"
-              style={{ backgroundColor: '#00BFB3', color: 'white', fontFamily: HL }}>
+              style={{ backgroundColor: '#1565C0', color: 'white', fontFamily: HL }}>
               {status === 'loading' ? <><Loader size={16} className="animate-spin" /> Saving…</> : <><CheckCircle size={16} /> Save Itinerary</>}
             </button>
             <button type="button"
               className="px-4 py-3 rounded-lg border-2 transition flex items-center justify-center"
-              style={{ borderColor: '#00BFB3', color: '#00BFB3' }} title="Share">
+              style={{ borderColor: '#1565C0', color: '#1565C0' }} title="Share">
               <Share2 size={18} />
             </button>
           </div>
@@ -412,7 +412,7 @@ export default function ItineraryBuilder({
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="mt-6">
               <div className="flex items-center gap-2 mb-3">
-                <MapPin size={16} style={{ color: '#00BFB3' }} />
+                <MapPin size={16} style={{ color: '#1565C0' }} />
                 <h4 className="font-bold text-sm" style={{ color: '#0F1F3C', fontFamily: HL }}>Your Route</h4>
                 {locationStatus === 'granted' && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold" style={{ fontFamily: BL }}>
@@ -461,7 +461,7 @@ export default function ItineraryBuilder({
               {/* Suggestions */}
               <div className="px-6 py-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Sparkles size={15} style={{ color: '#00BFB3' }} />
+                  <Sparkles size={15} style={{ color: '#1565C0' }} />
                   <p className="text-sm font-semibold text-gray-700" style={{ fontFamily: HL }}>
                     Or swap with a similar destination
                   </p>
@@ -490,7 +490,7 @@ export default function ItineraryBuilder({
                             </div>
                           </div>
                           <span className="text-xs px-2 py-0.5 rounded-full font-semibold capitalize"
-                            style={{ backgroundColor: '#e0faf8', color: '#00BFB3', fontFamily: BL }}>
+                            style={{ backgroundColor: '#e0faf8', color: '#1565C0', fontFamily: BL }}>
                             {s.category}
                           </span>
                         </div>

@@ -55,7 +55,7 @@ export default function QRCodeGenerator({
         whileHover={{ scale: 1.05 }}
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition"
-        style={{ backgroundColor: '#00BFB3' }}
+        style={{ backgroundColor: '#1565C0' }}
       >
         <QrCode size={18} />
         QR Code

@@ -46,7 +46,7 @@ export default function InteractiveMap({
   if (!TOKEN || TOKEN === 'pk.your_mapbox_token_here') {
     return (
       <div className="rounded-2xl overflow-hidden border-2 aspect-video flex items-center justify-center bg-gray-100"
-        style={{ borderColor: '#00BFB3' }}>
+        style={{ borderColor: '#1565C0' }}>
         <div className="text-center text-gray-500 p-6">
           <MapPin className="w-10 h-10 mx-auto mb-2 opacity-40" />
           <p className="font-semibold">Map not configured</p>
@@ -58,7 +58,7 @@ export default function InteractiveMap({
 
   return (
     <div className="w-full space-y-3">
-      <div className="rounded-2xl overflow-hidden border-2 shadow-xl" style={{ borderColor: '#00BFB3', height: 360 }}>
+      <div className="rounded-2xl overflow-hidden border-2 shadow-xl" style={{ borderColor: '#1565C0', height: 360 }}>
         <Map
           mapboxAccessToken={TOKEN}
           initialViewState={{ longitude: lng, latitude: lat, zoom }}
@@ -71,7 +71,7 @@ export default function InteractiveMap({
               <div className="flex flex-col items-center">
                 <div
                   className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center shadow-lg"
-                  style={{ backgroundColor: '#00BFB3' }}
+                  style={{ backgroundColor: '#1565C0' }}
                 >
                   <MapPin className="w-5 h-5 text-white" />
                 </div>
@@ -86,7 +86,7 @@ export default function InteractiveMap({
         <button
           onClick={getDirections}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm transition hover:opacity-90"
-          style={{ backgroundColor: '#00BFB3' }}
+          style={{ backgroundColor: '#1565C0' }}
         >
           <Navigation className="w-4 h-4" />
           Get Directions

@@ -48,7 +48,7 @@ export default function FeaturedCarousel({ attractions }: Props) {
   const coverUrl = photos[0]?.url
     ? (photos[0].url.startsWith('http') ? photos[0].url : `${STRAPI_BASE}${photos[0].url}`)
     : null;
-  const color = TYPE_COLORS[a.type] ?? '#00BFB3';
+  const color = TYPE_COLORS[a.type] ?? '#1565C0';
   const label = TYPE_LABELS[a.type] ?? a.type;
   const gradient = TYPE_GRADIENTS[a.type] ?? 'from-teal-700 to-teal-900';
 

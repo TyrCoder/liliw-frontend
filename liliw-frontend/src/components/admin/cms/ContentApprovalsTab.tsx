@@ -129,7 +129,7 @@ export default function ContentApprovalsTab({ token }: Props) {
           {types.map(t => (
             <button key={t} onClick={() => setTypeFilter(t)}
               className={`px-3 py-1 rounded-lg text-xs font-semibold transition capitalize ${typeFilter === t ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-              style={typeFilter === t ? { backgroundColor: '#00BFB3' } : {}}>
+              style={typeFilter === t ? { backgroundColor: '#1565C0' } : {}}>
               {t === 'all' ? 'All' : TYPE_LABELS[t]}
               {t !== 'all' && (
                 <span className="ml-1 opacity-70">
@@ -152,7 +152,7 @@ export default function ContentApprovalsTab({ token }: Props) {
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} />
+          <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} />
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center py-20 text-gray-400">
