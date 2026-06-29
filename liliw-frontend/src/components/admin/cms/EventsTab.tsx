@@ -243,7 +243,7 @@ export default function EventsTab({ token, userEmail, isOfficer, isAdmin }: Prop
               </div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="is_joinable" checked={!!editing.is_joinable} onChange={e => setEditing(p => ({ ...p, is_joinable: e.target.checked }))}
-                  className="w-4 h-4 rounded border-gray-300 accent-teal-500" />
+                  className="w-4 h-4 rounded border-gray-300 accent-blue-500" />
                 <label htmlFor="is_joinable" className="text-sm text-gray-700 font-medium">Allow public sign-ups (Joinable)</label>
               </div>
               <div>
