@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback, useRef, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { ChevronLeft, Layers, PenLine, Lock, X, Eye, EyeOff, Camera, Trash2, Upload } from 'lucide-react';
+import { ChevronLeft, Layers, PenLine, Lock, X, Eye, EyeOff, Camera, Trash2, Upload, Images } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import ImmersiveViewer from '@/components/ImmersiveViewer';
+import CloudinaryPicker, { type CloudinaryAsset } from '@/components/CloudinaryPicker';
 import type { Hotspot } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 
@@ -46,7 +47,8 @@ export default function ImmersivePage() {
   const [virtualTourPhotos, setVirtualTourPhotos] = useState<VirtualTourPhoto[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveStatus, setSaveStatus]   = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [pickerOpen, setPickerOpen]   = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const virtualTourPhotosRef = useRef<VirtualTourPhoto[]>([]);
@@ -509,7 +511,7 @@ export default function ImmersivePage() {
                         <p className="text-gray-500 text-xs mb-3">No photos yet. Upload 360° panoramic images below.</p>
                       )}
 
-                      {/* Upload button */}
+                      {/* Upload + Library buttons */}
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -518,15 +520,26 @@ export default function ImmersivePage() {
                         className="hidden"
                         onChange={handleFileUpload}
                       />
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                        className="w-full py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition disabled:opacity-60"
-                        style={{ backgroundColor: '#FFB400', color: '#0F1F3C' }}
-                      >
-                        <Upload className="w-4 h-4" />
-                        {uploading ? `Uploading ${uploadStatus}` : 'Upload Photos'}
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                          className="flex-1 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-60"
+                          style={{ backgroundColor: '#FFB400', color: '#0F1F3C' }}
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          {uploading ? uploadStatus : 'Upload'}
+                        </button>
+                        <button
+                          onClick={() => setPickerOpen(true)}
+                          disabled={uploading}
+                          className="flex-1 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border transition disabled:opacity-60"
+                          style={{ borderColor: '#FFB400', color: '#FFB400' }}
+                        >
+                          <Images className="w-3.5 h-3.5" />
+                          Library
+                        </button>
+                      </div>
 
                       {/* Progress bar */}
                       {uploading && (
@@ -565,6 +578,25 @@ export default function ImmersivePage() {
           </div>
         )}
       </div>
+
+      {/* Cloudinary library picker for 360° photos */}
+      <CloudinaryPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        folder="liliw-virtual-tours"
+        multiple
+        signEndpoint="/api/cloudinary-sign"
+        onSelect={async (assets: CloudinaryAsset[]) => {
+          const newPhotos: VirtualTourPhoto[] = assets.map(a => ({
+            url:       a.url,
+            name:      a.name,
+            public_id: a.public_id,
+          }));
+          const updated = [...virtualTourPhotos, ...newPhotos];
+          setVirtualTourPhotos(updated);
+          await savePhotosToStrapi(updated);
+        }}
+      />
     </div>
   );
 }
