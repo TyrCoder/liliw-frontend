@@ -69,8 +69,7 @@ export default function RejectModal({ open, remarks, onChangeRemarks, onConfirm,
                 onChange={e => onChangeRemarks(e.target.value)}
                 placeholder="Explain why this entry is being rejected…"
                 rows={4}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:outline-none focus:ring-2 resize-none"
-                style={{ focusRingColor: '#1565C0' }}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
               />
               {remarks.trim().length === 0 && (
                 <p className="text-xs text-red-400 mt-1.5">Remarks are required before rejecting.</p>
