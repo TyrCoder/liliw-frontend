@@ -305,8 +305,8 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
       map.on('load', async () => {
         if (cancelled) return;
         const coords: [number, number][] = [];
-        // Show user location pin but don't include in route — route goes Stop 1 → 2 → 3
         if (userLocation) {
+          coords.push(userLocation);
           new mapboxgl.Marker({ color: '#1565C0' }).setLngLat(userLocation).setPopup(new mapboxgl.Popup({ offset: 25 }).setText('Your Location')).addTo(map);
         }
         const allStops = localPlan.days.flatMap((d: any) =>
@@ -723,7 +723,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
               )}
             </div>
             <div ref={mapContainer} className="rounded-2xl overflow-hidden shadow-md" style={{ height: 360 }} />
-            <p className="text-xs text-gray-400 mt-2 text-center" style={{ fontFamily: BL }}>Numbered pins = stops (click for details) · Blue line = driving route</p>
+            <p className="text-xs text-gray-400 mt-2 text-center" style={{ fontFamily: BL }}>Numbered pins = stops (hover for details) · Blue line = driving route</p>
           </motion.div>
         )}
       </AnimatePresence>
