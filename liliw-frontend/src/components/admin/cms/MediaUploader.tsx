@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Upload, X, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Loader2, Images } from 'lucide-react';
+import CloudinaryPicker, { type CloudinaryAsset } from '@/components/CloudinaryPicker';
 
 export interface MediaItem {
   url: string;
@@ -42,8 +43,9 @@ async function uploadToCloudinary(file: File): Promise<MediaItem> {
 }
 
 export default function MediaUploader({ value, onChange, maxFiles = 10 }: Props) {
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading]   = useState(false);
+  const [error, setError]           = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = async (files: FileList | null) => {
@@ -62,7 +64,19 @@ export default function MediaUploader({ value, onChange, maxFiles = 10 }: Props)
     setUploading(false);
   };
 
+  const handlePickerSelect = (assets: CloudinaryAsset[]) => {
+    const remaining = maxFiles - value.length;
+    const toAdd = assets.slice(0, remaining).map(a => ({
+      url:       a.url,
+      public_id: a.public_id,
+      alt_text:  a.name || '',
+    }));
+    if (toAdd.length) onChange([...value, ...toAdd]);
+  };
+
   const remove = (i: number) => onChange(value.filter((_, idx) => idx !== i));
+
+  const canAdd = value.length < maxFiles;
 
   return (
     <div className="space-y-3">
@@ -83,9 +97,10 @@ export default function MediaUploader({ value, onChange, maxFiles = 10 }: Props)
         </div>
       )}
 
-      {/* Upload button */}
-      {value.length < maxFiles && (
-        <div>
+      {/* Action buttons */}
+      {canAdd && (
+        <div className="flex gap-2">
+          {/* Direct upload */}
           <input
             ref={inputRef}
             type="file"
@@ -98,15 +113,40 @@ export default function MediaUploader({ value, onChange, maxFiles = 10 }: Props)
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-500 hover:border-blue-300 hover:text-blue-600 transition disabled:opacity-60 w-full justify-center">
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-500 hover:border-blue-300 hover:text-blue-600 transition disabled:opacity-60"
+          >
             {uploading
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
-              : <><Upload className="w-4 h-4" /> Add Photos ({value.length}/{maxFiles})</>}
+              : <><Upload className="w-4 h-4" /> Upload</>}
+          </button>
+
+          {/* Browse library */}
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            disabled={uploading}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-500 hover:border-blue-300 hover:text-blue-600 transition disabled:opacity-60"
+          >
+            <Images className="w-4 h-4" /> Library
           </button>
         </div>
       )}
 
+      {!canAdd && (
+        <p className="text-xs text-gray-400 text-center">{maxFiles}/{maxFiles} photos added</p>
+      )}
+
       {error && <p className="text-xs text-red-500">{error}</p>}
+
+      <CloudinaryPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={handlePickerSelect}
+        folder="liliw-cms"
+        multiple
+        maxSelect={maxFiles - value.length}
+        signEndpoint="/api/cms/upload/sign"
+      />
     </div>
   );
 }
