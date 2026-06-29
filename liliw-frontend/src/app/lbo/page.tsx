@@ -1077,52 +1077,53 @@ export default function LboDashboard() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide border border-gray-200 min-w-[200px]">Visitor Category</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide border border-gray-200 w-28">Male</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide border border-gray-200 w-28">Female</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide border border-gray-200 w-28">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {VISITOR_ROWS.map(row => {
-                      const rowTotal = vrTotal(row.male_key, row.female_key);
-                      return (
-                        <tr key={row.label} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 font-medium text-gray-700 border border-gray-200">{row.label}</td>
-                          <td className="px-2 py-2 border border-gray-200">
-                            <input type="number" min={0}
-                              value={vrCounts[row.male_key]}
-                              onChange={e => setVrCounts(c => ({ ...c, [row.male_key]: e.target.value }))}
-                              placeholder="0"
-                              className="w-full text-center border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-                          </td>
-                          <td className="px-2 py-2 border border-gray-200">
-                            <input type="number" min={0}
-                              value={vrCounts[row.female_key]}
-                              onChange={e => setVrCounts(c => ({ ...c, [row.female_key]: e.target.value }))}
-                              placeholder="0"
-                              className="w-full text-center border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-                          </td>
-                          <td className="px-4 py-3 text-center font-bold text-gray-900 border border-gray-200 bg-gray-50">{rowTotal}</td>
-                        </tr>
-                      );
-                    })}
-                    <tr className="bg-blue-50">
-                      <td className="px-4 py-3 font-bold text-blue-900 border border-gray-200">Grand Total</td>
-                      <td className="px-4 py-3 text-center font-bold text-blue-900 border border-gray-200">
-                        {VISITOR_ROWS.reduce((s, r) => s + (Number(vrCounts[r.male_key]) || 0), 0)}
-                      </td>
-                      <td className="px-4 py-3 text-center font-bold text-blue-900 border border-gray-200">
-                        {VISITOR_ROWS.reduce((s, r) => s + (Number(vrCounts[r.female_key]) || 0), 0)}
-                      </td>
-                      <td className="px-4 py-3 text-center font-bold text-blue-900 border border-gray-200">{vrGrandTotal}</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+                {/* Header */}
+                <div className="grid grid-cols-[1fr_100px_100px_80px] bg-gray-50 px-4 py-2.5 border-b border-gray-200">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Visitor Category</span>
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center">Male</span>
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center">Female</span>
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center">Total</span>
+                </div>
+                {/* Rows */}
+                <div className="divide-y divide-gray-100">
+                  {VISITOR_ROWS.map(row => {
+                    const rowTotal = vrTotal(row.male_key, row.female_key);
+                    return (
+                      <div key={row.label} className="grid grid-cols-[1fr_100px_100px_80px] items-center px-4 py-3 hover:bg-gray-50 transition-colors">
+                        <span className="text-sm font-medium text-gray-700">{row.label}</span>
+                        <div className="px-1">
+                          <input type="number" min={0}
+                            value={vrCounts[row.male_key]}
+                            onChange={e => setVrCounts(c => ({ ...c, [row.male_key]: e.target.value }))}
+                            placeholder="0"
+                            className="w-full text-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition" />
+                        </div>
+                        <div className="px-1">
+                          <input type="number" min={0}
+                            value={vrCounts[row.female_key]}
+                            onChange={e => setVrCounts(c => ({ ...c, [row.female_key]: e.target.value }))}
+                            placeholder="0"
+                            className="w-full text-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition" />
+                        </div>
+                        <div className="text-center">
+                          <span className={`text-sm font-bold ${rowTotal > 0 ? 'text-gray-900' : 'text-gray-300'}`}>{rowTotal || '—'}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Grand Total */}
+                <div className="grid grid-cols-[1fr_100px_100px_80px] items-center px-4 py-3 border-t border-gray-200" style={{ backgroundColor: '#EFF6FF' }}>
+                  <span className="text-sm font-bold text-blue-900">Grand Total</span>
+                  <span className="text-sm font-bold text-blue-900 text-center">
+                    {VISITOR_ROWS.reduce((s, r) => s + (Number(vrCounts[r.male_key]) || 0), 0)}
+                  </span>
+                  <span className="text-sm font-bold text-blue-900 text-center">
+                    {VISITOR_ROWS.reduce((s, r) => s + (Number(vrCounts[r.female_key]) || 0), 0)}
+                  </span>
+                  <span className="text-sm font-bold text-blue-900 text-center">{vrGrandTotal || '—'}</span>
+                </div>
               </div>
 
               {vrMsg && (

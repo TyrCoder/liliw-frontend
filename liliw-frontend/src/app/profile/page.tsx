@@ -156,7 +156,7 @@ export default function ProfilePage() {
               <button key={key} id={key === 'trips' ? 'saved' : undefined}
                 onClick={() => setActiveTab(key)}
                 className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold transition border-b-2 ${
-                  activeTab === key ? 'border-[#1565C0]' : 'border-transparent text-gray-400 hover:text-gray-600'
+                  activeTab === key ? 'border-[#1565C0] bg-blue-50/60' : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                 }`}
                 style={{ color: activeTab === key ? '#1565C0' : undefined, fontFamily: BL }}>
                 <Icon className="w-4 h-4" />
