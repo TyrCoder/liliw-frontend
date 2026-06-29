@@ -48,11 +48,11 @@ export default function NewsletterSignup() {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl p-8 text-white"
+      className="rounded-xl p-8 text-white" style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)' }}
     >
       <div className="max-w-md mx-auto">
         <h3 className="text-2xl font-bold mb-2">Get Travel Tips</h3>
-        <p className="text-teal-100 mb-6">Subscribe for exclusive Liliw updates and travel guides</p>
+        <p className="text-blue-100 mb-6">Subscribe for exclusive Liliw updates and travel guides</p>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="relative">
@@ -70,7 +70,7 @@ export default function NewsletterSignup() {
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="w-full bg-white text-teal-600 font-semibold py-3 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition"
+            className="w-full bg-white text-blue-700 font-semibold py-3 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition"
           >
             {status === 'loading' ? 'Subscribing...' : 'Subscribe'}
           </button>

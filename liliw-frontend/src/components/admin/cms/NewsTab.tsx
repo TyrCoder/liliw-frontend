@@ -165,7 +165,7 @@ export default function NewsTab({ token, userEmail, isOfficer, isAdmin }: Props)
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2 flex-wrap">
                         {canEdit && ['draft','rejected','approved'].includes(e.status) && (
-                          <button onClick={() => openEdit(e)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:border-teal-300 hover:text-teal-600 transition">
+                          <button onClick={() => openEdit(e)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600 transition">
                             <Edit2 className="w-3 h-3" /> Edit
                           </button>
                         )}
@@ -210,12 +210,12 @@ export default function NewsTab({ token, userEmail, isOfficer, isAdmin }: Props)
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Title *</label>
                 <input value={editing.title || ''} onChange={e => setEditing(p => ({ ...p, title: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300" />
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
               </div>
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Category</label>
                 <select value={editing.category || 'announcement'} onChange={e => setEditing(p => ({ ...p, category: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-300">
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
                   {CATEGORIES.map(c => <option key={c} value={c}>{c.replace('-', ' ')}</option>)}
                 </select>
               </div>

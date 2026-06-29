@@ -138,7 +138,7 @@ export default function FaqsTab({ token, userEmail, isOfficer, isAdmin }: Props)
                     <td className="px-5 py-4"><StatusBadge status={e.status} /></td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {canEdit && ['draft','rejected','approved'].includes(e.status) && <button onClick={() => openEdit(e)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:border-teal-300 hover:text-teal-600 transition"><Edit2 className="w-3 h-3" /> Edit</button>}
+                        {canEdit && ['draft','rejected','approved'].includes(e.status) && <button onClick={() => openEdit(e)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600 transition"><Edit2 className="w-3 h-3" /> Edit</button>}
                         {canEdit && ['draft','rejected'].includes(e.status) && <button onClick={() => submit(e.id)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition"><Send className="w-3 h-3" /> Submit</button>}
                         {(isOfficer || isAdmin) && e.status === 'pending' && <>
                           <button onClick={() => approve(e.id)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-green-200 text-green-700 hover:bg-green-50 transition"><CheckCircle className="w-3 h-3" /> Approve</button>
@@ -165,20 +165,20 @@ export default function FaqsTab({ token, userEmail, isOfficer, isAdmin }: Props)
             <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Question *</label>
-                <input value={editing.question || ''} onChange={e => setEditing(p => ({ ...p, question: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300" placeholder="What is…?" />
+                <input value={editing.question || ''} onChange={e => setEditing(p => ({ ...p, question: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="What is…?" />
               </div>
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Answer *</label>
-                <textarea rows={5} value={editing.answer || ''} onChange={e => setEditing(p => ({ ...p, answer: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300 resize-none" />
+                <textarea rows={5} value={editing.answer || ''} onChange={e => setEditing(p => ({ ...p, answer: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Category</label>
-                  <input value={editing.category || ''} onChange={e => setEditing(p => ({ ...p, category: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300" placeholder="e.g. Travel, Permits" />
+                  <input value={editing.category || ''} onChange={e => setEditing(p => ({ ...p, category: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="e.g. Travel, Permits" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Sort Order</label>
-                  <input type="number" value={editing.sort_order ?? 0} onChange={e => setEditing(p => ({ ...p, sort_order: Number(e.target.value) }))} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300" />
+                  <input type="number" value={editing.sort_order ?? 0} onChange={e => setEditing(p => ({ ...p, sort_order: Number(e.target.value) }))} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
               </div>
             </div>

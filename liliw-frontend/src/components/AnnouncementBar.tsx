@@ -36,7 +36,7 @@ export default function AnnouncementBar({ defaultOpen = true }: AnnouncementBarP
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="overflow-hidden bg-linear-to-r from-teal-500 to-cyan-500 text-white shadow-lg"
+          className="overflow-hidden text-white shadow-lg" style={{ background: 'linear-gradient(to right, #0B3D91, #1565C0)' } as any}
         >
           <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4 flex-wrap">
             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">

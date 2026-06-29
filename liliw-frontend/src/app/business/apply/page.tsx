@@ -164,7 +164,7 @@ export default function LBOApplyPage() {
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)' }} className="py-12">
         <div className="max-w-2xl mx-auto px-4">
-          <Link href="/" className="inline-flex items-center text-sm font-semibold mb-6 opacity-80 hover:opacity-100 transition" style={{ color: '#1565C0' }}>
+          <Link href="/" className="inline-flex items-center text-sm font-semibold mb-6 opacity-80 hover:opacity-100 transition" style={{ color: '#F5C518' }}>
             <ChevronLeft className="w-4 h-4 mr-1" /> Back to Liliw Tourism
           </Link>
           <div className="flex items-center gap-4">
@@ -270,8 +270,8 @@ export default function LBOApplyPage() {
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
-                <MapPin className="w-5 h-5 text-teal-600" />
+              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                <MapPin className="w-5 h-5 text-blue-500" />
               </div>
               <div>
                 <h2 className="font-bold text-gray-900 text-base">Attraction Location</h2>
@@ -279,7 +279,7 @@ export default function LBOApplyPage() {
               </div>
             </div>
             <button type="button" onClick={handleUseLocation} disabled={geoLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-teal-200 text-teal-700 hover:bg-teal-50 transition disabled:opacity-50">
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-blue-200 text-blue-700 hover:bg-blue-50 transition disabled:opacity-50">
               {geoLoading
                 ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 : <Navigation className="w-3.5 h-3.5" />}
@@ -342,7 +342,7 @@ export default function LBOApplyPage() {
           </div>
 
           {markerPos && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-teal-50 rounded-lg border border-teal-100 text-xs text-teal-700">
+            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-100 text-xs text-blue-700">
               <MapPin className="w-3.5 h-3.5 shrink-0" />
               <span>Pinned at <strong>{markerPos.lat.toFixed(6)}, {markerPos.lng.toFixed(6)}</strong> — drag the pin to adjust</span>
             </div>
