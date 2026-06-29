@@ -63,7 +63,7 @@ export default function SocialShare({ title, description, url }: SocialShareProp
           onClick={copyLink}
           whileTap={{ scale: 0.95 }}
           className="p-2.5 rounded-lg text-white transition"
-          style={{ backgroundColor: copied ? '#00BFB3' : '#6b7280' }}
+          style={{ backgroundColor: copied ? '#1565C0' : '#6b7280' }}
           title="Copy link"
         >
           {copied ? <Zap size={18} /> : <Share2 size={18} />}

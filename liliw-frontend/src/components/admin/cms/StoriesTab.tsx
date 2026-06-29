@@ -6,6 +6,7 @@ import StatusBadge from './StatusBadge';
 import RichTextEditor from './RichTextEditor';
 import MediaUploader, { MediaItem } from './MediaUploader';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
+import RejectModal from './RejectModal';
 
 const STATUS_LABELS: Record<string, string> = { all: 'All', draft: 'Draft', pending: 'Pending Review', approved: 'Published', rejected: 'Rejected' };
 
@@ -31,6 +32,9 @@ export default function StoriesTab({ token, userEmail, isOfficer, isAdmin }: Pro
   const [msg, setMsg]           = useState<{ ok: boolean; text: string } | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+  const [rejectRemarks, setRejectRemarks] = useState('');
+  const [rejecting, setRejecting] = useState(false);
 
   const h: Record<string, string> = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 
@@ -86,10 +90,12 @@ export default function StoriesTab({ token, userEmail, isOfficer, isAdmin }: Pro
     load(statusFilter);
   };
 
-  const reject = async (id: string) => {
-    const remarks = prompt('Rejection remarks (required):');
-    if (!remarks?.trim()) return;
-    await fetch(`/api/cms/stories/${id}/reject`, { method: 'POST', headers: h, body: JSON.stringify({ remarks }) });
+  const reject = (id: string) => { setRejectTarget(id); setRejectRemarks(''); };
+  const confirmReject = async () => {
+    if (!rejectTarget || !rejectRemarks.trim()) return;
+    setRejecting(true);
+    await fetch(`/api/cms/stories/${rejectTarget}/reject`, { method: 'POST', headers: h, body: JSON.stringify({ remarks: rejectRemarks }) });
+    setRejecting(false); setRejectTarget(null); setRejectRemarks('');
     load(statusFilter);
   };
 
@@ -114,14 +120,14 @@ export default function StoriesTab({ token, userEmail, isOfficer, isAdmin }: Pro
           {['all','draft','pending','approved','rejected'].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${statusFilter === s ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-              style={statusFilter === s ? { backgroundColor: '#00BFB3' } : {}}>
+              style={statusFilter === s ? { backgroundColor: '#1565C0' } : {}}>
               {STATUS_LABELS[s]}
             </button>
           ))}
           {canEdit && (
             <button onClick={openCreate}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white transition"
-              style={{ backgroundColor: '#00BFB3' }}>
+              style={{ backgroundColor: '#1565C0' }}>
               <Plus className="w-4 h-4" /> New Entry
             </button>
           )}
@@ -130,7 +136,7 @@ export default function StoriesTab({ token, userEmail, isOfficer, isAdmin }: Pro
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+          <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
         ) : entries.length === 0 ? (
           <div className="flex flex-col items-center py-16 text-gray-400">
             <BookOpen className="w-10 h-10 mb-3 opacity-20" />
@@ -243,7 +249,7 @@ export default function StoriesTab({ token, userEmail, isOfficer, isAdmin }: Pro
                 <button onClick={closeForm} className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-100 transition">Cancel</button>
                 <button onClick={save} disabled={saving || !editing.title?.trim()}
                   className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-60"
-                  style={{ backgroundColor: '#00BFB3' }}>
+                  style={{ backgroundColor: '#1565C0' }}>
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Save Draft
                 </button>
               </div>
@@ -251,6 +257,14 @@ export default function StoriesTab({ token, userEmail, isOfficer, isAdmin }: Pro
           </div>
         </div>
       )}
+      <RejectModal
+        open={rejectTarget !== null}
+        remarks={rejectRemarks}
+        onChangeRemarks={setRejectRemarks}
+        onConfirm={confirmReject}
+        onCancel={() => { setRejectTarget(null); setRejectRemarks(''); }}
+        loading={rejecting}
+      />
     </div>
   );
 }

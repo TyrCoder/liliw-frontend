@@ -349,7 +349,7 @@ export default function LboDashboard() {
   if (authLoading || checking) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--warm-white)' }}>
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} />
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1565C0' }} />
       </div>
     );
   }
@@ -424,7 +424,7 @@ export default function LboDashboard() {
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }} className="py-7">
         <div className="max-w-4xl mx-auto px-4">
-          <Link href="/" className="inline-flex items-center text-xs font-semibold mb-5 opacity-70 hover:opacity-100 transition" style={{ color: '#00BFB3' }}>
+          <Link href="/" className="inline-flex items-center text-xs font-semibold mb-5 opacity-70 hover:opacity-100 transition" style={{ color: '#1565C0' }}>
             <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Back to Site
           </Link>
           <div className="flex items-start gap-4">
@@ -488,7 +488,7 @@ export default function LboDashboard() {
           <>
             {loadingAttr ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} />
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1565C0' }} />
               </div>
             ) : attrData?.linked && attrData.attraction ? (
               /* ── Linked attraction card ── */
@@ -770,7 +770,7 @@ export default function LboDashboard() {
                       <span className="text-sm text-gray-400">{attrReqs.length} total</span>
                     </div>
                     {loadingAttrReqs ? (
-                      <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin" style={{ color: '#00BFB3' }} /></div>
+                      <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin" style={{ color: '#1565C0' }} /></div>
                     ) : (
                       <div className="divide-y divide-gray-50">
                         {attrReqs.map(req => {
@@ -889,7 +889,7 @@ export default function LboDashboard() {
                 <span className="text-sm text-gray-400">{requests.length} total</span>
               </div>
               {loadingReqs ? (
-                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
               ) : requests.length === 0 ? (
                 <div className="flex flex-col items-center py-16 text-center text-gray-400">
                   <FileText className="w-10 h-10 opacity-20 mb-3" />
@@ -949,7 +949,7 @@ export default function LboDashboard() {
               </div>
             ) : loadingRatings ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#00BFB3' }} />
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1565C0' }} />
               </div>
             ) : (() => {
               const avgRating = ratings.length > 0
@@ -1145,7 +1145,7 @@ export default function LboDashboard() {
                 <span className="text-sm text-gray-400">{records.length} total</span>
               </div>
               {loadingRecs ? (
-                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#00BFB3' }} /></div>
+                <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
               ) : records.length === 0 ? (
                 <div className="flex flex-col items-center py-16 text-center text-gray-400">
                   <Users className="w-10 h-10 opacity-20 mb-3" />

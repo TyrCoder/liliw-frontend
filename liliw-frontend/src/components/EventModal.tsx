@@ -151,25 +151,25 @@ export default function EventModal({ event, onClose, defaultStep = 'details' }: 
               <div className="space-y-2 mb-5 text-sm text-gray-600">
                 {schedule && (
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 shrink-0" style={{ color: '#00BFB3' }} />
+                    <Calendar className="w-4 h-4 shrink-0" style={{ color: '#1565C0' }} />
                     <span>{schedule}</span>
                   </div>
                 )}
                 {a.venue && (
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 shrink-0" style={{ color: '#00BFB3' }} />
+                    <MapPin className="w-4 h-4 shrink-0" style={{ color: '#1565C0' }} />
                     <span>{a.venue}</span>
                   </div>
                 )}
                 {a.max_participants && (
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 shrink-0" style={{ color: '#00BFB3' }} />
+                    <Users className="w-4 h-4 shrink-0" style={{ color: '#1565C0' }} />
                     <span>Max {a.max_participants} participants</span>
                   </div>
                 )}
                 {a.capacity_note && !a.max_participants && (
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 shrink-0" style={{ color: '#00BFB3' }} />
+                    <Users className="w-4 h-4 shrink-0" style={{ color: '#1565C0' }} />
                     <span>{a.capacity_note}</span>
                   </div>
                 )}
@@ -202,7 +202,7 @@ export default function EventModal({ event, onClose, defaultStep = 'details' }: 
                 <button
                   onClick={() => setStep('form')}
                   className="flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)' }}
+                  style={{ background: 'linear-gradient(135deg,#1565C0,#009E99)' }}
                 >
                   Participate Now
                 </button>
@@ -216,7 +216,7 @@ export default function EventModal({ event, onClose, defaultStep = 'details' }: 
               <button
                 onClick={() => { setStep('details'); setError(''); }}
                 className="inline-flex items-center gap-1 text-sm font-semibold mb-4 hover:opacity-70 transition"
-                style={{ color: '#00BFB3' }}
+                style={{ color: '#1565C0' }}
               >
                 <ChevronLeft className="w-4 h-4" /> Back to event
               </button>
@@ -263,7 +263,7 @@ export default function EventModal({ event, onClose, defaultStep = 'details' }: 
                   <button
                     type="submit" disabled={submitting}
                     className="flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
-                    style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)' }}
+                    style={{ background: 'linear-gradient(135deg,#1565C0,#009E99)' }}
                   >
                     {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                     {submitting ? 'Sending…' : 'Send Request'}
@@ -278,7 +278,7 @@ export default function EventModal({ event, onClose, defaultStep = 'details' }: 
             <div className="p-8 flex flex-col items-center text-center">
               <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
                 style={{ backgroundColor: 'rgba(0,191,179,.12)' }}>
-                <CheckCircle className="w-8 h-8" style={{ color: '#00BFB3' }} />
+                <CheckCircle className="w-8 h-8" style={{ color: '#1565C0' }} />
               </div>
               <h2 className="text-xl font-bold text-gray-900 mb-2">Request Submitted!</h2>
               <p className="text-sm text-gray-500 mb-1">
@@ -290,7 +290,7 @@ export default function EventModal({ event, onClose, defaultStep = 'details' }: 
               <button
                 onClick={onClose}
                 className="px-6 py-2.5 rounded-xl text-white text-sm font-semibold transition hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg,#00BFB3,#009E99)' }}
+                style={{ background: 'linear-gradient(135deg,#1565C0,#009E99)' }}
               >
                 Done
               </button>

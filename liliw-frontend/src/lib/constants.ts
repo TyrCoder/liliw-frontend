@@ -5,24 +5,24 @@
 
 // Brand Colors
 export const COLORS = {
-  primary: '#00BFB3', // Teal - Primary accent
+  primary: '#1565C0', // Blue - Primary accent
   secondary: '#0F1F3C', // Navy - Secondary/background
-  primaryLight: 'rgba(0, 191, 179, 0.08)', // Light teal background
-  primaryLightHover: 'rgba(0, 191, 179, 0.1)', // Slightly darker teal
-  gradient: 'linear-gradient(135deg, #00BFB3 0%, #0F1F3C 100%)',
-  gradientToRight: 'linear-gradient(to right, #00BFB3, #00CED1)',
+  primaryLight: 'rgba(21, 101, 192, 0.08)', // Light blue background
+  primaryLightHover: 'rgba(21, 101, 192, 0.1)', // Slightly darker blue
+  gradient: 'linear-gradient(135deg, #1565C0 0%, #0F1F3C 100%)',
+  gradientToRight: 'linear-gradient(to right, #1565C0, #0B3D91)',
 } as const;
 
 // Border Colors & Styles
 export const BORDERS = {
-  primary: '#00BFB3',
+  primary: '#1565C0',
   light: 'rgb(229, 231, 235)',
   dark: 'rgb(55, 65, 81)',
 } as const;
 
 // Ring Colors (for focus states)
 export const RINGS = {
-  primary: '#00BFB3',
+  primary: '#1565C0',
 } as const;
 
 // Typography Sizes

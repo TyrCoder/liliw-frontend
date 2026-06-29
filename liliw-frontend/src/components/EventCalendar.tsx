@@ -110,7 +110,7 @@ export default function EventCalendar({ attractionName, events: propEvents }: Ev
                   {day && (
                     <>
                       <span className="text-sm font-medium">{day}</span>
-                      {dayEvents.length > 0 && <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#00BFB3' }} />}
+                      {dayEvents.length > 0 && <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#1565C0' }} />}
                     </>
                   )}
                 </button>
@@ -124,7 +124,7 @@ export default function EventCalendar({ attractionName, events: propEvents }: Ev
       <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
         className="bg-gray-50 p-6 rounded-xl">
         <h3 className="flex items-center gap-2 font-bold mb-4" style={{ color: '#0F1F3C' }}>
-          <CalendarIcon size={20} style={{ color: '#00BFB3' }} />
+          <CalendarIcon size={20} style={{ color: '#1565C0' }} />
           {selectedDate ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('default', { dateStyle: 'long' }) : 'Select a date'}
         </h3>
 

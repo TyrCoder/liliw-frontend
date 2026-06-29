@@ -67,7 +67,7 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
                 className={`flex-shrink-0 relative w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
                   idx === selectedIndex ? 'border-teal-500' : 'border-gray-200 opacity-60 hover:opacity-100'
                 }`}
-                style={idx === selectedIndex ? { borderColor: '#00BFB3' } : {}}
+                style={idx === selectedIndex ? { borderColor: '#1565C0' } : {}}
               >
                 <img src={img.src} alt={img.alt} className="w-full h-full object-cover" />
               </button>
