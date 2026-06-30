@@ -459,8 +459,16 @@ export default function ImmersivePage() {
                           paddingLeft: '12px',
                         }}
                       >
-                        <div className="font-semibold text-sm">{attraction.attributes.name}</div>
-                        <div className="text-xs opacity-70 mt-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold text-sm leading-tight">{attraction.attributes.name}</span>
+                          {attraction.attributes.has_virtual_tour && (
+                            <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                              style={{ backgroundColor: 'rgba(245,197,24,0.2)', color: '#F5C518' }}>
+                              360°
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs opacity-70 mt-0.5">
                           {attraction.type === 'heritage' ? 'Heritage' : 'Tourist Spot'}
                         </div>
                       </motion.button>
