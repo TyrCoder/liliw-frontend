@@ -25,6 +25,7 @@ interface Attraction {
     name: string; description?: string; location?: string; category?: string;
     is_featured?: boolean; rating?: number; phone?: string; hours?: string;
     website?: string; best_for?: string; google_place_id?: string;
+    has_virtual_tour?: boolean;
     coordinates?: { latitude: number; longitude: number };
     photos?: Array<{ id: number; name: string; url: string; width?: number; height?: number; formats?: any; mime?: string; }>;
   };
@@ -83,12 +84,10 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           fetch(`/api/admin/external-reviews?strapiId=${current.strapiId}`)
             .then(r => r.json())
             .then(d => {
-              console.log('[ExternalReviews] strapiId:', current.strapiId, 'response:', d);
               if (d.data?.[0]) setExternalReview({ ...d.data[0], reviews: d.data[0].reviews ?? [] });
             })
-            .catch(err => console.error('[ExternalReviews] fetch error:', err));
+            .catch(() => {});
         } else {
-          console.log('[ExternalReviews] no strapiId on attraction:', current.id);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load attraction');
@@ -237,7 +236,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           {attraction.attributes.photos && attraction.attributes.photos.length > 0 ? (
             <ImageGallery
               images={attraction.attributes.photos.map(photo => ({
-                src: photo.url.startsWith('http') ? photo.url : `${process.env.NEXT_PUBLIC_STRAPI_URL}${photo.url}`,
+                src: photo.url,
                 alt: photo.name,
                 caption: photo.name,
               }))}
@@ -246,12 +245,37 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           ) : (
             <div className="p-8 bg-white rounded-2xl text-center text-gray-500 border border-gray-100">
               <p style={{ fontFamily: BL }}>No photos available for this attraction yet.</p>
-              <p className="text-sm mt-2 text-gray-400" style={{ fontFamily: BL }}>Upload photos in the Strapi admin panel to see them here.</p>
+              <p className="text-sm mt-2 text-gray-400" style={{ fontFamily: BL }}>Photos can be added via the CMS.</p>
             </div>
           )}
         </motion.div>
 
-        {/* Interactive Map — only render when coordinates are set in Strapi */}
+        {/* 3D Virtual Tour CTA */}
+        {attraction.attributes.has_virtual_tour && (
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.28 }}
+            className="mb-8 sm:mb-12">
+            <div className="rounded-2xl overflow-hidden flex flex-col sm:flex-row items-center gap-5 px-6 py-5"
+              style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)' }}>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: 'rgba(245,197,24,0.2)' }}>
+                <Layers className="w-6 h-6" style={{ color: '#F5C518' }} />
+              </div>
+              <div className="flex-1 text-center sm:text-left">
+                <p className="font-bold text-white text-base" style={{ fontFamily: HL }}>Experience the 3D Virtual Tour</p>
+                <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.7)', fontFamily: BL }}>
+                  Explore {attraction.attributes.name} in immersive 360° — drag to look around.
+                </p>
+              </div>
+              <Link href="/immersive"
+                className="shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 whitespace-nowrap"
+                style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: BL }}>
+                Launch 3D Tour →
+              </Link>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Interactive Map */}
         {(() => {
           const c = attraction.attributes.coordinates as any;
           const lat = c?.latitude ?? c?.lat ?? null;
