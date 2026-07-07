@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { BookOpen, User, Play } from 'lucide-react';
 import GatTayaw from '@/components/GatTayaw';
+import DogMascot from '@/components/DogMascot';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -265,16 +266,7 @@ export default function StoriesPage() {
 
           {/* ── Right sidebar: floating dog (sticky) ── */}
           <div className="hidden xl:flex w-44 shrink-0 flex-col items-center sticky top-8">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/liliw-dog.png"
-              alt="Liliw mascot"
-              className="gat-float"
-              style={{
-                width: 160, height: 'auto', display: 'block',
-                filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.15))',
-              }}
-            />
+            <DogMascot size={160} />
           </div>
 
         </div>
