@@ -14,6 +14,7 @@ import {
   Download, BarChart2, Plus, Trash2, ArrowUp, ArrowDown, ClipboardList, Send,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import BadgeSVG from '@/components/BadgeSVG';
 import * as XLSX from 'xlsx-js-style';
 
 /* ─── types ──────────────────────────────────────────────── */
@@ -25,7 +26,13 @@ interface StrapiActivity { id: string; contentType: string; entryName: string; a
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses';
+type Tab = 'overview' | 'users' | 'roles' | 'achievements' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses';
+
+const TRIGGER_TYPE_LABELS: Record<string, string> = {
+  event_count: 'Event sign-ups',
+  review_count: 'Reviews written',
+  total_points: 'Total points earned',
+};
 
 type FieldType = 'short_text' | 'paragraph' | 'number' | 'dropdown' | 'multiple_choice' | 'checkboxes';
 interface FormField { id: string; type: FieldType; label: string; required: boolean; options: string[]; }
@@ -162,6 +169,16 @@ export default function AdminDashboard() {
   const [savingPwd,     setSavingPwd]     = useState(false);
   const [pwdMsg,        setPwdMsg]        = useState<{ ok: boolean; text: string } | null>(null);
 
+  const [achievements,  setAchievements]  = useState<any[]>([]);
+  const [loadingAch,    setLoadingAch]    = useState(true);
+  const [achForm,       setAchForm]       = useState<{
+    id: string | null; name: string; description: string; icon: string; badge_color: string;
+    trigger_type: string; trigger_value: number; points_reward: number; sort_order: number; is_active: boolean;
+  }>({ id: null, name: '', description: '', icon: '🏆', badge_color: '#F59E0B', trigger_type: 'event_count', trigger_value: 1, points_reward: 10, sort_order: 0, is_active: true });
+  const [savingAch,     setSavingAch]     = useState(false);
+  const [achMsg,        setAchMsg]        = useState<{ ok: boolean; text: string } | null>(null);
+  const [deletingAchId, setDeletingAchId] = useState<string | null>(null);
+
   const [lboApps,       setLboApps]       = useState<any[]>([]);
   const [loadingLbo,    setLoadingLbo]    = useState(false);
   const [expandedLbo,   setExpandedLbo]   = useState<number | null>(null);
@@ -266,6 +283,8 @@ export default function AdminDashboard() {
         setRoleUsers(d.users || []);
         setAvailRoles(d.roles || []);
       }).catch(() => {}).finally(() => setLoadingRoles(false));
+      setLoadingAch(true);
+      fetch('/api/admin/achievements', { headers: h }).then(r => r.json()).then(d => setAchievements(d.data || [])).catch(() => {}).finally(() => setLoadingAch(false));
     }
 
     // Officer — requests & submissions
@@ -368,6 +387,68 @@ export default function AdminDashboard() {
       setPwdMsg({ ok: false, text: 'Network error' });
     }
     setSavingPwd(false);
+  };
+
+  const resetAchForm = () => {
+    setAchForm({ id: null, name: '', description: '', icon: '🏆', badge_color: '#F59E0B', trigger_type: 'event_count', trigger_value: 1, points_reward: 10, sort_order: 0, is_active: true });
+  };
+
+  const handleAchEdit = (a: any) => {
+    setAchForm({
+      id: a.id, name: a.name, description: a.description, icon: a.icon, badge_color: a.badge_color,
+      trigger_type: a.trigger_type, trigger_value: a.trigger_value, points_reward: a.points_reward,
+      sort_order: a.sort_order, is_active: a.is_active,
+    });
+    setAchMsg(null);
+  };
+
+  const handleAchSave = async () => {
+    if (!achForm.name.trim() || !achForm.description.trim()) { setAchMsg({ ok: false, text: 'Name and description are required' }); return; }
+    setSavingAch(true); setAchMsg(null);
+    try {
+      const res = await fetch('/api/admin/achievements', {
+        method: achForm.id ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(achForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAchievements(prev => achForm.id
+          ? prev.map(a => a.id === data.data.id ? data.data : a)
+          : [...prev, data.data].sort((a, b) => a.sort_order - b.sort_order));
+        setAchMsg({ ok: true, text: achForm.id ? 'Achievement updated' : 'Achievement created' });
+        resetAchForm();
+      } else {
+        setAchMsg({ ok: false, text: data.error || 'Failed to save' });
+      }
+    } catch { setAchMsg({ ok: false, text: 'Network error' }); }
+    setSavingAch(false);
+  };
+
+  const handleAchDelete = async (id: string) => {
+    if (!confirm('Delete this achievement? Any users who already earned it will lose that record.')) return;
+    setDeletingAchId(id);
+    try {
+      const res = await fetch('/api/admin/achievements', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) setAchievements(prev => prev.filter(a => a.id !== id));
+    } catch {}
+    setDeletingAchId(null);
+  };
+
+  const handleAchToggleActive = async (a: any) => {
+    const res = await fetch('/api/admin/achievements', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id: a.id, is_active: !a.is_active }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setAchievements(prev => prev.map(x => x.id === a.id ? data.data : x));
+    }
   };
 
   const handleSyncSearch = async () => {
@@ -616,6 +697,7 @@ export default function AdminDashboard() {
     { key: 'overview',           label: 'Analytics',           badge: undefined,                                                                                    roles: ['admin'] },
     { key: 'users',              label: 'Users',                badge: users.length,                                                                                 roles: ['admin'] },
     { key: 'roles',              label: 'Role Management',      badge: roleUsers.length,                                                                             roles: ['admin'] },
+    { key: 'achievements',       label: 'Achievements',         badge: achievements.length,                                                                          roles: ['admin'] },
     { key: 'audit',              label: 'Audit Logs',           badge: strapiActivity.length,                                                                        roles: ['admin'] },
     { key: 'reports',            label: 'Reports',              badge: undefined,                                                                                    roles: ['admin'] },
     // Officer: all requests & submissions
@@ -1101,6 +1183,144 @@ export default function AdminDashboard() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── ACHIEVEMENTS ──────────────────────────────────── */}
+        {activeTab === 'achievements' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-6">
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h2 className="font-bold text-gray-900 mb-1">{achForm.id ? 'Edit Achievement' : 'Create New Achievement'}</h2>
+                    <p className="text-xs text-gray-400">Any emoji you pick renders in the same badge style as the existing achievements — no image editing needed.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Name</label>
+                      <input value={achForm.name} onChange={e => setAchForm(f => ({ ...f, name: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        placeholder="e.g. Weekend Wanderer" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Icon (emoji)</label>
+                      <input value={achForm.icon} onChange={e => setAchForm(f => ({ ...f, icon: e.target.value }))}
+                        maxLength={4}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        placeholder="🏆" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Description</label>
+                    <input value={achForm.description} onChange={e => setAchForm(f => ({ ...f, description: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="e.g. Sign up for 2 weekend events" />
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Badge Color</label>
+                      <input type="color" value={achForm.badge_color} onChange={e => setAchForm(f => ({ ...f, badge_color: e.target.value }))}
+                        className="w-full h-9 border border-gray-200 rounded-lg cursor-pointer" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Trigger Type</label>
+                      <select value={achForm.trigger_type} onChange={e => setAchForm(f => ({ ...f, trigger_type: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        {Object.entries(TRIGGER_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Threshold</label>
+                      <input type="number" min={1} value={achForm.trigger_value}
+                        onChange={e => setAchForm(f => ({ ...f, trigger_value: Number(e.target.value) }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Points Reward</label>
+                      <input type="number" min={0} value={achForm.points_reward}
+                        onChange={e => setAchForm(f => ({ ...f, points_reward: Number(e.target.value) }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    </div>
+                  </div>
+
+                  {achMsg && (
+                    <p className={`text-xs font-semibold flex items-center gap-1.5 ${achMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                      {achMsg.ok ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                      {achMsg.text}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <button onClick={handleAchSave} disabled={savingAch}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition"
+                      style={{ backgroundColor: '#1565C0' }}>
+                      {savingAch ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      {achForm.id ? 'Save Changes' : 'Create Achievement'}
+                    </button>
+                    {achForm.id && (
+                      <button onClick={() => { resetAchForm(); setAchMsg(null); }}
+                        className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:border-gray-300 transition">
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Live preview */}
+                <div className="flex flex-col items-center gap-2 shrink-0 mx-auto">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Live Preview</span>
+                  <BadgeSVG icon={achForm.icon || '🏆'} color={achForm.badge_color} earned size={100} />
+                </div>
+              </div>
+            </div>
+
+            {loadingAch ? (
+              <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                  <h2 className="font-bold text-gray-900">All Achievements</h2>
+                  <span className="text-sm text-gray-400">{achievements.length} total</span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {achievements.map((a: any) => (
+                    <div key={a.id} className={`flex items-center gap-4 px-6 py-4 transition ${!a.is_active ? 'opacity-50' : ''}`}>
+                      <BadgeSVG icon={a.icon} color={a.badge_color} earned size={56} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm">{a.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{a.description}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {TRIGGER_TYPE_LABELS[a.trigger_type] || a.trigger_type} ≥ {a.trigger_value} · +{a.points_reward} pts
+                        </p>
+                      </div>
+                      <button onClick={() => handleAchToggleActive(a)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 transition ${
+                          a.is_active ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}>
+                        {a.is_active ? 'Active' : 'Disabled'}
+                      </button>
+                      <button onClick={() => handleAchEdit(a)}
+                        className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition shrink-0" title="Edit">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleAchDelete(a.id)} disabled={deletingAchId === a.id}
+                        className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition shrink-0 disabled:opacity-50" title="Delete">
+                        {deletingAchId === a.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  ))}
+                  {achievements.length === 0 && (
+                    <div className="flex flex-col items-center py-16 text-center text-gray-400">
+                      <p className="font-semibold">No achievements yet</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
