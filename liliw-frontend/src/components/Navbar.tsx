@@ -366,6 +366,7 @@ export default function Navbar() {
                           {[
                             { href: '/profile',       icon: <User className="w-4 h-4" />,          label: 'View Profile' },
                             { href: '/profile#saved', icon: <BookmarkCheck className="w-4 h-4" />, label: 'Saved Itineraries' },
+                            { href: '/rewards',       icon: <Trophy className="w-4 h-4" />,        label: 'Rewards' },
                           ].map(item => (
                             <Link key={item.href} href={item.href} onClick={() => setUserMenuOpen(false)}
                               className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 transition"
@@ -446,6 +447,7 @@ export default function Navbar() {
                     <>
                       <NavLink href="/profile" label="My Profile" onClick={closeMenu} />
                       <NavLink href="/profile#saved" label="Saved Itineraries" onClick={closeMenu} />
+                      <NavLink href="/rewards" label="Rewards" onClick={closeMenu} />
                     </>
                   )}
                   {isStaff && <NavLink href="/admin" label={isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'Officer Dashboard' : 'Editor Dashboard'} onClick={closeMenu} />}
