@@ -1,5 +1,24 @@
 'use client';
 
+import {
+  Footprints, CalendarCheck, PartyPopper, Star, MessageSquare,
+  Award, Compass, Trophy, Sparkles,
+} from 'lucide-react';
+
+// Named vector icons render crisp on every device (unlike emoji, which vary by OS/font).
+// Any icon value not in this map falls back to rendering as raw emoji text.
+export const BADGE_ICONS: Record<string, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
+  footprints: Footprints,
+  'calendar-check': CalendarCheck,
+  'party-popper': PartyPopper,
+  star: Star,
+  'message-square': MessageSquare,
+  award: Award,
+  compass: Compass,
+  trophy: Trophy,
+  sparkles: Sparkles,
+};
+
 interface Props {
   icon: string;
   color: string;
@@ -11,6 +30,7 @@ export default function BadgeSVG({ icon, color, earned, size = 80 }: Props) {
   const c   = earned ? color   : '#C4C9D4';
   const bg1 = earned ? `${color}30` : '#EAECF0';
   const bg2 = earned ? `${color}10` : '#F3F4F8';
+  const VectorIcon = BADGE_ICONS[icon?.toLowerCase().trim()];
 
   // Lighter tint for inner glow
   const uid = color.replace('#', '');
@@ -68,16 +88,22 @@ export default function BadgeSVG({ icon, color, earned, size = 80 }: Props) {
         <circle cx="40" cy="8" r="4" fill="#C4C9D4" />
       )}
 
-      {/* Emoji icon */}
-      <text
-        x="40" y="47"
-        textAnchor="middle"
-        fontSize="22"
-        opacity={earned ? 1 : 0.35}
-        style={{ userSelect: 'none' }}
-      >
-        {icon}
-      </text>
+      {/* Icon — vector icon when it matches a known name, else raw emoji text */}
+      {VectorIcon ? (
+        <g transform="translate(28, 28)" opacity={earned ? 1 : 0.4} style={{ color: c }}>
+          <VectorIcon size={24} strokeWidth={2.2} />
+        </g>
+      ) : (
+        <text
+          x="40" y="47"
+          textAnchor="middle"
+          fontSize="22"
+          opacity={earned ? 1 : 0.35}
+          style={{ userSelect: 'none' }}
+        >
+          {icon}
+        </text>
+      )}
 
       {/* Ribbon at bottom */}
       <path

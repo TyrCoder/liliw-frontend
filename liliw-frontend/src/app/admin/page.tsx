@@ -14,7 +14,7 @@ import {
   Download, BarChart2, Plus, Trash2, ArrowUp, ArrowDown, ClipboardList, Send,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import BadgeSVG from '@/components/BadgeSVG';
+import BadgeSVG, { BADGE_ICONS } from '@/components/BadgeSVG';
 import * as XLSX from 'xlsx-js-style';
 
 /* ─── types ──────────────────────────────────────────────── */
@@ -1208,11 +1208,22 @@ export default function AdminDashboard() {
                         placeholder="e.g. Weekend Wanderer" />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Icon (emoji)</label>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Icon</label>
                       <input value={achForm.icon} onChange={e => setAchForm(f => ({ ...f, icon: e.target.value }))}
-                        maxLength={4}
+                        maxLength={20}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        placeholder="🏆" />
+                        placeholder="🏆 or pick a vector icon below" />
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {Object.entries(BADGE_ICONS).map(([name, Icon]) => (
+                          <button key={name} type="button" title={name}
+                            onClick={() => setAchForm(f => ({ ...f, icon: name }))}
+                            className={`p-1.5 rounded-lg border transition ${
+                              achForm.icon === name ? 'border-blue-400 bg-blue-50 text-blue-600' : 'border-gray-200 text-gray-400 hover:border-blue-300 hover:text-blue-500'
+                            }`}>
+                            <Icon size={16} />
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
