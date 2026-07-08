@@ -5,7 +5,7 @@ import { verifyToken } from '@/lib/verifyToken';
 export async function GET(request: NextRequest) {
   const { data: rewards, error } = await supabaseServer
     .from('rewards')
-    .select('id, name, description, icon, badge_color, points_cost, stock, sort_order')
+    .select('id, name, description, icon, badge_color, points_cost, stock, claim_type, sort_order')
     .eq('is_active', true)
     .order('sort_order', { ascending: true });
 

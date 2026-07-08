@@ -184,8 +184,8 @@ export default function AdminDashboard() {
   const [loadingRewards, setLoadingRewards] = useState(true);
   const [rewardForm,    setRewardForm]    = useState<{
     id: string | null; name: string; description: string; icon: string; badge_color: string;
-    points_cost: number; stock: string; sort_order: number; is_active: boolean;
-  }>({ id: null, name: '', description: '', icon: '🎁', badge_color: '#1565C0', points_cost: 50, stock: '', sort_order: 0, is_active: true });
+    points_cost: number; stock: string; claim_type: 'irl' | 'online'; sort_order: number; is_active: boolean;
+  }>({ id: null, name: '', description: '', icon: '🎁', badge_color: '#1565C0', points_cost: 50, stock: '', claim_type: 'irl', sort_order: 0, is_active: true });
   const [savingReward,     setSavingReward]     = useState(false);
   const [rewardMsg,        setRewardMsg]        = useState<{ ok: boolean; text: string } | null>(null);
   const [deletingRewardId, setDeletingRewardId] = useState<string | null>(null);
@@ -471,13 +471,14 @@ export default function AdminDashboard() {
   };
 
   const resetRewardForm = () => {
-    setRewardForm({ id: null, name: '', description: '', icon: '🎁', badge_color: '#1565C0', points_cost: 50, stock: '', sort_order: 0, is_active: true });
+    setRewardForm({ id: null, name: '', description: '', icon: '🎁', badge_color: '#1565C0', points_cost: 50, stock: '', claim_type: 'irl', sort_order: 0, is_active: true });
   };
 
   const handleRewardEdit = (r: any) => {
     setRewardForm({
       id: r.id, name: r.name, description: r.description, icon: r.icon, badge_color: r.badge_color,
-      points_cost: r.points_cost, stock: r.stock == null ? '' : String(r.stock), sort_order: r.sort_order, is_active: r.is_active,
+      points_cost: r.points_cost, stock: r.stock == null ? '' : String(r.stock),
+      claim_type: r.claim_type === 'online' ? 'online' : 'irl', sort_order: r.sort_order, is_active: r.is_active,
     });
     setRewardMsg(null);
   };
@@ -1499,7 +1500,7 @@ export default function AdminDashboard() {
                       placeholder="e.g. A free souvenir keychain from a local artisan" />
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 mb-1">Badge Color</label>
                       <input type="color" value={rewardForm.badge_color} onChange={e => setRewardForm(f => ({ ...f, badge_color: e.target.value }))}
@@ -1518,7 +1519,20 @@ export default function AdminDashboard() {
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                         placeholder="Unlimited" />
                     </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Claim Type</label>
+                      <select value={rewardForm.claim_type} onChange={e => setRewardForm(f => ({ ...f, claim_type: e.target.value as 'irl' | 'online' }))}
+                        className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="irl">In-person (QR pickup)</option>
+                        <option value="online">Online (instant badge)</option>
+                      </select>
+                    </div>
                   </div>
+                  <p className="text-[11px] text-gray-400">
+                    {rewardForm.claim_type === 'online'
+                      ? 'Claimed instantly online — no pickup, no code to scan.'
+                      : 'Guest gets a one-time QR code to redeem in person at the Tourism Office.'}
+                  </p>
 
                   {rewardMsg && (
                     <p className={`text-xs font-semibold flex items-center gap-1.5 ${rewardMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
@@ -1563,7 +1577,12 @@ export default function AdminDashboard() {
                     <div key={r.id} className={`flex items-center gap-4 px-6 py-4 transition ${!r.is_active ? 'opacity-50' : ''}`}>
                       <BadgeSVG icon={r.icon} color={r.badge_color} earned size={56} />
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 text-sm">{r.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900 text-sm">{r.name}</p>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${r.claim_type === 'online' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'}`}>
+                            {r.claim_type === 'online' ? 'ONLINE' : 'IN-PERSON'}
+                          </span>
+                        </div>
                         <p className="text-xs text-gray-400 truncate">{r.description}</p>
                         <p className="text-[11px] text-gray-400 mt-0.5">
                           {r.points_cost} pts · {r.stock === null ? 'Unlimited stock' : `${r.stock} left`}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Gift, Loader2, X, CheckCircle, Clock, Copy } from 'lucide-react';
+import { ChevronLeft, Gift, Loader2, X, CheckCircle, Clock, Copy, Globe, Building2 } from 'lucide-react';
 import BadgeSVG from '@/components/BadgeSVG';
 import { useAuth } from '@/context/AuthContext';
 
@@ -13,10 +13,10 @@ const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 interface Reward {
   id: string; name: string; description: string; icon: string; badge_color: string;
-  points_cost: number; stock: number | null;
+  points_cost: number; stock: number | null; claim_type: 'irl' | 'online';
 }
 interface Redemption {
-  id: string; reward_name: string; points_spent: number; redemption_code: string;
+  id: string; reward_name: string; points_spent: number; redemption_code: string; claim_type: 'irl' | 'online';
   status: 'pending' | 'redeemed' | 'cancelled'; created_at: string; redeemed_at: string | null;
 }
 
@@ -115,6 +115,11 @@ export default function RewardsPage() {
                 const outOfStock = r.stock !== null && r.stock <= 0;
                 return (
                   <div key={r.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex flex-col items-center text-center">
+                    <span className={`mb-2 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
+                      r.claim_type === 'online' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'
+                    }`}>
+                      {r.claim_type === 'online' ? <><Globe className="w-2.5 h-2.5" /> ONLINE BADGE</> : <><Building2 className="w-2.5 h-2.5" /> IN-PERSON PICKUP</>}
+                    </span>
                     <BadgeSVG icon={r.icon} color={r.badge_color} earned={canAfford && !outOfStock} size={72} />
                     <p className="font-bold text-gray-900 mt-3" style={{ fontFamily: HL }}>{r.name}</p>
                     <p className="text-xs text-gray-400 mt-1" style={{ fontFamily: BL }}>{r.description}</p>
@@ -127,7 +132,7 @@ export default function RewardsPage() {
                       className="mt-4 w-full py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
                       style={{ backgroundColor: '#1565C0', fontFamily: HL }}>
                       {redeemingId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                      {outOfStock ? 'Out of Stock' : `Redeem — ${r.points_cost} pts`}
+                      {outOfStock ? 'Out of Stock' : `${r.claim_type === 'online' ? 'Claim' : 'Redeem'} — ${r.points_cost} pts`}
                     </button>
                   </div>
                 );
@@ -163,7 +168,7 @@ export default function RewardsPage() {
                     </span>
                     <button onClick={() => setReceipt(rd)}
                       className="text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600 transition">
-                      View Code
+                      {rd.claim_type === 'online' ? 'View' : 'View Code'}
                     </button>
                   </div>
                 </div>
@@ -185,25 +190,39 @@ export default function RewardsPage() {
                 <button onClick={() => setReceipt(null)} className="absolute top-4 right-4 text-white/50 hover:text-white transition"><X className="w-4 h-4" /></button>
                 <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: '#F5C518' }}>Liliw Tourism Office</p>
                 <h3 className="text-xl font-black text-white" style={{ fontFamily: DL }}>{receipt.reward_name}</h3>
-                <p className="text-white/60 text-xs mt-1">Show this code at the Tourism Office to claim</p>
+                <p className="text-white/60 text-xs mt-1">
+                  {receipt.claim_type === 'online' ? 'Claimed instantly — no pickup needed' : 'Show this code at the Tourism Office to claim'}
+                </p>
               </div>
-              <div className="p-6 flex flex-col items-center">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(receipt.redemption_code)}`}
-                  alt="Redemption QR code" className="w-44 h-44 mb-4" />
-                <button onClick={() => copyCode(receipt.redemption_code)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-dashed font-black text-lg tracking-[0.15em]"
-                  style={{ borderColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}>
-                  {receipt.redemption_code} <Copy className="w-4 h-4 opacity-50" />
-                </button>
-                {copied && <p className="text-xs text-green-600 font-semibold mt-2">Copied!</p>}
-                <div className={`mt-5 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-                  receipt.status === 'redeemed' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                }`}>
-                  {receipt.status === 'redeemed' ? <CheckCircle className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
-                  {receipt.status === 'redeemed' ? `Redeemed on ${receipt.redeemed_at ? new Date(receipt.redeemed_at).toLocaleDateString('en-PH') : ''}` : 'Not yet redeemed — one-time use'}
+              {receipt.claim_type === 'online' ? (
+                <div className="p-8 flex flex-col items-center text-center">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'linear-gradient(135deg,#DBEAFE,#EFF6FF)' }}>
+                    <CheckCircle className="w-8 h-8" style={{ color: '#1565C0' }} />
+                  </div>
+                  <p className="font-bold text-gray-900" style={{ fontFamily: HL }}>Badge Claimed!</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {receipt.redeemed_at ? new Date(receipt.redeemed_at).toLocaleString('en-PH') : ''}
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <div className="p-6 flex flex-col items-center">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(receipt.redemption_code)}`}
+                    alt="Redemption QR code" className="w-44 h-44 mb-4" />
+                  <button onClick={() => copyCode(receipt.redemption_code)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-dashed font-black text-lg tracking-[0.15em]"
+                    style={{ borderColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}>
+                    {receipt.redemption_code} <Copy className="w-4 h-4 opacity-50" />
+                  </button>
+                  {copied && <p className="text-xs text-green-600 font-semibold mt-2">Copied!</p>}
+                  <div className={`mt-5 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+                    receipt.status === 'redeemed' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                  }`}>
+                    {receipt.status === 'redeemed' ? <CheckCircle className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                    {receipt.status === 'redeemed' ? `Redeemed on ${receipt.redeemed_at ? new Date(receipt.redeemed_at).toLocaleDateString('en-PH') : ''}` : 'Not yet redeemed — one-time use'}
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
