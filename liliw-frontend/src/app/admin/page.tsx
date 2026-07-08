@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import BadgeSVG, { BADGE_ICONS } from '@/components/BadgeSVG';
+import MediaUploader from '@/components/admin/cms/MediaUploader';
 import * as XLSX from 'xlsx-js-style';
 
 /* ─── types ──────────────────────────────────────────────── */
@@ -185,7 +186,8 @@ export default function AdminDashboard() {
   const [rewardForm,    setRewardForm]    = useState<{
     id: string | null; name: string; description: string; icon: string; badge_color: string;
     points_cost: number; stock: string; claim_type: 'irl' | 'online'; sort_order: number; is_active: boolean;
-  }>({ id: null, name: '', description: '', icon: '🎁', badge_color: '#1565C0', points_cost: 50, stock: '', claim_type: 'irl', sort_order: 0, is_active: true });
+    image_url: string; image_public_id: string;
+  }>({ id: null, name: '', description: '', icon: '🎁', badge_color: '#1565C0', points_cost: 50, stock: '', claim_type: 'irl', sort_order: 0, is_active: true, image_url: '', image_public_id: '' });
   const [savingReward,     setSavingReward]     = useState(false);
   const [rewardMsg,        setRewardMsg]        = useState<{ ok: boolean; text: string } | null>(null);
   const [deletingRewardId, setDeletingRewardId] = useState<string | null>(null);
@@ -471,7 +473,7 @@ export default function AdminDashboard() {
   };
 
   const resetRewardForm = () => {
-    setRewardForm({ id: null, name: '', description: '', icon: '🎁', badge_color: '#1565C0', points_cost: 50, stock: '', claim_type: 'irl', sort_order: 0, is_active: true });
+    setRewardForm({ id: null, name: '', description: '', icon: '🎁', badge_color: '#1565C0', points_cost: 50, stock: '', claim_type: 'irl', sort_order: 0, is_active: true, image_url: '', image_public_id: '' });
   };
 
   const handleRewardEdit = (r: any) => {
@@ -479,6 +481,7 @@ export default function AdminDashboard() {
       id: r.id, name: r.name, description: r.description, icon: r.icon, badge_color: r.badge_color,
       points_cost: r.points_cost, stock: r.stock == null ? '' : String(r.stock),
       claim_type: r.claim_type === 'online' ? 'online' : 'irl', sort_order: r.sort_order, is_active: r.is_active,
+      image_url: r.image_url || '', image_public_id: r.image_public_id || '',
     });
     setRewardMsg(null);
   };
@@ -1500,6 +1503,15 @@ export default function AdminDashboard() {
                       placeholder="e.g. A free souvenir keychain from a local artisan" />
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Photo (proof of the item / design)</label>
+                    <MediaUploader
+                      value={rewardForm.image_url ? [{ url: rewardForm.image_url, public_id: rewardForm.image_public_id, alt_text: rewardForm.name }] : []}
+                      onChange={items => setRewardForm(f => ({ ...f, image_url: items[0]?.url || '', image_public_id: items[0]?.public_id || '' }))}
+                      maxFiles={1}
+                    />
+                  </div>
+
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 mb-1">Badge Color</label>
@@ -1513,11 +1525,17 @@ export default function AdminDashboard() {
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Stock (blank = unlimited)</label>
-                      <input type="number" min={0} value={rewardForm.stock}
-                        onChange={e => setRewardForm(f => ({ ...f, stock: e.target.value }))}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        placeholder="Unlimited" />
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Stock</label>
+                      {rewardForm.claim_type === 'online' ? (
+                        <div className="w-full border border-dashed border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-400 bg-gray-50">
+                          Unlimited · 1 per person
+                        </div>
+                      ) : (
+                        <input type="number" min={0} value={rewardForm.stock}
+                          onChange={e => setRewardForm(f => ({ ...f, stock: e.target.value }))}
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          placeholder="Unlimited" />
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 mb-1">Claim Type</label>
@@ -1530,7 +1548,7 @@ export default function AdminDashboard() {
                   </div>
                   <p className="text-[11px] text-gray-400">
                     {rewardForm.claim_type === 'online'
-                      ? 'Claimed instantly online — no pickup, no code to scan.'
+                      ? 'Claimed instantly online — no pickup, no code to scan. Unlimited supply, but each guest can only claim it once.'
                       : 'Guest gets a one-time QR code to redeem in person at the Tourism Office.'}
                   </p>
 
@@ -1559,7 +1577,11 @@ export default function AdminDashboard() {
 
                 <div className="flex flex-col items-center gap-2 shrink-0 mx-auto">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Live Preview</span>
-                  <BadgeSVG icon={rewardForm.icon || '🎁'} color={rewardForm.badge_color} earned size={100} />
+                  {rewardForm.image_url ? (
+                    <img src={rewardForm.image_url} alt="" className="w-[100px] h-[100px] rounded-2xl object-cover border border-gray-200" />
+                  ) : (
+                    <BadgeSVG icon={rewardForm.icon || '🎁'} color={rewardForm.badge_color} earned size={100} />
+                  )}
                 </div>
               </div>
             </div>
@@ -1575,7 +1597,11 @@ export default function AdminDashboard() {
                 <div className="divide-y divide-gray-50">
                   {rewards.map((r: any) => (
                     <div key={r.id} className={`flex items-center gap-4 px-6 py-4 transition ${!r.is_active ? 'opacity-50' : ''}`}>
-                      <BadgeSVG icon={r.icon} color={r.badge_color} earned size={56} />
+                      {r.image_url ? (
+                        <img src={r.image_url} alt="" className="w-14 h-14 rounded-2xl object-cover border border-gray-200 shrink-0" />
+                      ) : (
+                        <BadgeSVG icon={r.icon} color={r.badge_color} earned size={56} />
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="font-semibold text-gray-900 text-sm">{r.name}</p>
@@ -1585,7 +1611,7 @@ export default function AdminDashboard() {
                         </div>
                         <p className="text-xs text-gray-400 truncate">{r.description}</p>
                         <p className="text-[11px] text-gray-400 mt-0.5">
-                          {r.points_cost} pts · {r.stock === null ? 'Unlimited stock' : `${r.stock} left`}
+                          {r.points_cost} pts · {r.claim_type === 'online' ? 'Unlimited · 1 per person' : r.stock === null ? 'Unlimited stock' : `${r.stock} left`}
                         </p>
                       </div>
                       <button onClick={() => handleRewardToggleActive(r)}
@@ -1643,13 +1669,18 @@ export default function AdminDashboard() {
 
             {redeemLookup && (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-gray-900">{redeemLookup.reward_name}</h3>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                    redeemLookup.status === 'redeemed' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                  }`}>
-                    {redeemLookup.status === 'redeemed' ? 'Already Redeemed' : 'Pending'}
-                  </span>
+                <div className="flex items-center gap-3">
+                  {redeemLookup.image_url && (
+                    <img src={redeemLookup.image_url} alt="" className="w-14 h-14 rounded-xl object-cover border border-gray-200 shrink-0" />
+                  )}
+                  <div className="flex-1 flex items-center justify-between">
+                    <h3 className="font-bold text-gray-900">{redeemLookup.reward_name}</h3>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      redeemLookup.status === 'redeemed' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      {redeemLookup.status === 'redeemed' ? 'Already Redeemed' : 'Pending'}
+                    </span>
+                  </div>
                 </div>
                 <p className="text-sm text-gray-500">
                   Guest: <span className="font-semibold text-gray-800">{redeemLookup.profile?.username || redeemLookup.profile?.email || 'Unknown'}</span>

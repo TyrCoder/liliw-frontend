@@ -13,10 +13,10 @@ const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 interface Reward {
   id: string; name: string; description: string; icon: string; badge_color: string;
-  points_cost: number; stock: number | null; claim_type: 'irl' | 'online';
+  points_cost: number; stock: number | null; claim_type: 'irl' | 'online'; image_url?: string | null; alreadyClaimed?: boolean;
 }
 interface Redemption {
-  id: string; reward_name: string; points_spent: number; redemption_code: string; claim_type: 'irl' | 'online';
+  id: string; reward_name: string; points_spent: number; redemption_code: string; claim_type: 'irl' | 'online'; image_url?: string | null;
   status: 'pending' | 'redeemed' | 'cancelled'; created_at: string; redeemed_at: string | null;
 }
 
@@ -112,7 +112,8 @@ export default function RewardsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
               {rewards.map(r => {
                 const canAfford = totalPoints >= r.points_cost;
-                const outOfStock = r.stock !== null && r.stock <= 0;
+                const outOfStock = r.claim_type !== 'online' && r.stock !== null && r.stock <= 0;
+                const locked = r.claim_type === 'online' && r.alreadyClaimed;
                 return (
                   <div key={r.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex flex-col items-center text-center">
                     <span className={`mb-2 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
@@ -120,19 +121,24 @@ export default function RewardsPage() {
                     }`}>
                       {r.claim_type === 'online' ? <><Globe className="w-2.5 h-2.5" /> ONLINE BADGE</> : <><Building2 className="w-2.5 h-2.5" /> IN-PERSON PICKUP</>}
                     </span>
-                    <BadgeSVG icon={r.icon} color={r.badge_color} earned={canAfford && !outOfStock} size={72} />
+                    {r.image_url ? (
+                      <img src={r.image_url} alt={r.name} className="w-18 h-18 rounded-2xl object-cover border border-gray-200"
+                        style={{ opacity: canAfford && !outOfStock && !locked ? 1 : 0.5 }} />
+                    ) : (
+                      <BadgeSVG icon={r.icon} color={r.badge_color} earned={canAfford && !outOfStock && !locked} size={72} />
+                    )}
                     <p className="font-bold text-gray-900 mt-3" style={{ fontFamily: HL }}>{r.name}</p>
                     <p className="text-xs text-gray-400 mt-1" style={{ fontFamily: BL }}>{r.description}</p>
-                    {r.stock !== null && (
-                      <p className="text-[11px] text-gray-400 mt-1">{r.stock} left</p>
-                    )}
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      {r.claim_type === 'online' ? 'Unlimited · 1 per person' : r.stock !== null ? `${r.stock} left` : ''}
+                    </p>
                     <button
                       onClick={() => handleRedeem(r)}
-                      disabled={!canAfford || outOfStock || redeemingId === r.id}
+                      disabled={!canAfford || outOfStock || locked || redeemingId === r.id}
                       className="mt-4 w-full py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
                       style={{ backgroundColor: '#1565C0', fontFamily: HL }}>
                       {redeemingId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                      {outOfStock ? 'Out of Stock' : `${r.claim_type === 'online' ? 'Claim' : 'Redeem'} — ${r.points_cost} pts`}
+                      {locked ? 'Already Claimed' : outOfStock ? 'Out of Stock' : `${r.claim_type === 'online' ? 'Claim' : 'Redeem'} — ${r.points_cost} pts`}
                     </button>
                   </div>
                 );
@@ -196,9 +202,13 @@ export default function RewardsPage() {
               </div>
               {receipt.claim_type === 'online' ? (
                 <div className="p-8 flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'linear-gradient(135deg,#DBEAFE,#EFF6FF)' }}>
-                    <CheckCircle className="w-8 h-8" style={{ color: '#1565C0' }} />
-                  </div>
+                  {receipt.image_url ? (
+                    <img src={receipt.image_url} alt={receipt.reward_name} className="w-20 h-20 rounded-2xl object-cover border border-gray-200 mb-4" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'linear-gradient(135deg,#DBEAFE,#EFF6FF)' }}>
+                      <CheckCircle className="w-8 h-8" style={{ color: '#1565C0' }} />
+                    </div>
+                  )}
                   <p className="font-bold text-gray-900" style={{ fontFamily: HL }}>Badge Claimed!</p>
                   <p className="text-xs text-gray-400 mt-1">
                     {receipt.redeemed_at ? new Date(receipt.redeemed_at).toLocaleString('en-PH') : ''}
@@ -206,6 +216,9 @@ export default function RewardsPage() {
                 </div>
               ) : (
                 <div className="p-6 flex flex-col items-center">
+                  {receipt.image_url && (
+                    <img src={receipt.image_url} alt={receipt.reward_name} className="w-20 h-20 rounded-2xl object-cover border border-gray-200 mb-4" />
+                  )}
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(receipt.redemption_code)}`}
                     alt="Redemption QR code" className="w-44 h-44 mb-4" />

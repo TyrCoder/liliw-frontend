@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { name, description, icon, badge_color, points_cost, stock, sort_order, claim_type } = body;
+  const { name, description, icon, badge_color, points_cost, stock, sort_order, claim_type, image_url, image_public_id } = body;
 
   if (!name?.trim() || !description?.trim() || points_cost == null) {
     return NextResponse.json({ error: 'name, description, and points_cost are required' }, { status: 400 });
@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
       points_cost,
       stock: stock === '' || stock == null ? null : stock,
       claim_type: claim_type === 'online' ? 'online' : 'irl',
+      image_url: image_url || null,
+      image_public_id: image_public_id || null,
       sort_order: sort_order || 0,
     })
     .select()
