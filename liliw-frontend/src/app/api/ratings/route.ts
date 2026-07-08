@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Award points for writing a review
-    awardPoints(authUser.userId, 'review', itemId, itemName || 'Attraction').catch(() => {});
+    const unlockedAchievements = await awardPoints(authUser.userId, 'review', itemId, itemName || 'Attraction').catch(() => []);
 
-    return NextResponse.json({ success: true }, { status: 201 });
+    return NextResponse.json({ success: true, unlockedAchievements }, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Failed to save rating' }, { status: 500 });
   }
