@@ -48,14 +48,15 @@ CREATE TABLE IF NOT EXISTS user_achievements (
 -- ─────────────────────────────────────────────
 -- 4. SEED DEFAULT ACHIEVEMENTS
 -- ─────────────────────────────────────────────
+-- icon values match BADGE_ICONS in src/components/BadgeSVG.tsx (vector icons, not emoji)
 INSERT INTO achievements (name, description, icon, badge_color, trigger_type, trigger_value, points_reward, sort_order) VALUES
-  ('First Step',        'Sign up for your first Liliw event',       '🎯', '#3B82F6', 'event_count',   1,   10, 10),
-  ('Event Regular',     'Sign up for 3 events',                      '🎉', '#8B5CF6', 'event_count',   3,   25, 20),
-  ('Festival Goer',     'Sign up for 5 events',                      '🎪', '#EC4899', 'event_count',   5,   50, 30),
-  ('First Review',      'Write your first attraction review',        '⭐', '#F59E0B', 'review_count',  1,   15, 40),
-  ('Community Voice',   'Write 3 reviews',                           '📝', '#10B981', 'review_count',  3,   30, 50),
-  ('Critic',            'Write 5 reviews',                           '🎖️', '#06B6D4', 'review_count',  5,   50, 60),
-  ('Rising Explorer',   'Earn 50 total points',                      '🗺️', '#F97316', 'total_points', 50,   20, 70),
-  ('Tourism Champion',  'Earn 150 total points',                     '🏆', '#F59E0B', 'total_points', 150,  50, 80),
-  ('Liliw Ambassador',  'Earn 300 total points',                     '🌟', '#EF4444', 'total_points', 300, 100, 90)
+  ('First Step',        'Sign up for your first Liliw event',       'footprints',     '#3B82F6', 'event_count',   1,   10, 10),
+  ('Event Regular',     'Sign up for 3 events',                      'calendar-check', '#8B5CF6', 'event_count',   3,   25, 20),
+  ('Festival Goer',     'Sign up for 5 events',                      'party-popper',   '#EC4899', 'event_count',   5,   50, 30),
+  ('First Review',      'Write your first attraction review',        'star',           '#F59E0B', 'review_count',  1,   15, 40),
+  ('Community Voice',   'Write 3 reviews',                           'message-square', '#10B981', 'review_count',  3,   30, 50),
+  ('Critic',            'Write 5 reviews',                           'award',          '#06B6D4', 'review_count',  5,   50, 60),
+  ('Rising Explorer',   'Earn 50 total points',                      'compass',        '#F97316', 'total_points', 50,   20, 70),
+  ('Tourism Champion',  'Earn 150 total points',                     'trophy',         '#F59E0B', 'total_points', 150,  50, 80),
+  ('Liliw Ambassador',  'Earn 300 total points',                     'sparkles',       '#EF4444', 'total_points', 300, 100, 90)
 ON CONFLICT DO NOTHING;
