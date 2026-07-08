@@ -11,10 +11,13 @@ CREATE TABLE IF NOT EXISTS rewards (
   badge_color   TEXT        NOT NULL DEFAULT '#1565C0',
   points_cost   INTEGER     NOT NULL,
   stock         INTEGER,               -- NULL = unlimited
+  claim_type    TEXT        NOT NULL DEFAULT 'irl', -- 'irl' (redeem at Tourism Office) | 'online' (instant digital badge)
   is_active     BOOLEAN     NOT NULL DEFAULT TRUE,
   sort_order    INTEGER     NOT NULL DEFAULT 0,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+-- safe to re-run if the table already existed before claim_type was added
+ALTER TABLE rewards ADD COLUMN IF NOT EXISTS claim_type TEXT NOT NULL DEFAULT 'irl';
 
 -- ─────────────────────────────────────────────
 -- 2. REWARD REDEMPTIONS (the "receipt" — one-time codes)
@@ -26,8 +29,10 @@ CREATE TABLE IF NOT EXISTS reward_redemptions (
   reward_name     TEXT        NOT NULL,
   points_spent    INTEGER     NOT NULL,
   redemption_code TEXT        NOT NULL UNIQUE,
+  claim_type      TEXT        NOT NULL DEFAULT 'irl', -- snapshot of rewards.claim_type at redemption time
   status          TEXT        NOT NULL DEFAULT 'pending', -- 'pending' | 'redeemed' | 'cancelled'
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   redeemed_at     TIMESTAMPTZ,
   redeemed_by     TEXT
 );
+ALTER TABLE reward_redemptions ADD COLUMN IF NOT EXISTS claim_type TEXT NOT NULL DEFAULT 'irl';

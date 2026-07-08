@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
   const { data: reward, error: rewardError } = await supabaseServer
     .from('rewards')
-    .select('id, name, points_cost, stock, is_active')
+    .select('id, name, points_cost, stock, is_active, claim_type')
     .eq('id', rewardId)
     .single();
 
@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
   }
 
   const redemptionCode = generateRedemptionCode();
+  const isOnline = reward.claim_type === 'online';
 
   const { data: redemption, error: redemptionError } = await supabaseServer
     .from('reward_redemptions')
@@ -37,7 +38,11 @@ export async function POST(request: NextRequest) {
       reward_name: reward.name,
       points_spent: reward.points_cost,
       redemption_code: redemptionCode,
-      status: 'pending',
+      claim_type: reward.claim_type,
+      // Online rewards are digital badges — claimed instantly, no in-person pickup step.
+      status: isOnline ? 'redeemed' : 'pending',
+      redeemed_at: isOnline ? new Date().toISOString() : null,
+      redeemed_by: isOnline ? 'online (self-claim)' : null,
     })
     .select()
     .single();

@@ -20,6 +20,10 @@ const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food' };
 
+// Guest must stay on the page this long before the visit counts toward achievements —
+// prevents rapid click-throughs from farming the "visit N spots" badge.
+const VISIT_DWELL_MS = 150_000; // 2.5 minutes
+
 interface Attraction {
   id: string | number;
   strapiId?: string;
@@ -66,16 +70,6 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         const current = allAttractions.find((a: any) => String(a.id) === attractionId);
         if (!current) { setError('Attraction not found'); return; }
         setAttraction(current);
-        if (token) {
-          fetch('/api/attractions/visit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ attractionId: current.id, attractionName: current.attributes.name }),
-          })
-            .then(r => r.json())
-            .then(d => showAchievementToasts(d.unlockedAchievements))
-            .catch(() => {});
-        }
         setRelatedAttractions(
           allAttractions.filter((a: any) => a.attributes.category === current.attributes.category && a.id !== current.id).slice(0, 3)
         );
@@ -108,6 +102,22 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
     };
     fetchData();
   }, [attractionId, token]);
+
+  // Only count a "visit" toward achievements after a genuine dwell — not a quick click-through.
+  useEffect(() => {
+    if (!attraction?.id || !token) return;
+    const t = setTimeout(() => {
+      fetch('/api/attractions/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ attractionId: attraction.id, attractionName: attraction.attributes.name }),
+      })
+        .then(r => r.json())
+        .then(d => showAchievementToasts(d.unlockedAchievements))
+        .catch(() => {});
+    }, VISIT_DWELL_MS);
+    return () => clearTimeout(t);
+  }, [attraction?.id, token]);
 
   if (loading) {
     return (

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { name, description, icon, badge_color, points_cost, stock, sort_order } = body;
+  const { name, description, icon, badge_color, points_cost, stock, sort_order, claim_type } = body;
 
   if (!name?.trim() || !description?.trim() || points_cost == null) {
     return NextResponse.json({ error: 'name, description, and points_cost are required' }, { status: 400 });
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
       badge_color: badge_color || '#1565C0',
       points_cost,
       stock: stock === '' || stock == null ? null : stock,
+      claim_type: claim_type === 'online' ? 'online' : 'irl',
       sort_order: sort_order || 0,
     })
     .select()
@@ -48,6 +49,7 @@ export async function PATCH(request: NextRequest) {
   const { id, ...fields } = await request.json();
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
   if ('stock' in fields && (fields.stock === '' || fields.stock == null)) fields.stock = null;
+  if ('claim_type' in fields) fields.claim_type = fields.claim_type === 'online' ? 'online' : 'irl';
 
   const { data, error } = await supabaseServer
     .from('rewards')
