@@ -16,8 +16,10 @@ CREATE TABLE IF NOT EXISTS rewards (
   sort_order    INTEGER     NOT NULL DEFAULT 0,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
--- safe to re-run if the table already existed before claim_type was added
-ALTER TABLE rewards ADD COLUMN IF NOT EXISTS claim_type TEXT NOT NULL DEFAULT 'irl';
+-- safe to re-run if the table already existed before these columns were added
+ALTER TABLE rewards ADD COLUMN IF NOT EXISTS claim_type       TEXT NOT NULL DEFAULT 'irl';
+ALTER TABLE rewards ADD COLUMN IF NOT EXISTS image_url        TEXT;
+ALTER TABLE rewards ADD COLUMN IF NOT EXISTS image_public_id  TEXT;
 
 -- ─────────────────────────────────────────────
 -- 2. REWARD REDEMPTIONS (the "receipt" — one-time codes)
@@ -36,3 +38,4 @@ CREATE TABLE IF NOT EXISTS reward_redemptions (
   redeemed_by     TEXT
 );
 ALTER TABLE reward_redemptions ADD COLUMN IF NOT EXISTS claim_type TEXT NOT NULL DEFAULT 'irl';
+ALTER TABLE reward_redemptions ADD COLUMN IF NOT EXISTS image_url  TEXT;

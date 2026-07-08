@@ -12,13 +12,27 @@ export async function POST(request: NextRequest) {
 
   const { data: reward, error: rewardError } = await supabaseServer
     .from('rewards')
-    .select('id, name, points_cost, stock, is_active, claim_type')
+    .select('id, name, points_cost, stock, is_active, claim_type, image_url')
     .eq('id', rewardId)
     .single();
 
   if (rewardError || !reward) return NextResponse.json({ error: 'Reward not found' }, { status: 404 });
   if (!reward.is_active) return NextResponse.json({ error: 'This reward is no longer available' }, { status: 400 });
-  if (reward.stock !== null && reward.stock <= 0) return NextResponse.json({ error: 'This reward is out of stock' }, { status: 400 });
+
+  const isOnline = reward.claim_type === 'online';
+
+  // Online badges are unlimited stock but capped at one claim per person.
+  if (isOnline) {
+    const { data: existing } = await supabaseServer
+      .from('reward_redemptions')
+      .select('id')
+      .eq('user_id', auth.userId)
+      .eq('reward_id', reward.id)
+      .maybeSingle();
+    if (existing) return NextResponse.json({ error: "You've already claimed this badge." }, { status: 409 });
+  } else if (reward.stock !== null && reward.stock <= 0) {
+    return NextResponse.json({ error: 'This reward is out of stock' }, { status: 400 });
+  }
 
   const { data: pointRows } = await supabaseServer.from('user_points').select('points').eq('user_id', auth.userId);
   const totalPoints = (pointRows ?? []).reduce((s, r) => s + (r.points || 0), 0);
@@ -28,7 +42,6 @@ export async function POST(request: NextRequest) {
   }
 
   const redemptionCode = generateRedemptionCode();
-  const isOnline = reward.claim_type === 'online';
 
   const { data: redemption, error: redemptionError } = await supabaseServer
     .from('reward_redemptions')
@@ -39,6 +52,7 @@ export async function POST(request: NextRequest) {
       points_spent: reward.points_cost,
       redemption_code: redemptionCode,
       claim_type: reward.claim_type,
+      image_url: reward.image_url || null,
       // Online rewards are digital badges — claimed instantly, no in-person pickup step.
       status: isOnline ? 'redeemed' : 'pending',
       redeemed_at: isOnline ? new Date().toISOString() : null,
@@ -56,7 +70,8 @@ export async function POST(request: NextRequest) {
     reference_id: redemption.id, reference_name: reward.name,
   });
 
-  if (reward.stock !== null) {
+  // Online badges are unlimited — stock only applies to physical in-person rewards.
+  if (!isOnline && reward.stock !== null) {
     await supabaseServer.from('rewards').update({ stock: reward.stock - 1 }).eq('id', reward.id);
   }
 

@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabaseServer
     .from('reward_redemptions')
-    .select('id, reward_name, points_spent, redemption_code, claim_type, status, created_at, redeemed_at')
+    .select('id, reward_name, points_spent, redemption_code, claim_type, image_url, status, created_at, redeemed_at')
     .eq('user_id', auth.userId)
     .order('created_at', { ascending: false });
 
