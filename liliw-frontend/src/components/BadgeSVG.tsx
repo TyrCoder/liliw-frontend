@@ -2,7 +2,7 @@
 
 import {
   Footprints, CalendarCheck, PartyPopper, Star, MessageSquare,
-  Award, Compass, Trophy, Sparkles,
+  Award, Compass, Trophy, Sparkles, MapPin,
 } from 'lucide-react';
 
 // Named vector icons render crisp on every device (unlike emoji, which vary by OS/font).
@@ -17,6 +17,7 @@ export const BADGE_ICONS: Record<string, React.ComponentType<{ size?: number; st
   compass: Compass,
   trophy: Trophy,
   sparkles: Sparkles,
+  'map-pin': MapPin,
 };
 
 interface Props {

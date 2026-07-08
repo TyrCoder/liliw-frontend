@@ -58,5 +58,6 @@ INSERT INTO achievements (name, description, icon, badge_color, trigger_type, tr
   ('Critic',            'Write 5 reviews',                           'award',          '#06B6D4', 'review_count',  5,   50, 60),
   ('Rising Explorer',   'Earn 50 total points',                      'compass',        '#F97316', 'total_points', 50,   20, 70),
   ('Tourism Champion',  'Earn 150 total points',                     'trophy',         '#F59E0B', 'total_points', 150,  50, 80),
-  ('Liliw Ambassador',  'Earn 300 total points',                     'sparkles',       '#EF4444', 'total_points', 300, 100, 90)
+  ('Liliw Ambassador',  'Earn 300 total points',                     'sparkles',       '#EF4444', 'total_points', 300, 100, 90),
+  ('Tourist Spot Explorer', 'Visit 5 tourist spots',                 'map-pin',        '#14B8A6', 'attraction_visit_count', 5, 25, 45)
 ON CONFLICT DO NOTHING;

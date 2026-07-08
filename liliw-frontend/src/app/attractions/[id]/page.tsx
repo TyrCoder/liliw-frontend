@@ -11,6 +11,7 @@ import Ratings from '@/components/Ratings';
 import EventCalendar from '@/components/EventCalendar';
 import InteractiveMap from '@/components/InteractiveMap';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
+import { useAuth } from '@/context/AuthContext';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -40,6 +41,7 @@ interface ExternalReview {
 }
 
 export default function AttractionDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { token } = useAuth();
   const [attractionId, setAttractionId] = useState<string | null>(null);
   const [attraction, setAttraction] = useState<Attraction | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,13 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         const current = allAttractions.find((a: any) => String(a.id) === attractionId);
         if (!current) { setError('Attraction not found'); return; }
         setAttraction(current);
+        if (token) {
+          fetch('/api/attractions/visit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ attractionId: current.id, attractionName: current.attributes.name }),
+          }).catch(() => {});
+        }
         setRelatedAttractions(
           allAttractions.filter((a: any) => a.attributes.category === current.attributes.category && a.id !== current.id).slice(0, 3)
         );
@@ -94,7 +103,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
       } finally { setLoading(false); }
     };
     fetchData();
-  }, [attractionId]);
+  }, [attractionId, token]);
 
   if (loading) {
     return (

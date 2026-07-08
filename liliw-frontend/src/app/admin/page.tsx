@@ -31,6 +31,7 @@ type Tab = 'overview' | 'users' | 'roles' | 'achievements' | 'lbo' | 'changerequ
 const TRIGGER_TYPE_LABELS: Record<string, string> = {
   event_count: 'Event sign-ups',
   review_count: 'Reviews written',
+  attraction_visit_count: 'Tourist spots visited',
   total_points: 'Total points earned',
 };
 

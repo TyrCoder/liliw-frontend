@@ -308,11 +308,11 @@ export default function ProfilePage() {
                     <div key={i} className="flex items-center justify-between px-5 py-3 border-b border-gray-50 last:border-0">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: r.action === 'event_signup' ? '#EFF6FF' : r.action === 'review' ? '#FEF9C3' : '#F0FDF4' }}>
-                          {r.action === 'event_signup' ? <Calendar className="w-3.5 h-3.5 text-blue-500" /> : r.action === 'review' ? <Star className="w-3.5 h-3.5 text-yellow-500" /> : <Trophy className="w-3.5 h-3.5 text-green-500" />}
+                          style={{ backgroundColor: r.action === 'event_signup' ? '#EFF6FF' : r.action === 'review' ? '#FEF9C3' : r.action === 'attraction_visit' ? '#F5F3FF' : '#F0FDF4' }}>
+                          {r.action === 'event_signup' ? <Calendar className="w-3.5 h-3.5 text-blue-500" /> : r.action === 'review' ? <Star className="w-3.5 h-3.5 text-yellow-500" /> : r.action === 'attraction_visit' ? <MapPin className="w-3.5 h-3.5 text-purple-500" /> : <Trophy className="w-3.5 h-3.5 text-green-500" />}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-800" style={{ fontFamily: HL }}>{r.reference_name || (r.action === 'event_signup' ? 'Event Sign-up' : r.action === 'review' ? 'Review Written' : 'Achievement Bonus')}</p>
+                          <p className="text-sm font-semibold text-gray-800" style={{ fontFamily: HL }}>{r.reference_name || (r.action === 'event_signup' ? 'Event Sign-up' : r.action === 'review' ? 'Review Written' : r.action === 'attraction_visit' ? 'Spot Visited' : 'Achievement Bonus')}</p>
                           <p className="text-xs text-gray-400" style={{ fontFamily: BL }}>{new Date(r.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</p>
                         </div>
                       </div>

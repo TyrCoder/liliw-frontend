@@ -1,8 +1,9 @@
 import { supabaseServer } from './supabase-server';
 
 export const POINTS = {
-  event_signup: 15,
-  review:       20,
+  event_signup:     15,
+  review:           20,
+  attraction_visit: 5,
 } as const;
 
 export async function awardPoints(
@@ -29,6 +30,7 @@ export async function awardPoints(
 
   const eventCount  = pointRows.filter(r => r.action === 'event_signup').length;
   const reviewCount = pointRows.filter(r => r.action === 'review').length;
+  const visitCount  = pointRows.filter(r => r.action === 'attraction_visit').length;
 
   const { data: pointSumRows } = await supabaseServer
     .from('user_points')
@@ -52,9 +54,10 @@ export async function awardPoints(
     if (earnedIds.has(ach.id)) continue;
 
     let unlocked = false;
-    if (ach.trigger_type === 'event_count'  && eventCount  >= ach.trigger_value) unlocked = true;
-    if (ach.trigger_type === 'review_count' && reviewCount >= ach.trigger_value) unlocked = true;
-    if (ach.trigger_type === 'total_points' && earned      >= ach.trigger_value) unlocked = true;
+    if (ach.trigger_type === 'event_count'            && eventCount  >= ach.trigger_value) unlocked = true;
+    if (ach.trigger_type === 'review_count'           && reviewCount >= ach.trigger_value) unlocked = true;
+    if (ach.trigger_type === 'attraction_visit_count' && visitCount  >= ach.trigger_value) unlocked = true;
+    if (ach.trigger_type === 'total_points'           && earned      >= ach.trigger_value) unlocked = true;
 
     if (unlocked) {
       await supabaseServer.from('user_achievements').insert({ user_id: userId, achievement_id: ach.id });
