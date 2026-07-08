@@ -12,6 +12,7 @@ import EventCalendar from '@/components/EventCalendar';
 import InteractiveMap from '@/components/InteractiveMap';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { useAuth } from '@/context/AuthContext';
+import { showAchievementToasts } from '@/lib/achievementToast';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -70,7 +71,10 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ attractionId: current.id, attractionName: current.attributes.name }),
-          }).catch(() => {});
+          })
+            .then(r => r.json())
+            .then(d => showAchievementToasts(d.unlockedAchievements))
+            .catch(() => {});
         }
         setRelatedAttractions(
           allAttractions.filter((a: any) => a.attributes.category === current.attributes.category && a.id !== current.id).slice(0, 3)

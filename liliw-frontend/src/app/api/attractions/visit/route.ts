@@ -4,11 +4,11 @@ import { awardPoints } from '@/lib/achievements';
 
 export async function POST(request: NextRequest) {
   const auth = await verifyToken(request);
-  if (!auth) return NextResponse.json({ success: true }); // guests just don't earn points
+  if (!auth) return NextResponse.json({ success: true, unlockedAchievements: [] }); // guests just don't earn points
 
   const { attractionId, attractionName } = await request.json();
   if (!attractionId) return NextResponse.json({ error: 'attractionId required' }, { status: 400 });
 
-  awardPoints(auth.userId, 'attraction_visit', String(attractionId), attractionName || 'Attraction').catch(() => {});
-  return NextResponse.json({ success: true });
+  const unlockedAchievements = await awardPoints(auth.userId, 'attraction_visit', String(attractionId), attractionName || 'Attraction').catch(() => []);
+  return NextResponse.json({ success: true, unlockedAchievements });
 }

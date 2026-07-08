@@ -6,19 +6,27 @@ export const POINTS = {
   attraction_visit: 5,
 } as const;
 
+export interface UnlockedAchievement {
+  id: string;
+  name: string;
+  icon: string;
+  badge_color: string;
+  points_reward: number;
+}
+
 export async function awardPoints(
   userId: string,
   action: keyof typeof POINTS,
   referenceId: string,
   referenceName: string,
-) {
+): Promise<UnlockedAchievement[]> {
   const points = POINTS[action];
 
   // Insert points log (unique index prevents duplicates for same action+ref)
   const { error } = await supabaseServer.from('user_points').insert({
     user_id: userId, points, action, reference_id: referenceId, reference_name: referenceName,
   });
-  if (error) return; // duplicate or db error — skip silently
+  if (error) return []; // duplicate or db error — skip silently
 
   // Recompute totals for achievement checks
   const { data: pointRows } = await supabaseServer
@@ -26,7 +34,7 @@ export async function awardPoints(
     .select('action')
     .eq('user_id', userId);
 
-  if (!pointRows) return;
+  if (!pointRows) return [];
 
   const eventCount  = pointRows.filter(r => r.action === 'event_signup').length;
   const reviewCount = pointRows.filter(r => r.action === 'review').length;
@@ -40,7 +48,7 @@ export async function awardPoints(
 
   const { data: allAchievements } = await supabaseServer
     .from('achievements')
-    .select('id, trigger_type, trigger_value, points_reward, name')
+    .select('id, trigger_type, trigger_value, points_reward, name, icon, badge_color')
     .eq('is_active', true);
 
   const { data: alreadyEarned } = await supabaseServer
@@ -49,6 +57,7 @@ export async function awardPoints(
     .eq('user_id', userId);
 
   const earnedIds = new Set((alreadyEarned ?? []).map(r => r.achievement_id));
+  const newlyUnlocked: UnlockedAchievement[] = [];
 
   for (const ach of allAchievements ?? []) {
     if (earnedIds.has(ach.id)) continue;
@@ -67,6 +76,9 @@ export async function awardPoints(
           action: 'achievement_bonus', reference_name: ach.name,
         });
       }
+      newlyUnlocked.push({ id: ach.id, name: ach.name, icon: ach.icon, badge_color: ach.badge_color, points_reward: ach.points_reward });
     }
   }
+
+  return newlyUnlocked;
 }
