@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { requireAdminAuth } from '@/lib/auth';
 
-const TRIGGER_TYPES = ['event_count', 'review_count', 'total_points'];
+const TRIGGER_TYPES = ['event_count', 'review_count', 'attraction_visit_count', 'total_points'];
 
 export async function GET(request: NextRequest) {
   if (!await requireAdminAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
