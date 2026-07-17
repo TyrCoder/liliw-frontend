@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronDown, HelpCircle } from 'lucide-react';
 import { fuzzyMatch } from '@/lib/fuzzySearch';
+import { stripHtml } from '@/lib/text';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -49,7 +50,7 @@ interface DisplayFaq {
 
 function extractText(richText: any): string {
   if (!richText) return '';
-  if (typeof richText === 'string') return richText;
+  if (typeof richText === 'string') return stripHtml(richText);
   if (Array.isArray(richText))
     return richText.map((block: any) => block.children?.map((c: any) => c.text).join(' ') || '').join(' ');
   return String(richText);

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, CheckCircle, AlertCircle, Loader2, Users, Briefcase, MessageSquare, ArrowRight, Phone, Mail, User, FileText } from 'lucide-react';
+import { stripHtml } from '@/lib/text';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
@@ -101,7 +102,7 @@ export default function ParticipationModal({ activity, initialStep = 'detail', o
                   </h2>
                   {activity.description && (
                     <p className="text-white/60 text-sm leading-relaxed" style={{ fontFamily: BL }}>
-                      {activity.description}
+                      {stripHtml(activity.description)}
                     </p>
                   )}
                 </div>

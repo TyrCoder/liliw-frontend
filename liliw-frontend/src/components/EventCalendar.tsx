@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { stripHtml } from '@/lib/text';
 
 interface CalendarEvent {
   date: string;
@@ -133,7 +134,7 @@ export default function EventCalendar({ attractionName, events: propEvents }: Ev
             {selectedDateEvents.map((event, idx) => (
               <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-3 rounded-lg space-y-2">
                 <h4 className="font-semibold text-sm" style={{ color: '#0F1F3C' }}>{event.title}</h4>
-                {event.description && <p className="text-xs text-gray-600">{event.description}</p>}
+                {event.description && <p className="text-xs text-gray-600">{stripHtml(event.description)}</p>}
                 {event.category && (
                   <span className={`text-xs font-medium px-2 py-1 rounded w-fit block ${categoryColors[event.category.toLowerCase()] ?? 'bg-blue-100 text-blue-700'}`}>
                     {event.category}

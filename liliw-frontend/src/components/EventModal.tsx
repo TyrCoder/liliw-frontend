@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, MapPin, Users, ChevronLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { showAchievementToasts } from '@/lib/achievementToast';
+import { stripHtml } from '@/lib/text';
 
 interface EventModalProps {
   event: any;
@@ -14,7 +15,7 @@ interface EventModalProps {
 
 function extractText(richText: any): string {
   if (!richText) return '';
-  if (typeof richText === 'string') return richText;
+  if (typeof richText === 'string') return stripHtml(richText);
   if (Array.isArray(richText)) {
     return richText
       .map((b: any) => (b?.children ?? []).map((c: any) => c?.text ?? '').join(' '))

@@ -3,6 +3,7 @@ import { logger } from '@/lib/logger';
 import algoliasearch from 'algoliasearch';
 import { requireAdminAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
+import { stripHtml } from '@/lib/text';
 
 const client = algoliasearch(
   process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || '',
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
       objects.push({
         objectID:    `attraction-${item.id}`,
         name:        item.name,
-        description: item.description || '',
+        description: stripHtml(item.description),
         type:        'attraction',
         category:    item.category,
         location:    item.location,
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
       objects.push({
         objectID:    `event-${item.id}`,
         name:        item.title,
-        description: item.description || '',
+        description: stripHtml(item.description),
         type:        'event',
         category:    item.category,
         url:         `/news`,
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
       objects.push({
         objectID:    `faq-${item.id}`,
         name:        item.question,
-        description: item.answer || '',
+        description: stripHtml(item.answer),
         type:        'faq',
         category:    item.category,
         url:         `/faq#faq-${item.id}`,
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
       objects.push({
         objectID:    `itinerary-${item.id}`,
         name:        item.title,
-        description: item.description || '',
+        description: stripHtml(item.description),
         type:        'itinerary',
         category:    item.category,
         url:         `/itineraries`,
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
       objects.push({
         objectID:    `art-form-${item.id}`,
         name:        item.name,
-        description: item.description || '',
+        description: stripHtml(item.description),
         type:        'art_form',
         url:         `/arts`,
       });
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
       objects.push({
         objectID:    `artisan-${item.id}`,
         name:        item.name,
-        description: item.description || '',
+        description: stripHtml(item.description),
         type:        'artisan',
         category:    item.craft_type,
         location:    item.location,
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
       objects.push({
         objectID:    `story-${item.id}`,
         name:        item.title,
-        description: item.content?.slice(0, 200) || '',
+        description: stripHtml(item.content).slice(0, 200),
         type:        'story',
         category:    item.category,
         url:         `/stories/${item.id}`,
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
       objects.push({
         objectID:    `news-${item.id}`,
         name:        item.title,
-        description: item.content?.slice(0, 200) || '',
+        description: stripHtml(item.content).slice(0, 200),
         type:        'news',
         category:    item.category,
         url:         `/news`,

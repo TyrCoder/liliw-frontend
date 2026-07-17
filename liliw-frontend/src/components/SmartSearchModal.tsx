@@ -5,6 +5,7 @@ import { Search, X, MapPin, Star, ChevronRight, Utensils, Landmark, CalendarDays
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { searchAlgolia, SearchResult } from '@/lib/algolia';
+import { stripHtml } from '@/lib/text';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
@@ -205,7 +206,7 @@ export default function SmartSearchModal({ onClose }: Props) {
                                 <div className="flex-1 min-w-0">
                                   <p className="font-semibold text-gray-800 truncate text-sm" style={{ fontFamily: HL }}>{r.name}</p>
                                   {r.description && (
-                                    <p className="text-xs text-gray-400 line-clamp-1 mt-0.5" style={{ fontFamily: BL }}>{r.description}</p>
+                                    <p className="text-xs text-gray-400 line-clamp-1 mt-0.5" style={{ fontFamily: BL }}>{stripHtml(r.description)}</p>
                                   )}
                                 </div>
                                 <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0 transition-colors mt-0.5" />

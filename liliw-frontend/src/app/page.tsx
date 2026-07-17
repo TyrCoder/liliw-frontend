@@ -9,6 +9,7 @@ import {
   Compass, UtensilsCrossed, Mountain, Camera, Users, Globe,
   Layers,
 } from 'lucide-react';
+import { stripHtml } from '@/lib/text';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -36,7 +37,7 @@ const CATEGORY_STYLE: Record<string, string> = {
 
 function extractText(rt: any): string {
   if (!rt) return '';
-  if (typeof rt === 'string') return rt;
+  if (typeof rt === 'string') return stripHtml(rt);
   if (Array.isArray(rt)) return rt.map((b: any) => b.children?.map((c: any) => c.text || '').join('') || '').join(' ').trim();
   return '';
 }

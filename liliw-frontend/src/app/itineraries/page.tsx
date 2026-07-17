@@ -12,6 +12,7 @@ import {
 import AuthModal from '@/components/AuthModal';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useAuth } from '@/context/AuthContext';
+import { stripHtml } from '@/lib/text';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -227,7 +228,7 @@ function AttractionQuickModal({ placeName, onClose }: { placeName: string; onClo
                 )}
               </div>
               {attr.description && (
-                <p className="text-sm text-gray-600 leading-relaxed line-clamp-5" style={{ fontFamily: BL }}>{attr.description}</p>
+                <p className="text-sm text-gray-600 leading-relaxed line-clamp-5" style={{ fontFamily: BL }}>{stripHtml(attr.description)}</p>
               )}
               <Link href={`/attractions/${attraction.id}`}
                 className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl font-bold text-sm hover:opacity-90 transition"
@@ -359,7 +360,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
             (a: any) => (a.attributes?.name || '').toLowerCase() === stop.place.toLowerCase()
           )?.attributes;
           const desc = strapiAttr?.description
-            ? (typeof strapiAttr.description === 'string'
+            ? stripHtml(typeof strapiAttr.description === 'string'
                 ? strapiAttr.description
                 : blocksToText(strapiAttr.description)
               ).substring(0, 120)
@@ -1455,7 +1456,7 @@ function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }
             {itin.description && (
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3" style={{ fontFamily: HL }}>About this tour</p>
-                <p className="text-gray-600 text-sm leading-relaxed" style={{ fontFamily: BL }}>{itin.description}</p>
+                <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed" style={{ fontFamily: BL }} dangerouslySetInnerHTML={{ __html: itin.description }} />
               </div>
             )}
             {itin.photos.length > 0 && (
@@ -1652,7 +1653,7 @@ function DatabaseItineraries() {
                   </div>
                   {itin.description && (
                     <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 flex-1 mb-4" style={{ fontFamily: BL }}>
-                      {itin.description}
+                      {stripHtml(itin.description)}
                     </p>
                   )}
                   <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
