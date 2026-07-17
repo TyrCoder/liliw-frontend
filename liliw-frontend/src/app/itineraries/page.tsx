@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
@@ -152,7 +152,7 @@ function AttractionQuickModal({ placeName, onClose }: { placeName: string; onClo
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/strapi/attractions').then(r => r.json()).then(json => {
+    fetch('/api/content/attractions').then(r => r.json()).then(json => {
       const all: any[] = json.data ?? [];
       const needle = placeName.toLowerCase();
       const found = all.find((a: any) => {
@@ -258,12 +258,37 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
   // Map
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
+  const markerRefs = useRef<Record<number, { marker: any; popup: any; coord: [number, number] }>>({});
   const [showMap, setShowMap] = useState(true);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'pending' | 'granted' | 'denied'>('idle');
 
+  const dayColor = (dayNum: number) => PENNANT[(dayNum - 1) % PENNANT.length];
+
+  // Global stop index (0-based, matches marker numbering) for a given day/stop position
+  const stopGlobalIndex = (dayIdx: number, stopIdx: number) => {
+    let idx = 0;
+    for (let d = 0; d < dayIdx; d++) idx += localPlan.days[d]?.stops?.length || 0;
+    return idx + stopIdx;
+  };
+
+  const handleStopHover = (globalIdx: number, hovering: boolean) => {
+    const entry = markerRefs.current[globalIdx];
+    if (!entry || !mapInstance.current) return;
+    const el = entry.marker.getElement();
+    if (hovering) {
+      el.style.transform += ' scale(1.25)';
+      el.style.zIndex = '10';
+      entry.popup.setLngLat(entry.coord).addTo(mapInstance.current);
+    } else {
+      el.style.transform = el.style.transform.replace(' scale(1.25)', '');
+      el.style.zIndex = '';
+      entry.popup.remove();
+    }
+  };
+
   useEffect(() => {
-    fetch('/api/strapi/attractions').then(r => r.json()).then(json => setAllAttractions(json.data ?? [])).catch(() => {});
+    fetch('/api/content/attractions').then(r => r.json()).then(json => setAllAttractions(json.data ?? [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -304,6 +329,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
       mapInstance.current = map;
       map.on('load', async () => {
         if (cancelled) return;
+        markerRefs.current = {};
         const coords: [number, number][] = [];
         if (userLocation) {
           coords.push(userLocation);
@@ -313,21 +339,22 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
           d.stops.map((s: Stop) => ({ ...s, dayNum: d.day as number }))
         ).filter((s: any) => s.place);
 
-        const makeMarkerEl = (num: number) => {
+        const makeMarkerEl = (num: number, color: string) => {
           const el = document.createElement('div');
           el.style.cssText = `
             width:34px;height:34px;border-radius:50%;
-            background:#0B3D91;border:3px solid #F5C518;
+            background:${color};border:3px solid #F5C518;
             box-shadow:0 2px 10px rgba(0,0,0,0.35);
             display:flex;align-items:center;justify-content:center;
-            color:#F5C518;font-weight:700;font-size:13px;
+            color:#fff;font-weight:700;font-size:13px;
             font-family:system-ui,sans-serif;cursor:pointer;
+            transition:transform 0.15s ease;
           `;
           el.textContent = String(num);
           return el;
         };
 
-        const makePopupHtml = (stop: any, num: number) => {
+        const makePopupHtml = (stop: any, num: number, color: string) => {
           const strapiAttr = allAttractions.find(
             (a: any) => (a.attributes?.name || '').toLowerCase() === stop.place.toLowerCase()
           )?.attributes;
@@ -345,7 +372,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
               ${photo ? `<img src="${photo}" alt="${stop.place}" style="width:100%;height:110px;object-fit:cover;display:block;" />` : ''}
               <div style="padding:12px;">
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-                  <span style="background:#0B3D91;color:#F5C518;font-weight:700;font-size:11px;padding:2px 8px;border-radius:20px">Stop ${num}</span>
+                  <span style="background:${color};color:#fff;font-weight:700;font-size:11px;padding:2px 8px;border-radius:20px">Stop ${num}</span>
                   ${stop.time ? `<span style="color:#9CA3AF;font-size:11px">${stop.time}</span>` : ''}
                 </div>
                 <p style="font-weight:700;font-size:14px;color:#1A1A2E;margin:0 0 4px">${stop.place}</p>
@@ -360,47 +387,118 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
           `;
         };
 
+        // Spread markers that land on (near-)identical coordinates so they don't stack unreadably
+        const usedCoordCounts: Record<string, number> = {};
+        const nudgeForDisplay = (coord: [number, number]): [number, number] => {
+          const key = `${coord[0].toFixed(4)},${coord[1].toFixed(4)}`;
+          const count = usedCoordCounts[key] || 0;
+          usedCoordCounts[key] = count + 1;
+          if (count === 0) return coord;
+          const angle = count * 137.5 * (Math.PI / 180);
+          const radius = 0.00028 * count;
+          return [coord[0] + Math.cos(angle) * radius, coord[1] + Math.sin(angle) * radius];
+        };
+
+        const dayCoords = new Map<number, [number, number][]>();
+
         for (let i = 0; i < allStops.length; i++) {
           const stop = allStops[i];
           const stopNum = i + 1;
+          const dayNum = stop.dayNum || 1;
+          const color = dayColor(dayNum);
           const strapiCoord = findCoord(stop.place);
           const addHoverMarker = (coord: [number, number]) => {
-            const el = makeMarkerEl(stopNum);
-            new mapboxgl.Marker({ element: el }).setLngLat(coord).addTo(map);
+            const displayCoord = nudgeForDisplay(coord);
+            const el = makeMarkerEl(stopNum, color);
+            const marker = new mapboxgl.Marker({ element: el }).setLngLat(displayCoord).addTo(map);
             const popup = new mapboxgl.Popup({ offset: 20, maxWidth: '280px', closeButton: false, closeOnClick: false })
-              .setHTML(makePopupHtml(stop, stopNum));
-            el.addEventListener('mouseenter', () => popup.setLngLat(coord).addTo(map));
+              .setHTML(makePopupHtml(stop, stopNum, color));
+            el.addEventListener('mouseenter', () => popup.setLngLat(displayCoord).addTo(map));
             el.addEventListener('mouseleave', () => popup.remove());
+            markerRefs.current[i] = { marker, popup, coord: displayCoord };
           };
 
-          if (strapiCoord) {
-            coords.push(strapiCoord);
-            addHoverMarker(strapiCoord);
-          } else {
+          let coord: [number, number] | undefined = strapiCoord;
+          if (!coord) {
             try {
               const q = encodeURIComponent(`${stop.place}, Liliw, Laguna, Philippines`);
               const r = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${MAPBOX_TOKEN}&limit=1&bbox=121.40,14.10,121.47,14.16&country=ph`);
               const d = await r.json();
-              const coord = d?.features?.[0]?.center as [number, number] | undefined;
-              if (coord) {
-                coords.push(coord);
-                addHoverMarker(coord);
-              }
-            } catch {}
+              coord = d?.features?.[0]?.center as [number, number] | undefined;
+              if (!coord) console.error('Itinerary map: could not geocode stop', stop.place, d);
+            } catch (err) {
+              console.error('Itinerary map: geocoding request failed for', stop.place, err);
+            }
+          }
+          if (coord) {
+            coords.push(coord);
+            addHoverMarker(coord);
+            if (!dayCoords.has(dayNum)) dayCoords.set(dayNum, []);
+            dayCoords.get(dayNum)!.push(coord);
           }
         }
-        if (coords.length >= 2) {
+
+        // Prepend the user's location to the first day's route only
+        if (userLocation && dayCoords.size > 0) {
+          const firstDay = Math.min(...dayCoords.keys());
+          dayCoords.get(firstDay)!.unshift(userLocation);
+        }
+
+        if (!map.hasImage('route-arrow')) {
+          const size = 32;
+          const canvasEl = document.createElement('canvas');
+          canvasEl.width = size; canvasEl.height = size;
+          const ctx = canvasEl.getContext('2d')!;
+          ctx.beginPath();
+          ctx.moveTo(size * 0.2, size * 0.12);
+          ctx.lineTo(size * 0.85, size * 0.5);
+          ctx.lineTo(size * 0.2, size * 0.88);
+          ctx.closePath();
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = '#1A1A2E';
+          ctx.stroke();
+          map.addImage('route-arrow', ctx.getImageData(0, 0, size, size), { pixelRatio: 1 });
+        }
+
+        const drawDayRoute = async (day: number, dayLine: [number, number][]) => {
+          const color = dayColor(day);
+          const sourceId = `route-day-${day}`;
+          let geometry: any = { type: 'LineString', coordinates: dayLine };
           try {
-            const waypointStr = coords.map(c => `${c[0]},${c[1]}`).join(';');
+            const waypointStr = dayLine.map(c => `${c[0]},${c[1]}`).join(';');
             const r = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${waypointStr}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`);
             const d = await r.json();
-            const geometry = d?.routes?.[0]?.geometry;
-            if (geometry) {
-              map.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry } });
-              map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 8, 'line-opacity': 0.5 } });
-              map.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#1565C0', 'line-width': 4, 'line-opacity': 0.9 } });
-            }
-          } catch {}
+            if (d.code && d.code !== 'Ok') throw new Error(`Directions API returned ${d.code}: ${d.message || ''}`);
+            if (d?.routes?.[0]?.geometry) geometry = d.routes[0].geometry;
+            else throw new Error('No route geometry returned');
+          } catch (err) {
+            console.error(`Itinerary map: driving directions failed for day ${day}, falling back to straight line`, err);
+          }
+          map.addSource(sourceId, { type: 'geojson', data: { type: 'Feature', properties: {}, geometry } });
+          map.addLayer({ id: `${sourceId}-casing`, type: 'line', source: sourceId, layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 8, 'line-opacity': 0.6 } });
+          map.addLayer({ id: sourceId, type: 'line', source: sourceId, layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': color, 'line-width': 4, 'line-opacity': 0.95 } });
+          map.addLayer({
+            id: `${sourceId}-arrows`,
+            type: 'symbol',
+            source: sourceId,
+            layout: {
+              'symbol-placement': 'line',
+              'symbol-spacing': 55,
+              'icon-image': 'route-arrow',
+              'icon-size': 0.75,
+              'icon-allow-overlap': true,
+              'icon-ignore-placement': true,
+              'icon-rotation-alignment': 'map',
+            },
+          });
+        };
+
+        if (coords.length >= 2) {
+          for (const [day, dayLine] of Array.from(dayCoords.entries()).sort((a, b) => a[0] - b[0])) {
+            if (dayLine.length >= 2) await drawDayRoute(day, dayLine);
+          }
           const bounds = coords.reduce((b, c) => b.extend(c as any), new mapboxgl.LngLatBounds(coords[0], coords[0]));
           map.fitBounds(bounds, { padding: 80 });
         } else if (coords.length === 1) {
@@ -535,14 +633,16 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
         )}
       </div>
 
-      {/* Days */}
+      {/* Days + Map, side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="space-y-6">
       {localPlan.days?.map((day, dayIdx) => (
         <motion.div key={dayIdx} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: dayIdx * 0.1 }}
           className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
-              style={{ backgroundColor: '#1565C0', fontFamily: HL }}>{day.day}</div>
+              style={{ backgroundColor: dayColor(day.day), fontFamily: HL }}>{day.day}</div>
             <div className="flex-1 min-w-0">
               <p className="text-xs text-gray-400 font-medium" style={{ fontFamily: BL }}>Day {day.day}</p>
               {isEditing ? (
@@ -560,9 +660,12 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
           </div>
           <div className="divide-y divide-gray-50">
             {day.stops?.map((stop, stopIdx) => (
-              <div key={stopIdx} className="px-5 py-4 flex gap-4">
+              <div key={stopIdx} className="px-5 py-4 flex gap-4"
+                onMouseEnter={() => handleStopHover(stopGlobalIndex(dayIdx, stopIdx), true)}
+                onMouseLeave={() => handleStopHover(stopGlobalIndex(dayIdx, stopIdx), false)}>
                 <div className="shrink-0 flex flex-col items-center gap-1 pt-0.5">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#1565C0' }} />
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                    style={{ backgroundColor: dayColor(day.day) }}>{stopGlobalIndex(dayIdx, stopIdx) + 1}</div>
                   {stopIdx < (day.stops.length - 1) && (
                     <div className="w-px flex-1 min-h-6" style={{ backgroundColor: 'rgba(11,61,145,0.12)' }} />
                   )}
@@ -668,6 +771,38 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
           )}
         </motion.div>
       ))}
+      </div>
+
+      <div className="lg:sticky lg:top-6">
+        {showMap && locationStatus === 'idle' && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between gap-3 p-4 mb-3 rounded-2xl bg-blue-50 border border-blue-100">
+            <p className="text-sm text-blue-800 flex items-center gap-2" style={{ fontFamily: BL }}>
+              <Navigation className="w-4 h-4 shrink-0" /> Allow location to show your starting point on the map
+            </p>
+            <button onClick={requestLocation}
+              className="shrink-0 px-4 py-1.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition"
+              style={{ backgroundColor: '#1565C0', fontFamily: HL }}>Allow</button>
+          </motion.div>
+        )}
+
+        <AnimatePresence>
+          {showMap && (
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="w-4 h-4" style={{ color: '#1565C0' }} />
+                <p className="font-bold text-sm text-gray-900" style={{ fontFamily: HL }}>Your Route</p>
+                {locationStatus === 'granted' && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold" style={{ fontFamily: BL }}>Starting from your location</span>
+                )}
+              </div>
+              <div ref={mapContainer} className="rounded-2xl overflow-hidden shadow-md" style={{ height: 480 }} />
+              <p className="text-xs text-gray-400 mt-2 text-center" style={{ fontFamily: BL }}>Numbered pins = stops, colored by day (hover for details) · Blue line = driving route</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      </div>
 
       {localPlan.tips?.length > 0 && (
         <div className="rounded-2xl p-5" style={{ backgroundColor: 'rgba(11,61,145,0.05)', border: '1px solid rgba(11,61,145,0.12)' }}>
@@ -697,36 +832,6 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
           <RotateCcw className="w-4 h-4" />
         </motion.button>
       </div>
-
-      {/* Location banner */}
-      {showMap && locationStatus === 'idle' && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-blue-50 border border-blue-100">
-          <p className="text-sm text-blue-800 flex items-center gap-2" style={{ fontFamily: BL }}>
-            <Navigation className="w-4 h-4 shrink-0" /> Allow location to show your starting point on the map
-          </p>
-          <button onClick={requestLocation}
-            className="shrink-0 px-4 py-1.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition"
-            style={{ backgroundColor: '#1565C0', fontFamily: HL }}>Allow</button>
-        </motion.div>
-      )}
-
-      {/* Route map */}
-      <AnimatePresence>
-        {showMap && (
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-            <div className="flex items-center gap-2 mb-2">
-              <MapPin className="w-4 h-4" style={{ color: '#1565C0' }} />
-              <p className="font-bold text-sm text-gray-900" style={{ fontFamily: HL }}>Your Route</p>
-              {locationStatus === 'granted' && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold" style={{ fontFamily: BL }}>Starting from your location</span>
-              )}
-            </div>
-            <div ref={mapContainer} className="rounded-2xl overflow-hidden shadow-md" style={{ height: 360 }} />
-            <p className="text-xs text-gray-400 mt-2 text-center" style={{ fontFamily: BL }}>Numbered pins = stops (hover for details) · Blue line = driving route</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {selectedPlace && (
@@ -1433,7 +1538,7 @@ function DatabaseItineraries() {
   const [detail, setDetail]           = useState<Itinerary | null>(null);
 
   useEffect(() => {
-    fetch('/api/strapi/itineraries').then(r => r.json()).then(json => {
+    fetch('/api/content/itineraries').then(r => r.json()).then(json => {
       const data: any[] = json.data ?? [];
       setItineraries(data.map((item: any) => {
         const a = item.attributes || item;
