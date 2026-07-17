@@ -245,7 +245,7 @@ export default function CommunityPage() {
   const [signUpEvent, setSignUpEvent] = useState<any | null>(null);
 
   useEffect(() => {
-    fetch('/api/strapi/events')
+    fetch('/api/content/events')
       .then(r => r.json())
       .then(d => setJoinableEvents((d.data || [])
         .filter((e: any) => e.attributes?.is_joinable || e.is_joinable)
@@ -262,7 +262,7 @@ export default function CommunityPage() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/strapi/participation-options')
+    fetch('/api/content/participation-options')
       .then(r => r.json())
       .then(data => {
         const items: any[] = data.data || [];

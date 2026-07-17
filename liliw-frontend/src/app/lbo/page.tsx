@@ -211,7 +211,7 @@ export default function LboDashboard() {
   useEffect(() => {
     if (!attrData?.linked || !attrData.strapiId || !token) return;
     setLoadingRatings(true);
-    fetch(`/api/strapi/reviews?itemId=${attrData.strapiId}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`/api/content/reviews?itemId=${attrData.strapiId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => setRatings(d.data || []))
       .catch(() => {})

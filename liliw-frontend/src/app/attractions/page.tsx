@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
@@ -120,7 +120,7 @@ export default function AttractionsPage() {
   const [selectedType, setSelectedType]         = useState('all');
 
   useEffect(() => {
-    fetch('/api/strapi/attractions')
+    fetch('/api/content/attractions')
       .then(r => r.json())
       .then(json => { const data: Attraction[] = json.data ?? []; setAll(data); setResults(data); })
       .catch(err => { logger.error('Failed to load attractions:', err); setError('Failed to load attractions'); })

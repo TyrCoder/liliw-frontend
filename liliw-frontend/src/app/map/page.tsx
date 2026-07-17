@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Map, { Marker, Popup, NavigationControl, GeolocateControl, Source, Layer } from 'react-map-gl/mapbox';
@@ -393,7 +393,7 @@ export default function MapPage() {
   // Attractions
   useEffect(() => {
     if (!TOKEN || TOKEN === 'pk.your_mapbox_token_here') { setNoToken(true); setLoading(false); return; }
-    fetch('/api/strapi/attractions')
+    fetch('/api/content/attractions')
       .then(r => r.json())
       .then(json => {
         const data: any[] = json.data ?? [];

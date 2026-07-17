@@ -252,8 +252,8 @@ export default function AdminDashboard() {
     const h = { Authorization: `Bearer ${token}` };
 
     // Editor + Officer — attractions & reviews
-    fetch('/api/strapi/attractions').then(r => r.json()).then(d => setAttractions(d.data || [])).catch(() => {}).finally(() => setLoadingAttr(false));
-    fetch('/api/strapi/reviews').then(r => r.json()).then(d => setReviews(d.data || [])).catch(() => {}).finally(() => setLoadingReviews(false));
+    fetch('/api/content/attractions').then(r => r.json()).then(d => setAttractions(d.data || [])).catch(() => {}).finally(() => setLoadingAttr(false));
+    fetch('/api/content/reviews').then(r => r.json()).then(d => setReviews(d.data || [])).catch(() => {}).finally(() => setLoadingReviews(false));
 
     // Admin — analytics, users, audit, reports
     if (isAdmin) {
@@ -299,7 +299,7 @@ export default function AdminDashboard() {
       setLoadingEF(true);
       setLoadingJE(true);
       fetch('/api/admin/event-forms', { headers: h }).then(r => r.json()).then(d => setEventForms(d.data || [])).catch(() => {}).finally(() => setLoadingEF(false));
-      fetch('/api/strapi/events').then(r => r.json()).then(d => setJoinableEvents((d.data || []).filter((e: any) => e.attributes?.is_joinable || e.is_joinable).map((e: any) => ({ id: e.id, slug: e.attributes?.slug || e.slug, title: e.attributes?.title || e.title, date_start: e.attributes?.date_start || e.date_start })))).catch(() => {}).finally(() => setLoadingJE(false));
+      fetch('/api/content/events').then(r => r.json()).then(d => setJoinableEvents((d.data || []).filter((e: any) => e.attributes?.is_joinable || e.is_joinable).map((e: any) => ({ id: e.id, slug: e.attributes?.slug || e.slug, title: e.attributes?.title || e.title, date_start: e.attributes?.date_start || e.date_start })))).catch(() => {}).finally(() => setLoadingJE(false));
     }
 
     // Officer — event form list for responses viewer

@@ -30,7 +30,7 @@ export default function EventCalendar({ attractionName, events: propEvents }: Ev
 
   useEffect(() => {
     if (propEvents) { setEvents(propEvents); return; }
-    fetch('/api/strapi/events')
+    fetch('/api/content/events')
       .then(r => r.ok ? r.json() : null)
       .then(json => {
         const raw: any[] = json?.data ?? [];

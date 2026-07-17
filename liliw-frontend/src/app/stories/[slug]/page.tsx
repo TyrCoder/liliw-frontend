@@ -257,7 +257,7 @@ export default function StoryDetailPage() {
 
   useEffect(() => {
     if (!slug) return;
-    fetch(`/api/strapi/stories`)
+    fetch(`/api/content/stories`)
       .then(r => r.json())
       .then(json => {
         const all: any[] = json?.data ?? [];

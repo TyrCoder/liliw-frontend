@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
-import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/strapi';
+import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/content';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { logger } from '@/lib/logger';
 

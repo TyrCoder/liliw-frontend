@@ -41,7 +41,10 @@ async function geocodePlace(name: string): Promise<[number, number] | null> {
     const data = await res.json();
     const f = data?.features?.[0];
     return f ? (f.center as [number, number]) : null;
-  } catch { return null; }
+  } catch (err) {
+    console.error('ItineraryBuilder geocode failed for', name, err);
+    return null;
+  }
 }
 
 export default function ItineraryBuilder({
@@ -117,25 +120,43 @@ export default function ItineraryBuilder({
               .setLngLat(coord)
               .setPopup(new mapboxgl.Popup({ offset: 25 }).setText(item.name))
               .addTo(map);
+          } else {
+            console.error('ItineraryBuilder map: could not geocode', item.name);
           }
         }
 
         if (coords.length >= 2) {
+          let routeDrawn = false;
           const coordStr = coords.map(c => c.join(',')).join(';');
           try {
             const r = await fetch(
-              `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?geometries=geojson&access_token=${MAPBOX_TOKEN}`
+              `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`
             );
             const d = await r.json();
+            if (d.code && d.code !== 'Ok') throw new Error(`Directions API returned ${d.code}: ${d.message || ''}`);
             const geometry = d?.routes?.[0]?.geometry;
             if (geometry) {
               map.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry } });
+              map.addLayer({ id: 'route-casing', type: 'line', source: 'route',
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: { 'line-color': '#ffffff', 'line-width': 8, 'line-opacity': 0.5 },
+              });
               map.addLayer({ id: 'route', type: 'line', source: 'route',
                 layout: { 'line-join': 'round', 'line-cap': 'round' },
                 paint: { 'line-color': '#1565C0', 'line-width': 4, 'line-opacity': 0.85 },
               });
+              routeDrawn = true;
             }
-          } catch {}
+          } catch (err) {
+            console.error('ItineraryBuilder map: driving directions failed, falling back to straight line', err);
+          }
+          if (!routeDrawn) {
+            map.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } } });
+            map.addLayer({ id: 'route', type: 'line', source: 'route',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: { 'line-color': '#1565C0', 'line-width': 3, 'line-opacity': 0.7, 'line-dasharray': [2, 2] },
+            });
+          }
 
           const bounds = coords.reduce(
             (b, c) => b.extend(c as any),
@@ -155,7 +176,7 @@ export default function ItineraryBuilder({
     setLoadingSuggestions(true);
     setSuggestions([]);
     try {
-      const res = await fetch('/api/strapi/attractions');
+      const res = await fetch('/api/content/attractions');
       const json = await res.json();
       const all: any[] = json.data ?? [];
       const inList = new Set(items.map(i => String(i.id)));

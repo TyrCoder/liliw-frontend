@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback, useRef, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -64,7 +64,7 @@ export default function ImmersivePage() {
   }, [isAdmin]);
 
   useEffect(() => {
-    fetch('/api/strapi/attractions')
+    fetch('/api/content/attractions')
       .then(r => r.json())
       .then(json => {
         const all: Attraction[] = json.data || [];

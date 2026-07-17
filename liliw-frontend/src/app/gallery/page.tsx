@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -81,7 +81,7 @@ export default function GalleryPage() {
   const [lightbox, setLightbox] = useState<GalleryItem | null>(null);
 
   useEffect(() => {
-    fetch('/api/strapi/gallery')
+    fetch('/api/content/gallery')
       .then(r => r.json())
       .then(json => {
         const raw: any[] = json?.data ?? [];

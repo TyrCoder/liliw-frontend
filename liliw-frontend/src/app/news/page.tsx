@@ -367,7 +367,7 @@ export default function NewsPage() {
   };
 
   useEffect(() => {
-    fetch('/api/strapi/news-events')
+    fetch('/api/content/news-events')
       .then(r => r.json())
       .catch(() => null)
       .then((combined: any) => {

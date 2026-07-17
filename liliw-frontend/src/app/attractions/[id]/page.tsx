@@ -57,7 +57,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
     if (!attractionId) return;
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/strapi/attractions');
+        const res = await fetch('/api/content/attractions');
         const json = await res.json();
         const allAttractions: any[] = json.data ?? [];
         const current = allAttractions.find((a: any) => String(a.id) === attractionId);
@@ -67,7 +67,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           allAttractions.filter((a: any) => a.attributes.category === current.attributes.category && a.id !== current.id).slice(0, 3)
         );
         // Fetch frontend ratings from Supabase
-        fetch(`/api/strapi/reviews?itemId=${encodeURIComponent(attractionId)}`)
+        fetch(`/api/content/reviews?itemId=${encodeURIComponent(attractionId)}`)
           .then(r => r.json())
           .then(d => {
             const revs: any[] = d?.data ?? [];

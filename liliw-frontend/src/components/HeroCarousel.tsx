@@ -13,7 +13,7 @@ export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
-    fetch('/api/strapi/hero-slides')
+    fetch('/api/content/hero-slides')
       .then(r => r.json())
       .then(data => {
         if (data?.data?.length) {
