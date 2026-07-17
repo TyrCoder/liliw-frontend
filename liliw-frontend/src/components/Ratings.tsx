@@ -5,6 +5,7 @@ import { Star, User, Calendar, LogIn } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
+import { showAchievementToasts } from '@/lib/achievementToast';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
@@ -92,6 +93,8 @@ export default function Ratings({ itemId, itemName }: RatingsProps) {
         setValidationMsg(err.error || 'Failed to submit. Please try again.');
         return;
       }
+      const data = await res.json().catch(() => ({}));
+      showAchievementToasts(data.unlockedAchievements);
       setSubmitted(true);
       setUserRating(0);
       setUserComment('');

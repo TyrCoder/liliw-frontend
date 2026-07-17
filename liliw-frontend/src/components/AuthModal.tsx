@@ -156,6 +156,15 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
 
   const refreshCaptcha = () => { if (Date.now() < cooldownEndRef.current) return; doRefresh(); };
 
+  useEffect(() => {
+    if (view === 'forgot') {
+      setCaptchaCode(generateCode());
+      setCaptchaInput('');
+      setCaptchaOk(false);
+      setCaptchaWrong(false);
+    }
+  }, [view]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true);
     try { await login(identifier, password); onClose(); }
@@ -204,7 +213,9 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
   };
 
   const handleForgot = async (e: React.FormEvent) => {
-    e.preventDefault(); setError(''); setLoading(true);
+    e.preventDefault(); setError('');
+    if (!captchaOk) { setError('Please complete the security check'); return; }
+    setLoading(true);
     try {
       const res = await fetch('/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: fpEmail }) });
       const data = await res.json();
@@ -536,8 +547,43 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                       className={INPUT_CLS} placeholder="you@email.com" />
                   </div>
                 </div>
-                <button type="submit" disabled={loading} style={primaryBtn}
-                  className="w-full py-4 rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 disabled:opacity-60 transition">
+                {/* CAPTCHA */}
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#1565C0]" />
+                    <span className="text-[10px] font-black text-[#1565C0] uppercase tracking-[0.2em]">Security Check</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">Type the 5 characters shown below</p>
+                  <div className="flex items-center gap-2 mb-3">
+                    <CaptchaCanvas code={captchaCode} />
+                    <button type="button" onClick={refreshCaptcha} disabled={cooldownSec > 0}
+                      title={cooldownSec > 0 ? `Wait ${cooldownSec}s` : 'New code'}
+                      className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:text-[#1565C0] hover:border-[#1565C0] hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed transition min-w-[44px]">
+                      <RefreshCw className="w-4 h-4" />
+                      {cooldownSec > 0 && <span className="text-[9px] font-bold mt-0.5">{cooldownSec}s</span>}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input type="text" value={captchaInput}
+                      onChange={e => handleCaptchaInput(e.target.value)}
+                      maxLength={5} autoComplete="off" autoCorrect="off"
+                      autoCapitalize="characters" spellCheck={false}
+                      placeholder="Enter code"
+                      className={`flex-1 text-center rounded-xl border px-3 py-2.5 text-sm font-bold tracking-[0.25em] focus:outline-none transition uppercase ${
+                        captchaOk     ? 'border-green-400 bg-green-50 text-green-700'
+                        : captchaWrong ? 'border-red-300 bg-red-50 text-red-600'
+                        : 'border-gray-200 bg-white focus:border-[#1565C0] focus:ring-2 focus:ring-[#1565C0]/10'
+                      }`} />
+                    {captchaOk && <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />}
+                  </div>
+                  {captchaWrong && !captchaOk && (
+                    <p className="text-xs text-red-500 mt-2">Incorrect — a new code is loading…</p>
+                  )}
+                </div>
+                <button type="submit" disabled={loading || !captchaOk} style={captchaOk ? primaryBtn : undefined}
+                  className={`w-full py-4 rounded-xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition ${
+                    !captchaOk ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'disabled:opacity-60'
+                  }`}>
                   {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send Reset Code'}
                 </button>
                 <p className="text-center text-xs text-gray-400">

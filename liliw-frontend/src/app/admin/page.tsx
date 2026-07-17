@@ -14,6 +14,8 @@ import {
   Download, BarChart2, Plus, Trash2, ArrowUp, ArrowDown, ClipboardList, Send,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import BadgeSVG, { BADGE_ICONS } from '@/components/BadgeSVG';
+import MediaUploader from '@/components/admin/cms/MediaUploader';
 import * as XLSX from 'xlsx-js-style';
 
 /* ─── types ──────────────────────────────────────────────── */
@@ -25,7 +27,14 @@ interface StrapiActivity { id: string; contentType: string; entryName: string; a
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses';
+type Tab = 'overview' | 'users' | 'roles' | 'achievements' | 'rewards' | 'redeemcodes' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses';
+
+const TRIGGER_TYPE_LABELS: Record<string, string> = {
+  event_count: 'Event sign-ups',
+  review_count: 'Reviews written',
+  attraction_visit_count: 'Tourist spots visited',
+  total_points: 'Total points earned',
+};
 
 type FieldType = 'short_text' | 'paragraph' | 'number' | 'dropdown' | 'multiple_choice' | 'checkboxes';
 interface FormField { id: string; type: FieldType; label: string; required: boolean; options: string[]; }
@@ -162,6 +171,33 @@ export default function AdminDashboard() {
   const [savingPwd,     setSavingPwd]     = useState(false);
   const [pwdMsg,        setPwdMsg]        = useState<{ ok: boolean; text: string } | null>(null);
 
+  const [achievements,  setAchievements]  = useState<any[]>([]);
+  const [loadingAch,    setLoadingAch]    = useState(true);
+  const [achForm,       setAchForm]       = useState<{
+    id: string | null; name: string; description: string; icon: string; badge_color: string;
+    trigger_type: string; trigger_value: number; points_reward: number; sort_order: number; is_active: boolean;
+  }>({ id: null, name: '', description: '', icon: '🏆', badge_color: '#F59E0B', trigger_type: 'event_count', trigger_value: 1, points_reward: 10, sort_order: 0, is_active: true });
+  const [savingAch,     setSavingAch]     = useState(false);
+  const [achMsg,        setAchMsg]        = useState<{ ok: boolean; text: string } | null>(null);
+  const [deletingAchId, setDeletingAchId] = useState<string | null>(null);
+
+  const [rewards,       setRewards]       = useState<any[]>([]);
+  const [loadingRewards, setLoadingRewards] = useState(true);
+  const [rewardForm,    setRewardForm]    = useState<{
+    id: string | null; name: string; description: string; icon: string; badge_color: string;
+    points_cost: number; stock: string; claim_type: 'irl' | 'online'; sort_order: number; is_active: boolean;
+    image_url: string; image_public_id: string;
+  }>({ id: null, name: '', description: '', icon: '🎁', badge_color: '#1565C0', points_cost: 50, stock: '', claim_type: 'irl', sort_order: 0, is_active: true, image_url: '', image_public_id: '' });
+  const [savingReward,     setSavingReward]     = useState(false);
+  const [rewardMsg,        setRewardMsg]        = useState<{ ok: boolean; text: string } | null>(null);
+  const [deletingRewardId, setDeletingRewardId] = useState<string | null>(null);
+
+  const [redeemCodeInput,   setRedeemCodeInput]   = useState('');
+  const [redeemLookup,      setRedeemLookup]      = useState<any | null>(null);
+  const [redeemLookupMsg,   setRedeemLookupMsg]   = useState<{ ok: boolean; text: string } | null>(null);
+  const [lookingUpCode,     setLookingUpCode]     = useState(false);
+  const [confirmingRedeem,  setConfirmingRedeem]  = useState(false);
+
   const [lboApps,       setLboApps]       = useState<any[]>([]);
   const [loadingLbo,    setLoadingLbo]    = useState(false);
   const [expandedLbo,   setExpandedLbo]   = useState<number | null>(null);
@@ -266,6 +302,10 @@ export default function AdminDashboard() {
         setRoleUsers(d.users || []);
         setAvailRoles(d.roles || []);
       }).catch(() => {}).finally(() => setLoadingRoles(false));
+      setLoadingAch(true);
+      fetch('/api/admin/achievements', { headers: h }).then(r => r.json()).then(d => setAchievements(d.data || [])).catch(() => {}).finally(() => setLoadingAch(false));
+      setLoadingRewards(true);
+      fetch('/api/admin/rewards', { headers: h }).then(r => r.json()).then(d => setRewards(d.data || [])).catch(() => {}).finally(() => setLoadingRewards(false));
     }
 
     // Officer — requests & submissions
@@ -368,6 +408,165 @@ export default function AdminDashboard() {
       setPwdMsg({ ok: false, text: 'Network error' });
     }
     setSavingPwd(false);
+  };
+
+  const resetAchForm = () => {
+    setAchForm({ id: null, name: '', description: '', icon: '🏆', badge_color: '#F59E0B', trigger_type: 'event_count', trigger_value: 1, points_reward: 10, sort_order: 0, is_active: true });
+  };
+
+  const handleAchEdit = (a: any) => {
+    setAchForm({
+      id: a.id, name: a.name, description: a.description, icon: a.icon, badge_color: a.badge_color,
+      trigger_type: a.trigger_type, trigger_value: a.trigger_value, points_reward: a.points_reward,
+      sort_order: a.sort_order, is_active: a.is_active,
+    });
+    setAchMsg(null);
+  };
+
+  const handleAchSave = async () => {
+    if (!achForm.name.trim() || !achForm.description.trim()) { setAchMsg({ ok: false, text: 'Name and description are required' }); return; }
+    setSavingAch(true); setAchMsg(null);
+    try {
+      const res = await fetch('/api/admin/achievements', {
+        method: achForm.id ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(achForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAchievements(prev => achForm.id
+          ? prev.map(a => a.id === data.data.id ? data.data : a)
+          : [...prev, data.data].sort((a, b) => a.sort_order - b.sort_order));
+        setAchMsg({ ok: true, text: achForm.id ? 'Achievement updated' : 'Achievement created' });
+        resetAchForm();
+      } else {
+        setAchMsg({ ok: false, text: data.error || 'Failed to save' });
+      }
+    } catch { setAchMsg({ ok: false, text: 'Network error' }); }
+    setSavingAch(false);
+  };
+
+  const handleAchDelete = async (id: string) => {
+    if (!confirm('Delete this achievement? Any users who already earned it will lose that record.')) return;
+    setDeletingAchId(id);
+    try {
+      const res = await fetch('/api/admin/achievements', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) setAchievements(prev => prev.filter(a => a.id !== id));
+    } catch {}
+    setDeletingAchId(null);
+  };
+
+  const handleAchToggleActive = async (a: any) => {
+    const res = await fetch('/api/admin/achievements', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id: a.id, is_active: !a.is_active }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setAchievements(prev => prev.map(x => x.id === a.id ? data.data : x));
+    }
+  };
+
+  const resetRewardForm = () => {
+    setRewardForm({ id: null, name: '', description: '', icon: '🎁', badge_color: '#1565C0', points_cost: 50, stock: '', claim_type: 'irl', sort_order: 0, is_active: true, image_url: '', image_public_id: '' });
+  };
+
+  const handleRewardEdit = (r: any) => {
+    setRewardForm({
+      id: r.id, name: r.name, description: r.description, icon: r.icon, badge_color: r.badge_color,
+      points_cost: r.points_cost, stock: r.stock == null ? '' : String(r.stock),
+      claim_type: r.claim_type === 'online' ? 'online' : 'irl', sort_order: r.sort_order, is_active: r.is_active,
+      image_url: r.image_url || '', image_public_id: r.image_public_id || '',
+    });
+    setRewardMsg(null);
+  };
+
+  const handleRewardSave = async () => {
+    if (!rewardForm.name.trim() || !rewardForm.description.trim()) { setRewardMsg({ ok: false, text: 'Name and description are required' }); return; }
+    setSavingReward(true); setRewardMsg(null);
+    try {
+      const res = await fetch('/api/admin/rewards', {
+        method: rewardForm.id ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...rewardForm, stock: rewardForm.stock === '' ? null : Number(rewardForm.stock) }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRewards(prev => rewardForm.id
+          ? prev.map(r => r.id === data.data.id ? data.data : r)
+          : [...prev, data.data].sort((a, b) => a.sort_order - b.sort_order));
+        setRewardMsg({ ok: true, text: rewardForm.id ? 'Reward updated' : 'Reward created' });
+        resetRewardForm();
+      } else {
+        setRewardMsg({ ok: false, text: data.error || 'Failed to save' });
+      }
+    } catch { setRewardMsg({ ok: false, text: 'Network error' }); }
+    setSavingReward(false);
+  };
+
+  const handleRewardDelete = async (id: string) => {
+    if (!confirm('Delete this reward? Any pending redemption codes for it will stay valid but lose the catalog link.')) return;
+    setDeletingRewardId(id);
+    try {
+      const res = await fetch('/api/admin/rewards', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) setRewards(prev => prev.filter(r => r.id !== id));
+    } catch {}
+    setDeletingRewardId(null);
+  };
+
+  const handleRewardToggleActive = async (r: any) => {
+    const res = await fetch('/api/admin/rewards', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id: r.id, is_active: !r.is_active }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setRewards(prev => prev.map(x => x.id === r.id ? data.data : x));
+    }
+  };
+
+  const handleLookupCode = async () => {
+    if (!redeemCodeInput.trim()) return;
+    setLookingUpCode(true); setRedeemLookup(null); setRedeemLookupMsg(null);
+    try {
+      const res = await fetch(`/api/admin/redemptions/verify?code=${encodeURIComponent(redeemCodeInput.trim())}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) setRedeemLookup(data.data);
+      else setRedeemLookupMsg({ ok: false, text: data.error || 'Code not found' });
+    } catch { setRedeemLookupMsg({ ok: false, text: 'Network error' }); }
+    setLookingUpCode(false);
+  };
+
+  const handleConfirmRedeem = async () => {
+    if (!redeemLookup) return;
+    setConfirmingRedeem(true); setRedeemLookupMsg(null);
+    try {
+      const res = await fetch('/api/admin/redemptions/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code: redeemCodeInput.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRedeemLookup(data.data);
+        setRedeemLookupMsg({ ok: true, text: 'Confirmed — reward given to guest' });
+      } else {
+        setRedeemLookupMsg({ ok: false, text: data.error || 'Failed to confirm' });
+      }
+    } catch { setRedeemLookupMsg({ ok: false, text: 'Network error' }); }
+    setConfirmingRedeem(false);
   };
 
   const handleSyncSearch = async () => {
@@ -616,6 +815,9 @@ export default function AdminDashboard() {
     { key: 'overview',           label: 'Analytics',           badge: undefined,                                                                                    roles: ['admin'] },
     { key: 'users',              label: 'Users',                badge: users.length,                                                                                 roles: ['admin'] },
     { key: 'roles',              label: 'Role Management',      badge: roleUsers.length,                                                                             roles: ['admin'] },
+    { key: 'achievements',       label: 'Achievements',         badge: achievements.length,                                                                          roles: ['admin'] },
+    { key: 'rewards',            label: 'Rewards Catalog',      badge: rewards.length,                                                                               roles: ['admin'] },
+    { key: 'redeemcodes',        label: 'Redeem Code',          badge: undefined,                                                                                    roles: ['admin', 'officer', 'editor'] },
     { key: 'audit',              label: 'Audit Logs',           badge: strapiActivity.length,                                                                        roles: ['admin'] },
     { key: 'reports',            label: 'Reports',              badge: undefined,                                                                                    roles: ['admin'] },
     // Officer: all requests & submissions
@@ -1102,6 +1304,405 @@ export default function AdminDashboard() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── ACHIEVEMENTS ──────────────────────────────────── */}
+        {activeTab === 'achievements' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-6">
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h2 className="font-bold text-gray-900 mb-1">{achForm.id ? 'Edit Achievement' : 'Create New Achievement'}</h2>
+                    <p className="text-xs text-gray-400">Any emoji you pick renders in the same badge style as the existing achievements — no image editing needed.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Name</label>
+                      <input value={achForm.name} onChange={e => setAchForm(f => ({ ...f, name: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        placeholder="e.g. Weekend Wanderer" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Icon</label>
+                      <input value={achForm.icon} onChange={e => setAchForm(f => ({ ...f, icon: e.target.value }))}
+                        maxLength={20}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        placeholder="🏆 or pick a vector icon below" />
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {Object.entries(BADGE_ICONS).map(([name, Icon]) => (
+                          <button key={name} type="button" title={name}
+                            onClick={() => setAchForm(f => ({ ...f, icon: name }))}
+                            className={`p-1.5 rounded-lg border transition ${
+                              achForm.icon === name ? 'border-blue-400 bg-blue-50 text-blue-600' : 'border-gray-200 text-gray-400 hover:border-blue-300 hover:text-blue-500'
+                            }`}>
+                            <Icon size={16} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Description</label>
+                    <input value={achForm.description} onChange={e => setAchForm(f => ({ ...f, description: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="e.g. Sign up for 2 weekend events" />
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Badge Color</label>
+                      <input type="color" value={achForm.badge_color} onChange={e => setAchForm(f => ({ ...f, badge_color: e.target.value }))}
+                        className="w-full h-9 border border-gray-200 rounded-lg cursor-pointer" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Trigger Type</label>
+                      <select value={achForm.trigger_type} onChange={e => setAchForm(f => ({ ...f, trigger_type: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        {Object.entries(TRIGGER_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Threshold</label>
+                      <input type="number" min={1} value={achForm.trigger_value}
+                        onChange={e => setAchForm(f => ({ ...f, trigger_value: Number(e.target.value) }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Points Reward</label>
+                      <input type="number" min={0} value={achForm.points_reward}
+                        onChange={e => setAchForm(f => ({ ...f, points_reward: Number(e.target.value) }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    </div>
+                  </div>
+
+                  {achMsg && (
+                    <p className={`text-xs font-semibold flex items-center gap-1.5 ${achMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                      {achMsg.ok ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                      {achMsg.text}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <button onClick={handleAchSave} disabled={savingAch}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition"
+                      style={{ backgroundColor: '#1565C0' }}>
+                      {savingAch ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      {achForm.id ? 'Save Changes' : 'Create Achievement'}
+                    </button>
+                    {achForm.id && (
+                      <button onClick={() => { resetAchForm(); setAchMsg(null); }}
+                        className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:border-gray-300 transition">
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Live preview */}
+                <div className="flex flex-col items-center gap-2 shrink-0 mx-auto">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Live Preview</span>
+                  <BadgeSVG icon={achForm.icon || '🏆'} color={achForm.badge_color} earned size={100} />
+                </div>
+              </div>
+            </div>
+
+            {loadingAch ? (
+              <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                  <h2 className="font-bold text-gray-900">All Achievements</h2>
+                  <span className="text-sm text-gray-400">{achievements.length} total</span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {achievements.map((a: any) => (
+                    <div key={a.id} className={`flex items-center gap-4 px-6 py-4 transition ${!a.is_active ? 'opacity-50' : ''}`}>
+                      <BadgeSVG icon={a.icon} color={a.badge_color} earned size={56} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm">{a.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{a.description}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {TRIGGER_TYPE_LABELS[a.trigger_type] || a.trigger_type} ≥ {a.trigger_value} · +{a.points_reward} pts
+                        </p>
+                      </div>
+                      <button onClick={() => handleAchToggleActive(a)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 transition ${
+                          a.is_active ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}>
+                        {a.is_active ? 'Active' : 'Disabled'}
+                      </button>
+                      <button onClick={() => handleAchEdit(a)}
+                        className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition shrink-0" title="Edit">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleAchDelete(a.id)} disabled={deletingAchId === a.id}
+                        className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition shrink-0 disabled:opacity-50" title="Delete">
+                        {deletingAchId === a.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  ))}
+                  {achievements.length === 0 && (
+                    <div className="flex flex-col items-center py-16 text-center text-gray-400">
+                      <p className="font-semibold">No achievements yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── REWARDS CATALOG ───────────────────────────────── */}
+        {activeTab === 'rewards' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-6">
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h2 className="font-bold text-gray-900 mb-1">{rewardForm.id ? 'Edit Reward' : 'Create New Reward'}</h2>
+                    <p className="text-xs text-gray-400">Tourists redeem points for these at the Tourism Office using a one-time code.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Name</label>
+                      <input value={rewardForm.name} onChange={e => setRewardForm(f => ({ ...f, name: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        placeholder="e.g. Free Tsinelas Keychain" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Icon</label>
+                      <input value={rewardForm.icon} onChange={e => setRewardForm(f => ({ ...f, icon: e.target.value }))}
+                        maxLength={20}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        placeholder="🎁 or pick a vector icon below" />
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {Object.entries(BADGE_ICONS).map(([name, Icon]) => (
+                          <button key={name} type="button" title={name}
+                            onClick={() => setRewardForm(f => ({ ...f, icon: name }))}
+                            className={`p-1.5 rounded-lg border transition ${
+                              rewardForm.icon === name ? 'border-blue-400 bg-blue-50 text-blue-600' : 'border-gray-200 text-gray-400 hover:border-blue-300 hover:text-blue-500'
+                            }`}>
+                            <Icon size={16} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Description</label>
+                    <input value={rewardForm.description} onChange={e => setRewardForm(f => ({ ...f, description: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="e.g. A free souvenir keychain from a local artisan" />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Photo (proof of the item / design)</label>
+                    <MediaUploader
+                      value={rewardForm.image_url ? [{ url: rewardForm.image_url, public_id: rewardForm.image_public_id, alt_text: rewardForm.name }] : []}
+                      onChange={items => setRewardForm(f => ({ ...f, image_url: items[0]?.url || '', image_public_id: items[0]?.public_id || '' }))}
+                      maxFiles={1}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Badge Color</label>
+                      <input type="color" value={rewardForm.badge_color} onChange={e => setRewardForm(f => ({ ...f, badge_color: e.target.value }))}
+                        className="w-full h-9 border border-gray-200 rounded-lg cursor-pointer" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Points Cost</label>
+                      <input type="number" min={1} value={rewardForm.points_cost}
+                        onChange={e => setRewardForm(f => ({ ...f, points_cost: Number(e.target.value) }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Stock</label>
+                      {rewardForm.claim_type === 'online' ? (
+                        <div className="w-full border border-dashed border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-400 bg-gray-50">
+                          Unlimited · 1 per person
+                        </div>
+                      ) : (
+                        <input type="number" min={0} value={rewardForm.stock}
+                          onChange={e => setRewardForm(f => ({ ...f, stock: e.target.value }))}
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          placeholder="Unlimited" />
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Claim Type</label>
+                      <select value={rewardForm.claim_type} onChange={e => setRewardForm(f => ({ ...f, claim_type: e.target.value as 'irl' | 'online' }))}
+                        className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="irl">In-person (QR pickup)</option>
+                        <option value="online">Online (instant badge)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    {rewardForm.claim_type === 'online'
+                      ? 'Claimed instantly online — no pickup, no code to scan. Unlimited supply, but each guest can only claim it once.'
+                      : 'Guest gets a one-time QR code to redeem in person at the Tourism Office.'}
+                  </p>
+
+                  {rewardMsg && (
+                    <p className={`text-xs font-semibold flex items-center gap-1.5 ${rewardMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                      {rewardMsg.ok ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                      {rewardMsg.text}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <button onClick={handleRewardSave} disabled={savingReward}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition"
+                      style={{ backgroundColor: '#1565C0' }}>
+                      {savingReward ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      {rewardForm.id ? 'Save Changes' : 'Create Reward'}
+                    </button>
+                    {rewardForm.id && (
+                      <button onClick={() => { resetRewardForm(); setRewardMsg(null); }}
+                        className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:border-gray-300 transition">
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-2 shrink-0 mx-auto">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Live Preview</span>
+                  {rewardForm.image_url ? (
+                    <img src={rewardForm.image_url} alt="" className="w-[100px] h-[100px] rounded-2xl object-cover border border-gray-200" />
+                  ) : (
+                    <BadgeSVG icon={rewardForm.icon || '🎁'} color={rewardForm.badge_color} earned size={100} />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {loadingRewards ? (
+              <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                  <h2 className="font-bold text-gray-900">All Rewards</h2>
+                  <span className="text-sm text-gray-400">{rewards.length} total</span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {rewards.map((r: any) => (
+                    <div key={r.id} className={`flex items-center gap-4 px-6 py-4 transition ${!r.is_active ? 'opacity-50' : ''}`}>
+                      {r.image_url ? (
+                        <img src={r.image_url} alt="" className="w-14 h-14 rounded-2xl object-cover border border-gray-200 shrink-0" />
+                      ) : (
+                        <BadgeSVG icon={r.icon} color={r.badge_color} earned size={56} />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900 text-sm">{r.name}</p>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${r.claim_type === 'online' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'}`}>
+                            {r.claim_type === 'online' ? 'ONLINE' : 'IN-PERSON'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-400 truncate">{r.description}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {r.points_cost} pts · {r.claim_type === 'online' ? 'Unlimited · 1 per person' : r.stock === null ? 'Unlimited stock' : `${r.stock} left`}
+                        </p>
+                      </div>
+                      <button onClick={() => handleRewardToggleActive(r)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 transition ${
+                          r.is_active ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}>
+                        {r.is_active ? 'Active' : 'Disabled'}
+                      </button>
+                      <button onClick={() => handleRewardEdit(r)}
+                        className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition shrink-0" title="Edit">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleRewardDelete(r.id)} disabled={deletingRewardId === r.id}
+                        className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition shrink-0 disabled:opacity-50" title="Delete">
+                        {deletingRewardId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  ))}
+                  {rewards.length === 0 && (
+                    <div className="flex flex-col items-center py-16 text-center text-gray-400">
+                      <p className="font-semibold">No rewards yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── REDEEM CODE ────────────────────────────────────── */}
+        {activeTab === 'redeemcodes' && (
+          <div className="max-w-lg mx-auto space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+              <h2 className="font-bold text-gray-900 mb-1">Redeem a Guest's Code</h2>
+              <p className="text-xs text-gray-400 mb-4">Scan or type the code the guest shows you, look it up, then confirm once you've handed over the reward.</p>
+              <div className="flex gap-2">
+                <input value={redeemCodeInput} onChange={e => setRedeemCodeInput(e.target.value.toUpperCase())}
+                  onKeyDown={e => e.key === 'Enter' && handleLookupCode()}
+                  placeholder="LILIW-XXXX-XXXX"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-bold tracking-wider uppercase focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <button onClick={handleLookupCode} disabled={lookingUpCode || !redeemCodeInput.trim()}
+                  className="px-4 py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition flex items-center gap-2"
+                  style={{ backgroundColor: '#1565C0' }}>
+                  {lookingUpCode ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Look Up
+                </button>
+              </div>
+            </div>
+
+            {redeemLookupMsg && !redeemLookup && (
+              <p className={`text-sm font-semibold flex items-center gap-1.5 ${redeemLookupMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                {redeemLookupMsg.ok ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                {redeemLookupMsg.text}
+              </p>
+            )}
+
+            {redeemLookup && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
+                <div className="flex items-center gap-3">
+                  {redeemLookup.image_url && (
+                    <img src={redeemLookup.image_url} alt="" className="w-14 h-14 rounded-xl object-cover border border-gray-200 shrink-0" />
+                  )}
+                  <div className="flex-1 flex items-center justify-between">
+                    <h3 className="font-bold text-gray-900">{redeemLookup.reward_name}</h3>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      redeemLookup.status === 'redeemed' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      {redeemLookup.status === 'redeemed' ? 'Already Redeemed' : 'Pending'}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500">
+                  Guest: <span className="font-semibold text-gray-800">{redeemLookup.profile?.username || redeemLookup.profile?.email || 'Unknown'}</span>
+                </p>
+                <p className="text-sm text-gray-500">Points spent: <span className="font-semibold text-gray-800">{redeemLookup.points_spent}</span></p>
+                <p className="text-xs text-gray-400">Requested {new Date(redeemLookup.created_at).toLocaleString('en-PH')}</p>
+                {redeemLookup.status === 'redeemed' ? (
+                  <p className="text-xs text-gray-400">Redeemed {redeemLookup.redeemed_at ? new Date(redeemLookup.redeemed_at).toLocaleString('en-PH') : ''} by {redeemLookup.redeemed_by || 'staff'}</p>
+                ) : (
+                  <button onClick={handleConfirmRedeem} disabled={confirmingRedeem}
+                    className="w-full py-2.5 rounded-lg text-sm font-bold text-white disabled:opacity-50 transition flex items-center justify-center gap-2"
+                    style={{ backgroundColor: '#16A34A' }}>
+                    {confirmingRedeem ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                    Confirm — Reward Given
+                  </button>
+                )}
+                {redeemLookupMsg && (
+                  <p className={`text-xs font-semibold flex items-center gap-1.5 ${redeemLookupMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                    {redeemLookupMsg.ok ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                    {redeemLookupMsg.text}
+                  </p>
+                )}
               </div>
             )}
           </div>

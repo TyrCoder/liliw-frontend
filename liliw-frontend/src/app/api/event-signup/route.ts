@@ -30,11 +30,12 @@ export async function POST(request: NextRequest) {
 
     // Award points if user is logged in
     const auth = await verifyToken(request);
+    let unlockedAchievements: Awaited<ReturnType<typeof awardPoints>> = [];
     if (auth?.userId && eventId) {
-      awardPoints(auth.userId, 'event_signup', String(eventId), event_title || 'Event').catch(() => {});
+      unlockedAchievements = await awardPoints(auth.userId, 'event_signup', String(eventId), event_title || 'Event').catch(() => []);
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, unlockedAchievements });
   } catch (err) {
     logger.error('event-signup route error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

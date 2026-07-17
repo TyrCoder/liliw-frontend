@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, MapPin, Users, ChevronLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { showAchievementToasts } from '@/lib/achievementToast';
 
 interface EventModalProps {
   event: any;
@@ -82,10 +83,11 @@ export default function EventModal({ event, onClose, defaultStep = 'details' }: 
           username: user?.username ?? '',
         }),
       });
+      const d = await res.json();
       if (!res.ok) {
-        const d = await res.json();
         throw new Error(d.error || 'Failed to submit');
       }
+      showAchievementToasts(d.unlockedAchievements);
       setStep('success');
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
