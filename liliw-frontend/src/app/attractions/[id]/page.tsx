@@ -11,12 +11,18 @@ import Ratings from '@/components/Ratings';
 import EventCalendar from '@/components/EventCalendar';
 import InteractiveMap from '@/components/InteractiveMap';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
+import { useAuth } from '@/context/AuthContext';
+import { showAchievementToasts } from '@/lib/achievementToast';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food' };
+
+// Guest must stay on the page this long before the visit counts toward achievements —
+// prevents rapid click-throughs from farming the "visit N spots" badge.
+const VISIT_DWELL_MS = 150_000; // 2.5 minutes
 
 interface Attraction {
   id: string | number;
@@ -40,6 +46,7 @@ interface ExternalReview {
 }
 
 export default function AttractionDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { token } = useAuth();
   const [attractionId, setAttractionId] = useState<string | null>(null);
   const [attraction, setAttraction] = useState<Attraction | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,7 +101,23 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
       } finally { setLoading(false); }
     };
     fetchData();
-  }, [attractionId]);
+  }, [attractionId, token]);
+
+  // Only count a "visit" toward achievements after a genuine dwell — not a quick click-through.
+  useEffect(() => {
+    if (!attraction?.id || !token) return;
+    const t = setTimeout(() => {
+      fetch('/api/attractions/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ attractionId: attraction.id, attractionName: attraction.attributes.name }),
+      })
+        .then(r => r.json())
+        .then(d => showAchievementToasts(d.unlockedAchievements))
+        .catch(() => {});
+    }, VISIT_DWELL_MS);
+    return () => clearTimeout(t);
+  }, [attraction?.id, token]);
 
   if (loading) {
     return (

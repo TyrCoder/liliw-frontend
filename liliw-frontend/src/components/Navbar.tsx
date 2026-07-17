@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck, ChevronDown, Search, Bell, MessageSquare, Users, Building2, MapPin, Newspaper, CalendarDays, Settings } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck, ChevronDown, Search, Bell, MessageSquare, Users, Building2, MapPin, Newspaper, CalendarDays, Settings, Trophy } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
@@ -10,7 +10,7 @@ import SmartSearchModal from '@/components/SmartSearchModal';
 
 type NotifItem = {
   id: string;
-  type: 'submission' | 'participation' | 'lbo_application' | 'attraction_request' | 'event' | 'news';
+  type: 'submission' | 'participation' | 'lbo_application' | 'attraction_request' | 'event' | 'news' | 'achievement';
   title: string;
   subtitle: string;
   status?: string;
@@ -34,6 +34,7 @@ function notifIcon(type: NotifItem['type']) {
   if (type === 'attraction_request') return <MapPin className="w-3.5 h-3.5" />;
   if (type === 'event')              return <CalendarDays className="w-3.5 h-3.5" />;
   if (type === 'news')               return <Newspaper className="w-3.5 h-3.5" />;
+  if (type === 'achievement')        return <Trophy className="w-3.5 h-3.5" />;
 }
 
 function notifColor(type: NotifItem['type']) {
@@ -43,6 +44,7 @@ function notifColor(type: NotifItem['type']) {
   if (type === 'attraction_request') return { bg: '#F5F3FF', color: '#6D28D9' };
   if (type === 'event')              return { bg: '#FEF3C7', color: '#B45309' };
   if (type === 'news')               return { bg: '#F0FDF4', color: '#065F46' };
+  if (type === 'achievement')        return { bg: '#FEF9C3', color: '#A16207' };
   return { bg: '#F1F5F9', color: '#475569' };
 }
 
@@ -364,6 +366,7 @@ export default function Navbar() {
                           {[
                             { href: '/profile',       icon: <User className="w-4 h-4" />,          label: 'View Profile' },
                             { href: '/profile#saved', icon: <BookmarkCheck className="w-4 h-4" />, label: 'Saved Itineraries' },
+                            { href: '/rewards',       icon: <Trophy className="w-4 h-4" />,        label: 'Rewards' },
                           ].map(item => (
                             <Link key={item.href} href={item.href} onClick={() => setUserMenuOpen(false)}
                               className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 transition"
@@ -444,6 +447,7 @@ export default function Navbar() {
                     <>
                       <NavLink href="/profile" label="My Profile" onClick={closeMenu} />
                       <NavLink href="/profile#saved" label="Saved Itineraries" onClick={closeMenu} />
+                      <NavLink href="/rewards" label="Rewards" onClick={closeMenu} />
                     </>
                   )}
                   {isStaff && <NavLink href="/admin" label={isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'Officer Dashboard' : 'Editor Dashboard'} onClick={closeMenu} />}

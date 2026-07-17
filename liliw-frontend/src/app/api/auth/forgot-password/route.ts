@@ -12,7 +12,7 @@ function generateOtp(): string {
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
-  auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
+  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
 });
 
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     otpStore.set(email.toLowerCase(), { otp, expiry: Date.now() + 10 * 60 * 1000 });
 
     await transporter.sendMail({
-      from: `"Liliw Tourism" <${process.env.GMAIL_USER}>`,
+      from: `"Liliw Tourism" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Your Liliw Tourism password reset code',
       html: `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Reset your password</title></head>

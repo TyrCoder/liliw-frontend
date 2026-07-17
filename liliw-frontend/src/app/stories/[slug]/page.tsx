@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, User, Calendar, BookOpen, Play } from 'lucide-react';
 import GatTayaw from '@/components/GatTayaw';
+import DogMascot from '@/components/DogMascot';
 
 // Add YouTube video IDs per story type — empty strings are hidden until filled
 const STORY_VIDEOS: Record<string, { id: string; title: string }[]> = {
@@ -422,13 +423,7 @@ export default function StoryDetailPage() {
 
             {/* ── Right sidebar: floating dog (sticky) ── */}
             <div className="hidden xl:flex w-40 shrink-0 flex-col items-center xl:sticky xl:top-32">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/liliw-dog.png"
-                alt="Liliw mascot"
-                className="gat-float"
-                style={{ width: 140, height: 'auto', display: 'block', filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.13))' }}
-              />
+              <DogMascot size={140} />
             </div>
 
           </div>

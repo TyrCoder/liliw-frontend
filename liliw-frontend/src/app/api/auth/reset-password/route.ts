@@ -15,9 +15,7 @@ export async function POST(req: NextRequest) {
     if (Date.now() > entry.expiry) { otpStore.delete(key); return NextResponse.json({ error: 'Code expired. Please request a new one.' }, { status: 400 }); }
     if (entry.otp !== otp)         return NextResponse.json({ error: 'Incorrect code. Please try again.' }, { status: 400 });
 
-    // Look up Supabase user by email
-    const { data: { users } } = await supabaseServer.auth.admin.listUsers({ page: 1, perPage: 1 });
-    // listUsers doesn't filter — use profiles table instead
+    // Look up Supabase user by email via the profiles table
     const { data: profile } = await supabaseServer.from('profiles').select('id').eq('email', key).single();
     if (!profile) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 

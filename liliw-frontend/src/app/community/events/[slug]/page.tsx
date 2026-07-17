@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
+import { showAchievementToasts } from '@/lib/achievementToast';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -52,7 +53,7 @@ const CATEGORY_BADGE: Record<string, string> = {
 
 export default function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { user }  = useAuth();
+  const { user, token }  = useAuth();
   const router    = useRouter();
 
   const [event, setEvent]         = useState<any>(null);
@@ -94,9 +95,13 @@ export default function EventDetailPage() {
     try {
       const res = await fetch('/api/event-signup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           eventId: event.id,
+          event_title: a.title,
           full_name: fullName,
           email,
           phone,
@@ -107,6 +112,7 @@ export default function EventDetailPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
+      showAchievementToasts(data.unlockedAchievements);
       setSubmitted(true);
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
