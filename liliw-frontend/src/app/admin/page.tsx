@@ -572,9 +572,9 @@ export default function AdminDashboard() {
   const handleSyncSearch = async () => {
     setSyncStatus('syncing');
     try {
-      const res = await fetch('/api/admin/sync-search', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch('/api/algolia/index', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      res.ok ? (setSyncCount(data.synced), setSyncStatus('done')) : setSyncStatus('error');
+      res.ok ? (setSyncCount(data.count), setSyncStatus('done')) : setSyncStatus('error');
     } catch { setSyncStatus('error'); }
     setTimeout(() => setSyncStatus('idle'), 4000);
   };
