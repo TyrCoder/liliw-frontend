@@ -445,6 +445,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
         }
 
         if (!map.hasImage('route-arrow')) {
+          // Solid silhouette + sdf:true lets each day's arrow layer tint via icon-color to match its route color
           const size = 32;
           const canvasEl = document.createElement('canvas');
           canvasEl.width = size; canvasEl.height = size;
@@ -454,12 +455,9 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
           ctx.lineTo(size * 0.85, size * 0.5);
           ctx.lineTo(size * 0.2, size * 0.88);
           ctx.closePath();
-          ctx.fillStyle = '#ffffff';
+          ctx.fillStyle = '#000000';
           ctx.fill();
-          ctx.lineWidth = 2.5;
-          ctx.strokeStyle = '#1A1A2E';
-          ctx.stroke();
-          map.addImage('route-arrow', ctx.getImageData(0, 0, size, size), { pixelRatio: 1 });
+          map.addImage('route-arrow', ctx.getImageData(0, 0, size, size), { pixelRatio: 1, sdf: true });
         }
 
         const drawDayRoute = async (day: number, dayLine: [number, number][]) => {
@@ -485,12 +483,17 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
             source: sourceId,
             layout: {
               'symbol-placement': 'line',
-              'symbol-spacing': 55,
+              'symbol-spacing': 140,
               'icon-image': 'route-arrow',
               'icon-size': 0.75,
               'icon-allow-overlap': true,
               'icon-ignore-placement': true,
               'icon-rotation-alignment': 'map',
+            },
+            paint: {
+              'icon-color': color,
+              'icon-halo-color': '#ffffff',
+              'icon-halo-width': 1,
             },
           });
         };
