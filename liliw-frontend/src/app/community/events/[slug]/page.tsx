@@ -68,7 +68,7 @@ export default function EventDetailPage() {
   const [error, setError]           = useState('');
 
   useEffect(() => {
-    fetch(`/api/strapi/events/${slug}`)
+    fetch(`/api/content/events/${slug}`)
       .then(r => r.json())
       .then(data => {
         const item = data.data?.[0];

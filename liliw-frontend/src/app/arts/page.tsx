@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -198,7 +198,7 @@ export default function ArtsPage() {
   const [selectedArtForm, setSelectedArtForm] = useState<any | null>(null);
 
   useEffect(() => {
-    fetch('/api/strapi/arts')
+    fetch('/api/content/arts')
       .then(r => r.json())
       .then(({ artForms: artData, artisans: artisanData }) => {
         if (artData?.data?.length) setArtForms(artData.data.map((i: any) => i.attributes || i));

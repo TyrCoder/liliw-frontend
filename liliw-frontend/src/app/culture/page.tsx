@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -177,7 +177,7 @@ export default function CulturePage() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
   useEffect(() => {
-    fetch('/api/strapi/culture-heritages')
+    fetch('/api/content/culture-heritages')
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(json => { const raw = json?.data ?? json ?? []; setCultureItems(Array.isArray(raw) ? raw : []); })
       .catch(() => setError(true))

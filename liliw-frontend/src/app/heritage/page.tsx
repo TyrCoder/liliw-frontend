@@ -52,7 +52,7 @@ export default function HeritagePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('/api/strapi/attractions')
+    fetch('/api/content/attractions')
       .then(r => r.json())
       .then(json => setHeritage((json.data ?? []).filter((a: any) => a.type === 'heritage')))
       .catch(() => setError('Failed to load heritage sites'))

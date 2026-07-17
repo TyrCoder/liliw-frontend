@@ -38,7 +38,7 @@ export default function Ratings({ itemId, itemName }: RatingsProps) {
 
   const fetchReviews = () => {
     setLoading(true);
-    fetch(`/api/strapi/reviews?itemId=${encodeURIComponent(itemId)}`)
+    fetch(`/api/content/reviews?itemId=${encodeURIComponent(itemId)}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data?.data) return;

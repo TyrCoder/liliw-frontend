@@ -320,7 +320,7 @@ export default function Home() {
 
   /* ── data fetching ──────────────────────────────────────── */
   useEffect(() => {
-    fetch('/api/strapi/hero-slides')
+    fetch('/api/content/hero-slides')
       .then(r => r.json())
       .then(d => {
         if (d?.data?.length) {
@@ -334,7 +334,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/strapi/attractions')
+    fetch('/api/content/attractions')
       .then(r => r.json())
       .then(d => {
         const data: any[] = d.data || [];
@@ -345,7 +345,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/strapi/news-events?limit=4')
+    fetch('/api/content/news-events?limit=4')
       .then(r => r.json())
       .catch(() => null)
       .then((combined: any) => {

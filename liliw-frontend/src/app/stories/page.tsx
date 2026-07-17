@@ -85,7 +85,7 @@ export default function StoriesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/strapi/stories')
+    fetch('/api/content/stories')
       .then(r => r.json())
       .then(json => {
         const raw: any[] = json?.data ?? [];

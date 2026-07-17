@@ -63,7 +63,7 @@ export default function FaqPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/strapi/faqs')
+    fetch('/api/content/faqs')
       .then(r => r.json())
       .then(json => {
         setFaqs((json.data ?? []).map((faq: any) => {

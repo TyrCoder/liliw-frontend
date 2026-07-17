@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
-import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/strapi';
+import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/content';
 
 const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
 

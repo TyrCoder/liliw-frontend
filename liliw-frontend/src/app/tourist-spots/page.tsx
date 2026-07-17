@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -67,7 +67,7 @@ export default function TouristSpotsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('/api/strapi/attractions')
+    fetch('/api/content/attractions')
       .then(r => r.json())
       .then(json => setSpots((json.data ?? []).filter((a: any) => a.type === 'spot')))
       .catch(() => setError('Failed to load tourist spots'))

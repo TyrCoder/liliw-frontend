@@ -16,7 +16,7 @@ export default function AnnouncementBar({ defaultOpen = true }: AnnouncementBarP
   const [subtext, setSubtext] = useState('');
 
   useEffect(() => {
-    fetch('/api/strapi/news-events?limit=1')
+    fetch('/api/content/news-events?limit=1')
       .then(r => r.json())
       .then(combined => {
         const item = combined?.news?.data?.[0];

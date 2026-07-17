@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Shared Type Definitions
  * Centralized types for better type safety across the application
  */
@@ -15,8 +15,8 @@ export interface Hotspot {
   size?: number; // scale multiplier, 0.5–2.0, default 1.0
 }
 
-// Strapi API Response Types
-export interface StrapiImageAttribute {
+// CMS API Response Types
+export interface ImageAttribute {
   id: number;
   name: string;
   alternativeText?: string;
@@ -41,7 +41,7 @@ export interface StrapiImageAttribute {
   updatedAt: string;
 }
 
-export interface StrapiComponentRichText {
+export interface RichTextComponent {
   type: string;
   children?: Array<{
     text: string;
@@ -52,7 +52,7 @@ export interface StrapiComponentRichText {
   }>;
 }
 
-export interface StrapiBlocksContent {
+export interface BlocksContent {
   type: string;
   children?: Array<{
     text: string;
@@ -63,7 +63,7 @@ export interface StrapiBlocksContent {
   }>;
 }
 
-export interface StrapiMeta {
+export interface ResponseMeta {
   pagination?: {
     page: number;
     pageSize: number;
@@ -72,9 +72,9 @@ export interface StrapiMeta {
   };
 }
 
-export interface StrapiResponse<T> {
+export interface ApiResponse<T> {
   data: T extends (infer U)[] ? T : T;
-  meta?: StrapiMeta;
+  meta?: ResponseMeta;
 }
 
 // Attraction Types
@@ -84,8 +84,8 @@ export interface AttractionAttribute {
   location: string;
   category?: string;
   rating?: number;
-  images?: StrapiImageAttribute[];
-  photos?: StrapiImageAttribute[];
+  images?: ImageAttribute[];
+  photos?: ImageAttribute[];
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
@@ -105,7 +105,7 @@ export interface HeritageSiteAttribute {
   yearBuilt?: number;
   location: string;
   rating?: number;
-  images?: StrapiImageAttribute[];
+  images?: ImageAttribute[];
   google_place_id?: string;
   coordinates?: {
     latitude: number;
@@ -129,7 +129,7 @@ export interface TouristSpotAttribute {
   location: string;
   category?: string;
   rating?: number;
-  images?: StrapiImageAttribute[];
+  images?: ImageAttribute[];
   google_place_id?: string;
   coordinates?: {
     latitude: number;
@@ -154,7 +154,7 @@ export interface DiningPlaceAttribute {
   cuisine?: string;
   priceRange?: string;
   rating?: number;
-  images?: StrapiImageAttribute[];
+  images?: ImageAttribute[];
   google_place_id?: string;
   coordinates?: {
     latitude: number;
@@ -179,7 +179,7 @@ export interface EventAttribute {
   endDate: string;
   location?: string;
   category?: string;
-  images?: StrapiImageAttribute[];
+  images?: ImageAttribute[];
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
