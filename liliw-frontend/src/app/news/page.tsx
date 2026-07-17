@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar, Bell, X, MapPin, Maximize2, CheckCircle, Loader2 } from 'lucide-react';
 import PhotoLightbox from '@/components/PhotoLightbox';
+import { stripHtml } from '@/lib/text';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
@@ -40,7 +41,7 @@ function Bunting({ flip = false }: { flip?: boolean }) {
 
 const extractText = (richText: any): string => {
   if (!richText) return '';
-  if (typeof richText === 'string') return richText;
+  if (typeof richText === 'string') return stripHtml(richText);
   if (Array.isArray(richText))
     return richText.map((b: any) => b.children?.map((c: any) => c.text || '').join('') || '').join(' ').trim();
   return '';

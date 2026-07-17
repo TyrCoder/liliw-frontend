@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Play, AlertCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { stripHtml } from '@/lib/text';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -48,7 +49,7 @@ function WaveDown({ from, to }: { from: string; to: string }) {
 
 function extractText(richText: any): string {
   if (!richText) return '';
-  if (typeof richText === 'string') return richText;
+  if (typeof richText === 'string') return stripHtml(richText);
   if (Array.isArray(richText))
     return richText.map((block: any) => (block?.children ?? []).map((c: any) => c?.text ?? '').join(' ')).join(' ');
   return '';

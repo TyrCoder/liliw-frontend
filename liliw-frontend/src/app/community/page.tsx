@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, MessageSquare, Users, Briefcase, Eye, Calendar, CheckCircle, AlertCircle, Loader2, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import ParticipationModal from '@/components/ParticipationModal';
+import { stripHtml } from '@/lib/text';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
@@ -329,7 +330,7 @@ export default function CommunityPage() {
                       {ICON_MAP[act.type] ?? <Users className="w-5 h-5" />}
                     </div>
                     <h3 className="text-lg font-bold mb-1" style={{ color: '#1A1A2E', fontFamily: HL }}>{act.title}</h3>
-                    {act.description && <p className="text-sm text-gray-400 mb-5" style={{ fontFamily: BL }}>{act.description}</p>}
+                    {act.description && <p className="text-sm text-gray-400 mb-5" style={{ fontFamily: BL }}>{stripHtml(act.description)}</p>}
                     {act.items.length > 0 && (
                       <ul className="space-y-2.5 mb-7 flex-1">
                         {act.items.map((b, i) => (

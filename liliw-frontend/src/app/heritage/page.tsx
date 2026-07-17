@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Layers, Star } from 'lucide-react';
 import FavoriteButton from '@/components/FavoriteButton';
+import { stripHtml } from '@/lib/text';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -134,7 +135,7 @@ export default function HeritagePage() {
                             {[...Array(5)].map((_, i) => <Star key={i} className="w-3.5 h-3.5" fill={i < Math.round(rating) ? '#F5C518' : 'none'} stroke={i < Math.round(rating) ? '#F5C518' : '#d1d5db'} />)}
                           </div>
                         )}
-                        {site.attributes?.description && <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 flex-1 mb-4" style={{ fontFamily: BL }}>{site.attributes.description}</p>}
+                        {site.attributes?.description && <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 flex-1 mb-4" style={{ fontFamily: BL }}>{stripHtml(site.attributes.description)}</p>}
                         <div className="inline-flex items-center font-semibold text-sm gap-1" style={{ color: '#1565C0', fontFamily: BL }}>
                           View Details <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
                         </div>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, MapPin, Phone, ExternalLink, Search, ChevronLeft, ChevronRight, X, Maximize2 } from 'lucide-react';
 import PhotoLightbox from '@/components/PhotoLightbox';
+import { stripHtml } from '@/lib/text';
 
 const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || '';
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -161,7 +162,7 @@ function ArtFormModal({ art, onClose }: { art: any; onClose: () => void }) {
         <div className="p-6 overflow-y-auto">
           <h3 className="text-2xl font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>{art.name || art.title}</h3>
           {art.description && (
-            <p className="text-gray-600 text-sm leading-relaxed mb-5" style={{ fontFamily: BL }}>{art.description}</p>
+            <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed mb-5" style={{ fontFamily: BL }} dangerouslySetInnerHTML={{ __html: art.description }} />
           )}
           {features.length > 0 && (
             <div>
@@ -279,7 +280,7 @@ export default function ArtsPage() {
                 <div className="p-6 relative">
                   <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-full opacity-5 group-hover:opacity-10 transition-opacity" style={{ backgroundColor: '#0B3D91' }} />
                   <h3 className="text-lg font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>{art.name || art.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed line-clamp-2" style={{ fontFamily: BL }}>{art.description}</p>
+                  <p className="text-gray-500 text-sm leading-relaxed line-clamp-2" style={{ fontFamily: BL }}>{stripHtml(art.description)}</p>
                   {features.length > 0 && (
                     <p className="text-xs text-blue-600 mt-3 font-semibold" style={{ fontFamily: BL }}>
                       {features.length} highlight{features.length > 1 ? 's' : ''} · tap to view

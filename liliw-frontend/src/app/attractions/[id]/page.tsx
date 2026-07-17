@@ -13,6 +13,7 @@ import InteractiveMap from '@/components/InteractiveMap';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { useAuth } from '@/context/AuthContext';
 import { showAchievementToasts } from '@/lib/achievementToast';
+import { stripHtml } from '@/lib/text';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -197,10 +198,9 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         {/* Description */}
         {attraction.attributes.description && (
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }}
-            className="mb-8 sm:mb-12 text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed p-5 sm:p-6 rounded-2xl border-l-4 bg-white"
-            style={{ borderLeftColor: '#1565C0' }}>
-            {attraction.attributes.description}
-          </motion.div>
+            className="mb-8 sm:mb-12 prose prose-sm sm:prose-base md:prose-lg max-w-none text-gray-700 leading-relaxed p-5 sm:p-6 rounded-2xl border-l-4 bg-white"
+            style={{ borderLeftColor: '#1565C0', fontFamily: BL }}
+            dangerouslySetInnerHTML={{ __html: attraction.attributes.description }} />
         )}
 
         {/* Info Grid */}
@@ -250,7 +250,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         {/* Social Share */}
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.2 }}
           className="mb-8 sm:mb-12 p-5 sm:p-6 bg-white rounded-2xl border border-gray-100">
-          <SocialShare title={attraction.attributes.name} description={attraction.attributes.description} />
+          <SocialShare title={attraction.attributes.name} description={stripHtml(attraction.attributes.description)} />
         </motion.div>
 
         {/* Image Gallery */}
@@ -315,7 +315,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
                   lng,
                   google_place_id: attraction.attributes.google_place_id,
                   category: attraction.attributes.category,
-                  description: attraction.attributes.description,
+                  description: stripHtml(attraction.attributes.description),
                 }]}
               />
             </motion.div>
@@ -425,7 +425,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
                         </p>
                       )}
                       {related.attributes.description && (
-                        <p className="text-sm text-gray-500 line-clamp-2" style={{ fontFamily: BL }}>{related.attributes.description}</p>
+                        <p className="text-sm text-gray-500 line-clamp-2" style={{ fontFamily: BL }}>{stripHtml(related.attributes.description)}</p>
                       )}
                     </div>
                   </Link>

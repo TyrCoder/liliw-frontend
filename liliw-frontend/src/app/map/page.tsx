@@ -7,6 +7,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { MapPin, Navigation, X, Layers, ChevronLeft, Eye, Star, ChevronDown, Plus, Search } from 'lucide-react';
+import { stripHtml } from '@/lib/text';
 
 const LILIW_CENTER = { longitude: 121.43605859033404, latitude: 14.130301377593792 };
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -687,7 +688,7 @@ export default function MapPage() {
                     )}
                   </div>
                   {selected.description && (
-                    <p className="px-4 pt-3 pb-0 text-white/50 text-xs leading-relaxed line-clamp-2">{selected.description}</p>
+                    <p className="px-4 pt-3 pb-0 text-white/50 text-xs leading-relaxed line-clamp-2">{stripHtml(selected.description)}</p>
                   )}
                   <div className="p-3 flex flex-col gap-2">
                     <div className="flex gap-2">

@@ -6,6 +6,7 @@ import StatusBadge from './StatusBadge';
 import RichTextEditor from './RichTextEditor';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import RejectModal from './RejectModal';
+import { stripHtml } from '@/lib/text';
 
 const STATUS_LABELS: Record<string, string> = { all: 'All', draft: 'Draft', pending: 'Pending Review', approved: 'Published', rejected: 'Rejected' };
 
@@ -133,7 +134,7 @@ export default function ItinerariesTab({ token, userEmail, isOfficer, isAdmin }:
                   <tr key={e.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-5 py-4">
                       <p className="font-semibold text-gray-900">{e.title}</p>
-                      {e.description && <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[250px]">{e.description}</p>}
+                      {e.description && <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[250px]">{stripHtml(e.description)}</p>}
                       {e.reject_remarks && <p className="text-xs text-red-500 mt-0.5">Rejected: {e.reject_remarks}</p>}
                     </td>
                     <td className="px-5 py-4 text-gray-500 text-xs">{e.category || '—'}</td>
