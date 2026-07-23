@@ -69,11 +69,12 @@ export async function awardPoints(
     if (ach.trigger_type === 'total_points'           && earned      >= ach.trigger_value) unlocked = true;
 
     if (unlocked) {
-      await supabaseServer.from('user_achievements').insert({ user_id: userId, achievement_id: ach.id });
+      const { error: achErr } = await supabaseServer.from('user_achievements').insert({ user_id: userId, achievement_id: ach.id });
+      if (achErr) continue; // lost the race to a concurrent call — don't double-award
       if (ach.points_reward > 0) {
         await supabaseServer.from('user_points').insert({
           user_id: userId, points: ach.points_reward,
-          action: 'achievement_bonus', reference_name: ach.name,
+          action: 'achievement_bonus', reference_id: ach.id, reference_name: ach.name,
         });
       }
       newlyUnlocked.push({ id: ach.id, name: ach.name, icon: ach.icon, badge_color: ach.badge_color, points_reward: ach.points_reward });
