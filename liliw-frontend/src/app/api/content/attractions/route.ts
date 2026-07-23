@@ -28,7 +28,7 @@ export async function GET() {
           description: item.description ?? '',
           location: item.location ?? '',
           category: item.category,
-          rating: 0,
+          rating: item.rating ?? 0,
           google_place_id: undefined,
           coordinates: (item.map_lat != null && item.map_lng != null)
             ? { latitude: Number(item.map_lat), longitude: Number(item.map_lng) }

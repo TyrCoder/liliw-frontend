@@ -560,7 +560,10 @@ export default function MapPage() {
         </div>
         <div className="flex gap-1.5 ml-auto overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
           {(['all', 'heritage', 'spot', 'dining'] as FilterType[]).map(f => (
-            <button key={f} onClick={() => setFilter(f)}
+            <button key={f} onClick={() => {
+              setFilter(f);
+              setSelected(prev => (prev && f !== 'all' && prev.type !== f) ? null : prev);
+            }}
               className="flex-shrink-0 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold transition"
               style={{ backgroundColor: filter === f ? '#F5C518' : 'rgba(255,255,255,0.08)', color: filter === f ? '#1565C0' : 'rgba(255,255,255,0.7)' }}>
               {f === 'all' ? 'All' : TYPE_CONFIG[f as keyof typeof TYPE_CONFIG].label}

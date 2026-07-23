@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabaseServer
     .from('reward_redemptions')
-    .select('id, reward_name, points_spent, status, created_at, redeemed_at, redeemed_by, user_id, image_url')
+    .select('id, redemption_code, reward_name, points_spent, status, created_at, redeemed_at, redeemed_by, user_id, image_url')
     .eq('redemption_code', code)
     .maybeSingle();
 

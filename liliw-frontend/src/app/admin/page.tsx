@@ -556,7 +556,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/redemptions/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ code: redeemCodeInput.trim() }),
+        body: JSON.stringify({ code: redeemLookup.redemption_code }),
       });
       const data = await res.json();
       if (res.ok) {
