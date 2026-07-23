@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { SESSION_COOKIE, verifySession } from '@/lib/session';
 
 const ADMIN_ROLES  = ['admin'];
 const STAFF_ROLES  = ['admin', 'chatoofficer', 'chatoeditor'];
 
 function getSessionRole(req: NextRequest): string | null {
-  return req.cookies.get('liliw-session')?.value ?? null;
+  const session = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
+  return session?.role ?? null;
 }
 
 function hasAuthHeader(req: NextRequest): boolean {
@@ -59,5 +61,6 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
+  runtime: 'nodejs',
   matcher: ['/admin/:path*', '/cms/:path*', '/lbo/:path*', '/api/admin/:path*'],
 };
