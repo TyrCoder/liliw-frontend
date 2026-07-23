@@ -58,16 +58,21 @@ export default function SmartSearchModal({ onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen]   = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   useEffect(() => {
     const t = setTimeout(async () => {
       if (query.trim().length > 2) {
+        const requestId = ++requestIdRef.current;
         setLoading(true);
-        setResults(await searchAlgolia(query));
+        const hits = await searchAlgolia(query);
+        if (requestIdRef.current !== requestId) return; // a newer search has since started
+        setResults(hits);
         setLoading(false);
       } else {
+        requestIdRef.current++;
         setResults([]);
       }
     }, 300);

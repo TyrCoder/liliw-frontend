@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
-import { getCmsIdentity, getCmsRole, CMS_TABLES } from '@/lib/cms-auth';
+import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
+import { invalidateContentCache } from '@/lib/content';
 
 type Params = { params: Promise<{ type: string; id: string }> };
 
@@ -55,12 +56,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const title = data?.name || data?.title || data?.question || id;
   logCmsAction({ table, entryId: id, entryTitle: String(title), event: 'entry.update', performedBy: email, role });
+  invalidateContentCache();
 
   // Replace media if provided
   if (Array.isArray(media)) {
     await supabaseServer.from('cms_media').delete().eq('content_id', id);
     if (media.length > 0) {
-      const contentType = type === 'art-forms' ? 'art_form' : type.replace(/-/g, '_').replace(/s$/, '');
+      const contentType = CMS_CONTENT_TYPES[type];
       const mediaRows = media.map((m: { url: string; public_id?: string; alt_text?: string }, i: number) => ({
         content_type: contentType,
         content_id: id,
@@ -97,5 +99,6 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   logCmsAction({ table, entryId: id, entryTitle: String(entryTitle), event: 'entry.delete', performedBy: email, role });
+  invalidateContentCache();
   return NextResponse.json({ success: true });
 }

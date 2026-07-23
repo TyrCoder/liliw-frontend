@@ -11,6 +11,16 @@ const CONTENT_TYPE_CATEGORY: Record<string, string> = {
   hero_slide:  'heritage',
 };
 
+const CONTENT_TYPE_TABLE: Record<string, string> = {
+  attraction:  'cms_attractions',
+  art_form:    'cms_art_forms',
+  artisan:     'cms_artisans',
+  story:       'cms_stories',
+  event:       'cms_events',
+  news:        'cms_news',
+  hero_slide:  'cms_hero_slides',
+};
+
 export async function GET() {
   try {
     // Pull all media whose parent content is approved
@@ -19,7 +29,19 @@ export async function GET() {
       .select('*')
       .order('sort_order', { ascending: true });
 
-    const data = (media ?? []).map((m: any, i: number) => ({
+    const approvedIds: Record<string, Set<string>> = {};
+    await Promise.all(
+      Object.entries(CONTENT_TYPE_TABLE).map(async ([contentType, table]) => {
+        const { data } = await supabaseServer.from(table).select('id').eq('status', 'approved');
+        approvedIds[contentType] = new Set((data ?? []).map((r: any) => String(r.id)));
+      }),
+    );
+
+    const approvedMedia = (media ?? []).filter((m: any) =>
+      approvedIds[m.content_type]?.has(String(m.content_id)),
+    );
+
+    const data = approvedMedia.map((m: any, i: number) => ({
       id: `${m.content_type}-${m.content_id}-${i}`,
       attributes: {
         title: m.alt_text ?? '',
