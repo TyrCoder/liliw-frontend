@@ -14,16 +14,13 @@ import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { useAuth } from '@/context/AuthContext';
 import { showAchievementToasts } from '@/lib/achievementToast';
 import { stripHtml } from '@/lib/text';
+import { VISIT_DWELL_MS } from '@/lib/visitDwell';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food' };
-
-// Guest must stay on the page this long before the visit counts toward achievements —
-// prevents rapid click-throughs from farming the "visit N spots" badge.
-const VISIT_DWELL_MS = 150_000; // 2.5 minutes
 
 interface Attraction {
   id: string | number;
@@ -103,6 +100,17 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
     };
     fetchData();
   }, [attractionId, token]);
+
+  // Record the server-side start of the dwell window as soon as the page loads —
+  // the visit route checks elapsed time against this, not a client-supplied value.
+  useEffect(() => {
+    if (!attraction?.id || !token) return;
+    fetch('/api/attractions/visit/checkin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ attractionId: attraction.id }),
+    }).catch(() => {});
+  }, [attraction?.id, token]);
 
   // Only count a "visit" toward achievements after a genuine dwell — not a quick click-through.
   useEffect(() => {
