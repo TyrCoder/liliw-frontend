@@ -21,12 +21,12 @@ export async function POST(req: NextRequest) {
 
     const [attractions, events, faqs, itineraries, artForms, artisans, stories, news] =
       await Promise.all([
-        supabaseServer.from('cms_attractions').select('id,name,category,description,location').eq('status','approved'),
+        supabaseServer.from('cms_attractions').select('id,name,category,description,location,rating').eq('status','approved'),
         supabaseServer.from('cms_events').select('id,title,category,description,venue').eq('status','approved'),
         supabaseServer.from('cms_faqs').select('id,question,answer,category').eq('status','approved'),
         supabaseServer.from('cms_itineraries').select('id,title,description,category,duration_days').eq('status','approved'),
         supabaseServer.from('cms_art_forms').select('id,name,description').eq('status','approved'),
-        supabaseServer.from('cms_artisans').select('id,name,craft_type,description,location').eq('status','approved'),
+        supabaseServer.from('cms_artisans').select('id,name,craft_type,description,location,rating').eq('status','approved'),
         supabaseServer.from('cms_stories').select('id,title,category,content,author').eq('status','approved'),
         supabaseServer.from('cms_news').select('id,title,category,content').eq('status','approved'),
       ]);
@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
         type:        'attraction',
         category:    item.category,
         location:    item.location,
+        rating:      item.rating ?? 0,
         url:         `/attractions/${item.id}`,
       });
     });
@@ -94,6 +95,7 @@ export async function POST(req: NextRequest) {
         type:        'artisan',
         category:    item.craft_type,
         location:    item.location,
+        rating:      item.rating ?? 0,
         url:         `/arts`,
       });
     });
