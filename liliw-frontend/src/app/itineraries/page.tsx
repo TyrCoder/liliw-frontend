@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -292,6 +292,16 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
     fetch('/api/content/attractions').then(r => r.json()).then(json => setAllAttractions(json.data ?? [])).catch(() => {});
   }, []);
 
+  // Only place names + day order actually need to re-geocode/re-route the map;
+  // typing in a stop's time/duration/activity/tip field shouldn't tear down
+  // and rebuild the whole map (and re-fire Mapbox geocoding/directions calls)
+  // on every keystroke, so the map effect below depends on this instead of
+  // the full localPlan object.
+  const stopsSignature = useMemo(
+    () => JSON.stringify(localPlan.days.map((d: any) => ({ day: d.day, places: d.stops.map((s: Stop) => s.place) }))),
+    [localPlan],
+  );
+
   useEffect(() => {
     if (!showMap || !mapContainer.current) return;
     let cancelled = false;
@@ -511,7 +521,8 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
       });
     });
     return () => { cancelled = true; mapInstance.current?.remove(); mapInstance.current = null; };
-  }, [showMap, userLocation, localPlan, allAttractions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on stopsSignature, not localPlan; see comment above
+  }, [showMap, userLocation, stopsSignature, allAttractions]);
 
   const allowedTypes = Array.from(
     new Set(

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
+import { invalidateContentCache } from '@/lib/content';
 
 type Params = { params: Promise<{ type: string }> };
 
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   logCmsAction({ table, entryId: data.id, entryTitle: label, event: 'entry.create', performedBy: email, role });
+  invalidateContentCache();
 
   // Attach media if provided
   if (Array.isArray(body.media) && body.media.length > 0) {

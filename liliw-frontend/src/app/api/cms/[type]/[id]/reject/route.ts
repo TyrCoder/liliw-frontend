@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { getCmsIdentity, CMS_TABLES } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
+import { invalidateContentCache } from '@/lib/content';
 
 type Params = { params: Promise<{ type: string; id: string }> };
 
@@ -38,5 +39,6 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const entryTitle = existing.name || existing.title || existing.question || id;
   logCmsAction({ table, entryId: id, entryTitle: String(entryTitle), event: 'entry.unpublish', performedBy: email, role });
+  invalidateContentCache();
   return NextResponse.json({ success: true });
 }
