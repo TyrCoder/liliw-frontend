@@ -18,6 +18,11 @@ function getCached(key: string) {
 }
 function setCached(key: string, data: any) { cache.set(key, { data, at: Date.now() }); }
 
+// Call after any CMS write (create/update/delete/approve/reject) so the AI
+// chat and trip planner (the only consumers of this cache) don't keep
+// serving stale content for up to TTL.
+export function invalidateContentCache() { cache.clear(); }
+
 export const getAllAttractions = async () => {
   const cached = getCached('all-attractions');
   if (cached) return cached;
