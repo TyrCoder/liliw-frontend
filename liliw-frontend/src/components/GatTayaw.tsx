@@ -151,6 +151,23 @@ export default function GatTayaw({ defaultKey }: Props) {
         .gat-rig       { position: relative; user-select: none; will-change: transform; }
         .gat-layer     { position: absolute; inset: 0; width: 100%; height: 100%; }
         .gat-layer img { width: 100%; height: 100%; display: block; }
+        /* head holds two stacked faces (closed + open mouth) */
+        .gat-head img  { position: absolute; inset: 0; }
+        .gat-mouth     { opacity: 0; }
+
+        /* Mouth flap while narrating — irregular cadence reads as speech, not a metronome */
+        @keyframes gatMouthFlap {
+          0%, 7%    { opacity: 0; }
+          8%, 20%   { opacity: 1; }
+          21%, 29%  { opacity: 0; }
+          30%, 44%  { opacity: 1; }
+          45%, 51%  { opacity: 0; }
+          52%, 67%  { opacity: 1; }
+          68%, 77%  { opacity: 0; }
+          78%, 90%  { opacity: 1; }
+          91%, 100% { opacity: 0; }
+        }
+        .gat-talking .gat-mouth { animation: gatMouthFlap 1.35s steps(1, end) infinite; }
 
         .gat-sway  { animation: gatSwayIdle 4.2s ease-in-out infinite; }
         .gat-body  { transform-origin: 50% 100%;        animation: gatBreath 4.2s ease-in-out infinite; }
@@ -195,7 +212,10 @@ export default function GatTayaw({ defaultKey }: Props) {
               <div className="gat-layer gat-armF"><img src="/images/gat/arm-free.png"  alt="" aria-hidden /></div>
               <div className="gat-layer gat-body"><img src="/images/gat/body.png"      alt="Gat Tayaw" /></div>
               <div className="gat-layer gat-armS"><img src="/images/gat/arm-staff.png" alt="" aria-hidden /></div>
-              <div className="gat-layer gat-head"><img src="/images/gat/head.png"      alt="" aria-hidden /></div>
+              <div className="gat-layer gat-head">
+                <img src="/images/gat/head.png" alt="" aria-hidden />
+                <img src="/images/gat/head-speaking.png" className="gat-mouth" alt="" aria-hidden />
+              </div>
               {/* eslint-enable @next/next/no-img-element */}
             </div>
           </div>

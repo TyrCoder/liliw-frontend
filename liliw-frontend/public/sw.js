@@ -24,6 +24,7 @@ const PRECACHE_ASSETS = [
   '/audio/tsinelas-en.mp3',  '/audio/tsinelas-fil.mp3',
   '/images/gat/body.png',
   '/images/gat/head.png',
+  '/images/gat/head-speaking.png',
   '/images/gat/arm-free.png',
   '/images/gat/arm-staff.png',
   '/images/liliw-dog.png',
