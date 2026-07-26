@@ -128,24 +128,12 @@ export default function GatTayaw({ defaultKey }: Props) {
         }
         @keyframes gatArmFreeIdle {
           0%, 100% { transform: rotate(0deg); }
-          50%       { transform: rotate(3.2deg); }
+          50%       { transform: rotate(2.4deg); }
         }
         @keyframes gatArmFreeTalk {
-          0%, 100% { transform: rotate(-3deg); }
-          40%       { transform: rotate(7deg); }
-          70%       { transform: rotate(1deg); }
-        }
-        @keyframes gatArmStaffIdle {
-          0%, 100% { transform: rotate(0deg); }
-          50%       { transform: rotate(1.6deg); }
-        }
-        @keyframes gatArmStaffTalk {
-          0%, 100% { transform: rotate(-2deg); }
-          45%       { transform: rotate(3.5deg); }
-        }
-        @keyframes gatSwayIdle {
-          0%, 100% { transform: translateY(0); }
-          50%       { transform: translateY(-2px); }
+          0%, 100% { transform: rotate(-1.5deg); }
+          40%       { transform: rotate(4deg); }
+          70%       { transform: rotate(0.5deg); }
         }
 
         .gat-rig       { position: relative; user-select: none; will-change: transform; }
@@ -169,20 +157,21 @@ export default function GatTayaw({ defaultKey }: Props) {
         }
         .gat-talking .gat-mouth { animation: gatMouthFlap 1.35s steps(1, end) infinite; }
 
-        .gat-sway  { animation: gatSwayIdle 4.2s ease-in-out infinite; }
-        .gat-body  { transform-origin: 50% 100%;        animation: gatBreath 4.2s ease-in-out infinite; }
+        /* Breathing lives on the whole rig so every layer scales together — if
+           only the body scaled, the arms would separate from it at the shoulders.
+           The staff arm is a rigid held prop: it stays put (rotating it opens a
+           seam where the staff crosses the chest), so only the free arm + head
+           add joint motion on top of the shared breath. */
+        .gat-rig   { transform-origin: 50% 100%;        animation: gatBreath 4.2s ease-in-out infinite; }
         .gat-head  { transform-origin: 52.75% 28.68%;   animation: gatHeadIdle 6.5s ease-in-out infinite; }
         .gat-armF  { transform-origin: 67.66% 40.29%;   animation: gatArmFreeIdle 4.2s ease-in-out infinite; }
-        .gat-armS  { transform-origin: 29.20% 38.83%;   animation: gatArmStaffIdle 4.2s ease-in-out infinite; }
 
-        .gat-talking .gat-sway { animation: none; }
-        .gat-talking .gat-body { animation: gatBreathFast 2.2s ease-in-out infinite; }
+        .gat-talking .gat-rig  { animation: gatBreathFast 2.2s ease-in-out infinite; }
         .gat-talking .gat-head { animation: gatHeadTalk 1.9s ease-in-out infinite; }
         .gat-talking .gat-armF { animation: gatArmFreeTalk 1.6s ease-in-out infinite; }
-        .gat-talking .gat-armS { animation: gatArmStaffTalk 1.75s ease-in-out infinite; }
 
         @media (prefers-reduced-motion: reduce) {
-          .gat-sway, .gat-body, .gat-head, .gat-armF, .gat-armS { animation: none !important; }
+          .gat-rig, .gat-head, .gat-armF, .gat-mouth { animation: none !important; }
         }
 
         @keyframes bubbleFade {
@@ -203,15 +192,15 @@ export default function GatTayaw({ defaultKey }: Props) {
         {/* ── Character (rigged layers, centered) ── */}
         <div className="flex justify-center mb-0">
           <div
-            className={`gat-sway ${playing ? 'gat-talking' : ''}`}
+            className={playing ? 'gat-talking' : ''}
             style={{ filter: 'drop-shadow(0 10px 22px rgba(11,61,145,0.3))' }}
           >
             {/* aspect ratio matches the 1274×1911 source art */}
             <div className="gat-rig" style={{ width: 178, height: 178 * (1911 / 1274) }}>
               {/* eslint-disable @next/next/no-img-element */}
               <div className="gat-layer gat-armF"><img src="/images/gat/arm-free.png"  alt="" aria-hidden /></div>
-              <div className="gat-layer gat-body"><img src="/images/gat/body.png"      alt="Gat Tayaw" /></div>
-              <div className="gat-layer gat-armS"><img src="/images/gat/arm-staff.png" alt="" aria-hidden /></div>
+              <div className="gat-layer"><img src="/images/gat/body.png"      alt="Gat Tayaw" /></div>
+              <div className="gat-layer"><img src="/images/gat/arm-staff.png" alt="" aria-hidden /></div>
               <div className="gat-layer gat-head">
                 <img src="/images/gat/head.png" alt="" aria-hidden />
                 <img src="/images/gat/head-speaking.png" className="gat-mouth" alt="" aria-hidden />
