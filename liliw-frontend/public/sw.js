@@ -22,8 +22,10 @@ const PRECACHE_ASSETS = [
   '/audio/church-en.mp3',    '/audio/church-fil.mp3',
   '/audio/legend-en.mp3',    '/audio/legend-fil.mp3',
   '/audio/tsinelas-en.mp3',  '/audio/tsinelas-fil.mp3',
-  '/images/gat-tayaw.png',
-  '/images/gat-tayaw-speaking.png',
+  '/images/gat/body.png',
+  '/images/gat/head.png',
+  '/images/gat/arm-free.png',
+  '/images/gat/arm-staff.png',
   '/images/liliw-dog.png',
   '/manifest.json',
 ];
