@@ -3,15 +3,34 @@
 import { Share2, MessageCircle, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
+import { showAchievementToasts } from '@/lib/achievementToast';
 
 interface SocialShareProps {
   title: string;
   description?: string;
   url?: string;
+  /** When set, sharing this attraction awards points (once per attraction). */
+  attractionId?: string;
 }
 
-export default function SocialShare({ title, description, url }: SocialShareProps) {
+export default function SocialShare({ title, description, url, attractionId }: SocialShareProps) {
+  const { token } = useAuth();
   const [copied, setCopied] = useState(false);
+
+  // Facebook gives no "share completed" callback, so this fires when the share
+  // window opens. Repeat clicks on the same attraction are deduped server-side.
+  const recordShare = () => {
+    if (!attractionId || !token) return;
+    fetch('/api/social/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ attractionId, attractionName: title }),
+    })
+      .then(r => r.json())
+      .then(d => showAchievementToasts(d.unlockedAchievements))
+      .catch(() => {});
+  };
   const pageUrl = url || typeof window !== 'undefined' ? window.location.href : '';
   const encodedUrl = encodeURIComponent(pageUrl);
   const encodedTitle = encodeURIComponent(title);
@@ -54,6 +73,7 @@ export default function SocialShare({ title, description, url }: SocialShareProp
             target="_blank"
             rel="noopener noreferrer"
             title={link.name}
+            onClick={recordShare}
             className={`p-2.5 rounded-lg text-white transition transform hover:scale-110 ${link.color}`}
           >
             <link.icon size={18} />

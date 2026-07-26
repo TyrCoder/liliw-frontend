@@ -4,6 +4,7 @@ export const POINTS = {
   event_signup:     15,
   review:           20,
   attraction_visit: 5,
+  share:            5,
 } as const;
 
 export interface UnlockedAchievement {
@@ -39,6 +40,7 @@ export async function awardPoints(
   const eventCount  = pointRows.filter(r => r.action === 'event_signup').length;
   const reviewCount = pointRows.filter(r => r.action === 'review').length;
   const visitCount  = pointRows.filter(r => r.action === 'attraction_visit').length;
+  const shareCount  = pointRows.filter(r => r.action === 'share').length;
 
   const { data: pointSumRows } = await supabaseServer
     .from('user_points')
@@ -66,6 +68,7 @@ export async function awardPoints(
     if (ach.trigger_type === 'event_count'            && eventCount  >= ach.trigger_value) unlocked = true;
     if (ach.trigger_type === 'review_count'           && reviewCount >= ach.trigger_value) unlocked = true;
     if (ach.trigger_type === 'attraction_visit_count' && visitCount  >= ach.trigger_value) unlocked = true;
+    if (ach.trigger_type === 'share_count'            && shareCount  >= ach.trigger_value) unlocked = true;
     if (ach.trigger_type === 'total_points'           && earned      >= ach.trigger_value) unlocked = true;
 
     if (unlocked) {

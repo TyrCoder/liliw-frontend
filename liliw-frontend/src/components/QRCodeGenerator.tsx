@@ -18,9 +18,11 @@ export default function QRCodeGenerator({
   const [copied, setCopied] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Build the URL to encode
+  // Build the URL to encode. ?src=qr marks the visit as coming from a physical
+  // QR scan so the check-in route can tell it apart from ordinary browsing —
+  // see /api/attractions/visit/checkin.
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
-  const itemUrl = `${baseUrl}/attractions/${itemId}`;
+  const itemUrl = `${baseUrl}/attractions/${itemId}?src=qr`;
 
   // QR Code API endpoint (using qr-server.com free service)
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(itemUrl)}`;
