@@ -177,6 +177,23 @@ function cutXAt(y, line) {
     if (!filled) break;
   }
 
+  // Speaking head: reuse the head layer's exact alpha as a stencil and take
+  // RGB from the open-mouth companion render. Identical silhouette means the
+  // component can cross-flap head <-> head-speaking with zero outline jump —
+  // only the mouth interior (and slightly livelier brows) changes.
+  const SPEAK = path.join(__dirname, '..', 'public', 'images', 'gat-tayaw-speaking.png');
+  const headSpeak = blank();
+  if (fs.existsSync(SPEAK)) {
+    const spk = (await sharp(SPEAK).ensureAlpha().raw().toBuffer({ resolveWithObject: true })).data;
+    for (let i = 0; i < W * H; i++) {
+      const a = head[i * 4 + 3];
+      if (a > 0) {
+        headSpeak[i * 4] = spk[i * 4]; headSpeak[i * 4 + 1] = spk[i * 4 + 1];
+        headSpeak[i * 4 + 2] = spk[i * 4 + 2]; headSpeak[i * 4 + 3] = a;
+      }
+    }
+  }
+
   fs.mkdirSync(OUT, { recursive: true });
   const write = (buf, name) =>
     sharp(buf, { raw: { width: W, height: H, channels: 4 } }).png({ compressionLevel: 9 })
@@ -185,6 +202,7 @@ function cutXAt(y, line) {
   await Promise.all([
     write(body, 'body.png'),
     write(head, 'head.png'),
+    write(headSpeak, 'head-speaking.png'),
     write(armFree, 'arm-free.png'),
     write(armStaff, 'arm-staff.png'),
   ]);
