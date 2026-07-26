@@ -105,10 +105,13 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
   // the visit route checks elapsed time against this, not a client-supplied value.
   useEffect(() => {
     if (!attraction?.id || !token) return;
+    // The on-site QR code encodes ?src=qr, so a scan is recorded as such rather
+    // than looking identical to someone browsing the site from home.
+    const via = new URLSearchParams(window.location.search).get('src') === 'qr' ? 'qr' : 'web';
     fetch('/api/attractions/visit/checkin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ attractionId: attraction.id }),
+      body: JSON.stringify({ attractionId: attraction.id, via }),
     }).catch(() => {});
   }, [attraction?.id, token]);
 
@@ -278,7 +281,8 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         {/* Social Share */}
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.2 }}
           className="mb-8 sm:mb-12 p-5 sm:p-6 bg-white rounded-2xl border border-gray-100">
-          <SocialShare title={attraction.attributes.name} description={stripHtml(attraction.attributes.description)} />
+          <SocialShare title={attraction.attributes.name} description={stripHtml(attraction.attributes.description)}
+            attractionId={String(attraction.id)} />
         </motion.div>
 
         {/* 3D Virtual Tour CTA */}

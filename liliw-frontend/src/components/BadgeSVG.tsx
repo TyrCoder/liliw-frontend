@@ -2,7 +2,7 @@
 
 import {
   Footprints, CalendarCheck, PartyPopper, Star, MessageSquare,
-  Award, Compass, Trophy, Sparkles, MapPin,
+  Award, Compass, Trophy, Sparkles, MapPin, Share2, QrCode,
 } from 'lucide-react';
 
 // Named vector icons render crisp on every device (unlike emoji, which vary by OS/font).
@@ -18,6 +18,8 @@ export const BADGE_ICONS: Record<string, React.ComponentType<{ size?: number; st
   trophy: Trophy,
   sparkles: Sparkles,
   'map-pin': MapPin,
+  'share-2': Share2,
+  'qr-code': QrCode,
 };
 
 const GOLD = '#F5C518';
