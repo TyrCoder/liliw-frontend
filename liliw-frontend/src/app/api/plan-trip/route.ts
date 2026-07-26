@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { duration, budget, interests, favoriteAttractions } = await request.json();
+    const { duration, groupSize, budget, interests, favoriteAttractions } = await request.json();
 
     if (!duration || !budget || !Array.isArray(interests) || interests.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -106,6 +106,8 @@ ${knowledge}
 RULES:
 - Only recommend places that appear in the database above — do NOT invent places
 - Match the budget level and selected interests closely
+- Suit the group size: pick venues that can accommodate the party, and tailor activities
+  (e.g. kid-friendly stops for families, intimate spots for couples, group-friendly dining for large parties)
 - Be specific with times (e.g., 8:00 AM, 10:30 AM, 2:00 PM)
 - Include practical local tips (parking, best time to visit, what to order, etc.)
 - Keep tone warm, friendly, and excited — like a knowledgeable local friend
@@ -138,8 +140,12 @@ IMPORTANT: Return ONLY a valid JSON object. No markdown, no extra text. Use this
       ? `\nMust-visit favorites (user specifically requested these): ${favoriteAttractions.join(', ')}`
       : '';
 
+    const groupSizeLine = typeof groupSize === 'string' && groupSize.trim()
+      ? `\nGroup size: ${groupSize.trim()}`
+      : '';
+
     const userMessage = `Create a ${duration} itinerary for Liliw, Laguna.
-Budget level: ${budget}
+Budget level: ${budget}${groupSizeLine}
 Interests: ${interests.join(', ')}${favoritesLine}
 Return only the JSON object.`;
 
