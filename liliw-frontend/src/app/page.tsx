@@ -7,7 +7,7 @@ import {
   ArrowRight, MapPin, History, Leaf, HelpCircle,
   Calendar, ChevronLeft, ChevronRight, Star,
   Compass, UtensilsCrossed, Mountain, Camera, Users, Globe,
-  Layers,
+  Layers, Sparkles, QrCode, Award, Gift,
 } from 'lucide-react';
 import { stripHtml } from '@/lib/text';
 
@@ -612,6 +612,63 @@ export default function Home() {
 
       {/* Wave: light blue → white */}
       <WaveDown from="#EFF6FF" to="#ffffff" />
+
+      {/* ══════════════════════════════════════════════════════
+          HOW IT WORKS — quick guide to using the app
+          ══════════════════════════════════════════════════════ */}
+      <section className="py-14 max-w-7xl mx-auto px-4">
+        <FestiveHeading
+          title="How It Works"
+          sub="New here? Here's how to get the most out of your Liliw visit in five steps" />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {[
+            {
+              href: '/attractions', icon: <Compass className="w-5 h-5" />, color: '#0B3D91',
+              title: 'Explore',
+              sub: 'Browse heritage sites, tourist spots, and local food places around town.',
+            },
+            {
+              href: '/itineraries', icon: <Sparkles className="w-5 h-5" />, color: '#1565C0',
+              title: 'Plan with AI',
+              sub: 'Tell us your trip length, group size, budget, and interests — get a day-by-day plan.',
+            },
+            {
+              href: '/map', icon: <QrCode className="w-5 h-5" />, color: '#0D9488',
+              title: 'Visit & Scan',
+              sub: 'At each spot, scan its QR code to check in and log your visit.',
+            },
+            {
+              href: '/profile', icon: <Award className="w-5 h-5" />, color: '#F97316',
+              title: 'Earn Badges',
+              sub: 'Collect points and unlock achievements as you explore more of Liliw.',
+            },
+            {
+              href: '/rewards', icon: <Gift className="w-5 h-5" />, color: '#EF4444',
+              title: 'Redeem Rewards',
+              sub: 'Trade your points for real rewards from local partners and shops.',
+            },
+          ].map(({ href, icon, color, title, sub }, i) => (
+            <Link key={href} href={href}
+              className="group relative flex flex-col p-5 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+              <span className="absolute top-4 right-4 text-3xl font-black leading-none select-none opacity-10"
+                style={{ fontFamily: HL, color }}>
+                {i + 1}
+              </span>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                style={{ backgroundColor: `${color}14`, color }}>
+                {icon}
+              </div>
+              <h4 className="font-bold mb-1.5 text-gray-900" style={{ fontFamily: HL, fontSize: 15 }}>{title}</h4>
+              <p className="text-xs text-gray-500 leading-relaxed flex-1" style={{ fontFamily: BL }}>{sub}</p>
+              <span className="inline-flex items-center gap-1 mt-3 text-xs font-bold group-hover:gap-2 transition-all"
+                style={{ color, fontFamily: BL }}>
+                Start here <ArrowRight className="w-3 h-3" />
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* ══════════════════════════════════════════════════════
           PLAN YOUR VISIT

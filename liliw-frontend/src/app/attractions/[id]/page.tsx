@@ -203,9 +203,29 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
 
       <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
 
+        {/* Image Gallery — shown first so visitors see the attraction before reading about it */}
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }}
+          className="mb-8 sm:mb-12">
+          {attraction.attributes.photos && attraction.attributes.photos.length > 0 ? (
+            <ImageGallery
+              images={attraction.attributes.photos.map(photo => ({
+                src: photo.url,
+                alt: photo.name,
+                caption: photo.name,
+              }))}
+              title="Photo Gallery"
+            />
+          ) : (
+            <div className="p-8 bg-white rounded-2xl text-center text-gray-500 border border-gray-100">
+              <p style={{ fontFamily: BL }}>No photos available for this attraction yet.</p>
+              <p className="text-sm mt-2 text-gray-400" style={{ fontFamily: BL }}>Photos can be added via the CMS.</p>
+            </div>
+          )}
+        </motion.div>
+
         {/* Description */}
         {attraction.attributes.description && (
-          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }}
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.05 }}
             className="mb-8 sm:mb-12 prose prose-sm sm:prose-base md:prose-lg max-w-none text-gray-700 leading-relaxed p-5 sm:p-6 rounded-2xl border-l-4 bg-white"
             style={{ borderLeftColor: '#1565C0', fontFamily: BL }}
             dangerouslySetInnerHTML={{ __html: attraction.attributes.description }} />
@@ -259,26 +279,6 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.2 }}
           className="mb-8 sm:mb-12 p-5 sm:p-6 bg-white rounded-2xl border border-gray-100">
           <SocialShare title={attraction.attributes.name} description={stripHtml(attraction.attributes.description)} />
-        </motion.div>
-
-        {/* Image Gallery */}
-        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.25 }}
-          className="mb-8 sm:mb-12">
-          {attraction.attributes.photos && attraction.attributes.photos.length > 0 ? (
-            <ImageGallery
-              images={attraction.attributes.photos.map(photo => ({
-                src: photo.url,
-                alt: photo.name,
-                caption: photo.name,
-              }))}
-              title="Photo Gallery"
-            />
-          ) : (
-            <div className="p-8 bg-white rounded-2xl text-center text-gray-500 border border-gray-100">
-              <p style={{ fontFamily: BL }}>No photos available for this attraction yet.</p>
-              <p className="text-sm mt-2 text-gray-400" style={{ fontFamily: BL }}>Photos can be added via the CMS.</p>
-            </div>
-          )}
         </motion.div>
 
         {/* 3D Virtual Tour CTA */}

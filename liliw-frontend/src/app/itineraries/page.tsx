@@ -82,6 +82,14 @@ const BUDGETS = [
   { value: 'custom',                              label: 'Custom',    sub: 'Set your own' },
 ];
 
+const GROUP_SIZES = [
+  { value: 'solo (1 traveler)',        label: 'Solo',    sub: 'Just me' },
+  { value: 'couple (2 travelers)',     label: 'Couple',  sub: '2 travelers' },
+  { value: 'family (3–5 travelers)',   label: 'Family',  sub: '3 – 5 travelers' },
+  { value: 'group (6+ travelers)',     label: 'Group',   sub: '6 or more travelers' },
+  { value: 'custom',                   label: 'Custom',  sub: 'Set your own' },
+];
+
 const INTERESTS = [
   { value: 'Heritage & History'   },
   { value: 'Local Food & Cuisine' },
@@ -248,6 +256,8 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
 }) {
   const [localPlan, setLocalPlan] = useState<GeneratedPlan>(() => JSON.parse(JSON.stringify(plan)));
   const [isEditing, setIsEditing] = useState(false);
+  const [sortMode, setSortMode]   = useState<'ai' | 'location'>('ai');
+  const [preSortPlan, setPreSortPlan] = useState<GeneratedPlan | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [allAttractions, setAllAttractions] = useState<any[]>([]);
 
@@ -302,34 +312,81 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
     [localPlan],
   );
 
-  useEffect(() => {
-    if (!showMap || !mapContainer.current) return;
-    let cancelled = false;
-    const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
-
-    // Build name → [lng, lat] lookup from Strapi attractions
-    const strapiCoords = new Map<string, [number, number]>();
+  // Shared name → [lng, lat] lookup, used both to draw the map and to sort
+  // stops geographically. Fuzzy: exact match first, then partial substring.
+  const attractionCoords = useMemo(() => {
+    const coords = new Map<string, [number, number]>();
     for (const a of allAttractions) {
       const name = (a.attributes?.name || '').toLowerCase();
       const c = a.attributes?.coordinates;
       if (name && c) {
         const lng = c.lng ?? c.longitude ?? c.lon;
         const lat = c.lat ?? c.latitude;
-        if (typeof lng === 'number' && typeof lat === 'number') {
-          strapiCoords.set(name, [lng, lat]);
-        }
+        if (typeof lng === 'number' && typeof lat === 'number') coords.set(name, [lng, lat]);
       }
     }
+    return coords;
+  }, [allAttractions]);
 
-    // Fuzzy lookup: try exact, then partial substring match
-    const findCoord = (place: string): [number, number] | undefined => {
-      const key = place.toLowerCase().trim();
-      if (strapiCoords.has(key)) return strapiCoords.get(key);
-      for (const [name, coord] of strapiCoords) {
-        if (name.includes(key) || key.includes(name)) return coord;
+  const findCoord = useCallback((place: string): [number, number] | undefined => {
+    const key = place.toLowerCase().trim();
+    if (attractionCoords.has(key)) return attractionCoords.get(key);
+    for (const [name, coord] of attractionCoords) {
+      if (name.includes(key) || key.includes(name)) return coord;
+    }
+    return undefined;
+  }, [attractionCoords]);
+
+  // Reorder each day's stops by geographic proximity (greedy nearest-neighbour,
+  // starting from the day's first stop) so the route doubles back as little as
+  // possible. Stops we can't geocode keep their original relative position at
+  // the end. Time fields are re-assigned in the original order so the schedule
+  // still reads sensibly after the shuffle.
+  const sortByLocation = () => {
+    const next: GeneratedPlan = JSON.parse(JSON.stringify(localPlan));
+    for (const day of next.days) {
+      const stops: Stop[] = day.stops ?? [];
+      if (stops.length < 3) continue;
+      const times = stops.map(s => s.time);
+      const located = stops.map(s => ({ stop: s, coord: findCoord(s.place) }));
+      const withCoord = located.filter(e => e.coord) as { stop: Stop; coord: [number, number] }[];
+      const without   = located.filter(e => !e.coord).map(e => e.stop);
+      if (withCoord.length < 3) continue;
+
+      const ordered: Stop[] = [];
+      const remaining = [...withCoord];
+      let current = remaining.shift()!;
+      ordered.push(current.stop);
+      while (remaining.length) {
+        let bestIdx = 0, bestDist = Infinity;
+        for (let i = 0; i < remaining.length; i++) {
+          const dx = remaining[i].coord[0] - current.coord[0];
+          const dy = remaining[i].coord[1] - current.coord[1];
+          const dist = dx * dx + dy * dy;
+          if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+        }
+        current = remaining.splice(bestIdx, 1)[0];
+        ordered.push(current.stop);
       }
-      return undefined;
-    };
+      day.stops = [...ordered, ...without].map((s, i) => ({ ...s, time: times[i] ?? s.time }));
+    }
+    // Snapshot the pre-sort order so toggling back restores it — including any
+    // edits the user made — rather than reverting to the original AI response.
+    setPreSortPlan(JSON.parse(JSON.stringify(localPlan)));
+    setLocalPlan(next);
+    setSortMode('location');
+  };
+
+  const restoreAiOrder = () => {
+    if (preSortPlan) setLocalPlan(preSortPlan);
+    setPreSortPlan(null);
+    setSortMode('ai');
+  };
+
+  useEffect(() => {
+    if (!showMap || !mapContainer.current) return;
+    let cancelled = false;
+    const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
     import('mapbox-gl').then(async ({ default: mapboxgl }) => {
       if (cancelled || !mapContainer.current) return;
@@ -640,11 +697,35 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
             </motion.button>
           </div>
         </div>
-        {localPlan.estimatedCostPerDay && (
-          <div className="mt-4 inline-flex items-center gap-2 bg-white/20 rounded-xl px-4 py-2">
-            <Wallet className="w-4 h-4" />
-            <span className="text-sm font-semibold" style={{ fontFamily: BL }}>{localPlan.estimatedCostPerDay} per day</span>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          {localPlan.estimatedCostPerDay && (
+            <div className="inline-flex items-center gap-2 bg-white/20 rounded-xl px-4 py-2">
+              <Wallet className="w-4 h-4" />
+              <span className="text-sm font-semibold" style={{ fontFamily: BL }}>{localPlan.estimatedCostPerDay} per day</span>
+            </div>
+          )}
+          {/* Order toggle — AI's suggested flow vs. shortest-travel geographic order */}
+          <div className="inline-flex items-center rounded-xl p-0.5 bg-white/20">
+            <button onClick={restoreAiOrder}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition"
+              style={sortMode === 'ai'
+                ? { backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }
+                : { color: 'rgba(255,255,255,0.75)', fontFamily: HL }}>
+              <Sparkles className="w-3.5 h-3.5" /> AI order
+            </button>
+            <button onClick={sortByLocation}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition"
+              style={sortMode === 'location'
+                ? { backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }
+                : { color: 'rgba(255,255,255,0.75)', fontFamily: HL }}>
+              <Navigation className="w-3.5 h-3.5" /> By location
+            </button>
           </div>
+        </div>
+        {sortMode === 'location' && (
+          <p className="mt-2 text-xs text-blue-100/80" style={{ fontFamily: BL }}>
+            Stops reordered to keep travel between them as short as possible. Times stay in their original slots.
+          </p>
         )}
       </div>
 
@@ -926,7 +1007,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
   );
 }
 
-type WizardStep = 'duration' | 'budget' | 'interests' | 'favorites' | 'generating' | 'result';
+type WizardStep = 'duration' | 'groupSize' | 'budget' | 'interests' | 'favorites' | 'generating' | 'result';
 
 function ItineraryWizard() {
   const { user, token } = useAuth();
@@ -935,6 +1016,8 @@ function ItineraryWizard() {
   const [step, setStep]                   = useState<WizardStep>('duration');
   const [duration, setDuration]           = useState('');
   const [customDuration, setCustomDuration] = useState('');
+  const [groupSize, setGroupSize]         = useState('');
+  const [customGroupSize, setCustomGroupSize] = useState('');
   const [budget, setBudget]               = useState('');
   const [customBudget, setCustomBudget]   = useState('');
   const [interests, setInterests]         = useState<string[]>([]);
@@ -950,8 +1033,9 @@ function ItineraryWizard() {
   const toggleFav = (name: string) =>
     setSelectedFavs(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
 
-  const effectiveDuration = duration === 'custom' ? customDuration.trim() : duration;
-  const effectiveBudget   = budget   === 'custom' ? customBudget.trim()   : budget;
+  const effectiveDuration  = duration  === 'custom' ? customDuration.trim()  : duration;
+  const effectiveGroupSize = groupSize === 'custom' ? customGroupSize.trim() : groupSize;
+  const effectiveBudget    = budget    === 'custom' ? customBudget.trim()    : budget;
 
   const afterInterests = () => hasFavorites ? setStep('favorites') : generate();
 
@@ -965,6 +1049,7 @@ function ItineraryWizard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           duration: effectiveDuration,
+          groupSize: effectiveGroupSize,
           budget: effectiveBudget,
           interests,
           favoriteAttractions: selectedFavs,
@@ -1003,13 +1088,14 @@ function ItineraryWizard() {
 
   const reset = () => {
     setStep('duration'); setDuration(''); setCustomDuration('');
+    setGroupSize(''); setCustomGroupSize('');
     setBudget(''); setCustomBudget(''); setInterests([]);
     setSelectedFavs([]); setPlan(null); setError(''); setTripSaved(false);
   };
 
-  const totalSteps = hasFavorites ? 4 : 3;
-  const stepNumber = step === 'duration' ? 1 : step === 'budget' ? 2 : step === 'interests' ? 3 : step === 'favorites' ? 4 : null;
-  const stepLabel  = (n: number) => n === 1 ? 'Duration' : n === 2 ? 'Budget' : n === 3 ? 'Interests' : 'Favorites';
+  const totalSteps = hasFavorites ? 5 : 4;
+  const stepNumber = step === 'duration' ? 1 : step === 'groupSize' ? 2 : step === 'budget' ? 3 : step === 'interests' ? 4 : step === 'favorites' ? 5 : null;
+  const stepLabel  = (n: number) => n === 1 ? 'Duration' : n === 2 ? 'Group' : n === 3 ? 'Budget' : n === 4 ? 'Interests' : 'Favorites';
 
   if (!user) {
     return (
@@ -1100,7 +1186,7 @@ function ItineraryWizard() {
               )}
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 disabled={!effectiveDuration}
-                onClick={() => setStep('budget')}
+                onClick={() => setStep('groupSize')}
                 className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
                 style={{
                   backgroundColor: effectiveDuration ? '#1565C0' : '#9CA3AF',
@@ -1113,7 +1199,52 @@ function ItineraryWizard() {
             </motion.div>
           )}
 
-          {/* Step 2 â€" Budget */}
+          {/* Step 2 â€" Group size */}
+          {step === 'groupSize' && (
+            <motion.div key="groupSize" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-4 h-4" style={{ color: '#1565C0' }} />
+                <p className="font-semibold text-gray-700 text-sm" style={{ fontFamily: HL }}>How many will tour?</p>
+              </div>
+              <div className="space-y-2">
+                {GROUP_SIZES.map(g => (
+                  <WizardCard key={g.value} {...g} selected={groupSize === g.value} onClick={() => setGroupSize(g.value)} />
+                ))}
+              </div>
+              {groupSize === 'custom' && (
+                <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
+                  <input
+                    type="text"
+                    placeholder="e.g. 12 people, 2 adults + 3 kids…"
+                    value={customGroupSize}
+                    onChange={e => setCustomGroupSize(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border-2 text-sm focus:outline-none"
+                    style={{ borderColor: '#1565C0', fontFamily: BL }}
+                  />
+                </motion.div>
+              )}
+              <div className="flex gap-2 mt-4">
+                <button onClick={() => setStep('duration')}
+                  className="shrink-0 px-4 py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  disabled={!effectiveGroupSize}
+                  onClick={() => setStep('budget')}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  style={{
+                    backgroundColor: effectiveGroupSize ? '#1565C0' : '#9CA3AF',
+                    color: effectiveGroupSize ? '#F5C518' : 'white',
+                    fontFamily: BL,
+                    boxShadow: effectiveGroupSize ? '0 6px 20px rgba(11,61,145,0.25)' : 'none',
+                  }}>
+                  Next <ChevronRight className="w-4 h-4" />
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 3 â€" Budget */}
           {step === 'budget' && (
             <motion.div key="budget" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <div className="flex items-center gap-2 mb-4">
@@ -1138,7 +1269,7 @@ function ItineraryWizard() {
                 </motion.div>
               )}
               <div className="flex gap-2 mt-4">
-                <button onClick={() => setStep('duration')}
+                <button onClick={() => setStep('groupSize')}
                   className="shrink-0 px-4 py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition">
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -1158,7 +1289,7 @@ function ItineraryWizard() {
             </motion.div>
           )}
 
-          {/* Step 3 â€" Interests */}
+          {/* Step 4 â€" Interests */}
           {step === 'interests' && (
             <motion.div key="interests" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <div className="flex items-center gap-2 mb-4">
@@ -1197,7 +1328,7 @@ function ItineraryWizard() {
             </motion.div>
           )}
 
-          {/* Step 4 â€" Favorites */}
+          {/* Step 5 â€" Favorites */}
           {step === 'favorites' && (
             <motion.div key="favorites" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <div className="flex items-center gap-2 mb-1">
