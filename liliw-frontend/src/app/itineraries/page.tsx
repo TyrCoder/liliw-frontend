@@ -7,7 +7,7 @@ import {
   ChevronLeft, ChevronRight, Clock, Users, X, MapPin, Star,
   CheckCircle, XCircle, Navigation, ArrowRight, Calendar,
   Lightbulb, Sparkles, RotateCcw, Wallet, Heart, Sun, BookmarkCheck,
-  Trash2, ChevronDown, LogIn, Pencil, Plus, ExternalLink, Check,
+  Trash2, ChevronDown, LogIn, Pencil, Plus, ExternalLink, Check, GripVertical,
 } from 'lucide-react';
 import AuthModal from '@/components/AuthModal';
 import { useFavorites } from '@/context/FavoritesContext';
@@ -251,8 +251,9 @@ function AttractionQuickModal({ placeName, onClose }: { placeName: string; onClo
   );
 }
 
-function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
+function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userLocation, locationStatus }: {
   plan: GeneratedPlan; onReset: () => void; onSave: (editedPlan: GeneratedPlan) => void; saved: boolean; isLoggedIn: boolean; interests: string[];
+  userLocation: [number, number] | null; locationStatus: 'idle' | 'pending' | 'granted' | 'denied';
 }) {
   const [localPlan, setLocalPlan] = useState<GeneratedPlan>(() => JSON.parse(JSON.stringify(plan)));
   const [isEditing, setIsEditing] = useState(false);
@@ -271,8 +272,6 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
   const mapInstance = useRef<any>(null);
   const markerRefs = useRef<Record<number, { marker: any; popup: any; coord: [number, number] }>>({});
   const [showMap, setShowMap] = useState(true);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [locationStatus, setLocationStatus] = useState<'idle' | 'pending' | 'granted' | 'denied'>('idle');
 
   const dayColor = (dayNum: number) => PENNANT[(dayNum - 1) % PENNANT.length];
 
@@ -640,13 +639,26 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
     setDeleteTarget(null); setSuggestions([]);
   };
 
-  const requestLocation = () => {
-    if (!navigator.geolocation) { setLocationStatus('denied'); return; }
-    setLocationStatus('pending');
-    navigator.geolocation.getCurrentPosition(
-      pos => { setUserLocation([pos.coords.longitude, pos.coords.latitude]); setLocationStatus('granted'); },
-      () => setLocationStatus('denied'),
-    );
+  // Drag-to-reorder. Rows are only draggable while the grip handle is held —
+  // otherwise the browser's native drag would fight text selection in the
+  // inputs that make up an editable stop.
+  const [dragRow, setDragRow] = useState<string | null>(null);
+  const [dragFrom, setDragFrom] = useState<{ dayIdx: number; stopIdx: number } | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
+
+  const moveStop = (dayIdx: number, from: number, to: number) => {
+    if (from === to) return;
+    setLocalPlan(prev => {
+      const next: GeneratedPlan = JSON.parse(JSON.stringify(prev));
+      const stops: Stop[] = next.days[dayIdx].stops;
+      // Times belong to the slot, not the stop — a stop dragged into the 9 AM
+      // position takes over the 9 AM slot rather than carrying its old time.
+      const times = stops.map(s => s.time);
+      const [moved] = stops.splice(from, 1);
+      stops.splice(to, 0, moved);
+      next.days[dayIdx].stops = stops.map((s, i) => ({ ...s, time: times[i] ?? s.time }));
+      return next;
+    });
   };
 
   const deleteStop = (dayIdx: number, stopIdx: number) => {
@@ -756,9 +768,37 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
           </div>
           <div className="divide-y divide-gray-50">
             {day.stops?.map((stop, stopIdx) => (
-              <div key={stopIdx} className="px-5 py-4 flex gap-4"
+              <div key={stopIdx}
+                draggable={dragRow === `${dayIdx}-${stopIdx}`}
+                onDragStart={() => setDragFrom({ dayIdx, stopIdx })}
+                onDragEnd={() => { setDragRow(null); setDragFrom(null); setDragOver(null); }}
+                onDragOver={e => {
+                  if (!dragFrom || dragFrom.dayIdx !== dayIdx) return;
+                  e.preventDefault();
+                  setDragOver(`${dayIdx}-${stopIdx}`);
+                }}
+                onDrop={e => {
+                  if (!dragFrom || dragFrom.dayIdx !== dayIdx) return;
+                  e.preventDefault();
+                  moveStop(dayIdx, dragFrom.stopIdx, stopIdx);
+                  setDragRow(null); setDragFrom(null); setDragOver(null);
+                }}
+                className={`px-5 py-4 flex gap-4 transition-colors ${
+                  dragOver === `${dayIdx}-${stopIdx}` && dragFrom?.stopIdx !== stopIdx ? 'bg-blue-50' : ''
+                } ${dragFrom && `${dragFrom.dayIdx}-${dragFrom.stopIdx}` === `${dayIdx}-${stopIdx}` ? 'opacity-40' : ''}`}
                 onMouseEnter={() => handleStopHover(stopGlobalIndex(dayIdx, stopIdx), true)}
                 onMouseLeave={() => handleStopHover(stopGlobalIndex(dayIdx, stopIdx), false)}>
+                {isEditing && (
+                  <div
+                    onMouseDown={() => setDragRow(`${dayIdx}-${stopIdx}`)}
+                    onMouseUp={() => setDragRow(null)}
+                    onTouchStart={() => setDragRow(`${dayIdx}-${stopIdx}`)}
+                    onTouchEnd={() => setDragRow(null)}
+                    title="Drag to reorder this stop"
+                    className="shrink-0 self-start mt-1 p-1 -ml-2 rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-100 cursor-grab active:cursor-grabbing transition">
+                    <GripVertical className="w-4 h-4" />
+                  </div>
+                )}
                 <div className="shrink-0 flex flex-col items-center gap-1 pt-0.5">
                   <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
                     style={{ backgroundColor: dayColor(day.day) }}>{stopGlobalIndex(dayIdx, stopIdx) + 1}</div>
@@ -857,12 +897,17 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
             ))}
           </div>
           {isEditing && (
-            <div className="px-5 py-3 border-t border-dashed border-gray-200">
+            <div className="px-5 py-3 border-t border-dashed border-gray-200 flex items-center justify-between gap-3 flex-wrap">
               <button onClick={() => addStop(dayIdx)}
                 className="flex items-center gap-2 text-sm font-semibold transition hover:opacity-70"
                 style={{ color: '#1565C0', fontFamily: BL }}>
                 <Plus className="w-4 h-4" /> Add Stop
               </button>
+              {day.stops.length > 1 && (
+                <span className="flex items-center gap-1.5 text-xs text-gray-400" style={{ fontFamily: BL }}>
+                  <GripVertical className="w-3.5 h-3.5" /> Drag to reorder
+                </span>
+              )}
             </div>
           )}
         </motion.div>
@@ -870,15 +915,13 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests }: {
       </div>
 
       <div className="lg:sticky lg:top-6">
-        {showMap && locationStatus === 'idle' && (
+        {showMap && locationStatus === 'denied' && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between gap-3 p-4 mb-3 rounded-2xl bg-blue-50 border border-blue-100">
-            <p className="text-sm text-blue-800 flex items-center gap-2" style={{ fontFamily: BL }}>
-              <Navigation className="w-4 h-4 shrink-0" /> Allow location to show your starting point on the map
+            className="flex items-center gap-2 p-4 mb-3 rounded-2xl bg-gray-50 border border-gray-200">
+            <Navigation className="w-4 h-4 shrink-0 text-gray-400" />
+            <p className="text-sm text-gray-500" style={{ fontFamily: BL }}>
+              Location is off, so the route starts at your first stop. Enable location in your browser to route from where you are.
             </p>
-            <button onClick={requestLocation}
-              className="shrink-0 px-4 py-1.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition"
-              style={{ backgroundColor: '#1565C0', fontFamily: HL }}>Allow</button>
           </motion.div>
         )}
 
@@ -1025,6 +1068,8 @@ function ItineraryWizard() {
   const [plan, setPlan]                   = useState<GeneratedPlan | null>(null);
   const [error, setError]                 = useState('');
   const [tripSaved, setTripSaved]         = useState(false);
+  const [userLocation, setUserLocation]   = useState<[number, number] | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'pending' | 'granted' | 'denied'>('idle');
 
   const hasFavorites = !!user && favorites.length > 0;
 
@@ -1039,10 +1084,26 @@ function ItineraryWizard() {
 
   const afterInterests = () => hasFavorites ? setStep('favorites') : generate();
 
+  // Ask for location as part of generating rather than making the user click an
+  // "Allow" button on the result — the route is far more useful when it can
+  // start from where they actually are. Resolves either way so a denied or
+  // unavailable permission never blocks the itinerary.
+  const captureLocation = () =>
+    new Promise<void>(resolve => {
+      if (!navigator.geolocation) { setLocationStatus('denied'); resolve(); return; }
+      setLocationStatus('pending');
+      navigator.geolocation.getCurrentPosition(
+        pos => { setUserLocation([pos.coords.longitude, pos.coords.latitude]); setLocationStatus('granted'); resolve(); },
+        () => { setLocationStatus('denied'); resolve(); },
+        { timeout: 10_000 },
+      );
+    });
+
   const generate = async () => {
     setStep('generating');
     setError('');
     setTripSaved(false);
+    await captureLocation();
     try {
       const res = await fetch('/api/plan-trip', {
         method: 'POST',
@@ -1091,6 +1152,7 @@ function ItineraryWizard() {
     setGroupSize(''); setCustomGroupSize('');
     setBudget(''); setCustomBudget(''); setInterests([]);
     setSelectedFavs([]); setPlan(null); setError(''); setTripSaved(false);
+    setUserLocation(null); setLocationStatus('idle');
   };
 
   const totalSteps = hasFavorites ? 5 : 4;
@@ -1387,15 +1449,22 @@ function ItineraryWizard() {
               <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
                 className="w-12 h-12 rounded-full border-4 mb-5"
                 style={{ borderColor: '#F5C518', borderTopColor: 'transparent' }} />
-              <h3 className="text-lg font-bold text-gray-900 mb-2" style={{ fontFamily: HL }}>Building your itinerary…</h3>
-              <p className="text-sm text-gray-500 max-w-xs" style={{ fontFamily: BL }}>Crafting a personalized plan using real Liliw attractions. Just a moment!</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2" style={{ fontFamily: HL }}>
+                {locationStatus === 'pending' ? 'Getting your location…' : 'Building your itinerary…'}
+              </h3>
+              <p className="text-sm text-gray-500 max-w-xs" style={{ fontFamily: BL }}>
+                {locationStatus === 'pending'
+                  ? 'Allow location so your route can start from where you are — you can skip this and we’ll start from your first stop.'
+                  : 'Crafting a personalized plan using real Liliw attractions. Just a moment!'}
+              </p>
             </motion.div>
           )}
 
           {/* Result */}
           {step === 'result' && plan && (
             <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <PlanResult plan={plan} onReset={reset} onSave={saveTrip} saved={tripSaved} isLoggedIn={!!user} interests={interests} />
+              <PlanResult plan={plan} onReset={reset} onSave={saveTrip} saved={tripSaved} isLoggedIn={!!user} interests={interests}
+                userLocation={userLocation} locationStatus={locationStatus} />
             </motion.div>
           )}
 
