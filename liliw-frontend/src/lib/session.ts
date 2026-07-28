@@ -43,12 +43,16 @@ export function verifySession(token: string | undefined): SessionPayload | null 
   }
 }
 
+// Secure is set outside development so the session cookie is never sent over
+// plain HTTP; localhost stays exempt or logging in during dev would break.
+const SECURE = process.env.NODE_ENV === 'production' ? ' Secure;' : '';
+
 export function sessionCookieHeader(token: string): string {
-  return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${MAX_AGE}`;
+  return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly;${SECURE} SameSite=Lax; Max-Age=${MAX_AGE}`;
 }
 
 export function clearSessionCookieHeader(): string {
-  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly;${SECURE} SameSite=Lax; Max-Age=0`;
 }
 
 /** Server-side mirror of AuthContext staffCookieRole(). */

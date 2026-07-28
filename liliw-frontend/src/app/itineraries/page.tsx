@@ -13,6 +13,7 @@ import AuthModal from '@/components/AuthModal';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useAuth } from '@/context/AuthContext';
 import { stripHtml } from '@/lib/text';
+import SafeHtml from '@/components/SafeHtml';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -1685,7 +1686,7 @@ function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }
             {itin.description && (
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3" style={{ fontFamily: HL }}>About this tour</p>
-                <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed" style={{ fontFamily: BL }} dangerouslySetInnerHTML={{ __html: itin.description }} />
+                <SafeHtml html={itin.description} className="prose prose-sm max-w-none text-gray-600 leading-relaxed" style={{ fontFamily: BL }} />
               </div>
             )}
             {itin.photos.length > 0 && (

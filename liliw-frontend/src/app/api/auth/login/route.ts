@@ -5,7 +5,7 @@ import { supabaseServer } from '@/lib/supabase-server';
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
-  if (!checkRateLimit(ip, 5, 60_000)) {
+  if (!checkRateLimit(`login:${ip}`, 5, 60_000)) {
     return NextResponse.json(
       { error: { message: 'Too many attempts. Try again in 1 minute.' } },
       { status: 429 },

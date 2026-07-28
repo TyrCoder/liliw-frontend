@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
-  if (!checkRateLimit(ip, 3, 60_000)) {
+  if (!checkRateLimit(`profile-otp:${ip}`, 3, 60_000)) {
     return NextResponse.json({ error: 'Too many attempts. Try again in 1 minute.' }, { status: 429 });
   }
 

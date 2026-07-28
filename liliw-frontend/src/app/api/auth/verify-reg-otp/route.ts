@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { regOtpStore } from '@/lib/regOtpStore';
+import { consumeOtp } from '@/lib/otp';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { supabaseServer } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
-  if (!checkRateLimit(ip, 5, 60_000)) {
+  if (!checkRateLimit(`verify-reg:${ip}`, 5, 60_000)) {
     return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 });
   }
 
@@ -21,13 +22,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
     }
 
-    const key   = email.toLowerCase();
-    const entry = regOtpStore.get(key);
-    if (!entry)                     return NextResponse.json({ error: 'No verification code found. Please request a new one.' }, { status: 400 });
-    if (Date.now() > entry.expiry)  { regOtpStore.delete(key); return NextResponse.json({ error: 'Code has expired. Please go back and request a new one.' }, { status: 400 }); }
-    if (entry.otp !== otp)          return NextResponse.json({ error: 'Incorrect code. Please check your email and try again.' }, { status: 400 });
-
-    regOtpStore.delete(key);
+    const key    = email.toLowerCase();
+    const result = consumeOtp(regOtpStore, key, otp);
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
     // Create Supabase auth user (email_confirm: true bypasses confirmation email since we already verified via OTP)
     const { data: created, error: createErr } = await supabaseServer.auth.admin.createUser({

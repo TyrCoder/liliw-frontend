@@ -1,7 +1,10 @@
-export const profileOtpStore = new Map<string, { otp: string; expiry: number }>();
+import { OtpEntry } from './otp';
+
+export const profileOtpStore = new Map<string, OtpEntry>();
 // Tracks old-email verified state during email-change flow (keyed by userId)
 export const emailChangeVerified = new Map<string, { expiry: number }>();
 
-export function generateOtp(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
+// Re-exported so existing callers keep working. Generation now comes from the
+// shared module, which uses a cryptographically secure source instead of
+// Math.random().
+export { generateOtp } from './otp';

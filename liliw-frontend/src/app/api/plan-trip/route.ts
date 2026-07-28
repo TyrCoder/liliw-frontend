@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
   if (!groq) return NextResponse.json({ error: 'Trip planner is temporarily unavailable.' }, { status: 503 });
 
   const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
-  if (!checkRateLimit(ip, 3, 60_000)) {
+  if (!checkRateLimit(`plan-trip:${ip}`, 3, 60_000)) {
     return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 });
   }
 

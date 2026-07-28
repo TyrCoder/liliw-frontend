@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, MapPin, Phone, ExternalLink, Search, ChevronLeft, ChevronRight, X, Maximize2 } from 'lucide-react';
 import PhotoLightbox from '@/components/PhotoLightbox';
+import SafeHtml from '@/components/SafeHtml';
 import { stripHtml } from '@/lib/text';
 
 const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || '';
@@ -162,7 +163,7 @@ function ArtFormModal({ art, onClose }: { art: any; onClose: () => void }) {
         <div className="p-6 overflow-y-auto">
           <h3 className="text-2xl font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>{art.name || art.title}</h3>
           {art.description && (
-            <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed mb-5" style={{ fontFamily: BL }} dangerouslySetInnerHTML={{ __html: art.description }} />
+            <SafeHtml html={art.description} className="prose prose-sm max-w-none text-gray-600 leading-relaxed mb-5" style={{ fontFamily: BL }} />
           )}
           {features.length > 0 && (
             <div>

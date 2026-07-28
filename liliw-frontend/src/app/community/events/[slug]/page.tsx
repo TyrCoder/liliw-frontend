@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
+import SafeHtml from '@/components/SafeHtml';
 import { showAchievementToasts } from '@/lib/achievementToast';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -216,7 +217,7 @@ export default function EventDetailPage() {
         {descHtml && (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <h2 className="text-base font-bold text-gray-900 mb-3" style={{ fontFamily: HL }}>About this Event</h2>
-            <div style={{ fontFamily: BL }} dangerouslySetInnerHTML={{ __html: descHtml }} />
+            <SafeHtml html={descHtml} style={{ fontFamily: BL }} />
           </div>
         )}
 
@@ -224,7 +225,7 @@ export default function EventDetailPage() {
         {programHtml && (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <h2 className="text-base font-bold text-gray-900 mb-3" style={{ fontFamily: HL }}>Program</h2>
-            <div style={{ fontFamily: BL }} dangerouslySetInnerHTML={{ __html: programHtml }} />
+            <SafeHtml html={programHtml} style={{ fontFamily: BL }} />
           </div>
         )}
 

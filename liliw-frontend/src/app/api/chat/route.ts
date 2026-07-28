@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/content';
+import { checkRateLimit } from '@/lib/ratelimit';
 
 const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
 
@@ -136,6 +137,14 @@ interface ChatRequest {
 export async function POST(request: NextRequest) {
   if (!groq) {
     return NextResponse.json({ error: 'Chat is temporarily unavailable.', unavailable: true }, { status: 503 });
+  }
+
+  // This endpoint is public and every call costs Groq tokens, so it needs the
+  // same throttle /api/plan-trip has — otherwise anyone can drain the quota.
+  // Slightly higher limit since chat is conversational and back-and-forth.
+  const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
+  if (!checkRateLimit(`chat:${ip}`, 10, 60_000)) {
+    return NextResponse.json({ error: 'Too many messages. Please wait a moment.' }, { status: 429 });
   }
 
   try {
