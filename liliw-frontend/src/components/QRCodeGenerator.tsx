@@ -63,12 +63,13 @@ export default function QRCodeGenerator({
         QR Code
       </motion.button>
 
-      {/* QR Modal */}
+      {/* QR Modal — anchored left on phones: the trigger sits near the screen's
+          left edge, so right-anchoring pushed the 288px panel off-screen. */}
       {isOpen && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="absolute top-full right-0 mt-2 p-6 bg-white rounded-lg shadow-2xl z-50 w-72 border border-gray-200"
+          className="absolute top-full left-0 sm:left-auto sm:right-0 mt-2 p-6 bg-white rounded-lg shadow-2xl z-50 w-72 max-w-[calc(100vw-2rem)] border border-gray-200"
         >
           {/* Close button */}
           <button

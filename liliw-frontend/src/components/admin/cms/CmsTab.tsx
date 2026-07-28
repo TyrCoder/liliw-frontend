@@ -316,9 +316,11 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
               <button onClick={closeForm} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 transition"><X className="w-5 h-5" /></button>
             </div>
             <div className="px-6 py-5 max-h-[70vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4">
+              {/* Single column on phones — half-width fields like lat/lng were
+                  ~140px wide side by side on a narrow screen. */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {fields.map(f => (
-                  <div key={f.name} className={(f.colSpan ?? 2) === 2 ? 'col-span-2' : ''}>
+                  <div key={f.name} className={(f.colSpan ?? 2) === 2 ? 'sm:col-span-2' : ''}>
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">
                       {f.label}{f.required ? ' *' : ''}
                     </label>
