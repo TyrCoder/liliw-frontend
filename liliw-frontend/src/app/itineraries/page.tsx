@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft, ChevronRight, Clock, Users, X, MapPin, Star,
+  ChevronLeft, ChevronRight, ChevronUp, Clock, Users, X, MapPin, Star,
   CheckCircle, XCircle, Navigation, ArrowRight, Calendar,
   Lightbulb, Sparkles, RotateCcw, Wallet, Heart, Sun, BookmarkCheck,
   Trash2, ChevronDown, LogIn, Pencil, Plus, ExternalLink, Check, GripVertical,
@@ -789,14 +789,27 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
                 onMouseEnter={() => handleStopHover(stopGlobalIndex(dayIdx, stopIdx), true)}
                 onMouseLeave={() => handleStopHover(stopGlobalIndex(dayIdx, stopIdx), false)}>
                 {isEditing && (
-                  <div
-                    onMouseDown={() => setDragRow(`${dayIdx}-${stopIdx}`)}
-                    onMouseUp={() => setDragRow(null)}
-                    onTouchStart={() => setDragRow(`${dayIdx}-${stopIdx}`)}
-                    onTouchEnd={() => setDragRow(null)}
-                    title="Drag to reorder this stop"
-                    className="shrink-0 self-start mt-1 p-1 -ml-2 rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-100 cursor-grab active:cursor-grabbing transition">
-                    <GripVertical className="w-4 h-4" />
+                  <div className="shrink-0 self-start mt-0.5 -ml-2 flex flex-col items-center">
+                    {/* Up/down buttons carry the reordering on touch (and for
+                        keyboard users) — HTML5 drag events never fire on phones,
+                        so the grip alone would be dead weight there. */}
+                    <button onClick={() => moveStop(dayIdx, stopIdx, stopIdx - 1)} disabled={stopIdx === 0}
+                      aria-label="Move stop up" title="Move up"
+                      className="p-0.5 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-25 disabled:hover:bg-transparent transition">
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </button>
+                    <div
+                      onMouseDown={() => setDragRow(`${dayIdx}-${stopIdx}`)}
+                      onMouseUp={() => setDragRow(null)}
+                      title="Drag to reorder this stop"
+                      className="hidden sm:block p-0.5 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 cursor-grab active:cursor-grabbing transition">
+                      <GripVertical className="w-4 h-4" />
+                    </div>
+                    <button onClick={() => moveStop(dayIdx, stopIdx, stopIdx + 1)} disabled={stopIdx === day.stops.length - 1}
+                      aria-label="Move stop down" title="Move down"
+                      className="p-0.5 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-25 disabled:hover:bg-transparent transition">
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
                 <div className="shrink-0 flex flex-col items-center gap-1 pt-0.5">
@@ -905,7 +918,9 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
               </button>
               {day.stops.length > 1 && (
                 <span className="flex items-center gap-1.5 text-xs text-gray-400" style={{ fontFamily: BL }}>
-                  <GripVertical className="w-3.5 h-3.5" /> Drag to reorder
+                  <GripVertical className="w-3.5 h-3.5 hidden sm:inline" />
+                  <span className="hidden sm:inline">Drag or use arrows to reorder</span>
+                  <span className="sm:hidden">Use arrows to reorder</span>
                 </span>
               )}
             </div>
@@ -1208,7 +1223,10 @@ function ItineraryWizard() {
                 }`} style={n <= stepNumber ? { backgroundColor: '#1565C0', fontFamily: HL } : { fontFamily: HL }}>
                   {n < stepNumber ? <Check className="w-3 h-3" /> : n}
                 </div>
-                <p className={`text-xs font-medium truncate ${n === stepNumber ? 'text-gray-900' : 'text-gray-400'}`}
+                {/* At five steps the labels truncate to two letters on a phone,
+                    so below sm only the numbered circles and connectors show —
+                    the current step is named in the heading below anyway. */}
+                <p className={`hidden sm:block text-xs font-medium truncate ${n === stepNumber ? 'text-gray-900' : 'text-gray-400'}`}
                   style={{ fontFamily: BL }}>
                   {stepLabel(n)}
                 </p>
