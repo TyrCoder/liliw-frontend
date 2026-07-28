@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, User, Calendar, BookOpen, Play } from 'lucide-react';
 import GatTayaw from '@/components/GatTayaw';
 import DogMascot from '@/components/DogMascot';
+import SafeHtml from '@/components/SafeHtml';
 
 // Add YouTube video IDs per story type — empty strings are hidden until filled
 const STORY_VIDEOS: Record<string, { id: string; title: string }[]> = {
@@ -412,7 +413,7 @@ export default function StoryDetailPage() {
               <div>
                 {typeof story.content === 'string'
                   ? story.content
-                    ? <div className="prose max-w-none" style={{ fontFamily: BL }} dangerouslySetInnerHTML={{ __html: story.content }} />
+                    ? <SafeHtml html={story.content} className="prose max-w-none" style={{ fontFamily: BL }} />
                     : <p className="text-gray-400 italic" style={{ fontFamily: BL }}>No content yet.</p>
                   : story.content.length > 0
                     ? story.content.map((block: any, i: number) => <RichTextBlock key={i} block={block} />)

@@ -3,12 +3,9 @@ import nodemailer from 'nodemailer';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabase-server';
+import { generateOtp, OtpEntry } from '@/lib/otp';
 
-export const otpStore = new Map<string, { otp: string; expiry: number }>();
-
-function generateOtp(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
+export const otpStore = new Map<string, OtpEntry>();
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -20,7 +17,7 @@ const LOGO = `${SITE}/icon-192x192.png`;
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
-  if (!checkRateLimit(ip, 3, 60_000)) {
+  if (!checkRateLimit(`forgot-pw:${ip}`, 3, 60_000)) {
     return NextResponse.json({ error: 'Too many requests. Try again in 1 minute.' }, { status: 429 });
   }
 

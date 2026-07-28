@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { regOtpStore } from '@/lib/regOtpStore';
+import { generateOtp } from '@/lib/otp';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { supabaseServer } from '@/lib/supabase-server';
 
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
 const LOGO = `${SITE}/icon-192x192.png`;
-
-function generateOtp() {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -18,7 +15,7 @@ const transporter = nodemailer.createTransport({
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
-  if (!checkRateLimit(ip, 3, 60_000)) {
+  if (!checkRateLimit(`reg-otp:${ip}`, 3, 60_000)) {
     return NextResponse.json({ error: 'Too many attempts. Try again in 1 minute.' }, { status: 429 });
   }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { profileOtpStore } from '@/lib/profileOtpStore';
+import { consumeOtp } from '@/lib/otp';
 import { supabaseServer } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
@@ -16,12 +17,8 @@ export async function POST(req: NextRequest) {
   if (newPassword !== confirmPassword)          return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 });
   if (newPassword.length < 6)                  return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
 
-  const key   = `${user.id}-password`;
-  const entry = profileOtpStore.get(key);
-  if (!entry)                    return NextResponse.json({ error: 'No verification code found. Please request a new one.' }, { status: 400 });
-  if (Date.now() > entry.expiry) { profileOtpStore.delete(key); return NextResponse.json({ error: 'Code expired. Please request a new one.' }, { status: 400 }); }
-  if (entry.otp !== otp)         return NextResponse.json({ error: 'Incorrect code. Please try again.' }, { status: 400 });
-  profileOtpStore.delete(key);
+  const result = consumeOtp(profileOtpStore, `${user.id}-password`, otp);
+  if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
   const { error } = await supabaseServer.auth.admin.updateUserById(user.id, { password: newPassword });
   if (error) return NextResponse.json({ error: 'Failed to update password. Please try again.' }, { status: 500 });

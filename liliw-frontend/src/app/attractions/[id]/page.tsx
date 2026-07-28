@@ -14,6 +14,7 @@ import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { useAuth } from '@/context/AuthContext';
 import { showAchievementToasts } from '@/lib/achievementToast';
 import { stripHtml } from '@/lib/text';
+import SafeHtml from '@/components/SafeHtml';
 import { VISIT_DWELL_MS } from '@/lib/visitDwell';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -228,10 +229,11 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
 
         {/* Description */}
         {attraction.attributes.description && (
-          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.05 }}
-            className="mb-8 sm:mb-12 prose prose-sm sm:prose-base md:prose-lg max-w-none text-gray-700 leading-relaxed p-5 sm:p-6 rounded-2xl border-l-4 bg-white"
-            style={{ borderLeftColor: '#1565C0', fontFamily: BL }}
-            dangerouslySetInnerHTML={{ __html: attraction.attributes.description }} />
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.05 }}>
+            <SafeHtml html={attraction.attributes.description}
+              className="mb-8 sm:mb-12 prose prose-sm sm:prose-base md:prose-lg max-w-none text-gray-700 leading-relaxed p-5 sm:p-6 rounded-2xl border-l-4 bg-white"
+              style={{ borderLeftColor: '#1565C0', fontFamily: BL }} />
+          </motion.div>
         )}
 
         {/* Info Grid */}
