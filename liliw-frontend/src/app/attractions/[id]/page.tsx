@@ -85,15 +85,18 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
             setFrontendCount(count);
           })
           .catch(() => {});
-        // Fetch external reviews from Supabase cache
+        // Fetch external reviews from Supabase cache. Failures are non-fatal —
+        // the rest of the page still renders — but they are logged rather than
+        // swallowed: a missing table here once hid the Google reviews entirely
+        // with no visible symptom.
         if (current.strapiId) {
           fetch(`/api/admin/external-reviews?strapiId=${current.strapiId}`)
             .then(r => r.json())
             .then(d => {
+              if (d.error) { console.error('External reviews unavailable:', d.error); return; }
               if (d.data?.[0]) setExternalReview({ ...d.data[0], reviews: d.data[0].reviews ?? [] });
             })
-            .catch(() => {});
-        } else {
+            .catch(err => console.error('External reviews request failed:', err));
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load attraction');
