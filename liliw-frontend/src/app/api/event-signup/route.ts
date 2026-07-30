@@ -26,7 +26,17 @@ export async function POST(request: NextRequest) {
         status:   'pending',
       });
 
-    if (sbError) logger.error('Supabase event-signup error:', sbError);
+    // A failed insert used to be logged and then ignored, so the visitor saw a
+    // confirmation screen while nothing was saved — and still collected the
+    // event-signup points, leaving badges awarded for sign-ups with no record.
+    // Fail loudly instead: no row, no points, no false confirmation.
+    if (sbError) {
+      logger.error('Supabase event-signup error:', sbError);
+      return NextResponse.json(
+        { error: 'Could not save your sign-up. Please try again.' },
+        { status: 500 },
+      );
+    }
 
     // Award points if user is logged in
     const auth = await verifyToken(request);
