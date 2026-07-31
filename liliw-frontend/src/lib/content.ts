@@ -23,13 +23,36 @@ function setCached(key: string, data: any) { cache.set(key, { data, at: Date.now
 // serving stale content for up to TTL.
 export function invalidateContentCache() { cache.clear(); }
 
+// Average visitor rating per attraction, keyed by the composite id reviews are
+// filed under ('<type>-<uuid>'). cms_attractions has a `rating` column, but
+// nothing ever writes to it — it isn't editable in the CMS and isn't derived
+// from anything — so every attraction reported 0 and the stars on the Tourism
+// listing never rendered. Deriving it from the reviews table makes the listing
+// agree with the average already shown on the detail page.
+async function getRatingsByItemId(): Promise<Record<string, number>> {
+  const { data, error } = await supabaseServer.from('reviews').select('item_id, rating');
+  if (error || !data) return {};
+  const sums: Record<string, { total: number; n: number }> = {};
+  for (const r of data) {
+    if (!r.item_id || typeof r.rating !== 'number') continue;
+    const acc = sums[r.item_id] ?? (sums[r.item_id] = { total: 0, n: 0 });
+    acc.total += r.rating; acc.n += 1;
+  }
+  return Object.fromEntries(
+    Object.entries(sums).map(([id, { total, n }]) => [id, total / n]),
+  );
+}
+
 export const getAllAttractions = async () => {
   const cached = getCached('all-attractions');
   if (cached) return cached;
   try {
-    const items = await fetchApprovedWithMedia('cms_attractions', 'attraction',
-      (q: any) => q.order('sort_order', { ascending: true }),
-    );
+    const [items, ratings] = await Promise.all([
+      fetchApprovedWithMedia('cms_attractions', 'attraction',
+        (q: any) => q.order('sort_order', { ascending: true }),
+      ),
+      getRatingsByItemId(),
+    ]);
     const data = items.map((item: any) => {
       const type = CAT_MAP[item.category] ?? 'spot';
       const photos = mediaToPhotos(item._media);
@@ -42,7 +65,9 @@ export const getAllAttractions = async () => {
           description:        item.description ?? '',
           location:           item.location ?? '',
           category:           item.category,
-          rating:             item.rating ?? 0,
+          // Visitor-review average, falling back to the stored column if a
+          // rating was ever seeded there directly.
+          rating:             ratings[`${type}-${item.id}`] ?? item.rating ?? 0,
           coordinates:        (item.map_lat != null && item.map_lng != null)
                                 ? { latitude: Number(item.map_lat), longitude: Number(item.map_lng) }
                                 : undefined,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { verifyToken } from '@/lib/verifyToken';
 import { awardPoints } from '@/lib/achievements';
+import { invalidateContentCache } from '@/lib/content';
 
 export async function POST(request: NextRequest) {
   const authUser = await verifyToken(request);
@@ -26,6 +27,11 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // The attractions listing derives its star rating from these reviews, so
+    // drop the cached copy — otherwise a new review takes up to the 5-minute
+    // TTL to show up there.
+    invalidateContentCache();
 
     // Award points for writing a review
     const unlockedAchievements = await awardPoints(authUser.userId, 'review', itemId, itemName || 'Attraction').catch(() => []);
