@@ -308,8 +308,10 @@ export default function AdminDashboard() {
       fetch('/api/admin/rewards', { headers: h }).then(r => r.json()).then(d => setRewards(d.data || [])).catch(() => {}).finally(() => setLoadingRewards(false));
     }
 
-    // Officer — requests & submissions
-    if (isChatoOfficer) {
+    // Officer — requests & submissions.
+    // Admin is included in these officer/editor blocks because admin now sees
+    // every tab; without the data fetch those tabs would render empty.
+    if (isChatoOfficer || isAdmin) {
       fetch('/api/admin/submissions',   { headers: h }).then(r => r.json()).then(d => setSubmissions(d.data || [])).catch(() => {}).finally(() => setLoadingSubs(false));
       fetch('/api/admin/participation',  { headers: h }).then(r => r.json()).then(d => setParticipation(d.data || [])).catch(() => {}).finally(() => setLoadingPart(false));
       fetch('/api/event-signup',         { headers: h }).then(r => r.json()).then(d => setSignups(d.data || [])).catch(() => {}).finally(() => setLoadingSignups(false));
@@ -320,7 +322,7 @@ export default function AdminDashboard() {
     }
 
     // Officer + Editor — LBO applications & change requests
-    if (isChatoOfficer || isChatoEditor) {
+    if (isChatoOfficer || isChatoEditor || isAdmin) {
       setLoadingLbo(true);
       fetch('/api/admin/lbo-applications',{ headers: h }).then(r => r.json()).then(d => { if (d._error) console.error('[LBO] Strapi error:', d._error, 'status:', d._status); setLboApps(d.data || []); }).catch(() => {}).finally(() => setLoadingLbo(false));
       setLoadingCR(true);
@@ -335,7 +337,7 @@ export default function AdminDashboard() {
     }).catch(() => {}).finally(() => setLoadingAR(false));
 
     // Editor — event forms + joinable events
-    if (isChatoEditor) {
+    if (isChatoEditor || isAdmin) {
       setLoadingEF(true);
       setLoadingJE(true);
       fetch('/api/admin/event-forms', { headers: h }).then(r => r.json()).then(d => setEventForms(d.data || [])).catch(() => {}).finally(() => setLoadingEF(false));
@@ -343,7 +345,7 @@ export default function AdminDashboard() {
     }
 
     // Officer — event form list for responses viewer
-    if (isChatoOfficer) {
+    if (isChatoOfficer || isAdmin) {
       setLoadingEF(true);
       fetch('/api/admin/event-forms', { headers: h }).then(r => r.json()).then(d => setEventForms(d.data || [])).catch(() => {}).finally(() => setLoadingEF(false));
     }
@@ -838,7 +840,13 @@ export default function AdminDashboard() {
   ];
 
   const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
-  const TABS = ALL_TABS.filter(t => t.roles.includes(myRole));
+  // Admin is a superset: it sees every tab, not just the ones tagged 'admin'.
+  // Previously the most privileged account saw the fewest operational tools —
+  // Online Reviews, Ratings, Submissions and the CMS tabs were all officer- or
+  // editor-only, so an admin had to sign in as another role to reach them.
+  // requireStaffAuth already authorises admin on those routes; only the tab
+  // bar was hiding them.
+  const TABS = ALL_TABS.filter(t => isAdmin || t.roles.includes(myRole));
 
   const roleBadge = isAdmin ? 'Admin' : isChatoOfficer ? 'Officer' : 'Editor';
 
