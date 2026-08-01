@@ -914,7 +914,7 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard icon={<Eye className="w-5 h-5" />}       label="Page Views"       value={loadingStats ? '—' : (analytics?.pageViews ?? 0).toLocaleString()} color="#1565C0" />
               <StatCard icon={<Users className="w-5 h-5" />}     label="Unique Visitors"  value={loadingStats ? '—' : (analytics?.uniqueVisitors ?? 0).toLocaleString()} color="#3B82F6" />
-              <StatCard icon={<MapPin className="w-5 h-5" />}    label="Attractions"       value={loadingAttr ? '—' : attractions.length} sub="in Strapi" color="#F59E0B" />
+              <StatCard icon={<MapPin className="w-5 h-5" />}    label="Attractions"       value={loadingAttr ? '—' : attractions.length} sub="in the CMS" color="#F59E0B" />
               <StatCard icon={<Activity className="w-5 h-5" />}  label="CMS Changes"       value={loadingActivity ? '—' : strapiActivity.length} sub="content edits tracked" color="#6366F1" />
             </div>
             <div className={`grid grid-cols-2 lg:grid-cols-${isAdmin ? 4 : 2} gap-4`}>
@@ -929,7 +929,7 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-sm font-bold text-gray-900">Search Index</p>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {syncStatus === 'done' ? `Synced ${syncCount} items to Algolia` : syncStatus === 'error' ? 'Sync failed — check Algolia credentials' : 'Sync Strapi content to Algolia for up-to-date search'}
+                  {syncStatus === 'done' ? `Synced ${syncCount} items to Algolia` : syncStatus === 'error' ? 'Sync failed — check Algolia credentials' : 'Sync CMS content to Algolia for up-to-date search'}
                 </p>
               </div>
               <button onClick={handleSyncSearch} disabled={syncStatus === 'syncing'}
@@ -1242,7 +1242,7 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
               <h2 className="font-bold text-gray-900 mb-1">Assign User Roles</h2>
-              <p className="text-xs text-gray-400">Changes are saved immediately to Strapi. Roles come from Users &amp; Permissions.</p>
+              <p className="text-xs text-gray-400">Changes are saved immediately.</p>
             </div>
 
             {loadingRoles ? (
@@ -2712,7 +2712,7 @@ export default function AdminDashboard() {
           };
           return (
             <div className="space-y-6">
-              <TableWrap title="Strapi Content Changes" count={strapiActivity.length} loading={loadingActivity} empty={strapiActivity.length === 0} emptyIcon={<Activity className="w-12 h-12" />}>
+              <TableWrap title="CMS Content Changes" count={strapiActivity.length} loading={loadingActivity} empty={strapiActivity.length === 0} emptyIcon={<Activity className="w-12 h-12" />}>
                 <table className="w-full text-sm">
                   <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
                     <th className="px-5 py-3 text-left">Action</th>
@@ -3252,7 +3252,7 @@ export default function AdminDashboard() {
                 <div className="flex flex-col items-center py-20 text-center text-gray-400">
                   <MapPin className="w-12 h-12 opacity-20 mb-3" />
                   <p className="font-semibold">No attractions with coordinates found</p>
-                  <p className="text-sm mt-1">Add coordinates to attractions in Strapi to enable review scraping.</p>
+                  <p className="text-sm mt-1">Add coordinates to attractions in the CMS to enable review scraping.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -3383,7 +3383,7 @@ export default function AdminDashboard() {
             ) : joinableEvents.length === 0 ? (
               <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
                 <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-400 text-sm">No joinable events found in Strapi.<br />Enable <strong>is_joinable</strong> on an event first.</p>
+                <p className="text-gray-400 text-sm">No joinable events found in the CMS.<br />Enable <strong>is_joinable</strong> on an event first.</p>
               </div>
             ) : joinableEvents.map(event => {
               const form = eventForms.find(f => f.event_slug === event.slug);
@@ -3774,7 +3774,7 @@ export default function AdminDashboard() {
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Editor Notes (optional)</label>
               <textarea value={crNotes} onChange={e => setCrNotes(e.target.value)} rows={3}
                 className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-                placeholder={crActionModal.action === 'done' ? 'e.g. Updated in Strapi CMS' : 'e.g. Insufficient information provided'} />
+                placeholder={crActionModal.action === 'done' ? 'e.g. Updated in the CMS' : 'e.g. Insufficient information provided'} />
             </div>
 
             <div className="flex gap-2">
@@ -3826,7 +3826,7 @@ export default function AdminDashboard() {
               </label>
               <textarea value={arNotes} onChange={e => setArNotes(e.target.value)} rows={3}
                 className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-                placeholder={arActionModal.action === 'approved' ? 'e.g. Will create the listing in Strapi shortly' : arActionModal.action === 'editor_reviewed' ? 'e.g. Verified business registration' : 'e.g. Insufficient documentation'} />
+                placeholder={arActionModal.action === 'approved' ? 'e.g. Will create the listing in the CMS shortly' : arActionModal.action === 'editor_reviewed' ? 'e.g. Verified business registration' : 'e.g. Insufficient documentation'} />
             </div>
 
             <div className="flex gap-2">

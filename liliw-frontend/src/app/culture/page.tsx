@@ -229,7 +229,7 @@ export default function CulturePage() {
           <div className="text-center py-20 rounded-2xl border border-dashed border-red-200 bg-red-50">
             <AlertCircle className="w-10 h-10 mx-auto mb-3 text-red-400" />
             <p className="font-semibold text-lg text-red-600" style={{ fontFamily: HL }}>Could not load content</p>
-            <p className="text-sm mt-1 text-red-400" style={{ fontFamily: BL }}>Make sure Strapi is running and the API token is valid.</p>
+            <p className="text-sm mt-1 text-red-400" style={{ fontFamily: BL }}>Please try again in a moment.</p>
           </div>
         )}
 
@@ -238,7 +238,7 @@ export default function CulturePage() {
           <div className="text-center py-20 rounded-2xl border-2 border-dashed border-gray-200">
             <Heart className="w-10 h-10 mx-auto mb-3 text-blue-300" />
             <p className="font-semibold text-lg" style={{ color: '#1A1A2E', fontFamily: HL }}>No culture & heritage content yet</p>
-            <p className="text-sm mt-1 text-gray-500" style={{ fontFamily: BL }}>Add and publish items in Strapi under Culture &amp; Heritage.</p>
+            <p className="text-sm mt-1 text-gray-500" style={{ fontFamily: BL }}>Add and publish items in the CMS under Culture &amp; Heritage.</p>
           </div>
         )}
 

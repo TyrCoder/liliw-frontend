@@ -153,7 +153,7 @@ export default function GalleryPage() {
           <div className="text-center py-24 rounded-2xl border-2 border-dashed border-gray-200">
             <Images className="w-12 h-12 mx-auto mb-3 text-blue-300" />
             <p className="font-semibold text-lg text-gray-700" style={{ fontFamily: HL }}>No photos yet</p>
-            <p className="text-sm text-gray-400 mt-1" style={{ fontFamily: BL }}>Add and publish Gallery Items in Strapi.</p>
+            <p className="text-sm text-gray-400 mt-1" style={{ fontFamily: BL }}>Add and publish Gallery Items in the CMS.</p>
           </div>
         )}
 

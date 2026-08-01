@@ -535,7 +535,7 @@ export default function LboDashboard() {
                     </div>
                   )}
                   {!attrData.attraction.description && !attrData.attraction.location && (
-                    <p className="text-sm text-gray-400">No additional details available from Strapi.</p>
+                    <p className="text-sm text-gray-400">No additional details available.</p>
                   )}
                 </div>
 
