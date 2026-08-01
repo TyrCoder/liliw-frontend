@@ -1838,7 +1838,7 @@ function DatabaseItineraries() {
           </h3>
           <p className="text-sm text-gray-400 max-w-xs" style={{ fontFamily: BL }}>
             {itineraries.length === 0
-              ? 'Publish tour packages in Strapi admin and they will appear here.'
+              ? 'Publish tour packages in the CMS and they will appear here.'
               : 'Try a different filter above.'}
           </p>
         </div>
