@@ -66,12 +66,19 @@ CREATE POLICY saved_itineraries_own_read ON public.saved_itineraries
 -- means no direct browser access.
 
 -- ─────────────────────────────────────────────
--- 5. Verify — expect rowsecurity = true and only the one policy
+-- 5. Verify — expect both flags true and only the one policy
 -- ─────────────────────────────────────────────
-SELECT tablename, rowsecurity, forcerowsecurity
-FROM pg_tables
-WHERE schemaname = 'public'
-  AND tablename IN ('saved_itineraries','participation_requests');
+-- Read the flags from pg_class: pg_tables exposes rowsecurity but has no
+-- forcerowsecurity column, and referencing it errors the whole script —
+-- which, because the SQL editor runs it as one transaction, silently rolls
+-- back all the work above.
+SELECT c.relname       AS tablename,
+       c.relrowsecurity      AS rls_enabled,
+       c.relforcerowsecurity AS rls_forced
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public'
+  AND c.relname IN ('saved_itineraries','participation_requests');
 
 SELECT tablename, policyname, roles, cmd
 FROM pg_policies
