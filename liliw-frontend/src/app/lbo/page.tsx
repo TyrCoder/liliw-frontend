@@ -10,6 +10,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import { stripHtml } from '@/lib/text';
+import SafeHtml from '@/components/SafeHtml';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -557,9 +558,11 @@ export default function LboDashboard() {
                   {attrData.attraction.features && (
                     <div>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Details</p>
-                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                        {stripHtml(attrData.attraction.features)}
-                      </p>
+                      {/* Rendered as HTML, not stripped — this field is authored
+                          as paragraphs, and flattening it ran every line
+                          (best time, fee, hours, tips) into one block of text. */}
+                      <SafeHtml html={attrData.attraction.features}
+                        className="prose prose-sm max-w-none text-gray-700 leading-relaxed" />
                     </div>
                   )}
                   {attrData.attraction.location && (

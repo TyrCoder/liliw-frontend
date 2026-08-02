@@ -63,6 +63,11 @@ export const getAllAttractions = async () => {
         attributes: {
           name:               item.name,
           description:        item.description ?? '',
+          // Visitor-practical notes an editor writes in the CMS: best time to
+          // visit, entrance fee, opening hours, what to bring. 38 of 40
+          // attractions have this filled in, and none of it reached the site
+          // because it was never mapped here.
+          features:           item.features ?? '',
           location:           item.location ?? '',
           category:           item.category,
           // Visitor-review average, falling back to the stored column if a
