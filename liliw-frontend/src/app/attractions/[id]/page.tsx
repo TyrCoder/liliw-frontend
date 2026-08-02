@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, MapPin, Phone, Clock, Globe, Users, Star, Layers, Utensils } from 'lucide-react';
+import { ChevronLeft, MapPin, Phone, Clock, Globe, Users, Star, Layers, Utensils, Lightbulb } from 'lucide-react';
 import SocialShare from '@/components/SocialShare';
 import FavoriteButton from '@/components/FavoriteButton';
 import ImageGallery from '@/components/ImageGallery';
@@ -27,7 +27,7 @@ interface Attraction {
   id: string | number;
   strapiId?: string;
   attributes: {
-    name: string; description?: string; location?: string; category?: string;
+    name: string; description?: string; features?: string; location?: string; category?: string;
     is_featured?: boolean; rating?: number; phone?: string; hours?: string;
     website?: string; best_for?: string; google_place_id?: string;
     has_virtual_tour?: boolean;
@@ -236,6 +236,23 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
             <SafeHtml html={attraction.attributes.description}
               className="mb-8 sm:mb-12 prose prose-sm sm:prose-base md:prose-lg max-w-none text-gray-700 leading-relaxed p-5 sm:p-6 rounded-2xl border-l-4 bg-white"
               style={{ borderLeftColor: '#1565C0', fontFamily: BL }} />
+          </motion.div>
+        )}
+
+        {/* Visitor info — best time, entrance fee, hours, what to bring.
+            Written by editors in the CMS and previously never surfaced. */}
+        {attraction.attributes.features && (
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.08 }}
+            className="mb-8 sm:mb-12">
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb className="w-5 h-5" style={{ color: '#F5C518' }} />
+              <h2 className="text-lg sm:text-xl font-bold" style={{ color: '#1A1A2E', fontFamily: HL }}>
+                Good to Know
+              </h2>
+            </div>
+            <SafeHtml html={attraction.attributes.features}
+              className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed p-5 sm:p-6 rounded-2xl bg-white border border-gray-100"
+              style={{ fontFamily: BL }} />
           </motion.div>
         )}
 
