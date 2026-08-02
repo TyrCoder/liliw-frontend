@@ -73,6 +73,8 @@ export const getAllAttractions = async () => {
           // grid already expects, so filling opening_hours in the CMS is all
           // that's needed to light that card up.
           hours:              item.opening_hours ?? '',
+          best_time:          item.best_time ?? '',
+          visitor_tips:       item.visitor_tips ?? '',
           entrance_fee:       item.entrance_fee ?? '',
           price_level:        item.price_level ?? '',
           phone:              item.phone ?? '',

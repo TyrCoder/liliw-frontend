@@ -8,7 +8,8 @@ interface Entry {
   id: string; name: string; category: string; description: string;
   location: string; map_lat: number | null; map_lng: number | null;
   features: string; sort_order: number; slug: string;
-  opening_hours: string; entrance_fee: string; price_level: string;
+  opening_hours: string; best_time: string; entrance_fee: string; price_level: string;
+  visitor_tips: string;
   phone: string; website: string; best_for: string;
   status: string; created_by: string; reject_remarks: string | null;
   created_at: string; media?: MediaItem[];
@@ -36,7 +37,7 @@ const CONFIG: CmsTabConfig<Entry> = {
   empty: {
     name: '', category: 'heritage', description: '', location: '',
     map_lat: null, map_lng: null, features: '', sort_order: 0, slug: '',
-    opening_hours: '', entrance_fee: '', price_level: '',
+    opening_hours: '', best_time: '', entrance_fee: '', price_level: '', visitor_tips: '',
     phone: '', website: '', best_for: '',
     reject_remarks: null, media: [],
   },
@@ -51,6 +52,8 @@ const CONFIG: CmsTabConfig<Entry> = {
     // public attraction page, which had no way to be filled in before.
     { name: 'opening_hours', label: 'Opening Hours', type: 'text', colSpan: 1,
       placeholder: 'e.g. 8:00 AM – 6:00 PM daily' },
+    { name: 'best_time',     label: 'Best Time to Visit', type: 'text', colSpan: 1,
+      placeholder: 'e.g. Early morning or late afternoon' },
     { name: 'entrance_fee',  label: 'Entrance Fee',  type: 'text', colSpan: 1,
       placeholder: 'e.g. ₱100 adults · ₱50 children, or Free' },
     { name: 'price_level',   label: 'Cost Level',    type: 'select', colSpan: 1,
@@ -61,7 +64,10 @@ const CONFIG: CmsTabConfig<Entry> = {
     { name: 'website',       label: 'Website',       type: 'text', colSpan: 1,
       placeholder: 'https://…' },
     { name: 'description', label: 'Description', type: 'textarea', rows: 3 },
-    { name: 'features',    label: 'Features',  type: 'richtext', placeholder: 'List features, highlights, or key points…' },
+    { name: 'visitor_tips', label: 'Tips for Visitors', type: 'richtext',
+      placeholder: 'One tip per line — what to bring, what to watch out for…' },
+    { name: 'features',    label: 'Highlights / Other Info',  type: 'richtext',
+      placeholder: 'Anything else worth knowing about this place…' },
     { name: 'media',       label: 'Photos',    type: 'media' },
   ],
   columns: [
