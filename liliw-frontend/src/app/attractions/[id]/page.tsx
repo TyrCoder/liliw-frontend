@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, MapPin, Phone, Clock, Globe, Users, Star, Layers, Utensils, Lightbulb } from 'lucide-react';
+import { ChevronLeft, MapPin, Phone, Clock, Globe, Users, Star, Layers, Utensils, Lightbulb, Wallet } from 'lucide-react';
 import SocialShare from '@/components/SocialShare';
 import FavoriteButton from '@/components/FavoriteButton';
 import ImageGallery from '@/components/ImageGallery';
@@ -23,11 +23,47 @@ const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food' };
 
+// Cost meter — how much a visit runs, at a glance. `filled` peso signs are
+// gold, the rest greyed, so three tiers read instantly without any numbers.
+const PRICE_META: Record<string, { filled: number; label: string }> = {
+  free:     { filled: 0, label: 'Free to visit' },
+  budget:   { filled: 1, label: 'Budget — under ₱200' },
+  moderate: { filled: 2, label: 'Moderate — ₱200 to ₱500' },
+  premium:  { filled: 3, label: 'Premium — ₱500 and up' },
+};
+
+function PriceMeter({ level, fee }: { level: string; fee?: string }) {
+  const meta = PRICE_META[level];
+  if (!meta) return null;
+  return (
+    <div className="p-5 rounded-2xl border border-gray-100 bg-white">
+      <div className="flex items-center gap-2 mb-2">
+        <Wallet className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: '#1565C0' }} />
+        <h3 className="font-semibold text-sm sm:text-base" style={{ color: '#1A1A2E', fontFamily: HL }}>Cost</h3>
+      </div>
+      <div className="flex items-center gap-1.5 mb-1">
+        {meta.filled === 0 ? (
+          <span className="text-sm font-bold px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: 'rgba(34,197,94,0.12)', color: '#16A34A', fontFamily: HL }}>FREE</span>
+        ) : (
+          [0, 1, 2].map(i => (
+            <span key={i} className="text-lg font-black leading-none"
+              style={{ color: i < meta.filled ? '#F5C518' : '#E5E7EB', fontFamily: HL }}>₱</span>
+          ))
+        )}
+      </div>
+      <p className="text-xs text-gray-500" style={{ fontFamily: BL }}>{meta.label}</p>
+      {fee && <p className="text-sm text-gray-700 mt-1.5" style={{ fontFamily: BL }}>{fee}</p>}
+    </div>
+  );
+}
+
 interface Attraction {
   id: string | number;
   strapiId?: string;
   attributes: {
     name: string; description?: string; features?: string; location?: string; category?: string;
+    entrance_fee?: string; price_level?: string;
     is_featured?: boolean; rating?: number; phone?: string; hours?: string;
     website?: string; best_for?: string; google_place_id?: string;
     has_virtual_tour?: boolean;
@@ -259,6 +295,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         {/* Info Grid */}
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.1 }}
           className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-8 sm:mb-12">
+          <PriceMeter level={attraction.attributes.price_level || ''} fee={attraction.attributes.entrance_fee} />
           {attraction.attributes.phone && (
             <div className="p-5 rounded-2xl border border-gray-100 bg-white">
               <div className="flex items-center gap-2 mb-2">

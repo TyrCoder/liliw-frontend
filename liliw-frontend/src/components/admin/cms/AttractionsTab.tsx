@@ -8,11 +8,23 @@ interface Entry {
   id: string; name: string; category: string; description: string;
   location: string; map_lat: number | null; map_lng: number | null;
   features: string; sort_order: number; slug: string;
+  opening_hours: string; entrance_fee: string; price_level: string;
+  phone: string; website: string; best_for: string;
   status: string; created_by: string; reject_remarks: string | null;
   created_at: string; media?: MediaItem[];
 }
 
 const CATEGORIES = ['heritage', 'tourist_spot', 'dining', 'other'];
+
+// Drives the ₱ meter on the attraction page. Blank is allowed so an editor
+// who doesn't know the cost isn't forced to guess one.
+const PRICE_LEVELS = [
+  { value: '',         label: '— not set —' },
+  { value: 'free',     label: 'Free' },
+  { value: 'budget',   label: '₱ Budget (under ₱200)' },
+  { value: 'moderate', label: '₱₱ Moderate (₱200 – ₱500)' },
+  { value: 'premium',  label: '₱₱₱ Premium (₱500+)' },
+];
 
 const CONFIG: CmsTabConfig<Entry> = {
   slug: 'attractions',
@@ -24,6 +36,8 @@ const CONFIG: CmsTabConfig<Entry> = {
   empty: {
     name: '', category: 'heritage', description: '', location: '',
     map_lat: null, map_lng: null, features: '', sort_order: 0, slug: '',
+    opening_hours: '', entrance_fee: '', price_level: '',
+    phone: '', website: '', best_for: '',
     reject_remarks: null, media: [],
   },
   fields: [
@@ -33,6 +47,19 @@ const CONFIG: CmsTabConfig<Entry> = {
     { name: 'location',    label: 'Location',  type: 'text',   colSpan: 1 },
     { name: 'map_lat',     label: 'Latitude',  type: 'number', colSpan: 1 },
     { name: 'map_lng',     label: 'Longitude', type: 'number', colSpan: 1 },
+    // Visitor info — these drive the Hours card and the ₱ cost meter on the
+    // public attraction page, which had no way to be filled in before.
+    { name: 'opening_hours', label: 'Opening Hours', type: 'text', colSpan: 1,
+      placeholder: 'e.g. 8:00 AM – 6:00 PM daily' },
+    { name: 'entrance_fee',  label: 'Entrance Fee',  type: 'text', colSpan: 1,
+      placeholder: 'e.g. ₱100 adults · ₱50 children, or Free' },
+    { name: 'price_level',   label: 'Cost Level',    type: 'select', colSpan: 1,
+      options: PRICE_LEVELS },
+    { name: 'best_for',      label: 'Best For',      type: 'text', colSpan: 1,
+      placeholder: 'e.g. Families, photographers' },
+    { name: 'phone',         label: 'Phone',         type: 'text', colSpan: 1 },
+    { name: 'website',       label: 'Website',       type: 'text', colSpan: 1,
+      placeholder: 'https://…' },
     { name: 'description', label: 'Description', type: 'textarea', rows: 3 },
     { name: 'features',    label: 'Features',  type: 'richtext', placeholder: 'List features, highlights, or key points…' },
     { name: 'media',       label: 'Photos',    type: 'media' },

@@ -69,6 +69,15 @@ export const getAllAttractions = async () => {
           // because it was never mapped here.
           features:           item.features ?? '',
           location:           item.location ?? '',
+          // Visitor info. `hours` keeps the name the attraction page's info
+          // grid already expects, so filling opening_hours in the CMS is all
+          // that's needed to light that card up.
+          hours:              item.opening_hours ?? '',
+          entrance_fee:       item.entrance_fee ?? '',
+          price_level:        item.price_level ?? '',
+          phone:              item.phone ?? '',
+          website:            item.website ?? '',
+          best_for:           item.best_for ?? '',
           category:           item.category,
           // Visitor-review average, falling back to the stored column if a
           // rating was ever seeded there directly.
