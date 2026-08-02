@@ -81,12 +81,19 @@ type AttractionData = {
   type?: string;
   strapiId?: string;
   attraction?: {
+    id?: string | null;
+    slug?: string | null;
     name: string;
     description?: string | null;
+    features?: string | null;
     location?: string | null;
     category?: string | null;
     rating?: number | null;
-    photos?: any[];
+    reviewCount?: number;
+    latitude?: number | null;
+    longitude?: number | null;
+    published?: boolean;
+    photos?: { url: string; alt?: string | null }[];
   };
   error?: string;
 };
@@ -521,11 +528,38 @@ export default function LboDashboard() {
                   )}
                 </div>
 
+                {/* Photos from the published listing — the owner's own gallery */}
+                {(attrData.attraction.photos?.length ?? 0) > 0 && (
+                  <div className="px-6 pt-5">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                      Photos ({attrData.attraction.photos!.length})
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {attrData.attraction.photos!.map((p, i) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={i} src={p.url} alt={p.alt || `${attrData.attraction!.name} photo ${i + 1}`}
+                          loading="lazy"
+                          className="w-full h-28 object-cover rounded-xl border border-gray-100" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="px-6 py-5 space-y-4">
                   {attrData.attraction.description && (
                     <div>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Description</p>
-                      <p className="text-sm text-gray-700 leading-relaxed">{stripHtml(attrData.attraction.description)}</p>
+                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                        {stripHtml(attrData.attraction.description)}
+                      </p>
+                    </div>
+                  )}
+                  {attrData.attraction.features && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Details</p>
+                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                        {stripHtml(attrData.attraction.features)}
+                      </p>
                     </div>
                   )}
                   {attrData.attraction.location && (
@@ -534,8 +568,32 @@ export default function LboDashboard() {
                       {attrData.attraction.location}
                     </div>
                   )}
-                  {!attrData.attraction.description && !attrData.attraction.location && (
-                    <p className="text-sm text-gray-400">No additional details available.</p>
+                  {attrData.attraction.latitude != null && attrData.attraction.longitude != null && (
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <MapPin className="w-3.5 h-3.5 shrink-0" />
+                      {Number(attrData.attraction.latitude).toFixed(5)}, {Number(attrData.attraction.longitude).toFixed(5)}
+                    </div>
+                  )}
+                  {(attrData.attraction.reviewCount ?? 0) > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Star className="w-4 h-4 fill-amber-400 stroke-amber-400 shrink-0" />
+                      {Number(attrData.attraction.rating).toFixed(1)} average from {attrData.attraction.reviewCount} review
+                      {attrData.attraction.reviewCount === 1 ? '' : 's'}
+                    </div>
+                  )}
+                  {!attrData.attraction.description && !attrData.attraction.location
+                    && (attrData.attraction.photos?.length ?? 0) === 0 && (
+                    <p className="text-sm text-gray-400">
+                      Your listing has no published details yet. An Editor adds these in the CMS.
+                    </p>
+                  )}
+                  {attrData.attraction.id && (
+                    <Link href={`/attractions/${attrData.type}-${attrData.attraction.id}`}
+                      target="_blank"
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
+                      style={{ color: '#1565C0' }}>
+                      View public listing →
+                    </Link>
                   )}
                 </div>
 
