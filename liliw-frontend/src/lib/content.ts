@@ -86,7 +86,7 @@ export const getAllAttractions = async () => {
                                 ? { latitude: Number(item.map_lat), longitude: Number(item.map_lng) }
                                 : undefined,
           has_virtual_tour:   vtPhotos.length > 0,
-          hotspots:           item.hotspots ?? [],
+          hotspots:           Array.isArray(item.hotspots) ? item.hotspots : [],
           virtual_tour_photos: vtPhotos,
           photos,
         },
