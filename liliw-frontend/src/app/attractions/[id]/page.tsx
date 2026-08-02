@@ -63,7 +63,7 @@ interface Attraction {
   strapiId?: string;
   attributes: {
     name: string; description?: string; features?: string; location?: string; category?: string;
-    entrance_fee?: string; price_level?: string;
+    entrance_fee?: string; price_level?: string; best_time?: string; visitor_tips?: string;
     is_featured?: boolean; rating?: number; phone?: string; hours?: string;
     website?: string; best_for?: string; google_place_id?: string;
     has_virtual_tour?: boolean;
@@ -275,9 +275,11 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           </motion.div>
         )}
 
-        {/* Visitor info — best time, entrance fee, hours, what to bring.
-            Written by editors in the CMS and previously never surfaced. */}
-        {attraction.attributes.features && (
+        {/* Visitor info. Each piece has its own labelled box so the important
+            facts are scannable, rather than one paragraph an editor had to
+            hand-format. `features` keeps rendering as free-form extra info. */}
+        {(attraction.attributes.best_time || attraction.attributes.hours
+          || attraction.attributes.visitor_tips || attraction.attributes.features) && (
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, delay: 0.08 }}
             className="mb-8 sm:mb-12">
             <div className="flex items-center gap-2 mb-3">
@@ -286,9 +288,48 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
                 Good to Know
               </h2>
             </div>
-            <SafeHtml html={attraction.attributes.features}
-              className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed p-5 sm:p-6 rounded-2xl bg-white border border-gray-100"
-              style={{ fontFamily: BL }} />
+
+            {(attraction.attributes.best_time || attraction.attributes.hours) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
+                {attraction.attributes.hours && (
+                  <div className="p-5 rounded-2xl border border-gray-100 bg-white">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Clock className="w-4 h-4" style={{ color: '#1565C0' }} />
+                      <h3 className="font-semibold text-sm" style={{ color: '#1A1A2E', fontFamily: HL }}>Opening Hours</h3>
+                    </div>
+                    <p className="text-sm text-gray-700" style={{ fontFamily: BL }}>{attraction.attributes.hours}</p>
+                  </div>
+                )}
+                {attraction.attributes.best_time && (
+                  <div className="p-5 rounded-2xl border border-gray-100 bg-white">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Star className="w-4 h-4" style={{ color: '#F5C518' }} />
+                      <h3 className="font-semibold text-sm" style={{ color: '#1A1A2E', fontFamily: HL }}>Best Time to Visit</h3>
+                    </div>
+                    <p className="text-sm text-gray-700" style={{ fontFamily: BL }}>{attraction.attributes.best_time}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {attraction.attributes.visitor_tips && (
+              <div className="p-5 sm:p-6 rounded-2xl border mb-4"
+                style={{ backgroundColor: 'rgba(245,197,24,0.06)', borderColor: 'rgba(245,197,24,0.35)' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Lightbulb className="w-4 h-4" style={{ color: '#F5C518' }} />
+                  <h3 className="font-semibold text-sm" style={{ color: '#1A1A2E', fontFamily: HL }}>Tips for Visitors</h3>
+                </div>
+                <SafeHtml html={attraction.attributes.visitor_tips}
+                  className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                  style={{ fontFamily: BL }} />
+              </div>
+            )}
+
+            {attraction.attributes.features && (
+              <SafeHtml html={attraction.attributes.features}
+                className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed p-5 sm:p-6 rounded-2xl bg-white border border-gray-100"
+                style={{ fontFamily: BL }} />
+            )}
           </motion.div>
         )}
 
