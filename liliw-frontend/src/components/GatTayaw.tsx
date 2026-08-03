@@ -130,10 +130,19 @@ export default function GatTayaw({ defaultKey }: Props) {
           0%, 100% { transform: rotate(0deg); }
           50%       { transform: rotate(2.4deg); }
         }
+        /* Talking gesture: the free arm lifts away from his side and moves
+           between presenting positions, the way someone gestures while
+           explaining something. Negative angles swing it outward. It stays
+           under -55deg — past that the hand drifts off the sprite's edge.
+           Eased and slow (3.4s) so it reads as deliberate, not flapping. */
         @keyframes gatArmFreeTalk {
-          0%, 100% { transform: rotate(-1.5deg); }
-          40%       { transform: rotate(4deg); }
-          70%       { transform: rotate(0.5deg); }
+          0%   { transform: rotate(-6deg); }
+          18%  { transform: rotate(-44deg); }
+          34%  { transform: rotate(-31deg); }
+          52%  { transform: rotate(-53deg); }
+          68%  { transform: rotate(-27deg); }
+          84%  { transform: rotate(-40deg); }
+          100% { transform: rotate(-6deg); }
         }
 
         .gat-rig       { position: relative; user-select: none; will-change: transform; }
@@ -168,7 +177,7 @@ export default function GatTayaw({ defaultKey }: Props) {
 
         .gat-talking .gat-rig  { animation: gatBreathFast 2.2s ease-in-out infinite; }
         .gat-talking .gat-head { animation: gatHeadTalk 1.9s ease-in-out infinite; }
-        .gat-talking .gat-armF { animation: gatArmFreeTalk 1.6s ease-in-out infinite; }
+        .gat-talking .gat-armF { animation: gatArmFreeTalk 3.4s ease-in-out infinite; }
 
         @media (prefers-reduced-motion: reduce) {
           .gat-rig, .gat-head, .gat-armF, .gat-mouth { animation: none !important; }
