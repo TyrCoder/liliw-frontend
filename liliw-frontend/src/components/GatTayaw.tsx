@@ -120,11 +120,29 @@ export default function GatTayaw({ defaultKey }: Props) {
           30%       { transform: rotate(-1.6deg); }
           65%       { transform: rotate(1.1deg); }
         }
+        /* Head talks with the arm — turning toward what he's presenting and
+           nodding on the beats, at roughly triple the old range so it's
+           actually visible at the size he renders. */
         @keyframes gatHeadTalk {
-          0%, 100% { transform: rotate(-1.5deg); }
-          25%       { transform: rotate(1.8deg); }
-          50%       { transform: rotate(-0.8deg); }
-          75%       { transform: rotate(2.4deg); }
+          0%   { transform: rotate(-2deg)   translateY(0); }
+          14%  { transform: rotate(4.5deg)  translateY(-2px); }
+          28%  { transform: rotate(1deg)    translateY(1px); }
+          42%  { transform: rotate(-4deg)   translateY(-1px); }
+          56%  { transform: rotate(2.5deg)  translateY(-3px); }
+          70%  { transform: rotate(-1.5deg) translateY(0); }
+          85%  { transform: rotate(3.5deg)  translateY(-2px); }
+          100% { transform: rotate(-2deg)   translateY(0); }
+        }
+
+        /* Whole-body lean. Weight shifts as he talks, which is most of what
+           sells "explaining" — a person gesturing doesn't stay planted.
+           Pivots at the feet so he never looks like he's floating. */
+        @keyframes gatLeanTalk {
+          0%   { transform: rotate(0deg)     translateX(0); }
+          22%  { transform: rotate(-1.4deg)  translateX(-4px); }
+          48%  { transform: rotate(0.9deg)   translateX(3px); }
+          74%  { transform: rotate(-0.8deg)  translateX(-2px); }
+          100% { transform: rotate(0deg)     translateX(0); }
         }
         @keyframes gatArmFreeIdle {
           0%, 100% { transform: rotate(0deg); }
@@ -136,13 +154,17 @@ export default function GatTayaw({ defaultKey }: Props) {
            under -55deg — past that the hand drifts off the sprite's edge.
            Eased and slow (3.4s) so it reads as deliberate, not flapping. */
         @keyframes gatArmFreeTalk {
-          0%   { transform: rotate(-6deg); }
-          18%  { transform: rotate(-44deg); }
-          34%  { transform: rotate(-31deg); }
-          52%  { transform: rotate(-53deg); }
-          68%  { transform: rotate(-27deg); }
-          84%  { transform: rotate(-40deg); }
-          100% { transform: rotate(-6deg); }
+          0%   { transform: rotate(-8deg); }
+          10%  { transform: rotate(-38deg); }
+          20%  { transform: rotate(-25deg); }
+          30%  { transform: rotate(-50deg); }
+          40%  { transform: rotate(-33deg); }
+          50%  { transform: rotate(-53deg); }
+          60%  { transform: rotate(-20deg); }
+          70%  { transform: rotate(-45deg); }
+          80%  { transform: rotate(-30deg); }
+          90%  { transform: rotate(-42deg); }
+          100% { transform: rotate(-8deg); }
         }
 
         .gat-rig       { position: relative; user-select: none; will-change: transform; }
@@ -175,12 +197,16 @@ export default function GatTayaw({ defaultKey }: Props) {
         .gat-head  { transform-origin: 52.75% 28.68%;   animation: gatHeadIdle 6.5s ease-in-out infinite; }
         .gat-armF  { transform-origin: 67.66% 40.29%;   animation: gatArmFreeIdle 4.2s ease-in-out infinite; }
 
+        /* Durations are deliberately co-prime-ish (2.2 / 2.6 / 3.4 / 4.6s) so
+           the parts drift out of phase instead of all hitting their extremes
+           together, which is what makes a loop look mechanical. */
+        .gat-talking           { transform-origin: 50% 100%; animation: gatLeanTalk 4.6s ease-in-out infinite; }
         .gat-talking .gat-rig  { animation: gatBreathFast 2.2s ease-in-out infinite; }
-        .gat-talking .gat-head { animation: gatHeadTalk 1.9s ease-in-out infinite; }
+        .gat-talking .gat-head { animation: gatHeadTalk 2.6s ease-in-out infinite; }
         .gat-talking .gat-armF { animation: gatArmFreeTalk 3.4s ease-in-out infinite; }
 
         @media (prefers-reduced-motion: reduce) {
-          .gat-rig, .gat-head, .gat-armF, .gat-mouth { animation: none !important; }
+          .gat-talking, .gat-rig, .gat-head, .gat-armF, .gat-mouth { animation: none !important; }
         }
 
         @keyframes bubbleFade {
