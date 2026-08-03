@@ -289,47 +289,47 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
               </h2>
             </div>
 
-            {(attraction.attributes.best_time || attraction.attributes.hours) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
-                {attraction.attributes.hours && (
-                  <div className="p-5 rounded-2xl border border-gray-100 bg-white">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Clock className="w-4 h-4" style={{ color: '#1565C0' }} />
-                      <h3 className="font-semibold text-sm" style={{ color: '#1A1A2E', fontFamily: HL }}>Opening Hours</h3>
-                    </div>
-                    <p className="text-sm text-gray-700" style={{ fontFamily: BL }}>{attraction.attributes.hours}</p>
+            {/* Flat layout: a hairline-separated list rather than cards. The
+                boxed version nested a panel inside the page's own card, which
+                read as a box within a box. */}
+            <div className="divide-y" style={{ borderColor: 'rgba(11,61,145,0.08)' }}>
+              {attraction.attributes.hours && (
+                <div className="flex items-start gap-3 py-3 first:pt-0">
+                  <Clock className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#1565C0' }} />
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide" style={{ fontFamily: HL }}>Opening Hours</p>
+                    <p className="text-sm sm:text-base text-gray-700 mt-0.5" style={{ fontFamily: BL }}>{attraction.attributes.hours}</p>
                   </div>
-                )}
-                {attraction.attributes.best_time && (
-                  <div className="p-5 rounded-2xl border border-gray-100 bg-white">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Star className="w-4 h-4" style={{ color: '#F5C518' }} />
-                      <h3 className="font-semibold text-sm" style={{ color: '#1A1A2E', fontFamily: HL }}>Best Time to Visit</h3>
-                    </div>
-                    <p className="text-sm text-gray-700" style={{ fontFamily: BL }}>{attraction.attributes.best_time}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {attraction.attributes.visitor_tips && (
-              <div className="p-5 sm:p-6 rounded-2xl border mb-4"
-                style={{ backgroundColor: 'rgba(245,197,24,0.06)', borderColor: 'rgba(245,197,24,0.35)' }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <Lightbulb className="w-4 h-4" style={{ color: '#F5C518' }} />
-                  <h3 className="font-semibold text-sm" style={{ color: '#1A1A2E', fontFamily: HL }}>Tips for Visitors</h3>
                 </div>
-                <SafeHtml html={attraction.attributes.visitor_tips}
-                  className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                  style={{ fontFamily: BL }} />
-              </div>
-            )}
-
-            {attraction.attributes.features && (
-              <SafeHtml html={attraction.attributes.features}
-                className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed p-5 sm:p-6 rounded-2xl bg-white border border-gray-100"
-                style={{ fontFamily: BL }} />
-            )}
+              )}
+              {attraction.attributes.best_time && (
+                <div className="flex items-start gap-3 py-3 first:pt-0">
+                  <Star className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#F5C518' }} />
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide" style={{ fontFamily: HL }}>Best Time to Visit</p>
+                    <p className="text-sm sm:text-base text-gray-700 mt-0.5" style={{ fontFamily: BL }}>{attraction.attributes.best_time}</p>
+                  </div>
+                </div>
+              )}
+              {attraction.attributes.visitor_tips && (
+                <div className="flex items-start gap-3 py-3 first:pt-0">
+                  <Lightbulb className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#F5C518' }} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5" style={{ fontFamily: HL }}>Tips for Visitors</p>
+                    <SafeHtml html={attraction.attributes.visitor_tips}
+                      className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed"
+                      style={{ fontFamily: BL }} />
+                  </div>
+                </div>
+              )}
+              {attraction.attributes.features && (
+                <div className="py-3 first:pt-0">
+                  <SafeHtml html={attraction.attributes.features}
+                    className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed"
+                    style={{ fontFamily: BL }} />
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
 
