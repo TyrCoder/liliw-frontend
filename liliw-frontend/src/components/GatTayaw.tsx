@@ -234,6 +234,10 @@ export default function GatTayaw({ defaultKey }: Props) {
             <div className="gat-rig" style={{ width: 178, height: 178 * (1911 / 1274) }}>
               {/* eslint-disable @next/next/no-img-element */}
               <div className="gat-layer gat-armF"><img src="/images/gat/arm-free.png"  alt="" aria-hidden /></div>
+              {/* Static neck slice behind the body. Cutting the head out left a
+                  hole; once the head turns, its base swings clear of the collar
+                  and this fills what would otherwise be a gap at the neck. */}
+              <div className="gat-layer"><img src="/images/gat/neck.png"      alt="" aria-hidden /></div>
               <div className="gat-layer"><img src="/images/gat/body.png"      alt="Gat Tayaw" /></div>
               <div className="gat-layer"><img src="/images/gat/arm-staff.png" alt="" aria-hidden /></div>
               <div className="gat-layer gat-head">

@@ -194,6 +194,23 @@ function cutXAt(y, line) {
     }
   }
 
+  // Neck patch. Cutting the head out leaves a hole in the body, so once the
+  // head rotates more than a couple of degrees its base swings clear of the
+  // collar and the page background shows through as a gap at the neck. This is
+  // a static slice of the ORIGINAL art around the neck, drawn behind the body:
+  // the body's collar hides it normally, and it only shows through the hole the
+  // head vacates — which is exactly where neck should be. Deliberately a small
+  // box rather than the whole frame, or the swinging arm would leave a ghost of
+  // itself behind.
+  const NECK = { x0: 500, y0: 300, x1: 860, y1: 680 };
+  const neck = blank();
+  for (let y = NECK.y0; y <= NECK.y1; y++) {
+    for (let x = NECK.x0; x <= NECK.x1; x++) {
+      const i = at(x, y);
+      if (data[i + 3]) neck.set(data.subarray(i, i + 4), i);
+    }
+  }
+
   fs.mkdirSync(OUT, { recursive: true });
   const write = (buf, name) =>
     sharp(buf, { raw: { width: W, height: H, channels: 4 } }).png({ compressionLevel: 9 })
@@ -205,6 +222,7 @@ function cutXAt(y, line) {
     write(headSpeak, 'head-speaking.png'),
     write(armFree, 'arm-free.png'),
     write(armStaff, 'arm-staff.png'),
+    write(neck, 'neck.png'),
   ]);
 
   console.log(`layers written to ${OUT} (${W}x${H})`);
