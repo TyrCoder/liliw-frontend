@@ -25,6 +25,7 @@ const PRECACHE_ASSETS = [
   '/images/gat/body.png',
   '/images/gat/head.png',
   '/images/gat/head-speaking.png',
+  '/images/gat/neck.png',
   '/images/gat/arm-free.png',
   '/images/gat/arm-staff.png',
   '/images/liliw-dog.png',
