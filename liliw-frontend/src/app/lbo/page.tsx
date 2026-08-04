@@ -5,10 +5,11 @@ import Link from 'next/link';
 import {
   Building2, ChevronLeft, Loader2, CheckCircle, AlertCircle,
   Clock, FileText, ArrowRight, RefreshCw, Users, Plus, X,
-  Edit, TrendingUp, MapPin, Star, Send, Layers,
+  Edit, TrendingUp, MapPin, Star, Send, Layers, QrCode,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
+import QRPoster from '@/components/QRPoster';
 import { stripHtml } from '@/lib/text';
 import SafeHtml from '@/components/SafeHtml';
 
@@ -609,7 +610,31 @@ export default function LboDashboard() {
                   </button>
                 </div>
               </div>
-            ) : (
+            ) : null}
+
+            {/* Printable check-in poster. Owners print this and display it at
+                the entrance; scanning it is what credits a visitor's visit. */}
+            {isLinked && attrData?.attraction?.id && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mt-6">
+                <div className="px-6 py-5 border-b border-gray-100">
+                  <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                    <QrCode className="w-4 h-4" style={{ color: '#1565C0' }} /> Your Check-In QR Poster
+                  </h2>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Print this and display it at your entrance. Visitors scan it to check in and earn points —
+                    scans are confirmed against your location, so keep your coordinates accurate.
+                  </p>
+                </div>
+                <div className="px-6 py-5">
+                  <QRPoster
+                    attractionId={`${attrData.type}-${attrData.attraction.id}`}
+                    attractionName={attrData.attraction.name}
+                  />
+                </div>
+              </div>
+            )}
+
+            {!isLinked && (
               /* ── No attraction linked ── */
               <>
                 <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center">
