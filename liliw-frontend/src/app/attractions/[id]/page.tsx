@@ -90,6 +90,8 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
   const [externalReview, setExternalReview] = useState<ExternalReview | null>(null);
   const [frontendAvg, setFrontendAvg] = useState(0);
   const [frontendCount, setFrontendCount] = useState(0);
+  // Only meaningful when arriving via a scanned QR code.
+  const [qrStatus, setQrStatus] = useState<'idle' | 'locating' | 'verified' | 'unverified'>('idle');
 
   useEffect(() => {
     Promise.resolve(params).then(async (resolved) => { setAttractionId(resolved.id); });
@@ -145,14 +147,40 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
   // the visit route checks elapsed time against this, not a client-supplied value.
   useEffect(() => {
     if (!attraction?.id || !token) return;
-    // The on-site QR code encodes ?src=qr, so a scan is recorded as such rather
-    // than looking identical to someone browsing the site from home.
-    const via = new URLSearchParams(window.location.search).get('src') === 'qr' ? 'qr' : 'web';
-    fetch('/api/attractions/visit/checkin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ attractionId: attraction.id, via }),
-    }).catch(() => {});
+    let cancelled = false;
+
+    // The on-site QR code encodes ?src=qr. For those we also ask for location,
+    // so the server can confirm the visitor is actually at the place rather
+    // than clicking the link from home. Same shape as captureLocation() in the
+    // itinerary wizard: resolves either way, so a refused or unavailable
+    // permission still checks in — it just won't count as a verified scan.
+    const isQr = new URLSearchParams(window.location.search).get('src') === 'qr';
+
+    const coords = () => new Promise<{ lat?: number; lng?: number }>(resolve => {
+      if (!isQr || !navigator.geolocation) { resolve({}); return; }
+      setQrStatus('locating');
+      navigator.geolocation.getCurrentPosition(
+        pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve({}),
+        { timeout: 10_000, enableHighAccuracy: true },
+      );
+    });
+
+    coords().then(({ lat, lng }) => {
+      if (cancelled) return;
+      return fetch('/api/attractions/visit/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ attractionId: attraction.id, via: isQr ? 'qr' : 'web', lat, lng }),
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (cancelled || !isQr) return;
+          setQrStatus(d.verified ? 'verified' : 'unverified');
+        });
+    }).catch(() => { if (!cancelled && isQr) setQrStatus('unverified'); });
+
+    return () => { cancelled = true; };
   }, [attraction?.id, token]);
 
   // Only count a "visit" toward achievements after a genuine dwell — not a quick click-through.
@@ -245,6 +273,32 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+
+        {/* QR scan feedback. Only appears when the visitor arrived by scanning
+            the on-site code, so they know whether the check-in counted rather
+            than being silently downgraded. */}
+        {qrStatus !== 'idle' && (
+          <motion.div initial={{ y: -8, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+            className="mb-6 flex items-start gap-3 p-4 rounded-2xl border"
+            style={qrStatus === 'verified'
+              ? { backgroundColor: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.35)' }
+              : { backgroundColor: 'rgba(11,61,145,0.04)', borderColor: 'rgba(11,61,145,0.15)' }}>
+            <MapPin className="w-5 h-5 shrink-0 mt-0.5"
+              style={{ color: qrStatus === 'verified' ? '#16A34A' : '#1565C0' }} />
+            <div>
+              <p className="font-bold text-sm" style={{ color: '#1A1A2E', fontFamily: HL }}>
+                {qrStatus === 'locating' && 'Checking you in…'}
+                {qrStatus === 'verified' && "You're here! Visit confirmed"}
+                {qrStatus === 'unverified' && 'Checked in — location not confirmed'}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5" style={{ fontFamily: BL }}>
+                {qrStatus === 'locating' && 'Confirming you are at the location.'}
+                {qrStatus === 'verified' && `Stay on this page for ${Math.round(VISIT_DWELL_MS / 60000)} minutes to earn your points.`}
+                {qrStatus === 'unverified' && 'Allow location and scan again to have this count as an on-site visit.'}
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Image Gallery — shown first so visitors see the attraction before reading about it */}
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }}
