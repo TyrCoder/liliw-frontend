@@ -25,6 +25,12 @@ interface Day  { day: number; theme: string; stops: Stop[]; }
 interface GeneratedPlan { title: string; summary: string; days: Day[]; tips: string[]; estimatedCostPerDay: string; }
 interface SavedTrip { id: string; savedAt: string; title: string; plan: GeneratedPlan; duration: string; budget: string; }
 
+interface VisitedPlace {
+  id: string; name: string; category: string | null; location: string | null;
+  photo: string | null; visitedAt: string;
+  viaQr: boolean; verified: boolean; distanceM: number | null; stillListed: boolean;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const { user, token, loading } = useAuth();
@@ -32,9 +38,10 @@ export default function ProfilePage() {
 
   const [trips, setTrips]           = useState<SavedTrip[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [activeTab, setActiveTab]   = useState<'trips' | 'favorites' | 'achievements'>('trips');
+  const [activeTab, setActiveTab]   = useState<'trips' | 'visited' | 'favorites' | 'achievements'>('trips');
   const [achievementsData, setAchievementsData] = useState<{ totalPoints: number; achievements: any[]; recentActivity: any[] } | null>(null);
   const [profile, setProfile]       = useState<{ user_type: string | null; full_name: string | null } | null>(null);
+  const [visits, setVisits]         = useState<VisitedPlace[] | null>(null);
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -73,6 +80,14 @@ export default function ProfilePage() {
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setAchievementsData(d); })
       .catch(() => {});
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch('/api/user/visited-attractions', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setVisits(d?.visits ?? []))
+      .catch(() => setVisits([]));
   }, [token]);
 
   useEffect(() => {
@@ -150,6 +165,7 @@ export default function ProfilePage() {
           <div className="flex border-b border-gray-100">
             {([
               { key: 'trips',        label: 'Saved Itineraries', icon: BookmarkCheck, count: trips.length },
+              { key: 'visited',      label: 'Places Visited',    icon: MapPin,        count: visits?.length ?? 0 },
               { key: 'favorites',    label: 'Favorites',         icon: Heart,         count: favorites.length },
               { key: 'achievements', label: 'Achievements',      icon: Trophy,        count: achievementsData?.achievements.filter((a: any) => a.earned).length ?? 0 },
             ] as const).map(({ key, label, icon: Icon, count }) => (
@@ -246,6 +262,97 @@ export default function ProfilePage() {
                 </AnimatePresence>
               </div>
             ))}
+          </motion.div>
+        )}
+
+        {/* Places Visited — the passport. One entry per attraction the visitor
+            actually earned a visit for (dwell met), newest first. */}
+        {activeTab === 'visited' && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="pb-16">
+            {visits === null ? (
+              <div className="text-center py-16 text-gray-400 text-sm" style={{ fontFamily: BL }}>Loading your places…</div>
+            ) : visits.length === 0 ? (
+              <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-10 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
+                  <MapPin className="w-7 h-7 text-blue-400" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-1" style={{ fontFamily: HL }}>No places visited yet</h3>
+                <p className="text-sm text-gray-500 max-w-sm mx-auto" style={{ fontFamily: BL }}>
+                  Scan the QR code at an attraction — or open its page and stay a few minutes — and it will be stamped here.
+                </p>
+                <Link href="/attractions"
+                  className="inline-flex items-center gap-1.5 mt-5 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition hover:opacity-90"
+                  style={{ backgroundColor: '#1565C0', fontFamily: BL }}>
+                  Explore attractions
+                </Link>
+              </div>
+            ) : (
+              <>
+                {/* Progress toward the Tourist Spot Explorer badge (visit 5). */}
+                {(() => {
+                  const target = achievementsData?.achievements
+                    .find((a: any) => a.trigger_type === 'attraction_visit_count');
+                  if (!target) return null;
+                  const goal = target.trigger_value || 5;
+                  const pct = Math.min(100, Math.round((visits.length / goal) * 100));
+                  return (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-bold text-gray-900" style={{ fontFamily: HL }}>{target.name}</p>
+                        <p className="text-xs font-semibold" style={{ color: target.earned ? '#16A34A' : '#6B7280', fontFamily: BL }}>
+                          {target.earned ? 'Earned' : `${visits.length} of ${goal}`}
+                        </p>
+                      </div>
+                      <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-full rounded-full transition-all"
+                          style={{ width: `${pct}%`, backgroundColor: target.earned ? '#16A34A' : '#F5C518' }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {visits.map(v => (
+                    <div key={v.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex">
+                      {v.photo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={v.photo} alt={v.name} loading="lazy" className="w-24 h-full object-cover shrink-0" />
+                      ) : (
+                        <div className="w-24 shrink-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(21,101,192,0.06)' }}>
+                          <MapPin className="w-6 h-6" style={{ color: '#1565C0' }} />
+                        </div>
+                      )}
+                      <div className="p-4 min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          {v.stillListed ? (
+                            <Link href={`/attractions/${v.id}`}
+                              className="font-bold text-sm text-gray-900 hover:underline truncate" style={{ fontFamily: HL }}>
+                              {v.name}
+                            </Link>
+                          ) : (
+                            <p className="font-bold text-sm text-gray-900 truncate" style={{ fontFamily: HL }}>{v.name}</p>
+                          )}
+                          {v.verified && (
+                            <span title={v.distanceM != null ? `Confirmed ${v.distanceM}m from the spot` : 'Confirmed on-site'}
+                              className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                              style={{ backgroundColor: 'rgba(34,197,94,0.12)', color: '#16A34A', fontFamily: HL }}>
+                              ON-SITE
+                            </span>
+                          )}
+                        </div>
+                        {v.location && (
+                          <p className="text-xs text-gray-400 truncate mt-0.5" style={{ fontFamily: BL }}>{v.location}</p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1" style={{ fontFamily: BL }}>
+                          <Calendar className="w-3 h-3 shrink-0" />
+                          {new Date(v.visitedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </motion.div>
         )}
 

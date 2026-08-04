@@ -1,6 +1,14 @@
 import { supabaseServer } from './supabase-server';
 import { fetchApprovedWithMedia, mediaToPhotos } from './supabase-cms';
 
+/**
+ * Public attraction ids are '<type>-<uuid>' (built below in getAllAttractions),
+ * while cms_attractions and cms_media are keyed on the bare uuid. Lives next to
+ * the code that composes the id so the two can't drift apart.
+ */
+export const cmsAttractionId = (publicId: string) =>
+  publicId.replace(/^(heritage|spot|dining)-/, '');
+
 const CAT_MAP: Record<string, 'heritage' | 'spot' | 'dining'> = {
   heritage:     'heritage',
   tourist_spot: 'spot',

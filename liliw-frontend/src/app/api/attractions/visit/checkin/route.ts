@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/verifyToken';
 import { supabaseServer } from '@/lib/supabase-server';
 import { distanceMeters, toCoords, QR_PROXIMITY_METERS } from '@/lib/geo';
-
-// Public ids are '<type>-<uuid>' (see getAllAttractions in lib/content.ts);
-// cms_attractions is keyed on the bare uuid.
-const cmsId = (id: string) => id.replace(/^(heritage|spot|dining)-/, '');
+import { cmsAttractionId } from '@/lib/content';
 
 // Fired as soon as an attraction detail page loads (while logged in) so the
 // server has an authoritative start time to check the dwell requirement
@@ -33,7 +30,7 @@ export async function POST(request: NextRequest) {
       const { data: attr } = await supabaseServer
         .from('cms_attractions')
         .select('map_lat, map_lng')
-        .eq('id', cmsId(String(attractionId)))
+        .eq('id', cmsAttractionId(String(attractionId)))
         .maybeSingle();
 
       const there = toCoords(
