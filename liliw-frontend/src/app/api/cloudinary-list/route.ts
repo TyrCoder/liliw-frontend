@@ -11,6 +11,11 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const folder = searchParams.get('folder') || 'liliw-cms';
   const nextCursor = searchParams.get('next_cursor') || '';
+  // Nearly every image in this account predates the folder convention: they
+  // were uploaded to the root by the old Strapi CMS, so their public_id has no
+  // folder prefix and a prefix query cannot see them. 'all' drops the prefix so
+  // that back catalogue is reachable; 'folder' keeps the tidy scoped view.
+  const scope = searchParams.get('scope') === 'all' ? 'all' : 'folder';
 
   if (!ALLOWED_FOLDERS.includes(folder)) {
     return NextResponse.json({ error: 'Invalid folder' }, { status: 400 });
@@ -26,11 +31,11 @@ export async function GET(req: NextRequest) {
 
   const auth   = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
   const params = new URLSearchParams({
-    prefix:       `${folder}/`,
     max_results:  '60',
     type:         'upload',
     direction:    '-1',
   });
+  if (scope === 'folder') params.set('prefix', `${folder}/`);
   if (nextCursor) params.set('next_cursor', nextCursor);
 
   const res = await fetch(
