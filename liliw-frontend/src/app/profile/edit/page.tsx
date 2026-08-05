@@ -12,6 +12,14 @@ const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 type Tab = 'profile' | 'password' | 'email';
 
+// Must stay in sync with the whitelist in /api/auth/update-profile.
+const USER_TYPE_OPTIONS = [
+  { value: 'liliw_local',   label: 'Liliw Resident' },
+  { value: 'laguna',        label: 'From Laguna Province' },
+  { value: 'provincial',    label: 'From Another Province' },
+  { value: 'international', label: 'International Tourist' },
+];
+
 const inputCls =
   'w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 bg-white';
 
@@ -114,6 +122,7 @@ function SendOtpButton({
 function ProfileTab({ token, email, username }: { token: string; email: string; username: string }) {
   const [fullName, setFullName] = useState('');
   const [uname, setUname] = useState(username);
+  const [userType, setUserType] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
@@ -122,7 +131,10 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
     if (!token) return;
     fetch('/api/user/profile', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.full_name) setFullName(d.full_name); })
+      .then(d => {
+        if (d?.full_name) setFullName(d.full_name);
+        if (d?.user_type) setUserType(d.user_type);
+      })
       .catch(() => {});
   }, [token]);
 
@@ -134,7 +146,7 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
       const res = await fetch('/api/auth/update-profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ username: uname, full_name: fullName }),
+        body: JSON.stringify({ username: uname, full_name: fullName, user_type: userType }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Update failed.'); return; }
@@ -184,6 +196,23 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
           className={inputCls}
           placeholder="Your full name"
         />
+      </div>
+
+      <div>
+        <Label>Where You're Visiting From</Label>
+        <select
+          value={userType}
+          onChange={e => setUserType(e.target.value)}
+          className={inputCls}
+        >
+          <option value="">Prefer not to say</option>
+          {USER_TYPE_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+        <p className="text-xs text-gray-400 mt-1" style={{ fontFamily: BL }}>
+          Shown on your travel passport and helps the Tourism Office understand who visits Liliw.
+        </p>
       </div>
 
       <SubmitBtn loading={loading}>Save Changes</SubmitBtn>
