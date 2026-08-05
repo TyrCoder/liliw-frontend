@@ -9,10 +9,35 @@ import { cmsAttractionId } from '@/lib/content';
 // against in POST /api/attractions/visit — see phase8-visit-checkins.sql.
 export async function POST(request: NextRequest) {
   const auth = await verifyToken(request);
-  if (!auth) return NextResponse.json({ success: true }); // guests just don't earn points
+  // Guests can read the page but can't be credited with anything. Said
+  // explicitly so a QR scan can prompt them to sign in rather than appearing
+  // to work and quietly awarding nothing.
+  if (!auth) return NextResponse.json({ success: true, authenticated: false });
 
   const { attractionId, via, lat, lng } = await request.json();
   if (!attractionId) return NextResponse.json({ error: 'attractionId required' }, { status: 400 });
+
+  // A place only counts once. user_points already refuses a duplicate
+  // (user_id, action, reference_id) row, so re-scanning could never award
+  // twice — but without checking here the page would restart the dwell timer
+  // and tell the visitor their scan was confirmed, implying points they will
+  // not get. Look it up so the UI can say "already collected" instead.
+  const { data: prior } = await supabaseServer
+    .from('user_points')
+    .select('created_at')
+    .eq('user_id', auth.userId)
+    .eq('action', 'attraction_visit')
+    .eq('reference_id', String(attractionId))
+    .maybeSingle();
+
+  if (prior) {
+    return NextResponse.json({
+      success: true,
+      authenticated: true,
+      alreadyVisited: true,
+      visitedAt: prior.created_at,
+    });
+  }
 
   // A QR scan only counts as on-site if the phone is actually near the place.
   // Without this the ?src=qr flag proves nothing — anyone with the link could
@@ -66,10 +91,13 @@ export async function POST(request: NextRequest) {
       .upsert(row, { onConflict: 'user_id,attraction_id' });
   }
 
-  // Reported back so the page can tell the visitor their scan was accepted —
-  // silently downgrading to unverified would leave them wondering.
+  // Reported back so the page can tell the visitor what happened rather than
+  // silently downgrading an unverified scan. authenticated/alreadyVisited let
+  // the caller tell a fresh check-in from a repeat or a signed-out scan.
   return NextResponse.json({
     success: true,
+    authenticated: true,
+    alreadyVisited: false,
     via: source,
     distanceMeters: distance,
     verified: source === 'qr',

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Phone, Clock, Globe, Users, Star, Layers, Utensils, Lightbulb, Wallet } from 'lucide-react';
 import SocialShare from '@/components/SocialShare';
+import AuthModal from '@/components/AuthModal';
 import FavoriteButton from '@/components/FavoriteButton';
 import ImageGallery from '@/components/ImageGallery';
 import Ratings from '@/components/Ratings';
@@ -91,7 +92,13 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
   const [frontendAvg, setFrontendAvg] = useState(0);
   const [frontendCount, setFrontendCount] = useState(0);
   // Only meaningful when arriving via a scanned QR code.
-  const [qrStatus, setQrStatus] = useState<'idle' | 'locating' | 'verified' | 'unverified'>('idle');
+  const [qrStatus, setQrStatus] = useState<
+    'idle' | 'locating' | 'verified' | 'unverified' | 'already' | 'signedout'>('idle');
+  const [visitedAt, setVisitedAt] = useState<string | null>(null);
+  const [authModal, setAuthModal] = useState(false);
+  // Set once the server confirms this place was already collected, so the dwell
+  // timer below doesn't run for a visit that can never be awarded again.
+  const [alreadyVisited, setAlreadyVisited] = useState(false);
 
   useEffect(() => {
     Promise.resolve(params).then(async (resolved) => { setAttractionId(resolved.id); });
@@ -146,7 +153,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
   // Record the server-side start of the dwell window as soon as the page loads —
   // the visit route checks elapsed time against this, not a client-supplied value.
   useEffect(() => {
-    if (!attraction?.id || !token) return;
+    if (!attraction?.id) return;
     let cancelled = false;
 
     // The on-site QR code encodes ?src=qr. For those we also ask for location,
@@ -155,6 +162,14 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
     // itinerary wizard: resolves either way, so a refused or unavailable
     // permission still checks in — it just won't count as a verified scan.
     const isQr = new URLSearchParams(window.location.search).get('src') === 'qr';
+
+    // Someone scanning the poster while signed out would otherwise get nothing
+    // and no explanation. Prompt them to sign in — the scan is only worth
+    // anything once it can be attached to an account.
+    if (!token) {
+      if (isQr) { setQrStatus('signedout'); setAuthModal(true); }
+      return;
+    }
 
     const coords = () => new Promise<{ lat?: number; lng?: number }>(resolve => {
       if (!isQr || !navigator.geolocation) { resolve({}); return; }
@@ -175,8 +190,15 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
       })
         .then(r => r.json())
         .then(d => {
-          if (cancelled || !isQr) return;
-          setQrStatus(d.verified ? 'verified' : 'unverified');
+          if (cancelled) return;
+          // A place counts once. Record it either way so the dwell timer can
+          // skip a visit that has already been collected.
+          if (d.alreadyVisited) {
+            setAlreadyVisited(true);
+            setVisitedAt(d.visitedAt ?? null);
+          }
+          if (!isQr) return;
+          setQrStatus(d.alreadyVisited ? 'already' : d.verified ? 'verified' : 'unverified');
         });
     }).catch(() => { if (!cancelled && isQr) setQrStatus('unverified'); });
 
@@ -184,8 +206,10 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
   }, [attraction?.id, token]);
 
   // Only count a "visit" toward achievements after a genuine dwell — not a quick click-through.
+  // Skipped once the place is already collected: the points row is deduped
+  // server-side anyway, so the request could only ever be a no-op.
   useEffect(() => {
-    if (!attraction?.id || !token) return;
+    if (!attraction?.id || !token || alreadyVisited) return;
     const t = setTimeout(() => {
       fetch('/api/attractions/visit', {
         method: 'POST',
@@ -197,7 +221,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
         .catch(() => {});
     }, VISIT_DWELL_MS);
     return () => clearTimeout(t);
-  }, [attraction?.id, token]);
+  }, [attraction?.id, token, alreadyVisited]);
 
   if (loading) {
     return (
@@ -282,20 +306,42 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
             className="mb-6 flex items-start gap-3 p-4 rounded-2xl border"
             style={qrStatus === 'verified'
               ? { backgroundColor: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.35)' }
-              : { backgroundColor: 'rgba(11,61,145,0.04)', borderColor: 'rgba(11,61,145,0.15)' }}>
+              : qrStatus === 'signedout'
+                ? { backgroundColor: 'rgba(245,197,24,0.10)', borderColor: 'rgba(245,197,24,0.45)' }
+                : { backgroundColor: 'rgba(11,61,145,0.04)', borderColor: 'rgba(11,61,145,0.15)' }}>
             <MapPin className="w-5 h-5 shrink-0 mt-0.5"
-              style={{ color: qrStatus === 'verified' ? '#16A34A' : '#1565C0' }} />
-            <div>
+              style={{ color: qrStatus === 'verified' ? '#16A34A' : qrStatus === 'signedout' ? '#B45309' : '#1565C0' }} />
+            <div className="flex-1 min-w-0">
               <p className="font-bold text-sm" style={{ color: '#1A1A2E', fontFamily: HL }}>
                 {qrStatus === 'locating' && 'Checking you in…'}
                 {qrStatus === 'verified' && "You're here! Visit confirmed"}
                 {qrStatus === 'unverified' && 'Checked in — location not confirmed'}
+                {qrStatus === 'already' && 'You have already collected this place'}
+                {qrStatus === 'signedout' && 'Sign in to collect this place'}
               </p>
               <p className="text-xs text-gray-500 mt-0.5" style={{ fontFamily: BL }}>
                 {qrStatus === 'locating' && 'Confirming you are at the location.'}
                 {qrStatus === 'verified' && `Stay on this page for ${Math.round(VISIT_DWELL_MS / 60000)} minutes to earn your points.`}
                 {qrStatus === 'unverified' && 'Allow location and scan again to have this count as an on-site visit.'}
+                {qrStatus === 'already' && (visitedAt
+                  ? `Collected on ${new Date(visitedAt).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}. Each place counts once — it is already in your passport.`
+                  : 'Each place counts once, and this one is already in your passport.')}
+                {qrStatus === 'signedout' && 'Scans only earn points once they are attached to an account. Signing in takes a moment.'}
               </p>
+              {qrStatus === 'signedout' && (
+                <button onClick={() => setAuthModal(true)}
+                  className="mt-2 px-4 py-1.5 rounded-xl text-xs font-bold text-white transition hover:opacity-90"
+                  style={{ backgroundColor: '#1565C0', fontFamily: BL }}>
+                  Sign in / Register
+                </button>
+              )}
+              {qrStatus === 'already' && (
+                <Link href="/profile"
+                  className="inline-block mt-2 text-xs font-bold hover:underline"
+                  style={{ color: '#1565C0', fontFamily: BL }}>
+                  View your passport →
+                </Link>
+              )}
             </div>
           </motion.div>
         )}
@@ -611,6 +657,11 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
           </Link>
         </motion.div>
       </div>
+
+      {authModal && (
+        <AuthModal defaultTab="login" onClose={() => setAuthModal(false)}
+          message={`Sign in to collect ${attraction.attributes.name} and earn points for your visit.`} />
+      )}
     </div>
   );
 }
