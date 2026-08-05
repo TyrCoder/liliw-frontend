@@ -7,6 +7,7 @@ import SearchProvider from "@/components/SearchProvider";
 import AIChat from "@/components/AIChat";
 import PWAHandler from "@/components/PWAHandler";
 import AnalyticsInit from "@/components/AnalyticsInit";
+import PassportHost from "@/components/PassportHost";
 import { AuthProvider } from "@/context/AuthContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { Toaster } from "sonner";
@@ -102,6 +103,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             {children}
             <Footer />
             <AIChat />
+            <PassportHost />
             <Toaster richColors position="bottom-left" closeButton />
           </FavoritesProvider>
         </AuthProvider>

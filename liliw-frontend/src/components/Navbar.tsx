@@ -7,6 +7,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import SmartSearchModal from '@/components/SmartSearchModal';
+import { openPassport } from '@/components/PassportHost';
+import { PASSPORT_TRIPS_PAGE } from '@/components/Passport';
 
 type NotifItem = {
   id: string;
@@ -59,6 +61,18 @@ function NavLink({ href, label, onClick }: { href: string; label: string; onClic
       style={{ color: '#374151', fontFamily: BL }}>
       {label}
     </Link>
+  );
+}
+
+// Same look as NavLink, for entries that open something in place rather than
+// navigating — the passport being the one that does.
+function NavAction({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick}
+      className="px-3 py-2 font-medium transition-all duration-200 rounded-lg text-sm whitespace-nowrap block w-full text-left hover:bg-blue-50 hover:text-blue-700"
+      style={{ color: '#374151', fontFamily: BL }}>
+      {label}
+    </button>
   );
 }
 
@@ -363,17 +377,25 @@ export default function Navbar() {
                               </span>
                             )}
                           </div>
+                          {/* The passport opens over the current page rather
+                              than navigating — that is the whole point of it
+                              being a booklet you pull out. */}
                           {[
-                            { href: '/profile',       icon: <User className="w-4 h-4" />,          label: 'View Profile' },
-                            { href: '/profile#saved', icon: <BookmarkCheck className="w-4 h-4" />, label: 'Saved Itineraries' },
-                            { href: '/rewards',       icon: <Trophy className="w-4 h-4" />,        label: 'Rewards' },
+                            { page: 0,                   icon: <User className="w-4 h-4" />,          label: 'View Profile' },
+                            { page: PASSPORT_TRIPS_PAGE, icon: <BookmarkCheck className="w-4 h-4" />, label: 'Saved Itineraries' },
                           ].map(item => (
-                            <Link key={item.href} href={item.href} onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 transition"
+                            <button key={item.label}
+                              onClick={() => { setUserMenuOpen(false); openPassport(item.page); }}
+                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 transition"
                               style={{ color: '#374151', fontFamily: BL }}>
                               <span className="text-blue-600">{item.icon}</span> {item.label}
-                            </Link>
+                            </button>
                           ))}
+                          <Link href="/rewards" onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 transition"
+                            style={{ color: '#374151', fontFamily: BL }}>
+                            <span className="text-blue-600"><Trophy className="w-4 h-4" /></span> Rewards
+                          </Link>
                           <Link href="/profile/edit" onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 transition border-t border-gray-100"
                             style={{ color: '#374151', fontFamily: BL }}>
@@ -445,8 +467,8 @@ export default function Navbar() {
                   ))}
                   {user && (
                     <>
-                      <NavLink href="/profile" label="My Profile" onClick={closeMenu} />
-                      <NavLink href="/profile#saved" label="Saved Itineraries" onClick={closeMenu} />
+                      <NavAction label="My Profile"        onClick={() => { closeMenu(); openPassport(0); }} />
+                      <NavAction label="Saved Itineraries" onClick={() => { closeMenu(); openPassport(PASSPORT_TRIPS_PAGE); }} />
                       <NavLink href="/rewards" label="Rewards" onClick={closeMenu} />
                     </>
                   )}
