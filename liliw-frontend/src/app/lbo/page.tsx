@@ -501,7 +501,8 @@ export default function LboDashboard() {
                 <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1565C0' }} />
               </div>
             ) : attrData?.linked && attrData.attraction ? (
-              /* ── Linked attraction card ── */
+              <>
+              {/* ── Linked attraction card ── */}
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-3">
@@ -610,11 +611,9 @@ export default function LboDashboard() {
                   </button>
                 </div>
               </div>
-            ) : null}
-
             {/* Printable check-in poster. Owners print this and display it at
                 the entrance; scanning it is what credits a visitor's visit. */}
-            {isLinked && attrData?.attraction?.id && (
+            {attrData.attraction.id && (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mt-6">
                 <div className="px-6 py-5 border-b border-gray-100">
                   <h2 className="font-bold text-gray-900 flex items-center gap-2">
@@ -634,8 +633,9 @@ export default function LboDashboard() {
               </div>
             )}
 
-            {!isLinked && (
-              /* ── No attraction linked ── */
+              </>
+            ) : (
+              /* ── No attraction linked, or the listing could not be loaded ── */
               <>
                 <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center">
                   <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
