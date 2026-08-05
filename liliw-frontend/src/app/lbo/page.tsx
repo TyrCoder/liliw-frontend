@@ -15,6 +15,11 @@ import SafeHtml from '@/components/SafeHtml';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+// Marks a booking for a 360° shoot in the shared change-request queue. Kept as
+// a constant because both the submit and the "already requested" lookup match
+// on it — a typo in either would silently allow duplicate bookings.
+const VT_FIELD = 'Virtual Tour (360°)';
+
 const FIELDS_TO_CHANGE = [
   'Name / Listing Title',
   'Description',
@@ -82,6 +87,7 @@ type AttractionData = {
   linked: boolean;
   type?: string;
   strapiId?: string;
+  virtualTour?: { exists: boolean; scenes: number };
   attraction?: {
     id?: string | null;
     slug?: string | null;
@@ -156,6 +162,15 @@ export default function LboDashboard() {
   const [crForm,        setCrForm]      = useState({ field_to_change: '', current_value: '', requested_value: '', reason: '' });
   const [submittingCr,  setSubmittingCr]= useState(false);
   const [crMsg,         setCrMsg]       = useState<{ ok: boolean; text: string } | null>(null);
+
+  /* ── Virtual Tour request ──
+     Owners cannot upload a 360° tour themselves — the panoramas and hotspots
+     are placed by CHATO staff in the /immersive editor. So this is a booking
+     request, filed through the same change-request queue staff already work. */
+  const [showVtForm,   setShowVtForm]   = useState(false);
+  const [vtForm,       setVtForm]       = useState({ areas: '', preferred_date: '', contact: '', notes: '' });
+  const [submittingVt, setSubmittingVt] = useState(false);
+  const [vtMsg,        setVtMsg]        = useState<{ ok: boolean; text: string } | null>(null);
 
   /* ── Ratings ── */
   const [ratings,        setRatings]        = useState<any[]>([]);
@@ -321,6 +336,59 @@ export default function LboDashboard() {
     }
     setSubmittingCr(false);
     setTimeout(() => setCrMsg(null), 4000);
+  };
+
+  const hasTour     = !!attrData?.virtualTour?.exists;
+  const tourScenes  = attrData?.virtualTour?.scenes ?? 0;
+  // One open booking at a time — staff schedule a shoot per request, and a
+  // second identical row in the queue only creates confusion about which is live.
+  const pendingTour = requests.find(
+    (r: any) => r.field_to_change === VT_FIELD && (r.status === 'pending' || r.status === 'in_progress'),
+  );
+
+  const handleSubmitVt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appInfo) return;
+    setSubmittingVt(true);
+    setVtMsg(null);
+
+    // Folded into requested_value because the queue is a single free-text
+    // field — staff read the whole booking in one place without a new table.
+    const summary = [
+      `Areas to capture: ${vtForm.areas.trim()}`,
+      vtForm.preferred_date.trim() ? `Preferred shoot date: ${vtForm.preferred_date.trim()}` : null,
+      vtForm.contact.trim()        ? `On-site contact: ${vtForm.contact.trim()}`             : null,
+      vtForm.notes.trim()          ? `Notes: ${vtForm.notes.trim()}`                          : null,
+    ].filter(Boolean).join('\n');
+
+    try {
+      const res = await fetch('/api/lbo/change-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          attraction_name: appInfo.attraction_name || appInfo.business_name,
+          field_to_change: VT_FIELD,
+          current_value:   hasTour ? `Existing tour with ${tourScenes} scene${tourScenes === 1 ? '' : 's'}` : 'No virtual tour yet',
+          requested_value: summary,
+          reason:          hasTour ? 'Requesting an update to the existing 360° tour' : 'Requesting a new 360° virtual tour',
+          lbo_name:        appInfo.owner_name,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setVtMsg({ ok: true, text: 'Request sent. CHATO will contact you to schedule the shoot.' });
+        setVtForm({ areas: '', preferred_date: '', contact: '', notes: '' });
+        setShowVtForm(false);
+        fetch('/api/lbo/change-requests', { headers: { Authorization: `Bearer ${token}` } })
+          .then(r => r.json()).then(d => setRequests(d.data || []));
+      } else {
+        setVtMsg({ ok: false, text: data.error || 'Submission failed' });
+      }
+    } catch {
+      setVtMsg({ ok: false, text: 'Network error' });
+    }
+    setSubmittingVt(false);
+    setTimeout(() => setVtMsg(null), 6000);
   };
 
   const handleSubmitVr = async (e: React.FormEvent) => {
@@ -611,6 +679,38 @@ export default function LboDashboard() {
                   </button>
                 </div>
               </div>
+            {/* 360° tour status. Read-only here — the panoramas are placed by
+                CHATO staff, so the only action an owner has is to ask. */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mt-6 px-6 py-5 flex items-center gap-4 flex-wrap">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: hasTour ? '#DCFCE7' : '#F3F4F6' }}>
+                <Layers className="w-5 h-5" style={{ color: hasTour ? '#16A34A' : '#9CA3AF' }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="font-bold text-gray-900 text-sm">360° Virtual Tour</h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {hasTour
+                    ? `Published with ${tourScenes} scene${tourScenes === 1 ? '' : 's'} on the 3D Tours page.`
+                    : pendingTour
+                      ? 'Your request is with CHATO — they will contact you to schedule the shoot.'
+                      : 'Not set up yet. Request one and a CHATO photographer will capture your place.'}
+                </p>
+              </div>
+              {hasTour ? (
+                <Link href="/immersive"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shrink-0"
+                  style={{ backgroundColor: '#16A34A' }}>
+                  View Tour <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              ) : (
+                <button onClick={() => setActiveTab('requests')}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition hover:opacity-90 shrink-0"
+                  style={{ backgroundColor: pendingTour ? '#FEF3C7' : '#1565C0', color: pendingTour ? '#B45309' : '#fff' }}>
+                  {pendingTour ? <><Clock className="w-3.5 h-3.5" /> Request Pending</> : <>Request a Tour <ArrowRight className="w-3.5 h-3.5" /></>}
+                </button>
+              )}
+            </div>
+
             {/* Printable check-in poster. Owners print this and display it at
                 the entrance; scanning it is what credits a visitor's visit. */}
             {attrData.attraction.id && (
@@ -902,6 +1002,100 @@ export default function LboDashboard() {
         {/* ── CHANGE REQUESTS ── */}
         {activeTab === 'requests' && (
           <>
+            {/* ── Virtual Tour booking ── */}
+            <div className="bg-white rounded-2xl border shadow-sm p-5"
+              style={{ borderColor: hasTour ? '#BBF7D0' : '#DBEAFE' }}>
+              <div className="flex items-start gap-4 flex-wrap justify-between">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: hasTour ? '#DCFCE7' : '#EFF6FF' }}>
+                    <Layers className="w-5 h-5" style={{ color: hasTour ? '#16A34A' : '#1565C0' }} />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="font-bold text-gray-900 flex items-center gap-2 flex-wrap">
+                      360° Virtual Tour
+                      {hasTour && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700">
+                          LIVE · {tourScenes} scene{tourScenes === 1 ? '' : 's'}
+                        </span>
+                      )}
+                    </h2>
+                    <p className="text-xs text-gray-400 mt-0.5 max-w-lg">
+                      {hasTour
+                        ? 'Visitors can walk through your place from the 3D Tours page. Ask for an update if it no longer matches how the place looks.'
+                        : 'A CHATO photographer captures 360° panoramas of your place and publishes them to the 3D Tours page. Request a shoot and they will contact you to schedule it.'}
+                    </p>
+                  </div>
+                </div>
+
+                {pendingTour ? (
+                  <span className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold shrink-0 bg-yellow-50 text-yellow-700">
+                    <Clock className="w-4 h-4" /> Request {CR_STATUS_LABEL[pendingTour.status] ?? pendingTour.status}
+                  </span>
+                ) : (
+                  <button onClick={() => { setShowVtForm(v => !v); setVtMsg(null); }}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shrink-0"
+                    style={{ backgroundColor: showVtForm ? '#6B7280' : hasTour ? '#16A34A' : '#1565C0' }}>
+                    {showVtForm
+                      ? <><X className="w-4 h-4" /> Cancel</>
+                      : <><Plus className="w-4 h-4" /> {hasTour ? 'Request an Update' : 'Request a Virtual Tour'}</>}
+                  </button>
+                )}
+              </div>
+
+              {showVtForm && (
+                <form onSubmit={handleSubmitVt} className="mt-5 pt-5 border-t border-gray-100 space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      Areas to Capture <span className="text-red-500">*</span>
+                    </label>
+                    <textarea required value={vtForm.areas} rows={2}
+                      onChange={e => setVtForm(f => ({ ...f, areas: e.target.value }))}
+                      placeholder="e.g. Main dining hall, garden, second-floor viewing deck"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Preferred Date / Time</label>
+                      <input type="text" value={vtForm.preferred_date}
+                        onChange={e => setVtForm(f => ({ ...f, preferred_date: e.target.value }))}
+                        placeholder="e.g. Weekday mornings, before 10 AM"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">On-site Contact</label>
+                      <input type="text" value={vtForm.contact}
+                        onChange={e => setVtForm(f => ({ ...f, contact: e.target.value }))}
+                        placeholder="Who will meet the photographer?"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Notes (optional)</label>
+                    <textarea value={vtForm.notes} rows={2}
+                      onChange={e => setVtForm(f => ({ ...f, notes: e.target.value }))}
+                      placeholder="Anything the photographer should know — access, busy hours, areas to avoid"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
+                  </div>
+
+                  <button type="submit" disabled={submittingVt}
+                    className="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+                    style={{ backgroundColor: hasTour ? '#16A34A' : '#1565C0' }}>
+                    {submittingVt ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : 'Send Request'}
+                  </button>
+                </form>
+              )}
+
+              {vtMsg && (
+                <div className={`flex items-center gap-2 mt-4 text-sm font-semibold ${vtMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                  {vtMsg.ok ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                  {vtMsg.text}
+                </div>
+              )}
+            </div>
+
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-start gap-4 flex-wrap justify-between">
               <div>
                 <h2 className="font-bold text-gray-900">Change Requests</h2>

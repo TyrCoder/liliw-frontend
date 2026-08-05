@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
   if (app.strapi_attraction_id) {
     const { data: row } = await supabaseServer
       .from('cms_attractions')
-      .select('id, name, category, description, features, location, map_lat, map_lng, slug, updated_at')
+      .select('id, name, category, description, features, location, map_lat, map_lng, slug, updated_at, virtual_tour_photos')
       .eq('id', app.strapi_attraction_id)
       .maybeSingle();
     cms = row ?? null;
@@ -69,9 +69,15 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // The 360° tour is uploaded by CHATO staff on /immersive, not by the owner —
+  // the dashboard only reports whether one exists so they know whether to ask
+  // for it. An empty array counts as none: that is what a cleared tour leaves.
+  const tourScenes = Array.isArray(cms?.virtual_tour_photos) ? cms.virtual_tour_photos.length : 0;
+
   return NextResponse.json({
     linked: true,
     type,
+    virtualTour: { exists: tourScenes > 0, scenes: tourScenes },
     attraction: {
       id:          cms?.id ?? null,
       slug:        cms?.slug ?? null,
