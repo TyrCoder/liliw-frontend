@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, Search, Check, Loader2, Images, RefreshCw } from 'lucide-react';
+import { X, Upload, Search, Check, Loader2, Images, RefreshCw, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export interface CloudinaryAsset {
@@ -41,29 +41,54 @@ export default function CloudinaryPicker({
   const [search, setSearch]           = useState('');
   const [nextCursor, setNextCursor]   = useState<string | null>(null);
   const [isDragging, setIsDragging]   = useState(false);
+  const [error, setError]             = useState('');
+  // Most of this account's images were uploaded to the root by the old Strapi
+  // CMS, so a folder-scoped view shows almost nothing. 'all' reaches them.
+  const [scope, setScope]             = useState<'folder' | 'all'>('folder');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const authHeaders = (): HeadersInit =>
     token ? { Authorization: `Bearer ${token}` } : {};
 
-  const loadAssets = async (reset = false) => {
+  const loadAssets = async (reset = false, useScope: 'folder' | 'all' = scope) => {
     setLoading(true);
+    if (reset) setError('');
     try {
-      const params = new URLSearchParams({ folder });
+      const params = new URLSearchParams({ folder, scope: useScope });
       if (!reset && nextCursor) params.set('next_cursor', nextCursor);
       const res  = await fetch(`/api/cloudinary-list?${params}`, { headers: authHeaders() });
       const data = await res.json();
-      setAssets(prev => reset ? (data.resources ?? []) : [...prev, ...(data.resources ?? [])]);
+
+      if (!res.ok) {
+        setError(data.error || `Could not load the library (${res.status}).`);
+        setLoading(false);
+        return;
+      }
+
+      const found: CloudinaryAsset[] = data.resources ?? [];
+      setAssets(prev => reset ? found : [...prev, ...found]);
       setNextCursor(data.next_cursor ?? null);
-    } catch {}
-    setLoading(false);
+      setLoading(false);
+
+      // An empty folder is almost always this account's missing-prefix history
+      // rather than an empty library, so fall through to everything instead of
+      // showing a blank grid over 600 reachable images.
+      if (reset && useScope === 'folder' && found.length === 0) {
+        setScope('all');
+        loadAssets(true, 'all');
+      }
+    } catch {
+      setError('Could not reach the media library. Check your connection and try again.');
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     if (!open) { setSelected(new Set()); setSearch(''); return; }
     setAssets([]);
     setNextCursor(null);
-    loadAssets(true);
+    setScope('folder');
+    loadAssets(true, 'folder');
   }, [open, folder]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -77,10 +102,16 @@ export default function CloudinaryPicker({
     const arr = Array.from(files);
     if (!arr.length) return;
     setUploading(true);
+    setError('');
     const newAssets: CloudinaryAsset[] = [];
+    // Every failure here used to be swallowed by a bare `continue`, so a
+    // rejected signature, an expired login and an oversized file all looked
+    // identical: the spinner stopped and nothing appeared. Keep the reason.
+    const failures: string[] = [];
 
     for (let i = 0; i < arr.length; i++) {
       setUploadCount(`${i + 1} / ${arr.length}`);
+      const label = arr[i].name;
       try {
         const timestamp = Math.floor(Date.now() / 1000);
         const signRes = await fetch(signEndpoint, {
@@ -88,7 +119,17 @@ export default function CloudinaryPicker({
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body:    JSON.stringify({ timestamp, folder }),
         });
-        if (!signRes.ok) continue;
+
+        if (!signRes.ok) {
+          const detail = await signRes.json().catch(() => ({}));
+          failures.push(
+            signRes.status === 401 ? `${label}: your session expired — sign in again.`
+            : signRes.status === 403 ? `${label}: ${detail.error || 'your account cannot upload media.'}`
+            : `${label}: ${detail.error || `upload could not be authorised (${signRes.status}).`}`,
+          );
+          continue;
+        }
+
         const { signature, api_key, cloud_name, folder: sf } = await signRes.json();
 
         const form = new FormData();
@@ -102,7 +143,13 @@ export default function CloudinaryPicker({
           `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`,
           { method: 'POST', body: form },
         );
-        if (!upRes.ok) continue;
+
+        if (!upRes.ok) {
+          const detail = await upRes.json().catch(() => ({}));
+          failures.push(`${label}: ${detail?.error?.message || `Cloudinary rejected the file (${upRes.status}).`}`);
+          continue;
+        }
+
         const result = await upRes.json();
         newAssets.push({
           public_id: result.public_id,
@@ -111,11 +158,15 @@ export default function CloudinaryPicker({
           width:     result.width,
           height:    result.height,
         });
-      } catch {}
+      } catch {
+        failures.push(`${label}: the upload did not complete — check your connection.`);
+      }
     }
 
     setUploading(false);
     setUploadCount('');
+    if (failures.length) setError(failures.join(' · '));
+
     if (newAssets.length) {
       setAssets(prev => [...newAssets, ...prev]);
       setSelected(prev => {
@@ -181,7 +232,7 @@ export default function CloudinaryPicker({
                 <p className="text-xs text-gray-400 truncate">{folder}</p>
               </div>
               <button
-                onClick={() => loadAssets(true)}
+                onClick={() => { setAssets([]); setNextCursor(null); loadAssets(true, scope); }}
                 disabled={loading}
                 title="Refresh"
                 className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition disabled:opacity-40"
@@ -232,9 +283,23 @@ export default function CloudinaryPicker({
               </div>
             </div>
 
-            {/* Search */}
-            <div className="px-6 py-3 shrink-0">
-              <div className="relative">
+            {/* Whatever went wrong, say so — silence here is what made a failed
+                upload look like a successful one. */}
+            {error && (
+              <div className="px-6 pt-3 shrink-0">
+                <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg border border-red-200 bg-red-50">
+                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-600 font-medium flex-1 min-w-0 break-words">{error}</p>
+                  <button onClick={() => setError('')} className="text-red-400 hover:text-red-600 shrink-0">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Search + scope */}
+            <div className="px-6 py-3 shrink-0 flex items-center gap-2">
+              <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
@@ -243,6 +308,31 @@ export default function CloudinaryPicker({
                   onChange={e => setSearch(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
                 />
+              </div>
+              <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
+                {([
+                  { key: 'folder', label: 'This folder' },
+                  { key: 'all',    label: 'All media' },
+                ] as const).map(s => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => {
+                      if (scope === s.key) return;
+                      setScope(s.key);
+                      setAssets([]);
+                      setNextCursor(null);
+                      loadAssets(true, s.key);
+                    }}
+                    className="px-3 py-2 text-xs font-semibold transition"
+                    style={{
+                      backgroundColor: scope === s.key ? '#1565C0' : '#fff',
+                      color:           scope === s.key ? '#fff'    : '#6B7280',
+                    }}
+                  >
+                    {s.label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -256,7 +346,9 @@ export default function CloudinaryPicker({
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <Images className="w-10 h-10 text-gray-200 mb-3" />
                   <p className="text-sm text-gray-400 font-medium">
-                    {search ? 'No assets match your search' : 'No assets yet — upload some above'}
+                    {search ? 'No assets match your search'
+                      : scope === 'folder' ? `Nothing in ${folder} yet — upload above, or switch to All media`
+                      : 'No assets yet — upload some above'}
                   </p>
                 </div>
               ) : (
