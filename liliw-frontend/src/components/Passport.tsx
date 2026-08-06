@@ -715,17 +715,24 @@ export default function Passport({ initialPage = 0, onClose }: { initialPage?: n
   const under = turn ? turn.under : PAGE_KEYS[pageIndex];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6"
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.28, ease: 'easeOut' }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6"
       style={{ background: 'radial-gradient(80% 80% at 50% 40%, rgba(8,20,45,0.80) 0%, rgba(4,10,24,0.93) 100%)' }}>
 
       {/* Clicking away closes the booklet */}
       <button aria-label="Close passport" onClick={onClose} className="absolute inset-0 cursor-default" />
 
-      <button aria-label="Close passport" onClick={onClose}
+      <motion.button aria-label="Close passport" onClick={onClose}
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.15 }}
         className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 w-9 h-9 rounded-full flex items-center justify-center transition hover:bg-white/15"
         style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', color: '#F5C518' }}>
         <X className="w-4.5 h-4.5" />
-      </button>
+      </motion.button>
 
       <motion.div
         initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
@@ -761,11 +768,23 @@ export default function Passport({ initialPage = 0, onClose }: { initialPage?: n
             style={{ ...PAPER, boxShadow: 'inset 12px 0 18px -16px rgba(11,61,145,0.45)' }}>
             <div className="h-full flex flex-col px-4 py-4 sm:px-6 sm:py-5 overflow-y-auto overscroll-contain"
               style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(11,61,145,0.25) transparent' }}>
-              <div className="flex-1">{renderPage(under)}</div>
-              <p className="pt-5 text-center text-[9px] uppercase tracking-[0.32em] shrink-0"
+              {/* Keyed on the page, so changing leaf remounts this and replays
+                  the fade. The turning sheet covers the swap, so the content
+                  underneath is already settling in as the leaf lands rather
+                  than appearing all at once the instant it clears. */}
+              <motion.div key={under} className="flex-1"
+                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.34, delay: turn ? 0.16 : 0, ease: 'easeOut' }}>
+                {renderPage(under)}
+              </motion.div>
+              <motion.p key={`n-${under}`} className="pt-5 text-center text-[9px] uppercase tracking-[0.32em] shrink-0"
+                initial={reduceMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.34, delay: turn ? 0.2 : 0 }}
                 style={{ color: 'rgba(11,61,145,0.3)', fontFamily: ML }}>
                 Page {PAGE_KEYS.indexOf(under) + 1} of {PAGE_KEYS.length}
-              </p>
+              </motion.p>
             </div>
           </div>
 
@@ -891,6 +910,6 @@ export default function Passport({ initialPage = 0, onClose }: { initialPage?: n
           )}
         </AnimatePresence>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }

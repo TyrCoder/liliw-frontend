@@ -128,8 +128,19 @@ export default function Navbar() {
   const { user, token, logout, isAdmin, isChatoOfficer, isChatoEditor, isStaff, isLocal, adminPanelRole } = useAuth();
   const pathname = usePathname();
 
+  // Scroll fires far more often than this state can meaningfully change, and
+  // every handler run sits on the main thread alongside the sticky bar's
+  // compositing. Coalesce to one read per frame.
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
+    let queued = false;
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        setScrolled(window.scrollY > 60);
+      });
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -206,29 +217,39 @@ export default function Navbar() {
         transition={{ duration: 0.5 }}
         className="sticky top-0 z-50"
         style={{
-          backgroundColor: scrolled ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.86)',
-          backdropFilter: 'blur(16px) saturate(140%)',
-          WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+          // backdrop-filter is the most expensive thing on this bar: it makes
+          // the browser re-blur whatever is behind it on every scroll frame,
+          // across the full viewport width. 10px reads the same as 16px at this
+          // opacity for noticeably less work, and dropping saturate() removes a
+          // second pass over the same pixels.
+          backgroundColor: scrolled ? 'rgba(255,255,255,0.93)' : 'rgba(255,255,255,0.88)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
           boxShadow: scrolled ? '0 6px 28px -12px rgba(15,23,42,0.22)' : 'none',
-          transition: 'box-shadow 300ms ease, background-color 300ms ease',
+          // Only the shadow crossfades. Animating background-color forces the
+          // blurred layer to recomposite for the whole 300ms.
+          transition: 'box-shadow 300ms ease',
+          // Keep the bar on its own compositor layer so page scroll underneath
+          // does not repaint it. Note: no `contain` here — paint containment
+          // clips descendants, which would swallow the dropdowns again.
+          willChange: 'transform',
         }}>
 
         {/* Festival ribbons entering from either edge. Kept at 7% and pinned
             behind the content so they colour the bar without ever competing
-            with a label or catching a click. */}
+            with a label or catching a click. One linear gradient each rather
+            than a pair of radials: these sit inside a backdrop-filtered
+            element, so every extra gradient pass is paid for again whenever
+            the bar recomposites. */}
         <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-40 sm:w-64"
           style={{
             opacity: 0.07,
-            background:
-              'radial-gradient(120% 90% at 0% 30%, var(--festival-magenta) 0%, transparent 60%),' +
-              'radial-gradient(90% 70% at 12% 90%, var(--festival-orange) 0%, transparent 65%)',
+            background: 'linear-gradient(100deg, var(--festival-magenta) 0%, var(--festival-orange) 45%, transparent 85%)',
           }} />
         <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-40 sm:w-64"
           style={{
             opacity: 0.07,
-            background:
-              'radial-gradient(120% 90% at 100% 30%, var(--festival-cyan) 0%, transparent 60%),' +
-              'radial-gradient(90% 70% at 88% 90%, var(--festival-yellow) 0%, transparent 65%)',
+            background: 'linear-gradient(260deg, var(--festival-cyan) 0%, var(--festival-yellow) 45%, transparent 85%)',
           }} />
 
         {/* Site chrome, so it spans the viewport rather than sitting inside the
