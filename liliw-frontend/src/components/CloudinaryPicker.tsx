@@ -4,13 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, Search, Check, Loader2, Images, RefreshCw, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-
-// Cloudinary's Free plan rejects anything over 10 MB outright — verified
-// against the account: "File size too large. Got 12963838. Maximum is
-// 10485760." Checked here so an oversized file fails instantly with advice
-// instead of after a slow upload that ends in a byte count. Pixel dimensions
-// are not a problem: a 33.6 MP panorama uploads fine.
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+import { fitForUpload, MAX_UPLOAD_BYTES } from '@/lib/image-fit';
 
 export interface CloudinaryAsset {
   public_id: string;
@@ -49,6 +43,7 @@ export default function CloudinaryPicker({
   const [nextCursor, setNextCursor]   = useState<string | null>(null);
   const [isDragging, setIsDragging]   = useState(false);
   const [error, setError]             = useState('');
+  const [notice, setNotice]           = useState('');
   // Most of this account's images were uploaded to the root by the old Strapi
   // CMS, so a folder-scoped view shows almost nothing. 'all' reaches them.
   const [scope, setScope]             = useState<'folder' | 'all'>('folder');
@@ -115,19 +110,23 @@ export default function CloudinaryPicker({
     // rejected signature, an expired login and an oversized file all looked
     // identical: the spinner stopped and nothing appeared. Keep the reason.
     const failures: string[] = [];
+    // Re-encoding is silent otherwise, and quietly swapping someone's PNG for
+    // a smaller JPEG is exactly the kind of thing they should be told about.
+    const shrunk: string[] = [];
 
     for (let i = 0; i < arr.length; i++) {
       setUploadCount(`${i + 1} / ${arr.length}`);
       const label = arr[i].name;
 
-      if (arr[i].size > MAX_UPLOAD_BYTES) {
-        const mb = (arr[i].size / 1024 / 1024).toFixed(1);
-        failures.push(
-          `${label} is ${mb} MB — the limit is 10 MB. ` +
-          `PNG screenshots and panoramas are often well over it; saving as JPEG usually solves this.`,
-        );
-        continue;
+      // Cloudinary caps uploads at 10 MB, so anything larger is re-encoded to
+      // fit rather than refused — see lib/image-fit.
+      setUploadCount(arr[i].size > MAX_UPLOAD_BYTES ? `resizing ${i + 1} / ${arr.length}` : `${i + 1} / ${arr.length}`);
+      const fitted = await fitForUpload(arr[i]);
+      if (fitted.error) { failures.push(fitted.error); continue; }
+      if (fitted.shrunk) {
+        shrunk.push(`${label} (${(fitted.originalBytes / 1024 / 1024).toFixed(1)} MB → ${(fitted.file.size / 1024 / 1024).toFixed(1)} MB)`);
       }
+      setUploadCount(`${i + 1} / ${arr.length}`);
 
       try {
         const timestamp = Math.floor(Date.now() / 1000);
@@ -150,7 +149,7 @@ export default function CloudinaryPicker({
         const { signature, api_key, cloud_name, folder: sf } = await signRes.json();
 
         const form = new FormData();
-        form.append('file',      arr[i]);
+        form.append('file',      fitted.file);
         form.append('timestamp', String(timestamp));
         form.append('signature', signature);
         form.append('api_key',   api_key);
@@ -182,6 +181,7 @@ export default function CloudinaryPicker({
 
     setUploading(false);
     setUploadCount('');
+    setNotice(shrunk.length ? `Resized to fit Cloudinary's 10 MB limit: ${shrunk.join(', ')}` : '');
     if (failures.length) setError(failures.join(' · '));
 
     if (newAssets.length) {
@@ -308,6 +308,18 @@ export default function CloudinaryPicker({
                   <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                   <p className="text-xs text-red-600 font-medium flex-1 min-w-0 break-words">{error}</p>
                   <button onClick={() => setError('')} className="text-red-400 hover:text-red-600 shrink-0">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {notice && (
+              <div className="px-6 pt-3 shrink-0">
+                <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg border border-blue-200 bg-blue-50">
+                  <Images className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-blue-700 font-medium flex-1 min-w-0 break-words">{notice}</p>
+                  <button onClick={() => setNotice('')} className="text-blue-400 hover:text-blue-600 shrink-0">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>

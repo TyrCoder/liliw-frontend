@@ -9,6 +9,7 @@ import ImmersiveViewer from '@/components/ImmersiveViewer';
 import CloudinaryPicker, { type CloudinaryAsset } from '@/components/CloudinaryPicker';
 import type { Hotspot } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { fitForUpload, MAX_UPLOAD_BYTES } from '@/lib/image-fit';
 
 const EDITOR_PASSWORD = 'LiliwOffice2026';
 const CLOUDINARY_FOLDER = 'liliw-virtual-tours';
@@ -35,12 +36,6 @@ interface Attraction {
   type: 'heritage' | 'spot' | 'dining';
 }
 
-// Cloudinary's Free plan rejects anything larger, outright. Verified against
-// the account: "File size too large. Got 12963838. Maximum is 10485760."
-// Pixel dimensions are not capped in practice — a 33.6 MP panorama uploads
-// fine — so bytes are the only thing worth checking before sending.
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-
 export default function ImmersivePage() {
   const [editMode, setEditMode] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -54,6 +49,7 @@ export default function ImmersivePage() {
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
   const [uploadError, setUploadError] = useState('');
+  const [uploadNotice, setUploadNotice] = useState('');
   const [saveStatus, setSaveStatus]   = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [pickerOpen, setPickerOpen]   = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
@@ -182,20 +178,23 @@ export default function ImmersivePage() {
     // where the 10 MB cap bites — and until now every failure went to the
     // console only, leaving the panel looking like the upload had worked.
     const failures: string[] = [];
+    const resized: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
       setUploadStatus(`${i + 1} / ${files.length}`);
 
-      if (files[i].size > MAX_UPLOAD_BYTES) {
-        failures.push(
-          `${files[i].name} is ${(files[i].size / 1024 / 1024).toFixed(1)} MB — the limit is 10 MB. ` +
-          `Save the panorama as JPEG (quality ~85) and it will fit.`,
-        );
-        continue;
+      // Cloudinary caps uploads at 10 MB. Panoramas routinely exceed it, so
+      // shrink to fit rather than refuse — see lib/image-fit.
+      if (files[i].size > MAX_UPLOAD_BYTES) setUploadStatus(`resizing ${i + 1} / ${files.length}`);
+      const fitted = await fitForUpload(files[i]);
+      if (fitted.error) { failures.push(fitted.error); continue; }
+      if (fitted.shrunk) {
+        resized.push(`${files[i].name} (${(fitted.originalBytes / 1024 / 1024).toFixed(1)} → ${(fitted.file.size / 1024 / 1024).toFixed(1)} MB)`);
       }
+      setUploadStatus(`${i + 1} / ${files.length}`);
 
       try {
-        const photo = await uploadOneFile(files[i]);
+        const photo = await uploadOneFile(fitted.file);
         newPhotos.push(photo);
       } catch (err) {
         logger.error(`Upload failed for ${files[i].name}`, err);
@@ -205,6 +204,7 @@ export default function ImmersivePage() {
 
     setUploading(false);
     setUploadStatus('');
+    setUploadNotice(resized.length ? `Resized to fit the 10 MB limit: ${resized.join(', ')}` : '');
     if (failures.length) setUploadError(failures.join(' · '));
 
     if (newPhotos.length > 0) {
@@ -227,7 +227,10 @@ export default function ImmersivePage() {
 
   // Called from HotspotDialog when admin uploads a new 360° scene inline
   const handleUploadScene = async (file: File) => {
-    const photo = await uploadOneFile(file);
+    // Same 10 MB ceiling applies to a scene added from inside a hotspot.
+    const fitted = await fitForUpload(file);
+    if (fitted.error) throw new Error(fitted.error);
+    const photo = await uploadOneFile(fitted.file);
     const idx = virtualTourPhotosRef.current.length;
     const scene = {
       id: photo.public_id,
@@ -554,6 +557,14 @@ export default function ImmersivePage() {
                           ? `Live for visitors — this attraction now shows under Available Tours with ${virtualTourPhotos.length} scene${virtualTourPhotos.length === 1 ? '' : 's'}.`
                           : 'Not published yet. Adding one 360° photo publishes the tour automatically — there is no separate switch to tick.'}
                       </div>
+
+                      {uploadNotice && (
+                        <div className="mb-3 rounded-lg px-3 py-2 text-[11px] leading-relaxed flex items-start gap-2"
+                          style={{ backgroundColor: 'rgba(96,165,250,0.12)', color: '#93C5FD' }}>
+                          <span className="flex-1 min-w-0 break-words">{uploadNotice}</span>
+                          <button onClick={() => setUploadNotice('')} className="shrink-0 opacity-70 hover:opacity-100">✕</button>
+                        </div>
+                      )}
 
                       {uploadError && (
                         <div className="mb-3 rounded-lg px-3 py-2 text-[11px] leading-relaxed flex items-start gap-2"
