@@ -643,6 +643,10 @@ export default function ImmersiveViewer({
   const [hotspots, setHotspots] = useState<Hotspot[]>(initialHotspots);
   const [pending, setPending] = useState<PendingHotspot | null>(null);
   const [repositioning, setRepositioning] = useState<string | null>(null);
+  // Editor mode used to place a hotspot on *every* click of the panorama, so
+  // you could not look around without littering it. Placement is now an
+  // explicit tool you arm from the toolbar, and it disarms after one use.
+  const [armed, setArmed] = useState(false);
   const [activeInfo, setActiveInfo] = useState<Hotspot | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -712,6 +716,9 @@ export default function ImmersiveViewer({
     }
     if (pending) return;
     setPending({ pitch, yaw });
+    // One click, one hotspot: placing disarms the tool so the next drag is
+    // just looking around again.
+    setArmed(false);
   }, [editMode, repositioning, pending, autoSave]);
 
   const resizeHotspot = useCallback((id: string, delta: number) => {
@@ -847,6 +854,21 @@ export default function ImmersiveViewer({
           )}
         </AnimatePresence>
 
+        {/* Armed hint — says what the next click will do. */}
+        <AnimatePresence>
+          {editMode && armed && !pending && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+              className="absolute left-1/2 -translate-x-1/2 px-4 py-2 rounded-full text-xs font-bold text-white pointer-events-none"
+              style={{
+                top: 64, zIndex: 20, backgroundColor: 'rgba(167,139,250,0.92)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.5)', letterSpacing: '0.02em',
+              }}>
+              Click on the panorama to place the hotspot
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Hotspot dialog */}
         <AnimatePresence>
           {pending && (
@@ -871,7 +893,7 @@ export default function ImmersiveViewer({
             camera={{ fov: 80, position: [0, 0, 0.01] }}
             gl={{ antialias: true, preserveDrawingBuffer: true }}
             dpr={[1, 2]}
-            style={{ cursor: repositioning ? 'crosshair' : (editMode ? 'crosshair' : 'grab') }}
+            style={{ cursor: (repositioning || (editMode && armed)) ? 'crosshair' : 'grab' }}
             onCreated={({ gl }) => {
               gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
               gl.domElement.addEventListener('webglcontextlost', (e) => e.preventDefault(), false);
@@ -882,7 +904,7 @@ export default function ImmersiveViewer({
                 key={current.imageUrl}
                 url={current.imageUrl}
                 thumbUrl={current.thumbUrl}
-                editMode={(editMode && !pending) || !!repositioning}
+                editMode={(editMode && armed && !pending) || !!repositioning}
                 onPlace={onPlace}
                 onReady={onReady}
               />
@@ -948,6 +970,26 @@ export default function ImmersiveViewer({
             >
               {editMode && (
                 <>
+                  {/* Arm placement explicitly, rather than every click on the
+                      panorama creating a hotspot. */}
+                  <motion.button
+                    onClick={() => setArmed(v => !v)}
+                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    title={armed ? 'Cancel placing' : 'Add a hotspot to this scene'}
+                    className="px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-1.5 transition"
+                    style={{
+                      backgroundColor: armed ? '#a78bfa' : 'rgba(0,0,0,0.72)',
+                      color: armed ? '#0F1F3C' : 'white',
+                      border: `1px solid ${armed ? '#a78bfa' : 'rgba(255,255,255,0.25)'}`,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                      backdropFilter: 'blur(10px)',
+                    }}
+                  >
+                    {armed
+                      ? <><X className="w-4 h-4" /> Cancel</>
+                      : <><MapPin className="w-4 h-4" /> Add Hotspot</>}
+                  </motion.button>
+
                   <motion.button
                     onClick={handleSave}
                     disabled={saving}
