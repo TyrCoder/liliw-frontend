@@ -1073,14 +1073,29 @@ export default function ImmersiveViewer({
                       {scenes.map((scene, idx) => (
                         <motion.button key={scene.id} onClick={() => goToScene(idx)}
                           whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+                          title={scene.title}
                           className="shrink-0 relative rounded-xl overflow-hidden border-2 transition-all"
                           style={{
-                            width: 'clamp(52px, 14vw, 70px)', height: 'clamp(34px, 9vw, 46px)',
-                            borderColor: idx === sceneIndex ? (editMode ? '#FFB400' : '#1565C0') : 'rgba(255,255,255,0.2)',
-                            opacity: idx === sceneIndex ? 1 : 0.5,
+                            // 2:1, matching the equirectangular source, so the
+                            // thumbnail shows the whole scene instead of a
+                            // cropped sliver of it.
+                            width: 'clamp(112px, 26vw, 176px)', height: 'clamp(56px, 13vw, 88px)',
+                            borderColor: idx === sceneIndex ? (editMode ? '#FFB400' : '#1565C0') : 'rgba(255,255,255,0.3)',
+                            opacity: idx === sceneIndex ? 1 : 0.72,
                             boxShadow: idx === sceneIndex ? `0 0 12px ${editMode ? '#FFB400' : '#1565C0'}90` : 'none',
                           }}>
                           <img src={scene.thumbUrl || scene.imageUrl} alt={scene.title} className="w-full h-full object-cover" />
+                          {/* Which scene is which — the picture alone is not
+                              enough to tell two corners of the same room apart. */}
+                          <span
+                            className="absolute inset-x-0 bottom-0 px-1.5 py-1 text-white font-semibold text-left truncate"
+                            style={{
+                              fontSize: 'clamp(9px, 2.4vw, 11px)',
+                              background: 'linear-gradient(to top, rgba(0,0,0,0.88), rgba(0,0,0,0))',
+                              textShadow: '0 1px 2px rgba(0,0,0,0.9)',
+                            }}>
+                            {scene.title}
+                          </span>
                         </motion.button>
                       ))}
                     </div>
