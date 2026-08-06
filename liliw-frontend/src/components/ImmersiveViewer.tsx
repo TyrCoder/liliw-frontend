@@ -89,7 +89,21 @@ function PanoramaSphere({
       setTexture((prev) => { prev?.dispose(); return tex; });
     };
 
-    const loadFull = () => loader.load(url, apply);
+    // The full-resolution texture had no error handler, so if it failed —
+    // a dropped connection, or a panorama big enough to stall on mobile —
+    // the sphere silently kept the low-res placeholder and the tour just
+    // looked permanently blurry. Retry once before giving up.
+    const loadFull = (attempt = 0) => {
+      loader.load(
+        url,
+        apply,
+        undefined,
+        () => {
+          if (disposed.current) return;
+          if (attempt < 1) setTimeout(() => loadFull(attempt + 1), 1200);
+        },
+      );
+    };
 
     if (thumbUrl) {
       loader.load(

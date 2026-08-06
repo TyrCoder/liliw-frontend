@@ -66,19 +66,35 @@ export default function ImmersivePage() {
     }
   }, [isAdmin]);
 
-  useEffect(() => {
-    fetch('/api/content/attractions')
-      .then(r => r.json())
-      .then(json => {
-        const all: Attraction[] = json.data || [];
-        setAttractions(all);
-        const firstWithTour = all.find(a => a.attributes.has_virtual_tour);
-        if (firstWithTour) setSelectedAttractionId(firstWithTour.id);
-        else if (all.length > 0) setSelectedAttractionId(all[0].id);
-      })
-      .catch(err => logger.error('Error fetching attractions:', err))
-      .finally(() => setLoading(false));
+  // `fresh` bypasses the CDN copy. /api/content/attractions is served with
+  // s-maxage=120, which is right for visitors but wrong for an editor: saving
+  // a tour and reloading inside that window showed the old, empty version and
+  // read as the save having failed.
+  const loadAttractions = useCallback(async (fresh = false) => {
+    try {
+      const res = await fetch(
+        fresh ? `/api/content/attractions?fresh=${Date.now()}` : '/api/content/attractions',
+        fresh ? { cache: 'no-store' } : undefined,
+      );
+      const json = await res.json();
+      const all: Attraction[] = json.data || [];
+      setAttractions(all);
+      setSelectedAttractionId(prev => {
+        if (prev && all.some(a => a.id === prev)) return prev;
+        return all.find(a => a.attributes.has_virtual_tour)?.id ?? all[0]?.id ?? null;
+      });
+    } catch (err) {
+      logger.error('Error fetching attractions:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { loadAttractions(false); }, [loadAttractions]);
+
+  // Entering the editor re-reads past the cache, so what is on screen is what
+  // is actually stored.
+  useEffect(() => { if (editMode) loadAttractions(true); }, [editMode, loadAttractions]);
 
   const selectedAttraction = attractions.find((a) => a.id === selectedAttractionId);
 
@@ -157,10 +173,15 @@ export default function ImmersivePage() {
           photos,
         }),
       });
-      if (!res.ok) throw new Error('Failed to save');
+      if (!res.ok) {
+        const detail = await res.text();
+        throw new Error(`Save failed (${res.status}): ${detail.slice(0, 200)}`);
+      }
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch {
+    } catch (err) {
+      logger.error('Saving tour photos failed', err);
+      setUploadError(err instanceof Error ? err.message : 'Could not save the tour.');
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
@@ -225,6 +246,19 @@ export default function ImmersivePage() {
     return url.replace('/upload/', `/upload/${transforms}/`);
   };
 
+  // Full-resolution sphere texture. q_auto:best is visually indistinguishable
+  // from q_100 on a panorama but roughly halves the bytes, and f_auto adds
+  // AVIF/WebP on top — which raises quality in practice rather than lowering
+  // it, because a q_100 JPEG of an 8K panorama is tens of megabytes and on a
+  // phone frequently never finishes, leaving the blurred placeholder up.
+  // No w_ is set, so the sphere still gets every pixel that was uploaded.
+  const sceneUrls = (url: string) => ({
+    imageUrl: cloudinaryTransform(url, 'q_auto:best,f_auto'),
+    // The interim texture, shown for the moment before the full one lands. A
+    // 256px blur was unreadable; this is still small but recognisable.
+    thumbUrl: cloudinaryTransform(url, 'w_1200,q_50,f_auto'),
+  });
+
   // Called from HotspotDialog when admin uploads a new 360° scene inline
   const handleUploadScene = async (file: File) => {
     // Same 10 MB ceiling applies to a scene added from inside a hotspot.
@@ -235,8 +269,7 @@ export default function ImmersivePage() {
     const scene = {
       id: photo.public_id,
       title: photo.name || `Scene ${idx + 1}`,
-      imageUrl: cloudinaryTransform(photo.url, 'q_100,f_jpg'),
-      thumbUrl: cloudinaryTransform(photo.url, 'w_256,q_20,e_blur:400,f_auto'),
+      ...sceneUrls(photo.url),
     };
     return { scene, photo };
   };
@@ -250,8 +283,7 @@ export default function ImmersivePage() {
   const scenes = virtualTourPhotos.map((photo, idx) => ({
     id: photo.public_id || String(idx),
     title: photo.name || `Scene ${idx + 1}`,
-    imageUrl: cloudinaryTransform(photo.url, 'q_100,f_jpg'),
-    thumbUrl: cloudinaryTransform(photo.url, 'w_256,q_20,e_blur:400,f_auto'),
+    ...sceneUrls(photo.url),
   }));
 
   const saveHotspots = useCallback(async (hotspots: Hotspot[]) => {
