@@ -68,23 +68,35 @@ function isCurrent(pathname: string | null, href: string) {
 }
 
 function NavLink({
-  href, label, icon: Icon, active = false, onClick,
+  href, label, icon: Icon, active = false, variant = 'bar', onClick,
 }: {
-  href: string; label: string; icon?: LucideIcon; active?: boolean; onClick?: () => void;
+  href: string; label: string; icon?: LucideIcon; active?: boolean;
+  variant?: 'bar' | 'menu'; onClick?: () => void;
 }) {
+  // A centre-out underline suits a compact bar item; stretched across a
+  // full-width menu row it just reads as a stray rule, so the menu gets a
+  // background wash instead.
+  const inMenu = variant === 'menu';
   return (
     <Link href={href} onClick={onClick} data-active={active}
       aria-current={active ? 'page' : undefined}
-      className={`nav-underline flex items-center gap-1.5 px-3.5 py-2 font-medium rounded-full text-sm whitespace-nowrap transition-colors duration-[250ms] ${
-        active ? 'text-white' : 'hover:text-[#0F5FB5]'
-      }`}
+      className={`flex items-center gap-2 font-medium rounded-full text-sm whitespace-nowrap transition-colors duration-[250ms] ${
+        inMenu
+          ? `px-3.5 py-2.5 ${active ? '' : 'hover:bg-blue-50/70'}`
+          : 'nav-underline px-3 2xl:px-3.5 py-2'
+      } ${active ? 'text-white' : 'hover:text-[#0F5FB5]'}`}
       style={{
         color: active ? '#fff' : INK,
         fontFamily: BL,
         backgroundColor: active ? ROYAL : 'transparent',
         boxShadow: active ? '0 6px 16px -6px rgba(15,95,181,0.65)' : 'none',
       }}>
-      {Icon && <Icon className="w-3.5 h-3.5 shrink-0 hidden xl:block" strokeWidth={1.75} />}
+      {/* Across seven links an icon costs ~22px each, which is the difference
+          between fitting and not fitting in the bar at xl — so there they wait
+          for 2xl. The menu has vertical room, so it always shows them. */}
+      {Icon && (
+        <Icon className={`w-3.5 h-3.5 shrink-0 ${inMenu ? '' : 'hidden 2xl:block'}`} strokeWidth={1.75} />
+      )}
       {label}
     </Link>
   );
@@ -219,13 +231,15 @@ export default function Navbar() {
               'radial-gradient(90% 70% at 88% 90%, var(--festival-yellow) 0%, transparent 65%)',
           }} />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
-          <div className="flex justify-between items-center gap-5 sm:gap-6">
+        {/* The container widens past 2xl so the full nav, the tagline and the
+            username can all be shown at once — inside max-w-7xl they cannot. */}
+        <div className="relative z-10 max-w-7xl 2xl:max-w-[1460px] mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex justify-between items-center gap-3 sm:gap-4 xl:gap-5">
 
             {/* Logo */}
             <motion.div whileHover={{ scale: 1.03 }} className="shrink-0">
               <Link href="/" className="flex items-center gap-2.5 sm:gap-3">
-                <div className="relative w-10 sm:w-11 h-10 sm:h-11 rounded-2xl flex items-center justify-center font-bold text-base sm:text-lg overflow-hidden"
+                <div className="relative w-9 sm:w-11 h-9 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold text-base sm:text-lg overflow-hidden shrink-0"
                   style={{
                     backgroundColor: ROYAL,
                     color: 'var(--festival-yellow)',
@@ -236,17 +250,22 @@ export default function Navbar() {
                   <span aria-hidden className="liliw-tread absolute inset-0" />
                   <span className="relative">L</span>
                 </div>
-                <div className="hidden sm:block">
+                <div className="hidden sm:block min-w-0">
                   <h1 className="text-lg sm:text-xl font-bold leading-none tracking-[0.14em]"
                     style={{ fontFamily: HL, color: ROYAL }}>LILIW</h1>
-                  <p className="text-[10.5px] leading-none mt-1 font-medium tracking-wide"
+                  {/* Hidden only in the xl band, where the full nav appears but
+                      the container has not widened yet and every pixel counts. */}
+                  <p className="text-[10.5px] leading-none mt-1 font-medium tracking-wide whitespace-nowrap xl:hidden 2xl:block"
                     style={{ color: '#64748B', fontFamily: BL }}>Home of the Tsinelas Festival</p>
                 </div>
               </Link>
             </motion.div>
 
-            {/* Desktop nav */}
-            <div className="hidden lg:flex items-center gap-1 xl:gap-2 flex-1 justify-center">
+            {/* Desktop nav — seven links plus the action cluster genuinely do
+                not fit before 1280px, so below xl it all moves into the menu.
+                overflow-x-auto is the last resort: at an unusual zoom or font
+                size the row scrolls rather than overflowing the bar. */}
+            <div className="hidden xl:flex items-center gap-0.5 2xl:gap-1.5 flex-1 justify-center min-w-0 overflow-x-auto scrollbar-hide">
               <NavLink href="/about" label="About Liliw" icon={Info} active={isCurrent(pathname, '/about')} />
 
               {/* Explore dropdown */}
@@ -254,7 +273,7 @@ export default function Navbar() {
                 <button onClick={() => setExploreOpen(p => !p)}
                   data-active={exploreActive}
                   aria-current={exploreActive ? 'page' : undefined}
-                  className={`nav-underline flex items-center gap-1.5 px-3.5 py-2 font-medium rounded-full text-sm whitespace-nowrap transition-colors duration-[250ms] ${
+                  className={`nav-underline flex items-center gap-1.5 px-3 2xl:px-3.5 py-2 font-medium rounded-full text-sm whitespace-nowrap transition-colors duration-[250ms] ${
                     exploreActive ? 'text-white' : 'hover:text-[#0F5FB5]'
                   }`}
                   style={{
@@ -263,7 +282,7 @@ export default function Navbar() {
                     backgroundColor: exploreActive ? ROYAL : exploreOpen ? 'rgba(15,95,181,0.08)' : 'transparent',
                     boxShadow: exploreActive ? '0 6px 16px -6px rgba(15,95,181,0.65)' : 'none',
                   }}>
-                  <Compass className="w-3.5 h-3.5 shrink-0 hidden xl:block" strokeWidth={1.75} />
+                  <Compass className="w-3.5 h-3.5 shrink-0 hidden 2xl:block" strokeWidth={1.75} />
                   Explore
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${exploreOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -308,41 +327,45 @@ export default function Navbar() {
             </div>
 
             {/* Right actions */}
-            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 2xl:gap-3 shrink-0">
               {/* Search — shaped like a field, not a button, so it reads as
-                  somewhere to type rather than a third call to action. */}
+                  somewhere to type rather than a third call to action. The
+                  label only fits once the container widens at 2xl; below that
+                  it collapses to the icon, and below sm it lives in the menu. */}
               <button onClick={() => setSearchOpen(true)}
-                className="hidden sm:flex items-center gap-2 pl-3.5 pr-4 py-2 rounded-full text-sm font-medium transition-colors duration-[250ms] border hover:border-[#0F5FB5]/40 hover:bg-white"
+                className="hidden sm:flex items-center gap-2 px-3 2xl:pl-3.5 2xl:pr-4 py-2 rounded-full text-sm font-medium transition-colors duration-[250ms] border hover:border-[#0F5FB5]/40 hover:bg-white"
                 style={{ color: '#64748B', fontFamily: BL, borderColor: '#E2E8F0', backgroundColor: 'rgba(248,250,252,0.9)' }}
                 aria-label="Search Liliw">
-                <Search className="w-4 h-4" strokeWidth={1.9} />
-                <span className="hidden md:inline text-xs">Discover Liliw...</span>
+                <Search className="w-4 h-4 shrink-0" strokeWidth={1.9} />
+                <span className="hidden 2xl:inline text-xs">Discover Liliw...</span>
               </button>
 
-              {/* Map — the primary pill */}
+              {/* Map — the primary pill. Collapses to a round icon button on
+                  phones, where the label would push the row over the edge. */}
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-                <Link href="/map"
-                  className="px-4 sm:px-5 py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-shadow inline-flex items-center gap-1.5 text-white"
+                <Link href="/map" aria-label="Map"
+                  className="w-9 h-9 sm:w-auto sm:h-auto sm:px-4 2xl:px-5 sm:py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-shadow inline-flex items-center justify-center gap-1.5 text-white"
                   style={{
                     backgroundColor: ROYAL, fontFamily: BL,
                     boxShadow: '0 8px 20px -8px rgba(15,95,181,0.8)',
                   }}>
-                  <MapPin className="w-3.5 h-3.5" strokeWidth={2} />
-                  Map
+                  <MapPin className="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0" strokeWidth={2} />
+                  <span className="hidden sm:inline">Map</span>
                 </Link>
               </motion.div>
 
               {/* 3D Tour — the secondary pill, outlined so the pair reads as
-                  primary and secondary rather than two competing actions. */}
-              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                  primary and secondary rather than two competing actions.
+                  Hidden on phones; it is in the menu instead. */}
+              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} className="hidden sm:block">
                 <Link href="/immersive"
-                  className="px-3.5 sm:px-5 py-2.5 rounded-full font-semibold text-xs sm:text-sm border transition-colors duration-[250ms] inline-flex items-center gap-1.5 hover:bg-blue-50"
+                  className="px-3.5 2xl:px-5 py-2.5 rounded-full font-semibold text-xs sm:text-sm border transition-colors duration-[250ms] inline-flex items-center gap-1.5 hover:bg-blue-50"
                   style={{
                     borderColor: 'rgba(15,95,181,0.35)', color: ROYAL, fontFamily: BL,
                     backgroundColor: 'rgba(255,255,255,0.75)',
                     boxShadow: '0 4px 14px -8px rgba(15,23,42,0.35)',
                   }}>
-                  <Sparkles className="w-3.5 h-3.5" strokeWidth={2} />
+                  <Sparkles className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
                   3D Tour
                 </Link>
               </motion.div>
@@ -351,7 +374,7 @@ export default function Navbar() {
               {user && (
                 <div className="relative">
                   <button onClick={() => notifOpen ? setNotifOpen(false) : openNotif()}
-                    className="relative flex items-center justify-center w-10 h-10 rounded-full hover:bg-blue-50 transition-colors duration-[250ms]"
+                    className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full hover:bg-blue-50 transition-colors duration-[250ms]"
                     aria-label="Notifications">
                     <Bell className="w-5 h-5" strokeWidth={1.9} style={{ color: INK }} />
                     {newCount > 0 && (
@@ -370,7 +393,7 @@ export default function Navbar() {
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.96, y: -6 }}
                           transition={{ duration: 0.12 }}
-                          className="absolute right-0 top-full mt-2 w-80 rounded-2xl overflow-hidden z-20"
+                          className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-2xl overflow-hidden z-20"
                           style={dropdownStyle}>
                           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                             <p className="text-sm font-bold text-gray-900" style={{ fontFamily: HL }}>
@@ -427,17 +450,20 @@ export default function Navbar() {
               {user ? (
                 <div className="relative">
                   <button onClick={() => setUserMenuOpen(p => !p)}
-                    className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full hover:bg-blue-50 transition-colors duration-[250ms]">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                    aria-label="Account menu"
+                    className="flex items-center gap-2 p-1 2xl:pl-1.5 2xl:pr-3 2xl:py-1.5 rounded-full hover:bg-blue-50 transition-colors duration-[250ms]">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
                       style={{ backgroundColor: ROYAL, fontFamily: HL, boxShadow: '0 4px 12px -4px rgba(15,95,181,0.7)' }}>
                       {user.username.charAt(0).toUpperCase()}
                     </div>
-                    <span className="hidden sm:inline text-sm font-medium max-w-24 truncate"
+                    {/* Name and role badge only once the container widens — in
+                        the xl band that space belongs to the nav links. */}
+                    <span className="hidden 2xl:inline text-sm font-medium max-w-24 truncate"
                       style={{ fontFamily: BL, color: INK }}>
                       {user.username}
                     </span>
                     {isStaff && (
-                      <span className="hidden sm:inline text-xs font-bold px-1.5 py-0.5 rounded-full"
+                      <span className="hidden 2xl:inline text-xs font-bold px-1.5 py-0.5 rounded-full"
                         style={{
                           fontSize: '10px', fontFamily: HL,
                           backgroundColor: isAdmin ? '#DBEAFE' : isChatoOfficer ? '#EDE9FE' : '#D1FAE5',
@@ -525,16 +551,18 @@ export default function Navbar() {
               ) : (
                 <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
                   onClick={() => setAuthModal('login')}
-                  className="flex items-center gap-1.5 px-3.5 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-colors duration-[250ms] border hover:text-[#0F5FB5] hover:bg-blue-50"
-                  style={{ color: INK, fontFamily: BL, borderColor: '#E2E8F0' }}>
-                  <User className="w-3.5 h-3.5" strokeWidth={2} />
+                  className="flex items-center justify-center gap-1.5 w-9 h-9 sm:w-auto sm:h-auto sm:px-4 2xl:px-5 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-colors duration-[250ms] border hover:text-[#0F5FB5] hover:bg-blue-50"
+                  style={{ color: INK, fontFamily: BL, borderColor: '#E2E8F0' }}
+                  aria-label="Log in">
+                  <User className="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0" strokeWidth={2} />
                   <span className="hidden sm:inline">Login</span>
                 </motion.button>
               )}
 
-              {/* Mobile toggle */}
+              {/* Menu toggle — shown right up to xl, since that is where the
+                  horizontal nav starts fitting. */}
               <motion.button whileTap={{ scale: 0.95 }} onClick={toggleMenu}
-                className="lg:hidden p-2 rounded-full transition-colors duration-[250ms] hover:bg-blue-50"
+                className="xl:hidden p-2 rounded-full transition-colors duration-[250ms] hover:bg-blue-50"
                 style={{ color: INK }} aria-label="Toggle menu">
                 {isOpen ? <X size={22} /> : <Menu size={22} />}
               </motion.button>
@@ -547,31 +575,33 @@ export default function Navbar() {
               <motion.div
                 initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }}
-                className="lg:hidden mt-4 pt-4 border-t border-gray-100">
-                <div className="flex flex-col gap-1">
-                  <NavLink href="/about" label="About Liliw" icon={Info}
+                className="xl:hidden mt-4 pt-4 border-t border-gray-100">
+                {/* Capped so a long menu — staff links, business dashboard —
+                    scrolls on a short screen instead of running off it. */}
+                <div className="flex flex-col gap-1 max-h-[calc(100vh-9rem)] overflow-y-auto overscroll-contain pb-1">
+                  <NavLink href="/about" label="About Liliw" icon={Info} variant="menu"
                     active={isCurrent(pathname, '/about')} onClick={closeMenu} />
                   <div className="pl-3 border-l-2 space-y-0.5 my-1" style={{ borderColor: ROYAL }}>
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-3 py-1.5"
                       style={{ fontFamily: HL }}>Explore</p>
                     {exploreLinks.map(link => (
-                      <NavLink key={link.href} href={link.href} label={link.label}
+                      <NavLink key={link.href} href={link.href} label={link.label} variant="menu"
                         active={isCurrent(pathname, link.href)} onClick={closeMenu} />
                     ))}
                   </div>
                   {navLinks.slice(1).map((link) => (
-                    <NavLink key={link.href} href={link.href} label={link.label} icon={link.icon}
+                    <NavLink key={link.href} href={link.href} label={link.label} icon={link.icon} variant="menu"
                       active={isCurrent(pathname, link.href)} onClick={closeMenu} />
                   ))}
                   {user && (
                     <>
                       <NavAction label="My Profile"        onClick={() => { closeMenu(); openPassport(0); }} />
                       <NavAction label="Saved Itineraries" onClick={() => { closeMenu(); openPassport(PASSPORT_TRIPS_PAGE); }} />
-                      <NavLink href="/rewards" label="Rewards" onClick={closeMenu} />
+                      <NavLink href="/rewards" label="Rewards" icon={Trophy} variant="menu" active={isCurrent(pathname, "/rewards")} onClick={closeMenu} />
                     </>
                   )}
-                  {isStaff && <NavLink href="/admin" label={isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'Officer Dashboard' : 'Editor Dashboard'} onClick={closeMenu} />}
-                  {isLocal && isLbo  && <NavLink href="/lbo" label="Business Dashboard" onClick={closeMenu} />}
+                  {isStaff && <NavLink href="/admin" variant="menu" icon={LayoutDashboard} active={isCurrent(pathname, "/admin")} label={isAdmin ? "Admin Dashboard" : isChatoOfficer ? "Officer Dashboard" : "Editor Dashboard"} onClick={closeMenu} />}
+                  {isLocal && isLbo  && <NavLink href="/lbo" label="Business Dashboard" icon={Building2} variant="menu" active={isCurrent(pathname, "/lbo")} onClick={closeMenu} />}
 
                   <button onClick={() => { setSearchOpen(true); closeMenu(); }}
                     className="flex items-center gap-2 px-4 py-3 rounded-full text-sm font-medium transition border w-full hover:bg-blue-50 hover:text-[#0F5FB5]"
