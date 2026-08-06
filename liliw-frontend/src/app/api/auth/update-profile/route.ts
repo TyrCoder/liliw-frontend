@@ -15,8 +15,23 @@ export async function PUT(req: NextRequest) {
 
   const { username, full_name, user_type, avatar } = await req.json();
 
+  // Every write below used to discard its error and the route returned
+  // success regardless, so a rejected write — a duplicate username, a missing
+  // column, a policy refusal — showed "Profile updated successfully!" over a
+  // profile that had not changed. Nothing here reports success it did not get.
   if (username?.trim()) {
-    await supabaseServer.from('profiles').update({ username: username.trim() }).eq('id', user.id);
+    const { error } = await supabaseServer
+      .from('profiles')
+      .update({ username: username.trim() })
+      .eq('id', user.id);
+
+    if (error) {
+      const taken = error.code === '23505';
+      return NextResponse.json(
+        { error: taken ? 'That username is already taken.' : `Could not save your username: ${error.message}` },
+        { status: taken ? 409 : 500 },
+      );
+    }
   }
 
   // user_type drives the passport's nationality line and the visitor-mix
@@ -47,8 +62,25 @@ export async function PUT(req: NextRequest) {
       patch.avatar_updated_at = new Date().toISOString();
     }
 
-    await supabaseServer.from('tourist_profiles').upsert(patch, { onConflict: 'email' });
+    const { error } = await supabaseServer
+      .from('tourist_profiles')
+      .upsert(patch, { onConflict: 'email' });
+
+    if (error) {
+      return NextResponse.json(
+        { error: `Could not save your profile: ${error.message}` },
+        { status: 500 },
+      );
+    }
   }
 
-  return NextResponse.json({ success: true });
+  // Returned so the form can show what is actually stored rather than what it
+  // hoped it sent — the difference between the two is the whole bug above.
+  const { data: saved } = await supabaseServer
+    .from('tourist_profiles')
+    .select('user_type, full_name, avatar')
+    .eq('email', user.email!.toLowerCase())
+    .maybeSingle();
+
+  return NextResponse.json({ success: true, profile: saved ?? null });
 }

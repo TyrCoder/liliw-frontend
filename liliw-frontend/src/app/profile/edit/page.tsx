@@ -158,8 +158,15 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ avatar: id }),
       });
-      if (!res.ok) setAvatarError((await res.json()).error ?? 'Could not save that picture.');
-      else setAvatarNote('Profile picture updated.');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAvatarError(data.error ?? 'Could not save that picture.');
+        setAvatar(prev => prev === id ? null : prev);   // undo the optimistic pick
+        return;
+      }
+      // Trust the row the server read back, not the value we sent.
+      setAvatar(data.profile?.avatar ?? id);
+      setAvatarNote('Profile picture updated.');
       window.dispatchEvent(new Event('liliw-avatar-updated'));
     } catch {
       setAvatarError('Could not reach the server.');
@@ -220,7 +227,18 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Update failed.'); return; }
-      setSuccess('Profile updated successfully!');
+
+      // Show what was stored. If the server trimmed or rejected something, the
+      // form should say so rather than keep displaying the attempt.
+      if (data.profile) {
+        setFullName(data.profile.full_name ?? '');
+        setUserType(data.profile.user_type ?? '');
+      }
+      setSuccess(
+        username !== uname
+          ? 'Saved. Your new username appears everywhere once you sign in again.'
+          : 'Profile updated successfully!',
+      );
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
