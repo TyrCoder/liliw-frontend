@@ -43,7 +43,10 @@ export default function ArtFormsTab({ token, userEmail, isOfficer, isAdmin }: Pr
     async () => {
       if (!editing?.id) return;
       await fetch(`/api/cms/art-forms/${editing.id}`, { method: 'PUT', headers: h, body: JSON.stringify({ ...editing, media, created_by: userEmail }) });
-    }
+    },
+    // Never auto-save something live or awaiting review: the PUT resets status
+    // to draft, which would quietly pull it off the public site.
+    editing?.status !== 'approved' && editing?.status !== 'pending',
   );
 
   const load = async (status?: string) => {

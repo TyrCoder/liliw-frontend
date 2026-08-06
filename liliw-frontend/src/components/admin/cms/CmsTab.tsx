@@ -114,6 +114,10 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
         method: 'PUT', headers: h, body: JSON.stringify(withMedia({ ...editing, created_by: userEmail })),
       });
     },
+    // Never auto-save something live or awaiting review: the PUT resets status
+    // to draft, which would quietly pull it off the public site.
+    (editing as { status?: string } | null)?.status !== 'approved'
+      && (editing as { status?: string } | null)?.status !== 'pending',
   );
 
   const load = async (status?: string) => {
@@ -121,8 +125,26 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
     const qs = status && status !== 'all' ? `?status=${status}` : '';
     const res = await fetch(`/api/cms/${slug}${qs}`, { headers: h }).catch(() => null);
     const d = res ? await res.json() : {};
+    if (res && !res.ok) setMsg({ ok: false, text: d.error || `Could not load (${res.status}).` });
     setEntries(d.data || []);
     setLoading(false);
+  };
+
+  /**
+   * Approve, submit, reject and delete were fire-and-forget: the response was
+   * dropped and the list reloaded regardless. A 403 (an editor pressing
+   * Approve) or a 409 (approving something not pending, deleting something
+   * under review) therefore looked exactly like a button that does nothing.
+   */
+  const act = async (url: string, init: RequestInit, failure: string) => {
+    const res = await fetch(url, init).catch(() => null);
+    if (!res) { setMsg({ ok: false, text: `${failure}: no response from the server.` }); return false; }
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setMsg({ ok: false, text: d.error || `${failure} (${res.status}).` });
+      return false;
+    }
+    return true;
   };
 
   // `load` is recreated every render; depending on it would refetch in a loop.
@@ -153,14 +175,34 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
     setSaving(false);
   };
 
-  const submit  = async (id: string) => { await fetch(`/api/cms/${slug}/${id}/submit`,  { method: 'POST', headers: h }); load(statusFilter); };
-  const approve = async (id: string) => { await fetch(`/api/cms/${slug}/${id}/approve`, { method: 'POST', headers: h }); load(statusFilter); };
-  const reject  = (id: string) => { setRejectTarget(id); setRejectRemarks(''); };
+  const submit = async (id: string) => {
+    setMsg(null);
+    if (await act(`/api/cms/${slug}/${id}/submit`, { method: 'POST', headers: h }, 'Could not submit for review')) {
+      setMsg({ ok: true, text: 'Sent for review.' });
+    }
+    load(statusFilter);
+  };
+
+  const approve = async (id: string) => {
+    setMsg(null);
+    if (await act(`/api/cms/${slug}/${id}/approve`, { method: 'POST', headers: h }, 'Could not approve')) {
+      setMsg({ ok: true, text: 'Published — it is now live on the site.' });
+    }
+    load(statusFilter);
+  };
+
+  const reject = (id: string) => { setRejectTarget(id); setRejectRemarks(''); };
 
   const confirmReject = async () => {
     if (!rejectTarget || !rejectRemarks.trim()) return;
     setRejecting(true);
-    await fetch(`/api/cms/${slug}/${rejectTarget}/reject`, { method: 'POST', headers: h, body: JSON.stringify({ remarks: rejectRemarks }) });
+    setMsg(null);
+    const ok = await act(
+      `/api/cms/${slug}/${rejectTarget}/reject`,
+      { method: 'POST', headers: h, body: JSON.stringify({ remarks: rejectRemarks }) },
+      'Could not reject',
+    );
+    if (ok) setMsg({ ok: true, text: 'Sent back to the author.' });
     setRejecting(false); setRejectTarget(null); setRejectRemarks('');
     load(statusFilter);
   };
@@ -168,7 +210,10 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
   const del = async (id: string) => {
     if (!confirm(`Delete this ${config.entityLabel.toLowerCase()}?`)) return;
     setDeleting(id);
-    await fetch(`/api/cms/${slug}/${id}`, { method: 'DELETE', headers: h });
+    setMsg(null);
+    if (await act(`/api/cms/${slug}/${id}`, { method: 'DELETE', headers: h }, 'Could not delete')) {
+      setMsg({ ok: true, text: `${config.entityLabel} deleted.` });
+    }
     setDeleting(null);
     load(statusFilter);
   };
@@ -242,6 +287,20 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
           )}
         </div>
       </div>
+
+      {/* Result of a list action. The only place `msg` used to render was the
+          edit form footer, so anything reported by approve, submit, reject or
+          delete — which all run from this list, with no form open — was set
+          and then never shown. */}
+      {editing === null && msg && (
+        <div className={`flex items-start gap-2 px-4 py-3 rounded-xl border text-sm font-medium ${
+          msg.ok ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-600'
+        }`}>
+          {msg.ok ? <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
+          <span className="flex-1 min-w-0">{msg.text}</span>
+          <button onClick={() => setMsg(null)} className="shrink-0 opacity-60 hover:opacity-100">✕</button>
+        </div>
+      )}
 
       {/* List */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
