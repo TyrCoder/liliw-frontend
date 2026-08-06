@@ -738,7 +738,15 @@ export default function Passport({ initialPage = 0, onClose }: { initialPage?: n
         initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.22, 0.7, 0.25, 1] }}
         className="relative"
-        style={{ width: 'min(94vw, 620px)', height: 'min(84vh, 520px)', perspective: 1800 }}>
+        style={{
+          width: 'min(94vw, 620px)', height: 'min(84vh, 520px)',
+          // A short perspective magnified the turning leaf as its free edge
+          // swung toward the viewer, so the page grew visibly larger than the
+          // booklet holding it. Longer, with the vanishing point over the
+          // spine, keeps the leaf inside its covers.
+          perspective: 3000,
+          perspectiveOrigin: '20px 50%',
+        }}>
 
         {/* Booklet body / back cover */}
         <div className="absolute inset-0 rounded-[14px]"
@@ -788,31 +796,50 @@ export default function Passport({ initialPage = 0, onClose }: { initialPage?: n
             </div>
           </div>
 
-          {/* The turning sheet. Deliberately blank apart from its title — a full
-              copy of the page rotating in 3D is what made the turn stutter, and
-              at speed the detail is not readable anyway. */}
+          {/* The turning sheet. Deliberately blank apart from a watermark — a
+              full copy of the page rotating in 3D is what made the turn
+              stutter, and at speed the detail is not readable anyway. */}
           <AnimatePresence>
             {turn && !reduceMotion && (
               <motion.div
                 key={`${turn.leaf}-${turn.dir}`}
                 aria-hidden
-                className="absolute inset-0 rounded-r-md pointer-events-none flex items-center justify-center"
+                className="absolute inset-0 rounded-r-md pointer-events-none flex items-center justify-center overflow-hidden"
                 style={{
-                  ...PAPER, transformOrigin: 'left center', backfaceVisibility: 'hidden',
-                  willChange: 'transform', boxShadow: '0 8px 24px rgba(0,0,0,0.28)',
+                  ...PAPER,
+                  transformOrigin: 'left center',
+                  backfaceVisibility: 'hidden',
+                  willChange: 'transform',
+                  // Shadow thrown back toward the spine, so the leaf reads as
+                  // lifting off the stack rather than floating over it.
+                  boxShadow: '-10px 14px 30px -10px rgba(8,20,45,0.5)',
                 }}
                 initial={{ rotateY: turn.dir > 0 ? 0 : -178 }}
                 animate={{ rotateY: turn.dir > 0 ? -178 : 0 }}
                 transition={{ duration: TURN_MS / 1000, ease: [0.36, 0.02, 0.2, 1] }}
                 onAnimationComplete={() => setTurn(null)}>
-                <div className="text-center px-6">
-                  <Seal size={70} gold={false} />
-                  <p className="mt-3 text-[15px] font-bold" style={{ color: 'rgba(11,61,145,0.35)', fontFamily: DL }}>
+
+                <div className="text-center px-6" style={{ opacity: 0.5 }}>
+                  <Seal size={54} gold={false} />
+                  <p className="mt-2 text-[11px] font-semibold tracking-wide"
+                    style={{ color: 'rgba(11,61,145,0.4)', fontFamily: DL }}>
                     {PAGE_TITLES[turn.leaf]}
                   </p>
                 </div>
-                <div className="absolute inset-0 rounded-r-md"
-                  style={{ background: 'linear-gradient(90deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.04) 50%, rgba(255,255,255,0.14) 100%)' }} />
+
+                {/* Paper shading: a firm crease at the hinge easing into light
+                    across the leaf, then a bright rim on the free edge where it
+                    catches the light as it lifts. */}
+                <div className="absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(90deg,' +
+                      ' rgba(8,20,45,0.30) 0%, rgba(8,20,45,0.13) 6%, rgba(8,20,45,0.03) 22%,' +
+                      ' rgba(255,255,255,0) 60%, rgba(255,255,255,0.22) 97%, rgba(255,255,255,0.5) 100%)',
+                  }} />
+                {/* The bound edge itself */}
+                <div className="absolute inset-y-0 left-0 w-[3px]"
+                  style={{ background: 'linear-gradient(90deg, rgba(8,20,45,0.4), rgba(8,20,45,0))' }} />
               </motion.div>
             )}
           </AnimatePresence>
