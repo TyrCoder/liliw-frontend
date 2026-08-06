@@ -91,11 +91,11 @@ function NavLink({
         backgroundColor: active ? ROYAL : 'transparent',
         boxShadow: active ? '0 6px 16px -6px rgba(15,95,181,0.65)' : 'none',
       }}>
-      {/* Across seven links an icon costs ~22px each, which is the difference
-          between fitting and not fitting in the bar at xl — so there they wait
-          for 2xl. The menu has vertical room, so it always shows them. */}
+      {/* Across seven links an icon costs ~22px each — about 154px in total —
+          so in the bar they wait until there is genuinely room for them. The
+          menu has vertical room, so it always shows them. */}
       {Icon && (
-        <Icon className={`w-3.5 h-3.5 shrink-0 ${inMenu ? '' : 'hidden 2xl:block'}`} strokeWidth={1.75} />
+        <Icon className={`w-3.5 h-3.5 shrink-0 ${inMenu ? '' : 'hidden min-[1800px]:block'}`} strokeWidth={1.75} />
       )}
       {label}
     </Link>
@@ -231,9 +231,11 @@ export default function Navbar() {
               'radial-gradient(90% 70% at 88% 90%, var(--festival-yellow) 0%, transparent 65%)',
           }} />
 
-        {/* The container widens past 2xl so the full nav, the tagline and the
-            username can all be shown at once — inside max-w-7xl they cannot. */}
-        <div className="relative z-10 max-w-7xl 2xl:max-w-[1460px] mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+        {/* Site chrome, so it spans the viewport rather than sitting inside the
+            page's max-w-7xl content column — at 1920px that column left ~320px
+            of dead space at each end, stranding the logo and the actions in the
+            middle. Capped at 1800px so it stops stretching on ultrawide. */}
+        <div className="relative z-10 w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-14 py-3 sm:py-4">
           <div className="flex justify-between items-center gap-3 sm:gap-4 xl:gap-5">
 
             {/* Logo */}
@@ -263,9 +265,10 @@ export default function Navbar() {
 
             {/* Desktop nav — seven links plus the action cluster genuinely do
                 not fit before 1280px, so below xl it all moves into the menu.
-                overflow-x-auto is the last resort: at an unusual zoom or font
-                size the row scrolls rather than overflowing the bar. */}
-            <div className="hidden xl:flex items-center gap-0.5 2xl:gap-1.5 flex-1 justify-center min-w-0 overflow-x-auto scrollbar-hide">
+                No overflow-x here: a scroll container clips absolutely
+                positioned children, which silently swallowed the Explore
+                dropdown hanging below it. */}
+            <div className="hidden xl:flex items-center gap-0.5 2xl:gap-1.5 flex-1 justify-center">
               <NavLink href="/about" label="About Liliw" icon={Info} active={isCurrent(pathname, '/about')} />
 
               {/* Explore dropdown */}
@@ -282,7 +285,7 @@ export default function Navbar() {
                     backgroundColor: exploreActive ? ROYAL : exploreOpen ? 'rgba(15,95,181,0.08)' : 'transparent',
                     boxShadow: exploreActive ? '0 6px 16px -6px rgba(15,95,181,0.65)' : 'none',
                   }}>
-                  <Compass className="w-3.5 h-3.5 shrink-0 hidden 2xl:block" strokeWidth={1.75} />
+                  <Compass className="w-3.5 h-3.5 shrink-0 hidden min-[1800px]:block" strokeWidth={1.75} />
                   Explore
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${exploreOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -333,11 +336,11 @@ export default function Navbar() {
                   label only fits once the container widens at 2xl; below that
                   it collapses to the icon, and below sm it lives in the menu. */}
               <button onClick={() => setSearchOpen(true)}
-                className="hidden sm:flex items-center gap-2 px-3 2xl:pl-3.5 2xl:pr-4 py-2 rounded-full text-sm font-medium transition-colors duration-[250ms] border hover:border-[#0F5FB5]/40 hover:bg-white"
+                className="hidden sm:flex items-center gap-2 px-3 min-[1700px]:pl-3.5 min-[1700px]:pr-4 py-2 rounded-full text-sm font-medium transition-colors duration-[250ms] border hover:border-[#0F5FB5]/40 hover:bg-white"
                 style={{ color: '#64748B', fontFamily: BL, borderColor: '#E2E8F0', backgroundColor: 'rgba(248,250,252,0.9)' }}
                 aria-label="Search Liliw">
                 <Search className="w-4 h-4 shrink-0" strokeWidth={1.9} />
-                <span className="hidden 2xl:inline text-xs">Discover Liliw...</span>
+                <span className="hidden min-[1700px]:inline text-xs">Discover Liliw...</span>
               </button>
 
               {/* Map — the primary pill. Collapses to a round icon button on
