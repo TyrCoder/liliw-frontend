@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
+import { normaliseAvatar } from '@/lib/avatars';
 
 const USER_TYPES = ['liliw_local', 'laguna', 'provincial', 'international'];
 
@@ -12,7 +13,7 @@ export async function PUT(req: NextRequest) {
   const { data: { user } } = await supabaseServer.auth.getUser(token);
   if (!user) return NextResponse.json({ error: 'Could not fetch user' }, { status: 401 });
 
-  const { username, full_name, user_type } = await req.json();
+  const { username, full_name, user_type, avatar } = await req.json();
 
   if (username?.trim()) {
     await supabaseServer.from('profiles').update({ username: username.trim() }).eq('id', user.id);
@@ -25,10 +26,26 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid visitor type' }, { status: 400 });
   }
 
-  if (full_name !== undefined || user_type !== undefined) {
+  // An avatar is either one of the twelve built-in ids or a URL in our own
+  // Storage bucket. normaliseAvatar rejects anything else, so the column can
+  // never be turned into a hotlink to an arbitrary image on the internet.
+  let nextAvatar: string | null | undefined;
+  if (avatar !== undefined) {
+    const host = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).host;
+    nextAvatar = normaliseAvatar(avatar, host);
+    if (avatar && nextAvatar === null) {
+      return NextResponse.json({ error: 'That profile picture is not allowed' }, { status: 400 });
+    }
+  }
+
+  if (full_name !== undefined || user_type !== undefined || avatar !== undefined) {
     const patch: Record<string, string | null> = { email: user.email!.toLowerCase() };
     if (full_name !== undefined) patch.full_name = full_name?.trim() || null;
     if (user_type !== undefined) patch.user_type = user_type || null;
+    if (avatar !== undefined) {
+      patch.avatar = nextAvatar ?? null;
+      patch.avatar_updated_at = new Date().toISOString();
+    }
 
     await supabaseServer.from('tourist_profiles').upsert(patch, { onConflict: 'email' });
   }

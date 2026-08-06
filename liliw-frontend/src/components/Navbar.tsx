@@ -11,6 +11,7 @@ import AuthModal from '@/components/AuthModal';
 import SmartSearchModal from '@/components/SmartSearchModal';
 import { openPassport } from '@/components/PassportHost';
 import { PASSPORT_TRIPS_PAGE } from '@/components/Passport';
+import Avatar from '@/components/Avatar';
 
 type NotifItem = {
   id: string;
@@ -125,6 +126,7 @@ export default function Navbar() {
   const [notifOpen,    setNotifOpen]    = useState(false);
   const [notifItems,   setNotifItems]   = useState<NotifItem[]>([]);
   const [newCount,     setNewCount]     = useState(0);
+  const [avatar,       setAvatar]       = useState<string | null>(null);
   const { user, token, logout, isAdmin, isChatoOfficer, isChatoEditor, isStaff, isLocal, adminPanelRole } = useAuth();
   const pathname = usePathname();
 
@@ -144,6 +146,21 @@ export default function Navbar() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Refetched on the liliw-avatar-updated event so changing a picture in the
+  // edit form is reflected in the bar without a reload.
+  useEffect(() => {
+    if (!user || !token) { setAvatar(null); return; }
+    const load = () => {
+      fetch('/api/user/profile', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => setAvatar(d?.avatar ?? null))
+        .catch(() => {});
+    };
+    load();
+    window.addEventListener('liliw-avatar-updated', load);
+    return () => window.removeEventListener('liliw-avatar-updated', load);
+  }, [user, token]);
 
   useEffect(() => {
     if (!isLocal || !token) { setIsLbo(false); return; }
@@ -476,10 +493,7 @@ export default function Navbar() {
                   <button onClick={() => setUserMenuOpen(p => !p)}
                     aria-label="Account menu"
                     className="flex items-center gap-2 p-1 2xl:pl-1.5 2xl:pr-3 2xl:py-1.5 rounded-full hover:bg-blue-50 transition-colors duration-[250ms]">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                      style={{ backgroundColor: ROYAL, fontFamily: HL, boxShadow: '0 4px 12px -4px rgba(15,95,181,0.7)' }}>
-                      {user.username.charAt(0).toUpperCase()}
-                    </div>
+                    <Avatar avatar={avatar} name={user.username} size={32} />
                     {/* Name and role badge only once the container widens — in
                         the xl band that space belongs to the nav links. */}
                     <span className="hidden 2xl:inline text-sm font-medium max-w-24 truncate"

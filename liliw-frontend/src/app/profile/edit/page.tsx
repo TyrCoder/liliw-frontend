@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, User, Lock, Mail, Check, Loader2 } from 'lucide-react';
+import { ChevronLeft, User, Lock, Mail, Check, Loader2, Upload } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import Avatar from '@/components/Avatar';
+import { DEFAULT_AVATARS, spriteStyle, isCustomAvatar } from '@/lib/avatars';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
@@ -123,9 +125,17 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
   const [fullName, setFullName] = useState('');
   const [uname, setUname] = useState(username);
   const [userType, setUserType] = useState('');
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+
+  // Upload state is separate from the form's, because a picture is saved the
+  // moment it is chosen rather than waiting for Save Changes.
+  const [uploading, setUploading] = useState(false);
+  const [avatarNote, setAvatarNote] = useState('');
+  const [avatarError, setAvatarError] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -134,9 +144,69 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
       .then(d => {
         if (d?.full_name) setFullName(d.full_name);
         if (d?.user_type) setUserType(d.user_type);
+        if (d?.avatar) setAvatar(d.avatar);
       })
       .catch(() => {});
   }, [token]);
+
+  const pickDefault = async (id: string) => {
+    setAvatar(id);
+    setAvatarError(''); setAvatarNote('');
+    try {
+      const res = await fetch('/api/auth/update-profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ avatar: id }),
+      });
+      if (!res.ok) setAvatarError((await res.json()).error ?? 'Could not save that picture.');
+      else setAvatarNote('Profile picture updated.');
+      window.dispatchEvent(new Event('liliw-avatar-updated'));
+    } catch {
+      setAvatarError('Could not reach the server.');
+    }
+  };
+
+  const uploadCustom = async (file: File) => {
+    setAvatarError(''); setAvatarNote('');
+    setUploading(true);
+    try {
+      // Screened here, before the bytes leave the device — see lib/avatar-screen.
+      setAvatarNote('Checking the image…');
+      const { screenAvatar } = await import('@/lib/avatar-screen');
+      const verdict = await screenAvatar(file);
+      if (!verdict.ok) { setAvatarNote(''); setAvatarError(verdict.reason); return; }
+
+      setAvatarNote('Uploading…');
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch('/api/user/avatar', {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` }, body,
+      });
+      const data = await res.json();
+      if (!res.ok) { setAvatarNote(''); setAvatarError(data.error ?? 'Upload failed.'); return; }
+      setAvatar(data.url);
+      setAvatarNote('Profile picture updated.');
+      window.dispatchEvent(new Event('liliw-avatar-updated'));
+    } catch {
+      setAvatarNote('');
+      setAvatarError('Something went wrong while uploading.');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const removeAvatar = async () => {
+    setAvatarError(''); setAvatarNote('');
+    try {
+      await fetch('/api/user/avatar', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      setAvatar(null);
+      setAvatarNote('Back to your initial.');
+      window.dispatchEvent(new Event('liliw-avatar-updated'));
+    } catch {
+      setAvatarError('Could not remove the picture.');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +232,75 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
     <form onSubmit={handleSubmit} className="space-y-4">
       {success && <Banner type="success" msg={success} />}
       {error   && <Banner type="error"   msg={error}   />}
+
+      {/* ── Profile picture ── */}
+      <div>
+        <Label>Profile Picture</Label>
+        <div className="rounded-xl border border-gray-200 p-4 bg-white">
+          <div className="flex items-center gap-4 mb-4">
+            <Avatar avatar={avatar} name={fullName || uname} size={64} />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gray-800" style={{ fontFamily: BL }}>
+                {isCustomAvatar(avatar) ? 'Your own photo'
+                  : avatar ? 'Liliw avatar'
+                  : 'Using your initial'}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: BL }}>
+                Pick one below, or upload your own.
+              </p>
+            </div>
+            {avatar && (
+              <button type="button" onClick={removeAvatar}
+                className="ml-auto shrink-0 text-xs font-semibold text-gray-400 hover:text-red-500 transition">
+                Remove
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-6 gap-2">
+            {DEFAULT_AVATARS.map(a => {
+              const on = avatar === a.id;
+              return (
+                <button key={a.id} type="button" onClick={() => pickDefault(a.id)}
+                  title={a.label} aria-label={a.label} aria-pressed={on}
+                  className="relative rounded-full transition hover:scale-[1.06]"
+                  style={{
+                    aspectRatio: '1 / 1',
+                    ...spriteStyle(a.id),
+                    backgroundColor: '#EAF1FA',
+                    boxShadow: on ? '0 0 0 3px #0F5FB5' : '0 0 0 1px rgba(15,23,42,0.1)',
+                  }}>
+                  {on && (
+                    <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: '#0F5FB5' }}>
+                      <Check className="w-2.5 h-2.5 text-white" strokeWidth={3.5} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) uploadCustom(f); }} />
+
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+            className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border border-dashed transition hover:bg-blue-50 disabled:opacity-60"
+            style={{ borderColor: '#93C5FD', color: '#0F5FB5', fontFamily: BL }}>
+            {uploading
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Working…</>
+              : <><Upload className="w-4 h-4" /> Upload your own photo</>}
+          </button>
+
+          <p className="text-[11px] text-gray-400 mt-2 leading-relaxed" style={{ fontFamily: BL }}>
+            JPEG, PNG or WebP, up to 2 MB. Uploads are checked on your device before they are sent,
+            and staff can remove anything unsuitable.
+          </p>
+
+          {avatarNote  && <p className="text-xs text-blue-600 font-medium mt-2">{avatarNote}</p>}
+          {avatarError && <p className="text-xs text-red-500 font-medium mt-2">{avatarError}</p>}
+        </div>
+      </div>
 
       <div>
         <Label>Email Address</Label>
