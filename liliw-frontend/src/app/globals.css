@@ -10,6 +10,16 @@
   --ink: #1A1A2E;
   --background: #F9F6F0;
   --foreground: #1A1A2E;
+
+  /* Tsinelas Festival palette. Royal blue carries meaning — active state,
+     primary actions, the wordmark. The other four are decorative only: they
+     appear in the woven border and the edge ribbons, never behind text, which
+     is what keeps the festival identity from tipping into looking childish. */
+  --royal-blue:       #0F5FB5;
+  --festival-yellow:  #F7C948;
+  --festival-orange:  #F7941D;
+  --festival-magenta: #D43D8D;
+  --festival-cyan:    #2EC4D6;
 }
 
 @theme inline {
@@ -56,6 +66,56 @@ body {
   background: var(--fiesta-gold);
   margin-top: 10px;
   border-radius: 2px;
+}
+
+/* ── Navbar: woven border, tread mark, hover underline ──────────────────────
+   The strip under the navbar stands in for the tread of a Liliw slipper sole
+   and the diagonal over-under of banig weaving. Done as a repeating gradient
+   rather than an SVG: no extra request, no asset to keep in sync, and it tiles
+   at any width. Kept to 3px so it reads as a hairline of colour, not a stripe. */
+.liliw-weave {
+  background-image: repeating-linear-gradient(
+    115deg,
+    var(--royal-blue)       0px,  var(--royal-blue)       9px,
+    var(--festival-cyan)    9px,  var(--festival-cyan)    15px,
+    var(--festival-yellow)  15px, var(--festival-yellow)  21px,
+    var(--festival-orange)  21px, var(--festival-orange)  27px,
+    var(--festival-magenta) 27px, var(--festival-magenta) 33px
+  );
+}
+
+/* The same weave at low opacity, used as the logo mark's sole texture. */
+.liliw-tread {
+  background-image: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.22) 0px, rgba(255, 255, 255, 0.22) 2px,
+    transparent 2px, transparent 6px
+  );
+}
+
+/* Hover underline that grows from the centre out. Pure CSS rather than a
+   Framer layoutId, because every link animates independently on its own hover
+   and a shared layout element would slide between them instead. */
+.nav-underline { position: relative; }
+.nav-underline::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 5px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--royal-blue), var(--festival-cyan));
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.nav-underline:hover::after { transform: scaleX(1); }
+/* The active page already has a filled pill; an underline on top is noise. */
+.nav-underline[data-active='true']::after { content: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-underline::after { transition: none; }
 }
 
 /* ── Scrollbar hide ─────────────────────────── */
