@@ -85,6 +85,16 @@ function PanoramaSphere({
       tex.minFilter = THREE.LinearFilter;
       tex.magFilter = THREE.LinearFilter;
       tex.anisotropy = maxAnisotropy;
+      // The sphere is rendered with BackSide, so the camera sits inside it and
+      // sees the texture from behind — which mirrors it. Any writing in the
+      // panorama came out backwards. Flipping the texture on u corrects it.
+      //
+      // Done on the texture rather than by inverting the geometry (the usual
+      // recipe) because a negative mesh scale changes how the raycaster reads
+      // faces, and clicking the sphere is how hotspots get placed.
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.repeat.x = -1;
+      tex.offset.x = 1;
       tex.needsUpdate = true;
       setTexture((prev) => { prev?.dispose(); return tex; });
     };
