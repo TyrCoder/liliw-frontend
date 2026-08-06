@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const { data } = await supabaseServer
     .from('tourist_profiles')
-    .select('user_type, full_name, created_at')
+    .select('user_type, full_name, created_at, avatar')
     .eq('email', (me.email as string).toLowerCase())
     .single();
 
@@ -32,5 +32,6 @@ export async function GET(req: NextRequest) {
     user_type: data?.user_type ?? null,
     full_name: data?.full_name ?? null,
     member_since: memberSince,
+    avatar: data?.avatar ?? null,
   });
 }

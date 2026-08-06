@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, BookmarkCheck, Heart, Trash2, ChevronDown, M
 import BadgeSVG from '@/components/BadgeSVG';
 import { useAuth } from '@/context/AuthContext';
 import { useFavorites } from '@/context/FavoritesContext';
+import { isDefaultAvatar, spriteStyle } from '@/lib/avatars';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -246,7 +247,7 @@ export default function Passport({ initialPage = 0, onClose }: { initialPage?: n
   const [trips, setTrips]           = useState<SavedTrip[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [achievementsData, setAchievementsData] = useState<{ totalPoints: number; achievements: any[]; recentActivity: any[] } | null>(null);
-  const [profile, setProfile]       = useState<{ user_type: string | null; full_name: string | null; member_since: string | null } | null>(null);
+  const [profile, setProfile]       = useState<{ user_type: string | null; full_name: string | null; member_since: string | null; avatar: string | null } | null>(null);
   const [visits, setVisits]         = useState<VisitedPlace[] | null>(null);
 
   // Opening straight onto a section (Saved Itineraries) skips the cover.
@@ -394,9 +395,18 @@ export default function Passport({ initialPage = 0, onClose }: { initialPage?: n
             <div className="shrink-0">
               <div className="w-[74px] p-1"
                 style={{ backgroundColor: '#fff', border: '1px solid rgba(245,197,24,0.85)', boxShadow: '0 2px 5px rgba(11,61,145,0.14)' }}>
-                <div className="w-full flex items-center justify-center font-bold"
+                <div className="w-full flex items-center justify-center font-bold overflow-hidden"
                   style={{ aspectRatio: '3 / 4', ...COVER, color: '#F5C518', fontSize: 34, fontFamily: DL }}>
-                  {initials}
+                  {/* A passport photo is a portrait crop, so the chosen avatar
+                      fills the frame rather than sitting in a circle inside it. */}
+                  {profile?.avatar && isDefaultAvatar(profile.avatar) ? (
+                    <span className="w-full h-full" style={{ ...spriteStyle(profile.avatar)!, backgroundSize: '600% 200%' }} />
+                  ) : profile?.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={profile.avatar} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    initials
+                  )}
                 </div>
               </div>
               <p className="text-[7px] text-center mt-1 uppercase tracking-[0.24em]"
