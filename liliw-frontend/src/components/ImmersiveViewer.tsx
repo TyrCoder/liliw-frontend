@@ -484,6 +484,19 @@ function HotspotDialog({
     const targetIndex = type === 'navigate'
       ? (newScene ? scenes.length : targetScene)
       : undefined;
+
+    // A scene added from inside this dialog took its name from the uploaded
+    // file, so the tour ended up labelled with things like "LILIW CHURCH
+    // INSIDE 2". The hotspot's own label is what the editor actually wrote to
+    // describe where it leads, so the new scene takes that name instead.
+    const named = newScene
+      ? {
+          ...newScene,
+          photo: { ...newScene.photo, name: label.trim() },
+          scene: { ...newScene.scene, title: label.trim() },
+        }
+      : undefined;
+
     onConfirm({
       pitch: pending.pitch,
       yaw: pending.yaw,
@@ -491,7 +504,7 @@ function HotspotDialog({
       label: label.trim(),
       targetSceneIndex: targetIndex,
       info: type === 'info' ? info.trim() : undefined,
-    }, newScene ?? undefined);
+    }, named);
   };
 
   return (

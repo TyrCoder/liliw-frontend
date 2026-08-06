@@ -564,7 +564,19 @@ export default function ImmersivePage() {
                                 alt={photo.name}
                                 className="w-12 h-7 object-cover rounded flex-shrink-0"
                               />
-                              <span className="text-gray-300 text-xs flex-1 truncate">{photo.name}</span>
+                              {/* The name defaults to the uploaded filename, which
+                                  is what visitors then see labelling the scene.
+                                  Editable so it can read like a place. */}
+                              <input
+                                value={photo.name}
+                                onChange={e => setVirtualTourPhotos(prev =>
+                                  prev.map((p, i) => i === idx ? { ...p, name: e.target.value } : p))}
+                                onBlur={() => savePhotosToStrapi(virtualTourPhotos)}
+                                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                                placeholder={`Scene ${idx + 1}`}
+                                title="Rename this scene"
+                                className="flex-1 min-w-0 bg-transparent text-gray-200 text-xs px-1.5 py-1 rounded border border-transparent hover:border-gray-600 focus:border-yellow-500 focus:bg-gray-900 focus:outline-none transition"
+                              />
                               <button
                                 onClick={() => deletePhoto(idx)}
                                 className="text-red-400 hover:text-red-300 flex-shrink-0 transition"
