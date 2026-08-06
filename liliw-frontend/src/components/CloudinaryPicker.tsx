@@ -5,6 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, Search, Check, Loader2, Images, RefreshCw, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
+// Cloudinary's Free plan rejects anything over 10 MB outright — verified
+// against the account: "File size too large. Got 12963838. Maximum is
+// 10485760." Checked here so an oversized file fails instantly with advice
+// instead of after a slow upload that ends in a byte count. Pixel dimensions
+// are not a problem: a 33.6 MP panorama uploads fine.
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
 export interface CloudinaryAsset {
   public_id: string;
   url: string;
@@ -112,6 +119,16 @@ export default function CloudinaryPicker({
     for (let i = 0; i < arr.length; i++) {
       setUploadCount(`${i + 1} / ${arr.length}`);
       const label = arr[i].name;
+
+      if (arr[i].size > MAX_UPLOAD_BYTES) {
+        const mb = (arr[i].size / 1024 / 1024).toFixed(1);
+        failures.push(
+          `${label} is ${mb} MB — the limit is 10 MB. ` +
+          `PNG screenshots and panoramas are often well over it; saving as JPEG usually solves this.`,
+        );
+        continue;
+      }
+
       try {
         const timestamp = Math.floor(Date.now() / 1000);
         const signRes = await fetch(signEndpoint, {
