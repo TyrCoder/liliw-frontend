@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
+import { invalidateContentCache } from '@/lib/content';
 
 export async function POST(req: NextRequest) {
   const isAdmin = await requireAdminAuth(req);
@@ -20,6 +21,11 @@ export async function POST(req: NextRequest) {
       .eq('id', id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // getAllAttractions() caches for five minutes and every CMS write clears
+    // it — but these two tour routes never did, so a saved tour kept reading
+    // back as empty and looked like it had not saved at all.
+    invalidateContentCache();
 
     return NextResponse.json({ ok: true });
   } catch (err) {
