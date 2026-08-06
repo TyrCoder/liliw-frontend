@@ -35,6 +35,12 @@ interface Attraction {
   type: 'heritage' | 'spot' | 'dining';
 }
 
+// Cloudinary's Free plan rejects anything larger, outright. Verified against
+// the account: "File size too large. Got 12963838. Maximum is 10485760."
+// Pixel dimensions are not capped in practice — a 33.6 MP panorama uploads
+// fine — so bytes are the only thing worth checking before sending.
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
 export default function ImmersivePage() {
   const [editMode, setEditMode] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -47,6 +53,7 @@ export default function ImmersivePage() {
   const [virtualTourPhotos, setVirtualTourPhotos] = useState<VirtualTourPhoto[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
+  const [uploadError, setUploadError] = useState('');
   const [saveStatus, setSaveStatus]   = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [pickerOpen, setPickerOpen]   = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
@@ -169,20 +176,36 @@ export default function ImmersivePage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
 
     setUploading(true);
+    setUploadError('');
     const newPhotos: VirtualTourPhoto[] = [];
+    // Panoramas are the biggest files anyone uploads here, so this is exactly
+    // where the 10 MB cap bites — and until now every failure went to the
+    // console only, leaving the panel looking like the upload had worked.
+    const failures: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
       setUploadStatus(`${i + 1} / ${files.length}`);
+
+      if (files[i].size > MAX_UPLOAD_BYTES) {
+        failures.push(
+          `${files[i].name} is ${(files[i].size / 1024 / 1024).toFixed(1)} MB — the limit is 10 MB. ` +
+          `Save the panorama as JPEG (quality ~85) and it will fit.`,
+        );
+        continue;
+      }
+
       try {
         const photo = await uploadOneFile(files[i]);
         newPhotos.push(photo);
       } catch (err) {
         logger.error(`Upload failed for ${files[i].name}`, err);
+        failures.push(`${files[i].name}: ${err instanceof Error ? err.message : 'upload failed'}`);
       }
     }
 
     setUploading(false);
     setUploadStatus('');
+    if (failures.length) setUploadError(failures.join(' · '));
 
     if (newPhotos.length > 0) {
       const updated = [...virtualTourPhotos, ...newPhotos];
@@ -517,6 +540,27 @@ export default function ImmersivePage() {
                         </div>
                       ) : (
                         <p className="text-gray-500 text-xs mb-3">No photos yet. Upload 360° panoramic images below.</p>
+                      )}
+
+                      {/* There is no "has a virtual tour" switch anywhere — the
+                          tour is published purely by having a photo. Say so,
+                          because an invisible rule looks like a missing one. */}
+                      <div className="mb-3 rounded-lg px-3 py-2 text-[11px] leading-relaxed"
+                        style={{
+                          backgroundColor: virtualTourPhotos.length > 0 ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.05)',
+                          color: virtualTourPhotos.length > 0 ? '#4ADE80' : '#9CA3AF',
+                        }}>
+                        {virtualTourPhotos.length > 0
+                          ? `Live for visitors — this attraction now shows under Available Tours with ${virtualTourPhotos.length} scene${virtualTourPhotos.length === 1 ? '' : 's'}.`
+                          : 'Not published yet. Adding one 360° photo publishes the tour automatically — there is no separate switch to tick.'}
+                      </div>
+
+                      {uploadError && (
+                        <div className="mb-3 rounded-lg px-3 py-2 text-[11px] leading-relaxed flex items-start gap-2"
+                          style={{ backgroundColor: 'rgba(248,113,113,0.12)', color: '#FCA5A5' }}>
+                          <span className="flex-1 min-w-0 break-words">{uploadError}</span>
+                          <button onClick={() => setUploadError('')} className="shrink-0 opacity-70 hover:opacity-100">✕</button>
+                        </div>
                       )}
 
                       {/* Upload + Library buttons */}
