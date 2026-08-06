@@ -36,9 +36,25 @@ export async function POST(req: NextRequest) {
     const { error } = await supabaseServer.auth.admin.updateUserById(user.id, { email: newEmail });
     if (error) return NextResponse.json({ error: 'Failed to update email. The new email may already be in use.' }, { status: 500 });
 
-    // Update profiles + tourist_profiles
-    await supabaseServer.from('profiles').update({ email: newEmail.toLowerCase() }).eq('id', user.id);
-    await supabaseServer.from('tourist_profiles').update({ email: newEmail.toLowerCase() }).eq('email', user.email!.toLowerCase());
+    // These two carry the address everything else looks the account up by, and
+    // the auth record has already moved. If either is left behind, the profile
+    // is orphaned: /api/user/profile searches tourist_profiles by the new email
+    // and finds nothing, so the name, visitor type and avatar all read as gone.
+    // Failing loudly here is the difference between a retryable error and a
+    // profile that has silently emptied itself.
+    const lower = newEmail.toLowerCase();
+    const { error: pErr } = await supabaseServer
+      .from('profiles').update({ email: lower }).eq('id', user.id);
+    const { error: tErr } = await supabaseServer
+      .from('tourist_profiles').update({ email: lower }).eq('email', user.email!.toLowerCase());
+
+    if (pErr || tErr) {
+      return NextResponse.json({
+        error: 'Your sign-in email was changed, but your profile could not be moved across. ' +
+               'Contact the Tourism Office before signing out.',
+        detail: (pErr ?? tErr)!.message,
+      }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true, emailChanged: true });
   }

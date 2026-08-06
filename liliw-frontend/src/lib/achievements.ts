@@ -75,10 +75,20 @@ export async function awardPoints(
       const { error: achErr } = await supabaseServer.from('user_achievements').insert({ user_id: userId, achievement_id: ach.id });
       if (achErr) continue; // lost the race to a concurrent call — don't double-award
       if (ach.points_reward > 0) {
-        await supabaseServer.from('user_points').insert({
+        // The badge row is already committed, so losing this one hands out a
+        // badge whose bonus never lands and quietly leaves the points total
+        // wrong. It cannot be retried here without risking a double award, so
+        // record it loudly enough to be found.
+        const { error: ptsErr } = await supabaseServer.from('user_points').insert({
           user_id: userId, points: ach.points_reward,
           action: 'achievement_bonus', reference_id: ach.id, reference_name: ach.name,
         });
+        if (ptsErr) {
+          console.error(
+            `[achievements] awarded "${ach.name}" to ${userId} but its ${ach.points_reward} bonus points failed:`,
+            ptsErr.message,
+          );
+        }
       }
       newlyUnlocked.push({ id: ach.id, name: ach.name, icon: ach.icon, badge_color: ach.badge_color, points_reward: ach.points_reward });
     }

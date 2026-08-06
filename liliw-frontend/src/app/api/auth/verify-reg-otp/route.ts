@@ -42,15 +42,26 @@ export async function POST(req: NextRequest) {
     }
 
     // Explicit profile row (trigger may lag)
-    await supabaseServer.from('profiles').upsert({
+    const { error: profErr } = await supabaseServer.from('profiles').upsert({
       id: created.user.id, email, username, role: 'authenticated',
     }, { onConflict: 'id' });
+    if (profErr) {
+      return NextResponse.json(
+        { error: `Account created but its profile could not be saved: ${profErr.message}` },
+        { status: 500 },
+      );
+    }
 
-    // Store tourist profile (fire-and-forget)
-    void supabaseServer.from('tourist_profiles').upsert(
+    // This row holds the full name and visitor type just collected on the form.
+    // It was fire-and-forget, so a failure here threw both away without a word
+    // and the new account looked like it had never answered those questions.
+    const { error: touristErr } = await supabaseServer.from('tourist_profiles').upsert(
       { email: key, username, full_name: fullName, user_type: userType || null },
       { onConflict: 'email' },
     );
+    if (touristErr) {
+      console.error('[register] tourist_profiles upsert failed:', touristErr.message);
+    }
 
     // Sign in to get JWT
     const { data: session } = await supabaseServer.auth.signInWithPassword({ email, password });

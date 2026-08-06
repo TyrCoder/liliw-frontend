@@ -72,7 +72,16 @@ export async function POST(req: NextRequest, { params }: Params) {
       alt_text: m.alt_text ?? null,
       sort_order: i,
     }));
-    await supabaseServer.from('cms_media').insert(mediaRows);
+    // The entry is already created, so a silent failure here produces content
+    // that saved fine and simply has no pictures — reported as "the images
+    // didn't upload" long after the fact.
+    const { error: mediaError } = await supabaseServer.from('cms_media').insert(mediaRows);
+    if (mediaError) {
+      return NextResponse.json(
+        { data, warning: `Saved, but the images could not be attached: ${mediaError.message}` },
+        { status: 201 },
+      );
+    }
   }
 
   return NextResponse.json({ data }, { status: 201 });

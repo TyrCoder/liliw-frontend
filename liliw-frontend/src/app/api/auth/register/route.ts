@@ -31,10 +31,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert profile row explicitly (trigger may not run in time for immediate signIn)
-    await supabaseServer.from('profiles').upsert({
+    // Insert profile row explicitly (trigger may not run in time for immediate
+    // signIn). Without this row the account signs in but has no username or
+    // role, so a silent failure here produces a half-made account.
+    const { error: profErr } = await supabaseServer.from('profiles').upsert({
       id: data.user.id, email, username: username || email.split('@')[0], role: 'authenticated',
     }, { onConflict: 'id' });
+    if (profErr) {
+      return NextResponse.json(
+        { error: { message: `Account created but its profile could not be saved: ${profErr.message}` } },
+        { status: 500 },
+      );
+    }
 
     // Sign in to get JWT
     const { data: session, error: signInErr } = await supabaseServer.auth.signInWithPassword({ email, password });
