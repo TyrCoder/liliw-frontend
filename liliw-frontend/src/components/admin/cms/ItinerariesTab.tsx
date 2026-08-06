@@ -43,7 +43,10 @@ export default function ItinerariesTab({ token, userEmail, isOfficer, isAdmin }:
     async () => {
       if (!editing?.id) return;
       await fetch(`/api/cms/itineraries/${editing.id}`, { method: 'PUT', headers: h, body: JSON.stringify({ ...editing, created_by: userEmail }) });
-    }
+    },
+    // Never auto-save something live or awaiting review: the PUT resets status
+    // to draft, which would quietly pull it off the public site.
+    editing?.status !== 'approved' && editing?.status !== 'pending',
   );
 
   const load = async (status?: string) => {
