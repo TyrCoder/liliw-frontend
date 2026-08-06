@@ -88,9 +88,12 @@ export async function DELETE(req: NextRequest) {
     await supabaseServer.storage.from(BUCKET).remove(existing.map(f => `${user.id}/${f.name}`));
   }
 
-  await supabaseServer
+  const { error } = await supabaseServer
     .from('tourist_profiles')
-    .upsert({ email: user.email!.toLowerCase(), avatar: null }, { onConflict: 'email' });
+    .upsert({ email: user.email!.toLowerCase(), avatar: null, avatar_updated_at: new Date().toISOString() },
+      { onConflict: 'email' });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ success: true });
 }

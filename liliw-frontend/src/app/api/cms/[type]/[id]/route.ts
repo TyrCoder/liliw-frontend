@@ -71,7 +71,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
         alt_text: m.alt_text ?? null,
         sort_order: i,
       }));
-      await supabaseServer.from('cms_media').insert(mediaRows);
+      // The old rows have already been deleted, so a failure here does not
+      // just skip the new images — it leaves the entry with none at all.
+      const { error: mediaError } = await supabaseServer.from('cms_media').insert(mediaRows);
+      if (mediaError) {
+        return NextResponse.json(
+          { data, warning: `Saved, but the images could not be attached: ${mediaError.message}` },
+        );
+      }
     }
   }
 

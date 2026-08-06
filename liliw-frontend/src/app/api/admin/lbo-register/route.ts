@@ -23,13 +23,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create account', detail: error?.message }, { status: 400 });
   }
 
-  // Explicit profile row
-  await supabaseServer.from('profiles').upsert({
+  // Explicit profile row. The auth user already exists by this point, so a
+  // failure here leaves an account that can sign in with no username or role.
+  const { error: profErr } = await supabaseServer.from('profiles').upsert({
     id: created.user.id, email, username, role: 'authenticated',
   }, { onConflict: 'id' });
+  if (profErr) {
+    return NextResponse.json(
+      { error: 'Account created but its profile row failed', detail: profErr.message },
+      { status: 500 },
+    );
+  }
 
   if (applicationId) {
-    await supabaseServer.from('lbo_applications').update({ status: 'approved' }).eq('id', applicationId);
+    // If this is skipped the owner has a working login while their application
+    // still reads as pending, so the approval looks like it never happened.
+    const { error: appErr } = await supabaseServer
+      .from('lbo_applications').update({ status: 'approved' }).eq('id', applicationId);
+    if (appErr) {
+      return NextResponse.json(
+        { error: 'Account created, but the application could not be marked approved', detail: appErr.message },
+        { status: 500 },
+      );
+    }
   }
 
   const { data: appData } = await supabaseServer
