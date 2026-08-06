@@ -246,17 +246,19 @@ export default function ImmersivePage() {
     return url.replace('/upload/', `/upload/${transforms}/`);
   };
 
-  // Full-resolution sphere texture. q_auto:best is visually indistinguishable
-  // from q_100 on a panorama but roughly halves the bytes, and f_auto adds
-  // AVIF/WebP on top — which raises quality in practice rather than lowering
-  // it, because a q_100 JPEG of an 8K panorama is tens of megabytes and on a
-  // phone frequently never finishes, leaving the blurred placeholder up.
-  // No w_ is set, so the sphere still gets every pixel that was uploaded.
+  // The sphere gets the original file, untransformed.
+  //
+  // Uploads are already capped at 10 MB and panoramas are stored as JPEG, so
+  // there is nothing to gain by sending them through Cloudinary again — and
+  // something to lose: every transformation re-encodes, and a second
+  // generation of JPEG loss on top of an already-compressed panorama is
+  // visible as exactly the softness this is meant to avoid. The stored
+  // panorama is what gets drawn.
   const sceneUrls = (url: string) => ({
-    imageUrl: cloudinaryTransform(url, 'q_auto:best,f_auto'),
-    // The interim texture, shown for the moment before the full one lands. A
-    // 256px blur was unreadable; this is still small but recognisable.
-    thumbUrl: cloudinaryTransform(url, 'w_1200,q_50,f_auto'),
+    imageUrl: url,
+    // Interim texture while the full one loads. Small enough to arrive almost
+    // immediately, large enough to be legible rather than a blur.
+    thumbUrl: cloudinaryTransform(url, 'w_1600,q_60,f_auto'),
   });
 
   // Called from HotspotDialog when admin uploads a new 360° scene inline
