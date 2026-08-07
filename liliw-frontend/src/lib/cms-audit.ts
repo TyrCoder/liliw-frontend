@@ -7,7 +7,6 @@ const TYPE_LABELS: Record<string, string> = {
   cms_art_forms:    'Art Form',
   cms_artisans:     'Artisan',
   cms_stories:      'Story',
-  cms_hero_slides:  'Hero Slide',
   cms_faqs:         'FAQ',
   cms_itineraries:  'Itinerary',
 };

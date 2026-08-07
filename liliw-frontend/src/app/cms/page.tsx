@@ -14,15 +14,13 @@ import NewsTab           from '@/components/admin/cms/NewsTab';
 import ArtFormsTab       from '@/components/admin/cms/ArtFormsTab';
 import ArtisansTab       from '@/components/admin/cms/ArtisansTab';
 import StoriesTab        from '@/components/admin/cms/StoriesTab';
-import HeroSlidesTab     from '@/components/admin/cms/HeroSlidesTab';
 import FaqsTab           from '@/components/admin/cms/FaqsTab';
 import ItinerariesTab    from '@/components/admin/cms/ItinerariesTab';
 import ContentApprovalsTab from '@/components/admin/cms/ContentApprovalsTab';
 
 type CMSTab =
   | 'approvals' | 'attractions' | 'events' | 'news'
-  | 'art-forms' | 'artisans' | 'stories'
-  | 'hero-slides' | 'faqs' | 'itineraries';
+  | 'art-forms' | 'artisans' | 'stories' | 'faqs' | 'itineraries';
 
 interface NavItem {
   key: CMSTab;
@@ -53,7 +51,6 @@ const NAV: { section: string; items: NavItem[] }[] = [
   {
     section: 'Site',
     items: [
-      { key: 'hero-slides', label: 'Hero Slides',  icon: <ImageIcon   className="w-4 h-4" />, roles: ['editor', 'officer', 'admin'], color: '#06B6D4' },
       { key: 'faqs',        label: 'FAQs',         icon: <HelpCircle  className="w-4 h-4" />, roles: ['editor', 'officer', 'admin'], color: '#6366F1' },
       { key: 'itineraries', label: 'Itineraries',  icon: <Route       className="w-4 h-4" />, roles: ['editor', 'officer', 'admin'], color: '#84CC16' },
     ],
@@ -185,9 +182,6 @@ export default function CMSPage() {
           )}
           {activeTab === 'stories' && (
             <StoriesTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
-          )}
-          {activeTab === 'hero-slides' && (
-            <HeroSlidesTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
           )}
           {activeTab === 'faqs' && (
             <FaqsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
