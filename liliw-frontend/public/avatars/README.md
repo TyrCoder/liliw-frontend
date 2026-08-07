@@ -26,10 +26,19 @@ right and top to bottom:
   is as wide as it is tall. The original artwork was 256×512 per cell and had
   to be re-cropped; a 1:2 cell dropped straight into a circular avatar squashes
   every face.
-- **Frame the rows the same.** In the source art, row 0's artwork began around
-  y=134 within its cell and row 1's around y=23, so a fixed crop caught one row
-  at the forehead and the other at the chin. Each cell was measured and cropped
-  around its own head and shoulders instead.
+- **Centre on the head, not the top of the artwork.** In the source art, row 0
+  began around y=134 within its cell and row 1 around y=23, so any fixed crop
+  framed the two rows differently. Each cell is measured for its own content
+  bounds and the square is centred on the head — about 22.5% of the bust height
+  down from the top of the hair — padding with white where the window falls
+  outside the cell. Anchoring near the top of the artwork instead pushes the
+  hair against the edge, and once the avatar is masked into a circle the top of
+  the head is clipped.
+- Detecting the neck from the silhouette was tried and abandoned: these
+  shoulders widen gradually, so a width threshold found them anywhere from a
+  third to nine tenths of the way down. The proportion is steadier because all
+  twelve are drawn to the same scale — measured bust heights fall within
+  365–395px of each other.
 - **Exactly 6 × 2, evenly spaced, no outer margin.** Positioning is by
   percentage, so padding around the grid pulls the first and last columns
   inward.
