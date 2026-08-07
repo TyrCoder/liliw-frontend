@@ -34,6 +34,12 @@ right and top to bottom:
   outside the cell. Anchoring near the top of the artwork instead pushes the
   hair against the edge, and once the avatar is masked into a circle the top of
   the head is clipped.
+- **Do not recentre horizontally.** The characters are drawn centred in their
+  cells, and the window is already as wide as a cell, so shifting it sideways
+  can only crop one edge and pad the other with white. Centring on the artwork's
+  bounding box seems reasonable and is not: that box includes a flower beside
+  the hair, a wide hat, a backpack strap, so its centre is not the face's. Take
+  the full cell width.
 - Detecting the neck from the silhouette was tried and abandoned: these
   shoulders widen gradually, so a width threshold found them anywhere from a
   third to nine tenths of the way down. The proportion is steadier because all
