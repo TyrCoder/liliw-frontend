@@ -21,9 +21,16 @@ const STATUS_LABELS: Record<string, string> = {
   all: 'All', draft: 'Draft', pending: 'Pending Review', approved: 'Published', rejected: 'Rejected',
 };
 
-export type CmsFieldType = 'text' | 'textarea' | 'number' | 'select' | 'richtext' | 'media';
+export type CmsFieldType =
+  | 'text' | 'textarea' | 'number' | 'select' | 'richtext' | 'media'
+  | 'datetime' | 'checkbox';
 
 export interface CmsField {
+  /**
+   * Column name. May be dotted to reach inside a JSON column — artisans keep
+   * their links in `social_media`, so 'social_media.facebook' edits that key
+   * without disturbing the others alongside it.
+   */
   name: string;
   label: string;
   type: CmsFieldType;
@@ -34,8 +41,28 @@ export interface CmsField {
   placeholder?: string;
   /** `textarea` only. */
   rows?: number;
+  /** `media` only — a cover image wants exactly one. */
+  maxFiles?: number;
   /** Full-width (2) or half-width (1) within the form's two-column grid. */
   colSpan?: 1 | 2;
+}
+
+/** Reads a possibly-dotted field name off the record being edited. */
+const readField = (obj: unknown, path: string): unknown =>
+  path.split('.').reduce<unknown>(
+    (acc, k) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[k] : undefined),
+    obj,
+  );
+
+/** Writes a possibly-dotted field name, cloning each level on the way down. */
+function writeField<T extends object>(obj: T, path: string, value: unknown): T {
+  const [head, ...rest] = path.split('.');
+  if (!rest.length) return { ...obj, [head]: value };
+  const child = (obj as Record<string, unknown>)[head];
+  return {
+    ...obj,
+    [head]: writeField((child && typeof child === 'object' ? child : {}) as object, rest.join('.'), value),
+  };
 }
 
 export interface CmsColumn<T> {
@@ -221,9 +248,9 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
   const canEdit = !isOfficer || isAdmin;
 
   const setField = (name: string, value: unknown) =>
-    setEditing(p => ({ ...(p as object), [name]: value }) as Partial<T>);
+    setEditing(p => writeField((p ?? {}) as object, name, value) as Partial<T>);
 
-  const val = (name: string) => (editing as Record<string, unknown> | null)?.[name];
+  const val = (name: string) => (editing ? readField(editing, name) : undefined);
 
   // Save is blocked until every required field has a non-empty value.
   const missingRequired = fields.some(f => {
@@ -254,8 +281,23 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
         );
       case 'richtext':
         return <RichTextEditor value={(val(f.name) as string) || ''} onChange={v => setField(f.name, v)} placeholder={f.placeholder} />;
+      case 'datetime':
+        // The column stores a full ISO timestamp; the input wants it trimmed
+        // to the minute, and gives it back without a zone.
+        return <input type="datetime-local" className={inputCls}
+          value={((val(f.name) as string) || '').slice(0, 16)}
+          onChange={e => setField(f.name, e.target.value || null)} />;
+      case 'checkbox':
+        return (
+          <label className="flex items-center gap-2.5 cursor-pointer select-none py-1">
+            <input type="checkbox" className="w-4 h-4 rounded accent-blue-600"
+              checked={!!val(f.name)}
+              onChange={e => setField(f.name, e.target.checked)} />
+            <span className="text-sm text-gray-700 font-medium">{f.label}</span>
+          </label>
+        );
       case 'media':
-        return <MediaUploader value={media} onChange={setMedia} />;
+        return <MediaUploader value={media} onChange={setMedia} maxFiles={f.maxFiles} />;
       default:
         return <input value={(val(f.name) as string) || ''} placeholder={f.placeholder}
           onChange={e => setField(f.name, e.target.value)} className={inputCls} />;
@@ -380,9 +422,13 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {fields.map(f => (
                   <div key={f.name} className={(f.colSpan ?? 2) === 2 ? 'sm:col-span-2' : ''}>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">
-                      {f.label}{f.required ? ' *' : ''}
-                    </label>
+                    {/* A checkbox reads better with its label beside it, and
+                        renders its own, so it skips the heading above. */}
+                    {f.type !== 'checkbox' && (
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">
+                        {f.label}{f.required ? ' *' : ''}
+                      </label>
+                    )}
                     {renderField(f)}
                   </div>
                 ))}
