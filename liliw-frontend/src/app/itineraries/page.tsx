@@ -1509,6 +1509,35 @@ const DURATION_LABEL: Record<string, string> = {
   'half-day': '4 hours', 'one-day': '8 hours', 'two-day': '2 days',
   heritage: 'Heritage', foodie: 'Foodie', family: 'Family',
 };
+
+/**
+ * The CMS asks an editor for a number of days; the filter tabs below work in
+ * bands. One day is a full day, anything longer is multi-day, and a blank or
+ * zero count means a short visit.
+ */
+function durationBand(days: unknown): string {
+  const n = Number(days);
+  if (!Number.isFinite(n) || n <= 0) return 'half-day';
+  if (n === 1) return 'one-day';
+  return 'two-day';
+}
+
+/**
+ * Rich text out of the CMS is one item per line, sometimes wrapped in markup.
+ * Strapi supplied arrays, so this bridges the two without the page needing to
+ * know which source an itinerary came from.
+ */
+function toLines(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter(Boolean).map(String);
+  if (typeof value !== 'string') return [];
+  return value
+    .replace(/<\/(p|div|li|h[1-6])>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .split('\n')
+    .map(s => s.replace(/^[\s•\-*]+/, '').trim())
+    .filter(Boolean);
+}
 const FILTER_TABS = [
   { key: 'all', label: 'All' }, { key: 'half-day', label: 'Half-Day' },
   { key: 'one-day', label: 'Full Day' }, { key: 'two-day', label: '2 Days' },
@@ -1782,11 +1811,17 @@ function DatabaseItineraries() {
         return {
           id:               String(item.id || item.documentId || Math.random()),
           title:            a.title,
-          duration:         a.duration    || 'half-day',
+          // The CMS stores a day count; this page filters on a duration band.
+          // Without the translation every CMS itinerary fell back to
+          // 'half-day' and the filter tabs sorted them all into one pile.
+          duration:         a.duration || durationBand(a.duration_days),
           difficulty:       a.difficulty  || 'easy',
           description:      blocksToText(a.description),
           stopsBlocks:      Array.isArray(a.stops) ? a.stops : [],
-          highlights:       Array.isArray(a.highlights)   ? a.highlights   : [],
+          // The CMS writes highlights as rich text, one per line, while this
+          // page was built against Strapi's array. Without splitting it, an
+          // itinerary published from the CMS showed no highlights at all.
+          highlights:       toLines(a.highlights),
           included:         Array.isArray(a.included)     ? a.included     : [],
           not_included:     Array.isArray(a.not_included) ? a.not_included : [],
           meeting_point:    a.meeting_point || undefined,

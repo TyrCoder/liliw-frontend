@@ -8,7 +8,6 @@ const CONTENT_TYPE_CATEGORY: Record<string, string> = {
   story:       'culture',
   event:       'events',
   news:        'community',
-  hero_slide:  'heritage',
 };
 
 const CONTENT_TYPE_TABLE: Record<string, string> = {
@@ -18,7 +17,6 @@ const CONTENT_TYPE_TABLE: Record<string, string> = {
   story:       'cms_stories',
   event:       'cms_events',
   news:        'cms_news',
-  hero_slide:  'cms_hero_slides',
 };
 
 export async function GET() {

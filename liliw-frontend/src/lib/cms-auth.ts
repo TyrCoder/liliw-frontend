@@ -87,8 +87,7 @@ export const CMS_TABLES: Record<string, string> = {
   news:          'cms_news',
   'art-forms':   'cms_art_forms',
   artisans:      'cms_artisans',
-  stories:       'cms_stories',
-  'hero-slides': 'cms_hero_slides',
+  stories:       'cms_stories',
   faqs:          'cms_faqs',
   itineraries:   'cms_itineraries',
 };
@@ -99,8 +98,7 @@ export const CMS_CONTENT_TYPES: Record<string, string> = {
   news:          'news',
   'art-forms':   'art_form',
   artisans:      'artisan',
-  stories:       'story',
-  'hero-slides': 'hero_slide',
+  stories:       'story',
   faqs:          'faq',
   itineraries:   'itinerary',
 };

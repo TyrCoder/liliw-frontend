@@ -180,7 +180,6 @@ export const getNews = async () => {
 
 export const getArtForms      = async () => [];
 export const getCultureAspects = async () => [];
-export const getHeroSlides     = async () => [];
 export const getCultureHeritages = async () => [];
 
 export default null;
