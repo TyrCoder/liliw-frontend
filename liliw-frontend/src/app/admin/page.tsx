@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import BadgeSVG, { BADGE_ICONS } from '@/components/BadgeSVG';
+import Avatar from '@/components/Avatar';
 import MediaUploader from '@/components/admin/cms/MediaUploader';
 import * as XLSX from 'xlsx-js-style';
 
@@ -146,6 +147,7 @@ export default function AdminDashboard() {
   const [analytics,     setAnalytics]     = useState<Analytics | null>(null);
   const [reviews,       setReviews]       = useState<any[]>([]);
   const [users,         setUsers]         = useState<any[]>([]);
+  const [clearingAvatar, setClearingAvatar] = useState<string | null>(null);
   const [attractions,   setAttractions]   = useState<Attraction[]>([]);
   const [auditLogs,       setAuditLogs]       = useState<AuditLog[]>([]);
   const [strapiActivity,  setStrapiActivity]  = useState<StrapiActivity[]>([]);
@@ -446,6 +448,34 @@ export default function AdminDashboard() {
       }
     } catch { setAchMsg({ ok: false, text: 'Network error' }); }
     setSavingAch(false);
+  };
+
+  /**
+   * Takes down an uploaded profile picture. Custom avatars are screened in the
+   * browser before upload, but that check is client-side and can be bypassed
+   * by posting to the endpoint directly — this is the backstop that assumes.
+   */
+  const clearAvatar = async (email: string) => {
+    if (!confirm(`Remove ${email}'s uploaded profile picture? They will go back to their initial.`)) return;
+    setClearingAvatar(email);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        alert(d.error ?? 'Could not remove that picture.');
+        return;
+      }
+      setUsers(prev => prev.map(u =>
+        u.email === email ? { ...u, avatar: null, avatarIsCustom: false } : u));
+    } catch {
+      alert('Could not reach the server.');
+    } finally {
+      setClearingAvatar(null);
+    }
   };
 
   const handleAchDelete = async (id: string) => {
@@ -1197,12 +1227,28 @@ export default function AdminDashboard() {
                     <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: roleColor.avatar }}>
-                            {(u.username || u.email || '?')[0].toUpperCase()}
-                          </div>
+                          {u.avatar ? (
+                            <Avatar avatar={u.avatar} name={u.username || u.email || '?'} size={32} ring={false} />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: roleColor.avatar }}>
+                              {(u.username || u.email || '?')[0].toUpperCase()}
+                            </div>
+                          )}
                           <div>
                             <p className="font-semibold text-gray-900">{u.username || '—'}</p>
                             {isPanel && <span className="text-xs text-gray-400">Admin Panel</span>}
+                            {/* Only uploaded pictures can be objectionable — the
+                                twelve built-in ones need no review — so only
+                                those offer the takedown. */}
+                            {u.avatarIsCustom && (
+                              <button
+                                onClick={() => clearAvatar(u.email)}
+                                disabled={clearingAvatar === u.email}
+                                className="block text-[11px] font-semibold text-gray-400 hover:text-red-500 transition disabled:opacity-50"
+                                title="Remove this uploaded profile picture">
+                                {clearingAvatar === u.email ? 'Removing…' : 'Uploaded photo · remove'}
+                              </button>
+                            )}
                           </div>
                         </div>
                       </td>

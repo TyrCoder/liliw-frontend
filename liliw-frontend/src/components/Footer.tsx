@@ -39,12 +39,12 @@ function IOSInstallModal({ onClose }: { onClose: () => void }) {
           initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
           transition={{ type: 'spring', stiffness: 340, damping: 26 }}
           className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl"
-          style={{ backgroundColor: '#1565C0', border: '1px solid rgba(255,255,255,0.2)' }}
+          style={{ backgroundColor: '#0F5FB5', border: '1px solid rgba(255,255,255,0.2)' }}
           onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg"
-                style={{ backgroundColor: '#F5C518', color: '#1565C0', fontFamily: DL }}>L</div>
+                style={{ backgroundColor: '#F5C518', color: '#0F5FB5', fontFamily: DL }}>L</div>
               <div>
                 <p className="text-white font-bold text-sm" style={{ fontFamily: HL }}>Add to Home Screen</p>
                 <p className="text-white/40 text-xs" style={{ fontFamily: BL }}>Liliw Tourism · iOS Safari</p>
@@ -68,7 +68,7 @@ function IOSInstallModal({ onClose }: { onClose: () => void }) {
             ))}
             <button onClick={onClose}
               className="w-full py-2.5 rounded-xl text-sm font-bold transition hover:opacity-90 mt-1"
-              style={{ backgroundColor: '#F5C518', color: '#1565C0', fontFamily: BL }}>
+              style={{ backgroundColor: '#F5C518', color: '#0F5FB5', fontFamily: BL }}>
               Got it!
             </button>
           </div>
@@ -118,23 +118,32 @@ export default function Footer() {
     <>
       {iosModalOpen && <IOSInstallModal onClose={() => setIosModalOpen(false)} />}
 
-      <footer className="mt-0" style={{ backgroundColor: '#1565C0' }}>
+      <footer className="mt-0" style={{ backgroundColor: '#0F5FB5' }}>
         {/* Wave top — white wave on blue */}
         <div style={{ lineHeight: 0, backgroundColor: '#fff' }}>
           <svg viewBox="0 0 1440 70" preserveAspectRatio="none" style={{ width: '100%', height: 70, display: 'block' }}>
-            <path d="M0,0 C480,70 960,0 1440,70 L1440,70 L0,70 Z" fill="#1565C0" />
+            <path d="M0,0 C480,70 960,0 1440,70 L1440,70 L0,70 Z" fill="#0F5FB5" />
           </svg>
         </div>
 
+        {/* The same woven trim that closes the navbar, bracketing the page. */}
+        <div aria-hidden className="liliw-weave h-[3px] w-full" style={{ opacity: 0.85 }} />
+
         <div className="max-w-5xl mx-auto px-4 pt-8 pb-12 text-center text-white">
 
-          {/* Logo */}
+          {/* Logo — the navbar's mark inverted for a dark ground, with the
+              same wordmark and tagline so the two ends of the page agree. */}
           <div className="flex justify-center items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg"
-              style={{ backgroundColor: '#F5C518', color: '#1565C0', fontFamily: DL }}>L</div>
+            <div className="relative w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-lg overflow-hidden"
+              style={{ backgroundColor: '#F5C518', color: '#0F5FB5', fontFamily: HL }}>
+              <span aria-hidden className="liliw-tread absolute inset-0" style={{ opacity: 0.45 }} />
+              <span className="relative">L</span>
+            </div>
             <div className="text-left">
-              <h3 className="text-xl font-bold leading-none" style={{ fontFamily: HL }}>Liliw Tourism</h3>
-              <p className="text-white/50 text-xs mt-0.5" style={{ fontFamily: BL }}>Laguna, Philippines</p>
+              <h3 className="text-xl font-bold leading-none tracking-[0.14em]" style={{ fontFamily: HL }}>LILIW</h3>
+              <p className="text-white/60 text-[10.5px] mt-1 font-medium tracking-wide" style={{ fontFamily: BL }}>
+                Home of the Tsinelas Festival
+              </p>
             </div>
           </div>
 
@@ -166,9 +175,9 @@ export default function Footer() {
                 <motion.button onClick={handleAndroidInstall} disabled={installing}
                   whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm shadow-lg transition-opacity disabled:opacity-70"
-                  style={{ backgroundColor: '#F5C518', color: '#1565C0', fontFamily: BL }}>
+                  style={{ backgroundColor: '#F5C518', color: '#0F5FB5', fontFamily: BL }}>
                   {installing
-                    ? <><span className="w-3.5 h-3.5 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(21,101,192,0.3)', borderTopColor: '#1565C0' }} /> Installing…</>
+                    ? <><span className="w-3.5 h-3.5 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(15,95,181,0.3)', borderTopColor: '#0F5FB5' }} /> Installing…</>
                     : <><Download size={15} /> Install App</>}
                 </motion.button>
               )}
@@ -176,7 +185,7 @@ export default function Footer() {
                 <motion.button onClick={() => setIosModalOpen(true)}
                   whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm"
-                  style={{ backgroundColor: '#F5C518', color: '#1565C0', fontFamily: BL }}>
+                  style={{ backgroundColor: '#F5C518', color: '#0F5FB5', fontFamily: BL }}>
                   <Smartphone size={15} /> Add to Home Screen
                 </motion.button>
               )}
