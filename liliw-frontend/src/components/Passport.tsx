@@ -400,7 +400,9 @@ export default function Passport({ initialPage = 0, onClose }: { initialPage?: n
                   {/* A passport photo is a portrait crop, so the chosen avatar
                       fills the frame rather than sitting in a circle inside it. */}
                   {profile?.avatar && isDefaultAvatar(profile.avatar) ? (
-                    <span className="w-full h-full" style={{ ...spriteStyle(profile.avatar)!, backgroundSize: '600% 200%' }} />
+                    // 3 / 4 matches the photo box, so the square cell is
+                    // cropped to the frame instead of stretched into it.
+                    <span className="w-full h-full" style={spriteStyle(profile.avatar, 3 / 4)!} />
                   ) : profile?.avatar ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={profile.avatar} alt="" className="w-full h-full object-cover" />

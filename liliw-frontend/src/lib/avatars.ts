@@ -57,17 +57,34 @@ export const hasAvatar = (v: string | null | undefined): boolean =>
 /**
  * Background rules that crop the sheet down to one cell.
  *
- * With six columns the stops land at 0%, 20%, 40%, 60%, 80%, 100% — positions
- * are a share of the *leftover* space, not of the image, which is why the
- * divisor is one less than the column count.
+ * `aspect` is the container's width ÷ height. It matters because the cells are
+ * square: dropped into a frame that is not — the passport's 3:4 photo box, say
+ * — a naive 600%/200% stretches the face to fit. So the cell is scaled to
+ * cover the frame and the overflow is centred, which crops rather than warps.
+ *
+ * The percentages are a share of the *leftover* space rather than of the
+ * image, which is why each denominator subtracts the container's own size.
  */
-export function spriteStyle(id: string): React.CSSProperties | null {
+export function spriteStyle(id: string, aspect = 1): React.CSSProperties | null {
   const a = byId.get(id as AvatarId);
   if (!a) return null;
+
+  // Work in units where the container is `aspect` wide and 1 tall. A square
+  // cell must be at least as large as the longer side to cover the frame.
+  const w = aspect, h = 1;
+  const side = Math.max(w, h);
+
+  const imgW = AVATAR_COLS * side;
+  const imgH = AVATAR_ROWS * side;
+
+  const xOffset = a.col * side + (side - w) / 2;
+  const yOffset = a.row * side + (side - h) / 2;
+
   return {
     backgroundImage: `url(${AVATAR_SHEET})`,
-    backgroundSize: `${AVATAR_COLS * 100}% ${AVATAR_ROWS * 100}%`,
-    backgroundPosition: `${(a.col / (AVATAR_COLS - 1)) * 100}% ${(a.row / (AVATAR_ROWS - 1)) * 100}%`,
+    backgroundSize: `${(imgW / w) * 100}% ${(imgH / h) * 100}%`,
+    backgroundPosition:
+      `${(xOffset / (imgW - w)) * 100}% ${(yOffset / (imgH - h)) * 100}%`,
     backgroundRepeat: 'no-repeat',
   };
 }
