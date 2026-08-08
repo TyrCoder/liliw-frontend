@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar, Bell, X, MapPin, Maximize2, CheckCircle, Loader2 } from 'lucide-react';
 import PhotoLightbox from '@/components/PhotoLightbox';
+import FacebookVideo from '@/components/FacebookVideo';
+import { extractFacebookVideos } from '@/lib/facebook';
 import { stripHtml } from '@/lib/text';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -324,9 +326,26 @@ function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => voi
             </span>
           </div>
           <h3 className="text-xl font-bold mb-3" style={{ color: '#1A1A2E', fontFamily: HL }}>{item.title}</h3>
-          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line" style={{ fontFamily: BL }}>
-            {item.fullText || item.excerpt}
-          </p>
+          {(() => {
+            // A Facebook video link pasted into the article becomes a player,
+            // and is taken out of the text so the raw URL is not left sitting
+            // above its own video.
+            const { urls, rest } = extractFacebookVideos(item.fullText || item.excerpt);
+            return (
+              <>
+                {rest && (
+                  <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line" style={{ fontFamily: BL }}>
+                    {rest}
+                  </p>
+                )}
+                {urls.length > 0 && (
+                  <div className="mt-4 space-y-3">
+                    {urls.map(u => <FacebookVideo key={u} url={u} title={item.title} />)}
+                  </div>
+                )}
+              </>
+            );
+          })()}
           {item.source && (
             <div className="flex items-center gap-1.5 mt-4 text-xs text-gray-400" style={{ fontFamily: BL }}>
               <MapPin className="w-3.5 h-3.5 shrink-0" />{item.source}
@@ -382,7 +401,9 @@ export default function NewsPage() {
             date,
             dateKey: toDateKey(date),
             category: a.category || 'announcement',
-            excerpt: full.substring(0, 200) || 'Read this news item for more information.',
+            // Without stripping, a pasted video link would fill the card's
+            // preview text with a URL instead of the story.
+            excerpt: extractFacebookVideos(full).rest.substring(0, 200) || 'Read this news item for more information.',
             fullText: full,
             source: 'Liliw Tourism Office',
             isEvent: false,
@@ -399,7 +420,7 @@ export default function NewsPage() {
             date,
             dateKey: toDateKey(date),
             category: a.category || 'other',
-            excerpt: full.substring(0, 200) || `Event at ${a.venue || 'Liliw'}`,
+            excerpt: extractFacebookVideos(full).rest.substring(0, 200) || `Event at ${a.venue || 'Liliw'}`,
             fullText: full,
             source: a.venue || 'Liliw',
             isEvent: true,
