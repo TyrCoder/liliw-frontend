@@ -108,6 +108,28 @@ export function slugify(input: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+/**
+ * Which column holds the human-readable label, per content type.
+ *
+ * This was previously inferred as "name for attractions, art-forms and
+ * artisans, title for everything else", which is wrong for FAQs — they have
+ * `question`. The consequence was silent: /api/cms/pending asked cms_faqs for
+ * a title, the query errored, the empty fallback hid it, and a submitted FAQ
+ * could never appear in Content Approvals at all.
+ */
+export const CMS_LABEL_FIELDS: Record<string, string> = {
+  attractions:  'name',
+  'art-forms':  'name',
+  artisans:     'name',
+  faqs:         'question',
+  events:       'title',
+  news:         'title',
+  stories:      'title',
+  itineraries:  'title',
+};
+
+export const labelFieldFor = (type: string): string => CMS_LABEL_FIELDS[type] ?? 'title';
+
 export const CMS_TABLES: Record<string, string> = {
   attractions:   'cms_attractions',
   events:        'cms_events',
