@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
-import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES, slugify } from '@/lib/cms-auth';
+import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES, slugify, labelFieldFor } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
 import { invalidateContentCache } from '@/lib/content';
 
@@ -39,8 +39,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (role === 'officer') return NextResponse.json({ error: 'Officers cannot create content' }, { status: 403 });
 
   const body = await req.json();
-  const nameField = type === 'attractions' || type === 'art-forms' || type === 'artisans' ? 'name' : 'title';
-  const label = body[nameField] || body.name || body.title;
+  // FAQs are labelled by `question`, which the old inference did not know
+  // about — it asked for a title, found none, and refused to create one.
+  const nameField = labelFieldFor(type);
+  const label = body[nameField] || body.name || body.title || body.question;
   if (!label) return NextResponse.json({ error: `${nameField} is required` }, { status: 400 });
 
   // `media` is not a column — photos live in cms_media and are attached below.
