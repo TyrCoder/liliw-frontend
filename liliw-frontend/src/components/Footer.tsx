@@ -10,27 +10,19 @@ const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 
 /**
- * Brand marks drawn inline, because lucide-react no longer ships them — the
- * footer had been standing in with Share2 for Facebook, MessageCircle for
- * Instagram and Send for Twitter, none of which read as the thing they link to.
+ * Drawn inline because lucide-react no longer ships brand marks — the footer
+ * had been standing in with Share2, which read as a generic share button
+ * rather than a link to the town's page.
  */
-const FacebookMark = () => (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+const FacebookMark = ({ size = 16 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden>
     <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z" />
   </svg>
 );
-const InstagramMark = () => (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-    <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
-    <circle cx="12" cy="12" r="4.2" />
-    <circle cx="17.6" cy="6.4" r="1.1" fill="currentColor" stroke="none" />
-  </svg>
-);
-const XMark = () => (
-  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden>
-    <path d="M18.9 2H22l-7.1 8.1L23.2 22h-6.6l-5.2-6.8L5.4 22H2.3l7.6-8.7L1.5 2h6.8l4.7 6.2L18.9 2z" />
-  </svg>
-);
+
+// The CHATO page is the town's only account. Instagram and Twitter links were
+// pointing at handles that do not exist, so they are not listed.
+const FACEBOOK_URL = 'https://www.facebook.com/LiliwCHATO';
 
 const ALL_LINKS = [
   { href: '/about',       label: 'About' },
@@ -44,11 +36,6 @@ const ALL_LINKS = [
   { href: '/contact',     label: 'Contact' },
 ];
 
-const SOCIAL = [
-  { icon: FacebookMark,  href: 'https://facebook.com/liliwtourism',  label: 'Facebook' },
-  { icon: InstagramMark, href: 'https://instagram.com/liliwtourism', label: 'Instagram' },
-  { icon: XMark,         href: 'https://twitter.com/liliwtourism',   label: 'X' },
-];
 
 function IOSInstallModal({ onClose }: { onClose: () => void }) {
   return (
@@ -177,15 +164,15 @@ export default function Footer() {
                 and the colour of the Tsinelas Festival, all in one Laguna town.
               </p>
 
-              <div className="flex gap-2.5 mt-5 justify-center sm:justify-start">
-                {SOCIAL.map(s => (
-                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                    title={s.label} aria-label={s.label}
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-white transition hover:bg-white/25"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.14)' }}>
-                    <s.icon />
-                  </a>
-                ))}
+              {/* One account, so it is named rather than reduced to a lone
+                  circle that gives no clue where it goes. */}
+              <div className="mt-5 flex justify-center sm:justify-start">
+                <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2.5 pl-3 pr-4 py-2 rounded-full text-sm font-semibold text-white transition hover:bg-white/25"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.14)', fontFamily: BL }}>
+                  <FacebookMark size={17} />
+                  Follow Liliw CHATO
+                </a>
               </div>
             </div>
 
