@@ -2,12 +2,35 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Share2, MessageCircle, Send, Download, CheckCircle, X, Smartphone } from 'lucide-react';
+import { Mail, Phone, MapPin, Download, CheckCircle, X, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
+
+/**
+ * Brand marks drawn inline, because lucide-react no longer ships them — the
+ * footer had been standing in with Share2 for Facebook, MessageCircle for
+ * Instagram and Send for Twitter, none of which read as the thing they link to.
+ */
+const FacebookMark = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
+    <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z" />
+  </svg>
+);
+const InstagramMark = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+    <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
+    <circle cx="12" cy="12" r="4.2" />
+    <circle cx="17.6" cy="6.4" r="1.1" fill="currentColor" stroke="none" />
+  </svg>
+);
+const XMark = () => (
+  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden>
+    <path d="M18.9 2H22l-7.1 8.1L23.2 22h-6.6l-5.2-6.8L5.4 22H2.3l7.6-8.7L1.5 2h6.8l4.7 6.2L18.9 2z" />
+  </svg>
+);
 
 const ALL_LINKS = [
   { href: '/about',       label: 'About' },
@@ -22,9 +45,9 @@ const ALL_LINKS = [
 ];
 
 const SOCIAL = [
-  { icon: Share2,        href: 'https://facebook.com/liliwtourism',  label: 'Facebook' },
-  { icon: MessageCircle, href: 'https://instagram.com/liliwtourism', label: 'Instagram' },
-  { icon: Send,          href: 'https://twitter.com/liliwtourism',   label: 'Twitter' },
+  { icon: FacebookMark,  href: 'https://facebook.com/liliwtourism',  label: 'Facebook' },
+  { icon: InstagramMark, href: 'https://instagram.com/liliwtourism', label: 'Instagram' },
+  { icon: XMark,         href: 'https://twitter.com/liliwtourism',   label: 'X' },
 ];
 
 function IOSInstallModal({ onClose }: { onClose: () => void }) {
@@ -126,45 +149,87 @@ export default function Footer() {
           </svg>
         </div>
 
-        {/* The same woven trim that closes the navbar, bracketing the page. */}
-        <div aria-hidden className="liliw-weave h-[3px] w-full" style={{ opacity: 0.85 }} />
+        <div className="max-w-6xl mx-auto px-5 pt-10 pb-10 text-white">
 
-        <div className="max-w-5xl mx-auto px-4 pt-8 pb-12 text-center text-white">
+          {/* Three columns on desktop, stacked and centred on a phone. The
+              single centred stack read as one long ribbon of small text with
+              no grouping — links, contact and legal all weighted the same. */}
+          <div className="grid gap-10 sm:grid-cols-3 text-center sm:text-left">
 
-          {/* Logo — the navbar's mark inverted for a dark ground, with the
-              same wordmark and tagline so the two ends of the page agree. */}
-          <div className="flex justify-center items-center gap-3 mb-3">
-            <div className="relative w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-lg overflow-hidden"
-              style={{ backgroundColor: '#F5C518', color: '#0F5FB5', fontFamily: HL }}>
-              <span aria-hidden className="liliw-tread absolute inset-0" style={{ opacity: 0.45 }} />
-              <span className="relative">L</span>
+            {/* Who this is */}
+            <div>
+              <div className="flex items-center gap-3 justify-center sm:justify-start">
+                <div className="relative w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-lg overflow-hidden shrink-0"
+                  style={{ backgroundColor: '#F5C518', color: '#0F5FB5', fontFamily: HL }}>
+                  <span aria-hidden className="liliw-tread absolute inset-0" style={{ opacity: 0.45 }} />
+                  <span className="relative">L</span>
+                </div>
+                <div className="text-left">
+                  <h3 className="text-xl font-bold leading-none tracking-[0.14em]" style={{ fontFamily: HL }}>LILIW</h3>
+                  <p className="text-white/60 text-[10.5px] mt-1 font-medium tracking-wide" style={{ fontFamily: BL }}>
+                    Home of the Tsinelas Festival
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-white/70 text-sm mt-4 leading-relaxed" style={{ fontFamily: BL }}>
+                The Footwear Capital of the Philippines — heritage, craftsmanship
+                and the colour of the Tsinelas Festival, all in one Laguna town.
+              </p>
+
+              <div className="flex gap-2.5 mt-5 justify-center sm:justify-start">
+                {SOCIAL.map(s => (
+                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
+                    title={s.label} aria-label={s.label}
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white transition hover:bg-white/25"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.14)' }}>
+                    <s.icon />
+                  </a>
+                ))}
+              </div>
             </div>
-            <div className="text-left">
-              <h3 className="text-xl font-bold leading-none tracking-[0.14em]" style={{ fontFamily: HL }}>LILIW</h3>
-              <p className="text-white/60 text-[10.5px] mt-1 font-medium tracking-wide" style={{ fontFamily: BL }}>
-                Home of the Tsinelas Festival
+
+            {/* Where to go */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45 mb-3.5" style={{ fontFamily: HL }}>
+                Explore
+              </p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                {ALL_LINKS.map(link => (
+                  <Link key={link.href} href={link.href}
+                    className="text-white/75 hover:text-white text-sm transition-colors"
+                    style={{ fontFamily: BL }}>
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* How to reach the office */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45 mb-3.5" style={{ fontFamily: HL }}>
+                Tourism Office
+              </p>
+              <div className="space-y-2.5 text-sm text-white/75" style={{ fontFamily: BL }}>
+                <a href="tel:+63495011234" className="flex items-center gap-2.5 justify-center sm:justify-start hover:text-white transition-colors">
+                  <Phone size={13} className="shrink-0 text-white/40" /> +63 (49) 501-1234
+                </a>
+                <a href="mailto:info@liliwtourism.com" className="flex items-center gap-2.5 justify-center sm:justify-start hover:text-white transition-colors">
+                  <Mail size={13} className="shrink-0 text-white/40" /> info@liliwtourism.com
+                </a>
+                <p className="flex items-start gap-2.5 justify-center sm:justify-start">
+                  <MapPin size={13} className="shrink-0 mt-1 text-white/40" /> Municipal Hall, Liliw, Laguna 4002
+                </p>
+              </div>
+              <p className="text-white/40 text-[11px] mt-4 leading-relaxed" style={{ fontFamily: BL }}>
+                Culture, History, Arts and Tourism Office
               </p>
             </div>
           </div>
 
-          <p className="text-white/70 text-sm mb-6 max-w-md mx-auto" style={{ fontFamily: BL }}>
-            Discover the beauty, heritage, and vibrant culture of Liliw — your ultimate guide to experiencing this Laguna gem.
-          </p>
-
-          {/* Social icons */}
-          <div className="flex justify-center gap-3 mb-6">
-            {SOCIAL.map(s => (
-              <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" title={s.label}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition hover:bg-white/30"
-                style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
-                <s.icon size={16} className="text-white" />
-              </a>
-            ))}
-          </div>
-
           {/* Install CTA */}
           {(showAndroid || showIOS || showInstalled) && (
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mt-10">
               {showInstalled && (
                 <div className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold"
                   style={{ backgroundColor: 'rgba(245,197,24,0.2)', color: '#F5C518', border: '1px solid rgba(245,197,24,0.3)', fontFamily: BL }}>
@@ -192,32 +257,15 @@ export default function Footer() {
             </div>
           )}
 
-          {/* Nav links */}
-          <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mb-6">
-            {ALL_LINKS.map(link => (
-              <Link key={link.href} href={link.href}
-                className="text-white/60 hover:text-white text-sm transition-colors"
-                style={{ fontFamily: BL }}>
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          {/* Contact mini-row */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 mb-6 text-xs text-white/40" style={{ fontFamily: BL }}>
-            <span className="flex items-center gap-1.5"><Phone size={11} /> +63 (49) 501-1234</span>
-            <span className="flex items-center gap-1.5"><Mail size={11} /> info@liliwtourism.com</span>
-            <span className="flex items-center gap-1.5"><MapPin size={11} /> Liliw, Laguna 4002</span>
-          </div>
-
-          {/* Divider */}
-          <div className="w-16 h-px mx-auto mb-4" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
-
-          {/* Legal + copyright */}
-          <div className="flex flex-wrap justify-center items-center gap-4 text-xs text-white/30" style={{ fontFamily: BL }}>
-            <span>&copy; {year} Liliw Tourism. All rights reserved.</span>
-            <Link href="#" className="hover:text-white/60 transition-colors">Privacy Policy</Link>
-            <Link href="#" className="hover:text-white/60 transition-colors">Terms of Service</Link>
+          {/* Legal bar — a full-width rule rather than the short centred dash,
+              so the small print reads as a footer line and not as more content. */}
+          <div className="mt-10 pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/40"
+            style={{ borderTop: '1px solid rgba(255,255,255,0.14)', fontFamily: BL }}>
+            <span>&copy; {year} Municipality of Liliw, Laguna. All rights reserved.</span>
+            <div className="flex items-center gap-5">
+              <Link href="/faq" className="hover:text-white transition-colors">Help &amp; FAQ</Link>
+              <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
+            </div>
           </div>
 
         </div>
