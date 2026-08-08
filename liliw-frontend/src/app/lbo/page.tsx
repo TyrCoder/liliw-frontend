@@ -500,36 +500,25 @@ export default function LboDashboard() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }} className="py-7">
-        <div className="max-w-4xl mx-auto px-4">
-          <Link href="/" className="inline-flex items-center text-xs font-semibold mb-5 opacity-70 hover:opacity-100 transition" style={{ color: '#1565C0' }}>
-            <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Back to Site
-          </Link>
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}>
-              <Building2 className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5 mb-0.5">
-                <h1 className="text-2xl font-bold text-white">{appInfo!.business_name}</h1>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold border" style={{ color: '#93C5FD', borderColor: 'rgba(147,197,253,0.35)', background: 'rgba(147,197,253,0.1)' }}>
-                  LBO
-                </span>
-              </div>
-              <p className="text-blue-200 text-sm">{appInfo!.owner_name}</p>
-              {appInfo!.attraction_name && !isLinked && (
-                <span className="inline-block mt-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-blue-100">
-                  {appInfo!.attraction_name}
-                </span>
-              )}
-              {isLinked && attrData?.attraction && (
-                <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-blue-100">
-                  <MapPin className="w-3 h-3" />{attrData.attraction.name}
-                </span>
-              )}
-            </div>
+      {/* Utility bar — matches /admin and /cms. The business name and
+          linked attraction moved into the dashboard below, which had been
+          repeating both a few hundred pixels further down. */}
+      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200/80">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/" className="inline-flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-700 transition shrink-0">
+              <ChevronLeft className="w-3.5 h-3.5" /> Site
+            </Link>
+            <span className="w-px h-4 bg-gray-200 shrink-0" />
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+              style={{ backgroundColor: 'rgba(15,95,181,0.1)', color: '#0F5FB5' }}>
+              <Building2 className="w-4 h-4" />
+            </span>
+            <span className="font-bold text-sm text-gray-800 truncate">{appInfo!.business_name}</span>
+            <span className="hidden sm:inline text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+              style={{ backgroundColor: 'rgba(15,95,181,0.1)', color: '#0F5FB5' }}>LBO</span>
           </div>
+          <span className="text-xs text-gray-400 hidden sm:inline shrink-0 truncate">{appInfo!.owner_name}</span>
         </div>
       </div>
 
