@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ChevronLeft, MapPin, Calendar, Newspaper, Palette, Users,
-  BookOpen, ImageIcon, HelpCircle, Route, ClipboardCheck, Edit3,
+  BookOpen, ImageIcon, HelpCircle, Route, ClipboardCheck, Edit3, LayoutDashboard,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import AttractionsTab    from '@/components/admin/cms/AttractionsTab';
@@ -17,9 +17,10 @@ import StoriesTab        from '@/components/admin/cms/StoriesTab';
 import FaqsTab           from '@/components/admin/cms/FaqsTab';
 import ItinerariesTab    from '@/components/admin/cms/ItinerariesTab';
 import ContentApprovalsTab from '@/components/admin/cms/ContentApprovalsTab';
+import CmsOverview from '@/components/admin/dashboard/CmsOverview';
 
 type CMSTab =
-  | 'approvals' | 'attractions' | 'events' | 'news'
+  | 'dashboard' | 'approvals' | 'attractions' | 'events' | 'news'
   | 'art-forms' | 'artisans' | 'stories' | 'faqs' | 'itineraries';
 
 interface NavItem {
@@ -31,6 +32,12 @@ interface NavItem {
 }
 
 const NAV: { section: string; items: NavItem[] }[] = [
+  {
+    section: 'Overview',
+    items: [
+      { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" />, roles: ['editor', 'officer', 'admin'], color: '#0F5FB5' },
+    ],
+  },
   {
     section: 'Approvals',
     items: [
@@ -162,6 +169,15 @@ export default function CMSPage() {
 
         {/* Main content */}
         <main className="flex-1 p-6 min-w-0">
+          {activeTab === 'dashboard' && (
+            <CmsOverview
+              token={token}
+              username={user.username}
+              isOfficer={isChatoOfficer || isAdmin}
+              onGoToTab={(t) => setActiveTab(t as CMSTab)}
+            />
+          )}
+
           {activeTab === 'approvals' && (
             <ContentApprovalsTab token={token} />
           )}

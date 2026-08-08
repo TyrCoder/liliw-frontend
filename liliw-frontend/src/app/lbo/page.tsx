@@ -5,11 +5,12 @@ import Link from 'next/link';
 import {
   Building2, ChevronLeft, Loader2, CheckCircle, AlertCircle,
   Clock, FileText, ArrowRight, RefreshCw, Users, Plus, X,
-  Edit, TrendingUp, MapPin, Star, Send, Layers, QrCode,
+  Edit, TrendingUp, MapPin, Star, Send, Layers, QrCode, LayoutDashboard,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import QRPoster from '@/components/QRPoster';
+import LboOverview from '@/components/admin/dashboard/LboOverview';
 import { stripHtml } from '@/lib/text';
 import SafeHtml from '@/components/SafeHtml';
 
@@ -31,7 +32,7 @@ const FIELDS_TO_CHANGE = [
   'Other',
 ];
 
-type Tab = 'overview' | 'requests' | 'visitors' | 'ratings';
+type Tab = 'dashboard' | 'overview' | 'requests' | 'visitors' | 'ratings';
 
 const CATEGORIES = ['heritage', 'spot', 'dining'] as const;
 type AttrCategory = typeof CATEGORIES[number];
@@ -131,7 +132,7 @@ export default function LboDashboard() {
   const [notLbo,     setNotLbo]     = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
 
   /* ── Attraction Overview ── */
   const [attrData,    setAttrData]    = useState<AttractionData | null>(null);
@@ -536,7 +537,8 @@ export default function LboDashboard() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-2.5 flex flex-wrap gap-1">
           {([
-            { key: 'overview',  label: 'Overview',        icon: <MapPin className="w-3.5 h-3.5" />,     badge: 0 },
+            { key: 'dashboard', label: 'Dashboard',       icon: <LayoutDashboard className="w-3.5 h-3.5" />, badge: 0 },
+            { key: 'overview',  label: 'Your Listing',    icon: <MapPin className="w-3.5 h-3.5" />,     badge: 0 },
             { key: 'requests',  label: 'Change Requests',  icon: <Edit className="w-3.5 h-3.5" />,       badge: pendingCrCount },
             { key: 'visitors',  label: 'Visitor Records',  icon: <TrendingUp className="w-3.5 h-3.5" />, badge: 0 },
             ...(attrData?.linked ? [{ key: 'ratings' as Tab, label: 'Ratings & Reviews', icon: <Star className="w-3.5 h-3.5" />, badge: 0 }] : []),
@@ -562,6 +564,10 @@ export default function LboDashboard() {
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
 
         {/* ── OVERVIEW ── */}
+        {activeTab === 'dashboard' && (
+          <LboOverview token={token} onGoToTab={(t) => setActiveTab(t as Tab)} />
+        )}
+
         {activeTab === 'overview' && (
           <>
             {loadingAttr ? (
