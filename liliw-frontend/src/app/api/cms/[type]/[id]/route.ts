@@ -94,7 +94,9 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   if (!role) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (role === 'officer') return NextResponse.json({ error: 'Officers cannot delete content' }, { status: 403 });
 
-  const { data: existing } = await supabaseServer.from(table).select('status, name, title, question').eq('id', id).single();
+  // See the note in submit/route.ts — no CMS table has name, title and
+  // question, so selecting all three failed and every entry read as missing.
+  const { data: existing } = await supabaseServer.from(table).select('*').eq('id', id).single();
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (existing.status === 'pending') {
     return NextResponse.json({ error: 'Pending entries cannot be deleted' }, { status: 409 });
