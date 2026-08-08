@@ -7,7 +7,7 @@ import { MediaItem } from './MediaUploader';
 interface Entry {
   id: string; title: string; category: string; description: string;
   venue: string; date_start: string | null; date_end: string | null;
-  is_joinable: boolean; slug: string; status: string;
+  is_joinable: boolean; video_url: string; slug: string; status: string;
   created_by: string; reject_remarks: string | null; created_at: string;
   media?: MediaItem[];
 }
@@ -23,7 +23,7 @@ const CONFIG: CmsTabConfig<Entry> = {
   emptyText: 'No events yet',
   empty: {
     title: '', category: 'cultural', description: '', venue: '',
-    date_start: null, date_end: null, is_joinable: false,
+    date_start: null, date_end: null, is_joinable: false, video_url: '',
     slug: '', reject_remarks: null, media: [],
   },
   fields: [
@@ -34,8 +34,9 @@ const CONFIG: CmsTabConfig<Entry> = {
     { name: 'date_start',  label: 'Start Date', type: 'datetime', colSpan: 1 },
     { name: 'date_end',    label: 'End Date',   type: 'datetime', colSpan: 1 },
     { name: 'is_joinable', label: 'Allow public sign-ups (Joinable)', type: 'checkbox' },
-    { name: 'description', label: 'Description', type: 'textarea', rows: 4,
-      placeholder: 'What is happening… A Facebook video link pasted here plays inside the event.' },
+    { name: 'description', label: 'Description', type: 'textarea', rows: 4 },
+    { name: 'video_url',   label: 'Facebook Video Link', type: 'text',
+      placeholder: 'https://www.facebook.com/LiliwCHATO/videos/… — plays inside the event' },
     { name: 'media',       label: 'Cover Photo', type: 'media', maxFiles: 1 },
   ],
   columns: [

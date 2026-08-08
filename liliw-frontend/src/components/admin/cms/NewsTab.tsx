@@ -6,7 +6,7 @@ import { MediaItem } from './MediaUploader';
 
 interface Entry {
   id: string; title: string; category: string; content: string;
-  slug: string; status: string; created_by: string;
+  video_url: string; slug: string; status: string; created_by: string;
   reject_remarks: string | null; created_at: string; media?: MediaItem[];
 }
 
@@ -20,14 +20,15 @@ const CONFIG: CmsTabConfig<Entry> = {
   emptyIcon: <Newspaper className="w-10 h-10 mb-3 opacity-20" />,
   emptyText: 'No articles yet',
   empty: {
-    title: '', category: 'announcement', content: '', slug: '', reject_remarks: null, media: [],
+    title: '', category: 'announcement', content: '', video_url: '', slug: '', reject_remarks: null, media: [],
   },
   fields: [
     { name: 'title',    label: 'Title',    type: 'text', required: true },
     { name: 'category', label: 'Category', type: 'select',
       options: CATEGORIES.map(c => ({ value: c, label: c.replace('-', ' ') })) },
-    { name: 'content',  label: 'Content',  type: 'richtext',
-      placeholder: 'Write the news article… Paste a Facebook video link on its own line and it plays inside the article.' },
+    { name: 'content',  label: 'Content',  type: 'richtext', placeholder: 'Write the news article…' },
+    { name: 'video_url', label: 'Facebook Video Link', type: 'text',
+      placeholder: 'https://www.facebook.com/LiliwCHATO/videos/… — plays inside the article' },
     { name: 'media',    label: 'Photos',   type: 'media' },
   ],
   columns: [
