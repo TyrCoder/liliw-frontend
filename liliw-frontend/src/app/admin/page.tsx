@@ -18,6 +18,7 @@ import BadgeSVG, { BADGE_ICONS } from '@/components/BadgeSVG';
 import Avatar from '@/components/Avatar';
 import MediaUploader from '@/components/admin/cms/MediaUploader';
 import ConfirmDialog from '@/components/admin/cms/ConfirmDialog';
+import { toast } from 'sonner';
 import * as XLSX from 'xlsx-js-style';
 
 /* ─── types ──────────────────────────────────────────────── */
@@ -472,13 +473,13 @@ export default function AdminDashboard() {
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        alert(d.error ?? 'Could not remove that picture.');
+        toast.error(d.error ?? 'Could not remove that picture.');
         return;
       }
       setUsers(prev => prev.map(u =>
         u.email === email ? { ...u, avatar: null, avatarIsCustom: false } : u));
     } catch {
-      alert('Could not reach the server.');
+      toast.error('Could not reach the server.');
     } finally {
       setClearingAvatar(null);
     }
