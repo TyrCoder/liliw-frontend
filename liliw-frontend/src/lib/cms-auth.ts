@@ -92,15 +92,20 @@ export async function getCmsRole(req: NextRequest): Promise<CmsRole | null> {
  */
 export function slugify(input: string): string {
   return (input || '')
-    .toLowerCase()
+    // Normalise before lowercasing, not after. Titles pasted from Facebook are
+    // often in mathematical bold (𝐆𝐎𝐁𝐓𝐎𝐔𝐑), and those characters have no
+    // lowercase mapping — so lowercasing first left them untouched, NFKD then
+    // produced uppercase ASCII, and the a-z filter deleted them. "GOBTOUR"
+    // came out as "btour". This way NFKD folds them to ASCII first.
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')   // strip accents
+    .replace(/[̀-ͯ]/g, '')   // strip the accents NFKD split off
+    .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .slice(0, 60)
-    .replace(/^-|-$/g, '');
+    .replace(/^-+|-+$/g, '');
 }
 
 export const CMS_TABLES: Record<string, string> = {
