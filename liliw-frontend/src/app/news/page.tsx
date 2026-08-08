@@ -11,6 +11,7 @@ import { stripHtml } from '@/lib/text';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
+const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 
 const PENNANT = ['#EF4444','#F97316','#EAB308','#22C55E','#0D9488','#3B82F6','#8B5CF6'];
 function Bunting({ flip = false }: { flip?: boolean }) {
@@ -313,33 +314,76 @@ function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => voi
             </button>
           </div>
         ) : (
-          <div className="relative h-16 shrink-0" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
-            <button onClick={onClose}
-              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition">
-              <X className="w-4 h-4" />
-            </button>
+          /* Without a photo this was 64px of empty blue holding nothing but a
+             close button. It now carries the category and date, tinted to the
+             category's own colour, so the space says something. */
+          <div className="relative shrink-0 px-6 pt-5 pb-4 overflow-hidden"
+            style={{ background: `linear-gradient(135deg, ${catStyle.text} 0%, #0B3D91 120%)` }}>
+            <span aria-hidden className="absolute inset-0 opacity-[0.16]" style={{
+              background:
+                'radial-gradient(80% 120% at 12% 0%, #F7C948 0%, transparent 55%),' +
+                'radial-gradient(70% 110% at 90% 100%, #2EC4D6 0%, transparent 60%)',
+            }} />
+            <span aria-hidden className="liliw-weave absolute inset-x-0 bottom-0 h-[3px] opacity-70" />
+
+            <div className="relative flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold capitalize"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.22)', color: '#fff', fontFamily: HL }}>
+                  {item.category.replace(/[-_]/g, ' ')}
+                </span>
+                {item.isEvent && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ml-2"
+                    style={{ backgroundColor: '#F7C948', color: '#0B3D91', fontFamily: HL }}>
+                    Event
+                  </span>
+                )}
+                {item.date && (
+                  <p className="text-white/80 text-[11px] mt-2 flex items-center gap-1.5" style={{ fontFamily: BL }}>
+                    <Calendar className="w-3 h-3" />
+                    {new Date(item.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </p>
+                )}
+              </div>
+              <button onClick={onClose} aria-label="Close"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white transition shrink-0 hover:bg-white/25"
+                style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className="px-3 py-1 rounded-full text-xs font-bold capitalize"
-              style={{ backgroundColor: catStyle.bg, color: catStyle.text, fontFamily: HL }}>
-              {item.category.replace(/[-_]/g, ' ')}
-            </span>
-            {item.isEvent && (
-              <span className="px-2 py-1 rounded-full text-xs font-bold"
-                style={{ backgroundColor: 'rgba(249,115,22,0.1)', color: '#C2410C', fontFamily: HL }}>
-                Event
+        <div className="px-6 pt-5 pb-6 overflow-y-auto">
+          {/* The chips and date live in the header above when there is no
+              photo, so they only repeat here over a carousel — and the date
+              is omitted rather than printed as an em dash when absent. */}
+          {item.photos.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="px-3 py-1 rounded-full text-xs font-bold capitalize"
+                style={{ backgroundColor: catStyle.bg, color: catStyle.text, fontFamily: HL }}>
+                {item.category.replace(/[-_]/g, ' ')}
               </span>
-            )}
-            <span className="ml-auto flex items-center gap-1.5 text-xs text-gray-400" style={{ fontFamily: BL }}>
-              <Calendar className="w-3.5 h-3.5" />
-              {item.date ? new Date(item.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
-            </span>
-          </div>
-          <h3 className="text-xl font-bold mb-3" style={{ color: '#1A1A2E', fontFamily: HL }}>{item.title}</h3>
+              {item.isEvent && (
+                <span className="px-2 py-1 rounded-full text-xs font-bold"
+                  style={{ backgroundColor: 'rgba(247,148,29,0.12)', color: '#B45309', fontFamily: HL }}>
+                  Event
+                </span>
+              )}
+              {item.date && (
+                <span className="ml-auto flex items-center gap-1.5 text-xs text-gray-400" style={{ fontFamily: BL }}>
+                  <Calendar className="w-3.5 h-3.5" />
+                  {new Date(item.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </span>
+              )}
+            </div>
+          )}
+
+          <h3 className="text-[22px] font-bold leading-tight mb-1" style={{ color: '#0B3D91', fontFamily: DL }}>
+            {item.title}
+          </h3>
+          <div className="h-0.5 w-12 rounded-full mb-4" style={{ backgroundColor: '#F7C948' }} />
           {(() => {
             // The video comes from its own CMS field, or from a link pasted
             // into the body — the second still works so nothing already
@@ -350,7 +394,8 @@ function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => voi
             return (
               <>
                 {rest && (
-                  <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line" style={{ fontFamily: BL }}>
+                  <p className="text-[15px] leading-relaxed whitespace-pre-line"
+                    style={{ color: '#334155', fontFamily: BL }}>
                     {rest}
                   </p>
                 )}
@@ -363,8 +408,12 @@ function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => voi
             );
           })()}
           {item.source && (
-            <div className="flex items-center gap-1.5 mt-4 text-xs text-gray-400" style={{ fontFamily: BL }}>
-              <MapPin className="w-3.5 h-3.5 shrink-0" />{item.source}
+            <div className="mt-5 pt-4 border-t border-gray-100 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+                style={{ backgroundColor: 'rgba(15,95,181,0.09)', color: '#0F5FB5' }}>
+                <MapPin className="w-3 h-3" />
+              </span>
+              <span className="text-xs font-medium" style={{ color: '#64748B', fontFamily: BL }}>{item.source}</span>
             </div>
           )}
         </div>
