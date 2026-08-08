@@ -53,8 +53,28 @@ export default function ContentApprovalsTab({ token }: Props) {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setMsg(null);
     const res = await fetch('/api/cms/pending', { headers: h }).catch(() => null);
-    const d = res ? await res.json() : {};
+    const d = res ? await res.json().catch(() => ({})) : {};
+
+    // "No pending items" and "this screen could not read them" looked exactly
+    // the same here: a 403 for an editor, or an expired session, produced an
+    // empty list and a reassuring "All content is up to date."
+    if (!res) {
+      setMsg({ ok: false, text: 'Could not reach the server.' });
+    } else if (!res.ok) {
+      setMsg({
+        ok: false,
+        text: res.status === 403
+          ? 'Approvals are reviewed by officers and admins — your account cannot see this list.'
+          : d.error || `Could not load pending content (${res.status}).`,
+      });
+    } else if (d.warning) {
+      // The route reports content types it could not read rather than
+      // quietly leaving them out of the count.
+      setMsg({ ok: false, text: d.warning });
+    }
+
     setEntries(d.data || []);
     setLoading(false);
   }, [token]);
