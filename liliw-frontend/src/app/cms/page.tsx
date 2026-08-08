@@ -98,28 +98,31 @@ export default function CMSPage() {
 
   return (
     <div style={{ background: '#f0f4f8' }}>
-      {/* Top bar */}
-      <div style={{ background: 'linear-gradient(135deg,#0F1F3C 0%,#1a3a5c 100%)' }} className="py-4 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/admin" className="inline-flex items-center gap-1.5 text-xs font-semibold opacity-70 hover:opacity-100 transition" style={{ color: '#1565C0' }}>
-            <ChevronLeft className="w-3.5 h-3.5" /> Back to Dashboard
-          </Link>
-          <div className="w-px h-5 bg-white/10" />
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(0,191,179,0.15)', border: '1px solid rgba(0,191,179,0.3)' }}>
-              <Edit3 className="w-4 h-4" style={{ color: '#1565C0' }} />
-            </div>
-            <div>
-              <p className="text-white font-bold text-sm leading-tight">Content Management</p>
-              <p className="text-gray-400 text-[11px]">Liliw Tourism CMS</p>
-            </div>
+      {/* Utility bar — same treatment as /admin and /lbo, so moving between
+          the three does not feel like moving between three products. */}
+      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200/80">
+        <div className="h-14 px-4 sm:px-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            {(isAdmin || isChatoOfficer) && (
+              <>
+                <Link href="/admin"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-700 transition shrink-0">
+                  <ChevronLeft className="w-3.5 h-3.5" /> Dashboard
+                </Link>
+                <span className="w-px h-4 bg-gray-200 shrink-0" />
+              </>
+            )}
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+              style={{ backgroundColor: 'rgba(15,95,181,0.1)', color: '#0F5FB5' }}>
+              <Edit3 className="w-4 h-4" />
+            </span>
+            <span className="font-bold text-sm text-gray-800 truncate">Content Management</span>
+            <span className="hidden sm:inline text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+              style={{ backgroundColor: 'rgba(15,95,181,0.1)', color: '#0F5FB5' }}>
+              {isAdmin ? 'Admin' : isChatoOfficer ? 'Officer' : 'Editor'}
+            </span>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold border" style={{ color: '#1565C0', borderColor: 'rgba(0,191,179,0.4)', background: 'rgba(0,191,179,0.1)' }}>
-            {isAdmin ? 'Admin' : isChatoOfficer ? 'Officer' : 'Editor'}
-          </span>
-          <span className="text-gray-400 text-sm hidden sm:inline">{user.username}</span>
+          <span className="text-xs text-gray-400 hidden sm:inline shrink-0">{user.username}</span>
         </div>
       </div>
 

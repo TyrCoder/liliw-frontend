@@ -844,13 +844,11 @@ export default function AdminDashboard() {
     URL.revokeObjectURL(url);
   };
 
-  const dashboardTitle = isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'CHATO Officer Dashboard' : 'CHATO Editor Dashboard';
-  const dashboardSub   = isAdmin ? 'Analytics & user management' : isChatoOfficer ? 'Requests & submissions' : 'LBO & attractions management';
 
   // Tab visibility per role
   const ALL_TABS: { key: Tab; label: string; badge?: number; roles: string[] }[] = [
     // Admin: analytics + user management
-    { key: 'overview',           label: 'Analytics',           badge: undefined,                                                                                    roles: ['admin'] },
+    { key: 'overview',           label: 'Dashboard',           badge: undefined,                                                                                    roles: ['admin'] },
     { key: 'users',              label: 'Users',                badge: users.length,                                                                                 roles: ['admin'] },
     { key: 'roles',              label: 'Role Management',      badge: roleUsers.length,                                                                             roles: ['admin'] },
     { key: 'achievements',       label: 'Achievements',         badge: achievements.length,                                                                          roles: ['admin'] },
@@ -888,33 +886,38 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg,#0F1F3C 0%,#1a3a5c 100%)' }} className="py-7">
-        <div className="max-w-7xl mx-auto px-4">
-          <Link href="/" className="inline-flex items-center text-xs font-semibold mb-5 group opacity-70 hover:opacity-100 transition" style={{ color: '#1565C0' }}>
-            <ChevronLeft className="w-3.5 h-3.5 mr-1 group-hover:-translate-x-1 transition" /> Back to Site
-          </Link>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'rgba(0,191,179,0.15)', border: '1px solid rgba(0,191,179,0.3)' }}>
-                <Shield className="w-6 h-6" style={{ color: '#1565C0' }} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2.5 mb-0.5">
-                  <h1 className="text-2xl font-bold text-white">{dashboardTitle}</h1>
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold border" style={{ color: '#1565C0', borderColor: 'rgba(0,191,179,0.4)', background: 'rgba(0,191,179,0.1)' }}>
-                    {roleBadge}
-                  </span>
-                </div>
-                <p className="text-gray-400 text-sm">Welcome back, <span className="text-gray-300 font-medium">{user.username}</span> · {dashboardSub}</p>
-              </div>
-            </div>
-            <Link href="/cms"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold text-sm transition hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg,#1565C0,#009E99)', boxShadow: '0 4px 14px rgba(0,191,179,.3)' }}>
-              <Edit className="w-4 h-4" /> Content Management
+      {/* Utility bar.
+          This was a tall dark gradient panel carrying the page title, the
+          role badge and a "Welcome back" line — all of which the dashboard
+          below now says itself, so it was the same greeting twice under two
+          different designs. What is left is what a header is actually for:
+          where you are, who you are, and the way out. */}
+      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200/80">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-700 transition shrink-0">
+              <ChevronLeft className="w-3.5 h-3.5" /> Site
             </Link>
+            <span className="w-px h-4 bg-gray-200 shrink-0" />
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+              style={{ backgroundColor: 'rgba(15,95,181,0.1)', color: '#0F5FB5' }}>
+              <Shield className="w-4 h-4" />
+            </span>
+            <span className="font-bold text-sm text-gray-800 truncate">Liliw Tourism</span>
+            <span className="hidden sm:inline text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+              style={{ backgroundColor: 'rgba(15,95,181,0.1)', color: '#0F5FB5' }}>
+              {roleBadge}
+            </span>
           </div>
+
+          <Link href="/cms"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-semibold text-xs text-white transition hover:opacity-90 shrink-0"
+            style={{ backgroundColor: '#0F5FB5', boxShadow: '0 6px 16px -8px rgba(15,95,181,0.9)' }}>
+            <Edit className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Content Management</span>
+            <span className="sm:hidden">CMS</span>
+          </Link>
         </div>
       </div>
 
