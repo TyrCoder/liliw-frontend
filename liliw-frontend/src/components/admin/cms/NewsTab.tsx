@@ -26,7 +26,8 @@ const CONFIG: CmsTabConfig<Entry> = {
     { name: 'title',    label: 'Title',    type: 'text', required: true },
     { name: 'category', label: 'Category', type: 'select',
       options: CATEGORIES.map(c => ({ value: c, label: c.replace('-', ' ') })) },
-    { name: 'content',  label: 'Content',  type: 'richtext', placeholder: 'Write the news article…' },
+    { name: 'content',  label: 'Content',  type: 'richtext',
+      placeholder: 'Write the news article… Paste a Facebook video link on its own line and it plays inside the article.' },
     { name: 'media',    label: 'Photos',   type: 'media' },
   ],
   columns: [
