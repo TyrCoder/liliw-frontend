@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState, ReactNode } from 'react';
-import { Loader2, Plus, Edit2, Trash2, Send, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Loader2, Plus, Edit2, Trash2, Send, CheckCircle, AlertCircle, X, Archive, RotateCcw } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import RichTextEditor from './RichTextEditor';
 import MediaUploader, { MediaItem } from './MediaUploader';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import RejectModal from './RejectModal';
+import ConfirmDialog, { IrreversibleNote } from './ConfirmDialog';
 
 // One template for every CMS content type.
 //
@@ -18,7 +19,8 @@ import RejectModal from './RejectModal';
 // the API routes use to resolve the backing table.
 
 const STATUS_LABELS: Record<string, string> = {
-  all: 'All', draft: 'Draft', pending: 'Pending Review', approved: 'Published', rejected: 'Rejected',
+  all: 'All', draft: 'Draft', pending: 'Pending Review', approved: 'Published',
+  rejected: 'Rejected', archived: 'Archived',
 };
 
 export type CmsFieldType =
@@ -125,6 +127,9 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
   const [msg, setMsg]           = useState<{ ok: boolean; text: string } | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  // Which destructive action the confirm dialog is currently asking about.
+  const [confirmAction, setConfirmAction] =
+    useState<{ kind: 'archive' | 'restore' | 'purge'; entry: T } | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [rejectRemarks, setRejectRemarks] = useState('');
   const [rejecting, setRejecting] = useState(false);
@@ -234,14 +239,34 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
     load(statusFilter);
   };
 
-  const del = async (id: string) => {
-    if (!confirm(`Delete this ${config.entityLabel.toLowerCase()}?`)) return;
-    setDeleting(id);
+  /** Archive, restore, or destroy — whichever the open dialog asked for. */
+  const runConfirmed = async () => {
+    if (!confirmAction) return;
+    const { kind, entry } = confirmAction;
+    const label = String(
+      (entry as Record<string, unknown>).name
+      ?? (entry as Record<string, unknown>).title
+      ?? (entry as Record<string, unknown>).question
+      ?? config.entityLabel,
+    );
+
+    setDeleting(entry.id);
     setMsg(null);
-    if (await act(`/api/cms/${slug}/${id}`, { method: 'DELETE', headers: h }, 'Could not delete')) {
-      setMsg({ ok: true, text: `${config.entityLabel} deleted.` });
+
+    let ok = false;
+    if (kind === 'archive') {
+      ok = await act(`/api/cms/${slug}/${entry.id}`, { method: 'DELETE', headers: h }, 'Could not archive');
+      if (ok) setMsg({ ok: true, text: `"${label}" archived. It is off the site and can be restored.` });
+    } else if (kind === 'restore') {
+      ok = await act(`/api/cms/${slug}/${entry.id}/restore`, { method: 'POST', headers: h }, 'Could not restore');
+      if (ok) setMsg({ ok: true, text: `"${label}" restored as a draft. Submit it for review to publish again.` });
+    } else {
+      ok = await act(`/api/cms/${slug}/${entry.id}?permanent=1`, { method: 'DELETE', headers: h }, 'Could not delete');
+      if (ok) setMsg({ ok: true, text: `"${label}" deleted permanently.` });
     }
+
     setDeleting(null);
+    setConfirmAction(null);
     load(statusFilter);
   };
 
@@ -313,7 +338,7 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
           <p className="text-xs text-gray-400 mt-0.5">{config.subtitle}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {['all', 'draft', 'pending', 'approved', 'rejected'].map(s => (
+          {['all', 'draft', 'pending', 'approved', 'rejected', ...(isOfficer || isAdmin ? ['archived'] : [])].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${statusFilter === s ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
               style={statusFilter === s ? { backgroundColor: '#1565C0' } : {}}>
@@ -394,9 +419,28 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
                           </>
                         )}
                         {canEdit && ['draft', 'rejected', 'approved'].includes(e.status) && (
-                          <button onClick={() => del(e.id)} disabled={deleting === e.id} className="p-1 rounded-lg text-gray-300 hover:text-red-500 transition disabled:opacity-50">
-                            {deleting === e.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                          <button onClick={() => setConfirmAction({ kind: 'archive', entry: e })}
+                            disabled={deleting === e.id} title="Archive"
+                            className="p-1 rounded-lg text-gray-300 hover:text-amber-600 transition disabled:opacity-50">
+                            {deleting === e.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
                           </button>
+                        )}
+
+                        {/* The archive belongs to admins and officers, and so
+                            do the only two things you can do from it. */}
+                        {(isOfficer || isAdmin) && e.status === 'archived' && (
+                          <>
+                            <button onClick={() => setConfirmAction({ kind: 'restore', entry: e })}
+                              disabled={deleting === e.id}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-blue-200 text-blue-700 hover:bg-blue-50 transition disabled:opacity-50">
+                              <RotateCcw className="w-3 h-3" /> Restore
+                            </button>
+                            <button onClick={() => setConfirmAction({ kind: 'purge', entry: e })}
+                              disabled={deleting === e.id} title="Delete permanently"
+                              className="p-1 rounded-lg text-gray-300 hover:text-red-500 transition disabled:opacity-50">
+                              {deleting === e.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -465,6 +509,69 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
         onCancel={() => { setRejectTarget(null); setRejectRemarks(''); }}
         loading={rejecting}
       />
+
+      {(() => {
+        if (!confirmAction) return null;
+        const { kind, entry } = confirmAction;
+        const label = String(
+          (entry as Record<string, unknown>).name
+          ?? (entry as Record<string, unknown>).title
+          ?? (entry as Record<string, unknown>).question
+          ?? 'this entry',
+        );
+        const noun = config.entityLabel.toLowerCase();
+
+        const copy = {
+          archive: {
+            tone: 'warning' as const,
+            title: `Archive this ${noun}?`,
+            confirmLabel: 'Archive',
+            message: (
+              <>
+                <strong className="text-gray-700">{label}</strong> will be taken off the
+                public site and moved to the archive. Its photos are kept, and an admin
+                or officer can restore it later.
+              </>
+            ),
+          },
+          restore: {
+            tone: 'neutral' as const,
+            title: `Restore this ${noun}?`,
+            confirmLabel: 'Restore',
+            message: (
+              <>
+                <strong className="text-gray-700">{label}</strong> comes back as a draft,
+                not straight to the site — submit it for review when it is ready.
+              </>
+            ),
+          },
+          purge: {
+            tone: 'danger' as const,
+            title: `Delete this ${noun} permanently?`,
+            confirmLabel: 'Delete permanently',
+            message: (
+              <>
+                <strong className="text-gray-700">{label}</strong> and its photos will be
+                removed from the database.
+                <IrreversibleNote>This cannot be undone.</IrreversibleNote>
+              </>
+            ),
+          },
+        }[kind];
+
+        return (
+          <ConfirmDialog
+            open
+            tone={copy.tone}
+            title={copy.title}
+            message={copy.message}
+            confirmLabel={copy.confirmLabel}
+            loading={deleting === entry.id}
+            onConfirm={runConfirmed}
+            onCancel={() => setConfirmAction(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

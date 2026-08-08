@@ -15,7 +15,11 @@ export async function logCmsAction(opts: {
   table:       string;
   entryId:     string;
   entryTitle:  string;
-  event:       'entry.create' | 'entry.update' | 'entry.delete' | 'entry.submit' | 'entry.publish' | 'entry.unpublish';
+  // archive/restore are distinct from delete on purpose: the audit trail should
+  // show that something was taken off the site and could still be brought back,
+  // not imply it was destroyed.
+  event:       'entry.create' | 'entry.update' | 'entry.delete' | 'entry.submit'
+             | 'entry.publish' | 'entry.unpublish' | 'entry.archive' | 'entry.restore';
   performedBy: string;
   role:        string;
 }) {

@@ -5,6 +5,7 @@ const MAP: Record<string, { cls: string; label: string }> = {
   pending:  { cls: 'bg-yellow-50 text-yellow-700', label: 'Pending Review' },
   approved: { cls: 'bg-green-50 text-green-700',   label: 'Published' },
   rejected: { cls: 'bg-red-50 text-red-600',       label: 'Rejected' },
+  archived: { cls: 'bg-amber-50 text-amber-700',   label: 'Archived' },
 };
 
 export default function StatusBadge({ status }: { status: string }) {

@@ -21,7 +21,18 @@ export async function GET(req: NextRequest, { params }: Params) {
   } else {
     const url = new URL(req.url);
     const status = url.searchParams.get('status');
-    if (status) query.eq('status', status);
+    if (status) {
+      // The archive is an admin and officer view; an editor asking for it
+      // directly gets nothing rather than a listing they should not have.
+      if (status === 'archived' && role === 'editor') {
+        return NextResponse.json({ data: [] });
+      }
+      query.eq('status', status);
+    } else if (role === 'editor') {
+      // Archived entries are otherwise invisible to editors, so "All" does not
+      // quietly include what they cannot act on.
+      query.neq('status', 'archived');
+    }
   }
 
   const { data, error } = await query;
