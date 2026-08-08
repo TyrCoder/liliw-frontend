@@ -92,6 +92,18 @@ export async function PUT(req: NextRequest, { params }: Params) {
   return NextResponse.json({ data });
 }
 
+/**
+ * Removing an entry archives it rather than destroying it.
+ *
+ * A delete used to take the row and its photos with it, with a browser confirm
+ * as the only thing standing in the way — no undo, and no way to see what had
+ * been removed or by whom. Archiving takes it off the public site just as
+ * effectively, since every public query asks for `approved`, while leaving it
+ * recoverable.
+ *
+ * `?permanent=1` still destroys the row, but only an admin or officer can ask
+ * for that, and only from the archive.
+ */
 export async function DELETE(req: NextRequest, { params }: Params) {
   const { type, id } = await params;
   const table = CMS_TABLES[type];
@@ -99,22 +111,54 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
   const { role, email } = await getCmsIdentity(req);
   if (!role) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (role === 'officer') return NextResponse.json({ error: 'Officers cannot delete content' }, { status: 403 });
 
-  // See the note in submit/route.ts — no CMS table has name, title and
-  // question, so selecting all three failed and every entry read as missing.
+  const permanent = new URL(req.url).searchParams.get('permanent') === '1';
+
+  // Archiving is an everyday editorial act; destroying is not. Only admins and
+  // officers can do the second, which is also who can see the archive at all.
+  if (!permanent && role === 'officer') {
+    return NextResponse.json({ error: 'Officers cannot archive content' }, { status: 403 });
+  }
+  if (permanent && role === 'editor') {
+    return NextResponse.json({ error: 'Only an admin or officer can delete permanently' }, { status: 403 });
+  }
+
   const { data: existing } = await supabaseServer.from(table).select('*').eq('id', id).single();
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  if (permanent) {
+    if (existing.status !== 'archived') {
+      return NextResponse.json(
+        { error: 'Only archived entries can be deleted permanently. Archive it first.' },
+        { status: 409 },
+      );
+    }
+    const entryTitle = existing.name || existing.title || existing.question || id;
+    await supabaseServer.from('cms_media').delete().eq('content_id', id);
+    const { error } = await supabaseServer.from(table).delete().eq('id', id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    logCmsAction({ table, entryId: id, entryTitle: String(entryTitle), event: 'entry.delete', performedBy: email, role });
+    invalidateContentCache();
+    return NextResponse.json({ success: true, permanent: true });
+  }
+
   if (existing.status === 'pending') {
-    return NextResponse.json({ error: 'Pending entries cannot be deleted' }, { status: 409 });
+    return NextResponse.json({ error: 'Entries awaiting review cannot be archived' }, { status: 409 });
+  }
+  if (existing.status === 'archived') {
+    return NextResponse.json({ error: 'That entry is already archived' }, { status: 409 });
   }
 
   const entryTitle = existing.name || existing.title || existing.question || id;
-  await supabaseServer.from('cms_media').delete().eq('content_id', id);
-  const { error } = await supabaseServer.from(table).delete().eq('id', id);
+  // Photos stay put — a restored entry with no pictures is barely a restore.
+  const { error } = await supabaseServer
+    .from(table)
+    .update({ status: 'archived' })
+    .eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  logCmsAction({ table, entryId: id, entryTitle: String(entryTitle), event: 'entry.delete', performedBy: email, role });
+  logCmsAction({ table, entryId: id, entryTitle: String(entryTitle), event: 'entry.archive', performedBy: email, role });
   invalidateContentCache();
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, archived: true });
 }

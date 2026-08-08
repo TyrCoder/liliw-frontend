@@ -17,6 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import BadgeSVG, { BADGE_ICONS } from '@/components/BadgeSVG';
 import Avatar from '@/components/Avatar';
 import MediaUploader from '@/components/admin/cms/MediaUploader';
+import ConfirmDialog from '@/components/admin/cms/ConfirmDialog';
 import * as XLSX from 'xlsx-js-style';
 
 /* ─── types ──────────────────────────────────────────────── */
@@ -148,6 +149,12 @@ export default function AdminDashboard() {
   const [reviews,       setReviews]       = useState<any[]>([]);
   const [users,         setUsers]         = useState<any[]>([]);
   const [clearingAvatar, setClearingAvatar] = useState<string | null>(null);
+  // One dialog serves every destructive action on this page, so they all read
+  // and behave alike instead of each raising the browser's own popup.
+  const [confirmBox, setConfirmBox] = useState<{
+    title: string; message: React.ReactNode; confirmLabel: string;
+    tone: 'danger' | 'warning' | 'neutral'; run: () => void;
+  } | null>(null);
   const [attractions,   setAttractions]   = useState<Attraction[]>([]);
   const [auditLogs,       setAuditLogs]       = useState<AuditLog[]>([]);
   const [strapiActivity,  setStrapiActivity]  = useState<StrapiActivity[]>([]);
@@ -456,7 +463,6 @@ export default function AdminDashboard() {
    * by posting to the endpoint directly — this is the backstop that assumes.
    */
   const clearAvatar = async (email: string) => {
-    if (!confirm(`Remove ${email}'s uploaded profile picture? They will go back to their initial.`)) return;
     setClearingAvatar(email);
     try {
       const res = await fetch('/api/admin/users', {
@@ -479,7 +485,6 @@ export default function AdminDashboard() {
   };
 
   const handleAchDelete = async (id: string) => {
-    if (!confirm('Delete this achievement? Any users who already earned it will lose that record.')) return;
     setDeletingAchId(id);
     try {
       const res = await fetch('/api/admin/achievements', {
@@ -542,7 +547,6 @@ export default function AdminDashboard() {
   };
 
   const handleRewardDelete = async (id: string) => {
-    if (!confirm('Delete this reward? Any pending redemption codes for it will stay valid but lose the catalog link.')) return;
     setDeletingRewardId(id);
     try {
       const res = await fetch('/api/admin/rewards', {
@@ -1242,7 +1246,13 @@ export default function AdminDashboard() {
                                 those offer the takedown. */}
                             {u.avatarIsCustom && (
                               <button
-                                onClick={() => clearAvatar(u.email)}
+                                onClick={() => setConfirmBox({
+                                  title: 'Remove this profile picture?',
+                                  tone: 'warning',
+                                  confirmLabel: 'Remove picture',
+                                  message: <><strong className="text-gray-700">{u.username || u.email}</strong> will go back to showing their initial. They can upload another one.</>,
+                                  run: () => clearAvatar(u.email),
+                                })}
                                 disabled={clearingAvatar === u.email}
                                 className="block text-[11px] font-semibold text-gray-400 hover:text-red-500 transition disabled:opacity-50"
                                 title="Remove this uploaded profile picture">
@@ -1495,7 +1505,13 @@ export default function AdminDashboard() {
                         className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition shrink-0" title="Edit">
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleAchDelete(a.id)} disabled={deletingAchId === a.id}
+                      <button onClick={() => setConfirmBox({
+                          title: 'Delete this achievement?',
+                          tone: 'danger',
+                          confirmLabel: 'Delete achievement',
+                          message: <><strong className="text-gray-700">{a.name}</strong> will be removed, and anyone who already earned it loses that record.</>,
+                          run: () => handleAchDelete(a.id),
+                        })} disabled={deletingAchId === a.id}
                         className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition shrink-0 disabled:opacity-50" title="Delete">
                         {deletingAchId === a.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       </button>
@@ -1678,7 +1694,13 @@ export default function AdminDashboard() {
                         className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition shrink-0" title="Edit">
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleRewardDelete(r.id)} disabled={deletingRewardId === r.id}
+                      <button onClick={() => setConfirmBox({
+                          title: 'Delete this reward?',
+                          tone: 'danger',
+                          confirmLabel: 'Delete reward',
+                          message: <><strong className="text-gray-700">{r.name}</strong> comes out of the catalogue. Redemption codes already issued stay valid but lose their link to it.</>,
+                          run: () => handleRewardDelete(r.id),
+                        })} disabled={deletingRewardId === r.id}
                         className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition shrink-0 disabled:opacity-50" title="Delete">
                         {deletingRewardId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       </button>
@@ -4080,6 +4102,16 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmBox !== null}
+        title={confirmBox?.title ?? ''}
+        message={confirmBox?.message ?? ''}
+        confirmLabel={confirmBox?.confirmLabel}
+        tone={confirmBox?.tone}
+        onConfirm={() => { confirmBox?.run(); setConfirmBox(null); }}
+        onCancel={() => setConfirmBox(null)}
+      />
     </div>
   );
 }
