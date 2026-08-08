@@ -1,6 +1,6 @@
 'use client';
 
-import { facebookEmbedSrc } from '@/lib/facebook';
+import { facebookEmbedSrc, isFacebookReel } from '@/lib/facebook';
 
 /**
  * A Facebook video, played in place.
@@ -14,12 +14,20 @@ export default function FacebookVideo({ url, title }: { url: string; title?: str
   const src = facebookEmbedSrc(url);
   if (!src) return null;
 
+  // A reel is shot vertically; giving it a 16:9 frame pillarboxes the picture
+  // into a sliver and the player just looks black. Narrow and tall for reels,
+  // widescreen for everything else.
+  const reel = isFacebookReel(url);
+
   return (
-    <div className="rounded-xl overflow-hidden bg-black"
-      style={{ border: '1px solid rgba(15,95,181,0.15)' }}>
-      {/* 16:9 box the frame fills, so the player scales with the column
-          instead of the plugin's fixed 560px. */}
-      <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+    <div
+      className="rounded-xl overflow-hidden bg-black mx-auto"
+      style={{
+        border: '1px solid rgba(15,95,181,0.15)',
+        // Capped so a vertical video does not tower over the article it sits in.
+        maxWidth: reel ? 340 : '100%',
+      }}>
+      <div className="relative w-full" style={{ paddingTop: reel ? '177.78%' : '56.25%' }}>
         <iframe
           src={src}
           title={title ? `${title} — Facebook video` : 'Facebook video'}
