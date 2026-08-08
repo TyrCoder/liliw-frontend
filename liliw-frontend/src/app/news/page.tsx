@@ -70,6 +70,8 @@ interface NewsItem {
   isEvent: boolean;
   slug: string;
   photos: string[];
+  /** Facebook video from its own CMS field, if one was given. */
+  videoUrl?: string;
 }
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -327,10 +329,12 @@ function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => voi
           </div>
           <h3 className="text-xl font-bold mb-3" style={{ color: '#1A1A2E', fontFamily: HL }}>{item.title}</h3>
           {(() => {
-            // A Facebook video link pasted into the article becomes a player,
-            // and is taken out of the text so the raw URL is not left sitting
-            // above its own video.
+            // The video comes from its own CMS field, or from a link pasted
+            // into the body — the second still works so nothing already
+            // written has to be revisited. A link found in the text is taken
+            // out of it, so a raw URL is never left above its own player.
             const { urls, rest } = extractFacebookVideos(item.fullText || item.excerpt);
+            const videos = [...new Set([...(item.videoUrl ? [item.videoUrl] : []), ...urls])];
             return (
               <>
                 {rest && (
@@ -338,9 +342,9 @@ function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => voi
                     {rest}
                   </p>
                 )}
-                {urls.length > 0 && (
+                {videos.length > 0 && (
                   <div className="mt-4 space-y-3">
-                    {urls.map(u => <FacebookVideo key={u} url={u} title={item.title} />)}
+                    {videos.map(u => <FacebookVideo key={u} url={u} title={item.title} />)}
                   </div>
                 )}
               </>
@@ -409,6 +413,7 @@ export default function NewsPage() {
             isEvent: false,
             slug: a.slug || a.documentId || String(item.id),
             photos: extractPhotos(a),
+            videoUrl: a.video_url || undefined,
           });
         });
         combined?.events?.data?.forEach((item: any) => {
@@ -426,6 +431,7 @@ export default function NewsPage() {
             isEvent: true,
             slug: a.slug || a.documentId || String(item.id),
             photos: extractPhotos(a),
+            videoUrl: a.video_url || undefined,
           });
         });
         if (items.length > 0) items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
