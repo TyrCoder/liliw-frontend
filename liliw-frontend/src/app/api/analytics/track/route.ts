@@ -2,48 +2,66 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 
 type Device = 'desktop' | 'mobile' | 'tablet';
+const DEVICES: Device[] = ['desktop', 'mobile', 'tablet'];
 
-interface Session {
-  pageViews: number;
-  startTime: number;
-  device: Device;
+const asDevice = (v: unknown): Device =>
+  DEVICES.includes(v as Device) ? (v as Device) : 'desktop';
+
+/**
+ * Attraction, story and event pages carry the entity in the path. Recording it
+ * alongside the view means "most visited attractions" is a lookup rather than
+ * URL parsing across the whole table on every dashboard load.
+ */
+function entityFromPath(path: string): { type: string | null; id: string | null } {
+  const m = path.match(/^\/(attractions|stories|community\/events)\/([^/?#]+)/);
+  if (!m) return { type: null, id: null };
+  const type = m[1] === 'community/events' ? 'event' : m[1] === 'stories' ? 'story' : 'attraction';
+  return { type, id: decodeURIComponent(m[2]) };
 }
 
-const sessionStore = new Map<string, Session>();
-const deviceCounts: Record<Device, number> = { desktop: 0, mobile: 0, tablet: 0 };
-
-function cleanOldSessions() {
-  if (sessionStore.size < 5000) return;
-  const cutoff = Date.now() - 7_200_000; // 2 hours
-  sessionStore.forEach((v, k) => { if (v.startTime < cutoff) sessionStore.delete(k); });
-}
-
+/**
+ * Records a page view.
+ *
+ * Views used to be counted in a Map held in module scope. On Vercel that resets
+ * whenever a function goes cold and is separate per instance, so the total was
+ * never real — and the GET below reported unique visitors as the page-view
+ * count, which is why the two dashboard cards always matched exactly. Views now
+ * go to the page_views table, one row each.
+ */
 export async function POST(request: NextRequest) {
   try {
-    const { path, sessionId, device = 'desktop' } = await request.json();
-    if (!path) return NextResponse.json({ error: 'Missing path' }, { status: 400 });
-
-    if (sessionId) {
-      const existing = sessionStore.get(sessionId);
-      if (existing) {
-        existing.pageViews++;
-      } else {
-        const d: Device = ['desktop', 'mobile', 'tablet'].includes(device) ? device : 'desktop';
-        sessionStore.set(sessionId, { pageViews: 1, startTime: Date.now(), device: d });
-        deviceCounts[d] = (deviceCounts[d] || 0) + 1;
-        cleanOldSessions();
-      }
+    const { path, sessionId, device } = await request.json();
+    if (!path || typeof path !== 'string') {
+      return NextResponse.json({ error: 'Missing path' }, { status: 400 });
     }
 
-    // Upsert live session into Supabase (fire-and-forget)
-    if (sessionId) {
-      const d: Device = ['desktop', 'mobile', 'tablet'].includes(device) ? device : 'desktop';
-      void supabaseServer.from('active_sessions').upsert({
-        session_id: sessionId,
-        page: path,
+    const d = asDevice(device);
+    const { type, id } = entityFromPath(path);
+
+    // Tracking must never delay or break a page, so failures are swallowed
+    // here deliberately — but they are the only ones in this file that are.
+    const [viewResult] = await Promise.allSettled([
+      supabaseServer.from('page_views').insert({
+        path: path.slice(0, 400),
+        session_id: sessionId ?? null,
         device: d,
-        last_seen: new Date().toISOString(),
-      }, { onConflict: 'session_id' });
+        entity_type: type,
+        entity_id: id,
+      }),
+      sessionId
+        ? supabaseServer.from('active_sessions').upsert({
+            session_id: sessionId,
+            page: path,
+            device: d,
+            last_seen: new Date().toISOString(),
+          }, { onConflict: 'session_id' })
+        : Promise.resolve(),
+    ]);
+
+    // Surfaced only in logs: if the migration has not been run, this is the
+    // one place that would otherwise be silent about it.
+    if (viewResult.status === 'fulfilled' && viewResult.value?.error) {
+      console.error('[analytics] page_views insert failed:', viewResult.value.error.message);
     }
 
     return NextResponse.json({ success: true });
@@ -52,39 +70,40 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/** Live snapshot: who is on the site now, and on what. */
 export async function GET() {
   try {
-    // ── Unique visitors from Supabase active_sessions (persistent) ────────
-    const { data: sessionRows, error: sessionErr } = await supabaseServer
-      .from('active_sessions')
-      .select('session_id, device', { count: 'exact' });
+    const since = new Date(Date.now() - 5 * 60_000).toISOString();
 
-    const rows = sessionErr ? [] : (sessionRows ?? []);
-    const uniqueVisitors = rows.length;
+    const [{ data: live }, { data: today }] = await Promise.all([
+      supabaseServer.from('active_sessions').select('session_id, device, page').gte('last_seen', since),
+      supabaseServer.from('page_views')
+        .select('session_id')
+        .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
+    ]);
 
-    // Bounce rate: sessions with only 1 page view (use in-memory fallback if available)
-    const inMemSessions = Array.from(sessionStore.values());
-    const bounceCount   = inMemSessions.filter(s => s.pageViews <= 1).length;
-    const bounceBase    = inMemSessions.length || uniqueVisitors;
-    const bounceRate    = bounceBase > 0 ? `${Math.round((bounceCount / bounceBase) * 100)}%` : '—';
-
-    // Device breakdown from Supabase rows
-    const dc = { desktop: 0, mobile: 0, tablet: 0 };
-    rows.forEach((r: any) => {
-      const d = r.device as Device;
-      if (d in dc) dc[d]++;
-    });
+    const rows = live ?? [];
+    const dc: Record<Device, number> = { desktop: 0, mobile: 0, tablet: 0 };
+    rows.forEach(r => { const d = asDevice(r.device); dc[d]++; });
     const total = dc.desktop + dc.mobile + dc.tablet || 1;
-    const devices = {
-      desktop: { count: dc.desktop, pct: Math.round((dc.desktop / total) * 100) },
-      mobile:  { count: dc.mobile,  pct: Math.round((dc.mobile  / total) * 100) },
-      tablet:  { count: dc.tablet,  pct: Math.round((dc.tablet  / total) * 100) },
-    };
 
-    const topPages: { path: string; views: number }[] = [];
-    const totalViews = uniqueVisitors;
-    return NextResponse.json({ pageViews: totalViews, uniqueVisitors, bounceRate, avgSessionTime: '—', topPages, devices });
+    const viewsToday = today?.length ?? 0;
+    const visitorsToday = new Set((today ?? []).map(r => r.session_id).filter(Boolean)).size;
+
+    return NextResponse.json({
+      onlineNow: rows.length,
+      viewsToday,
+      visitorsToday,
+      devices: {
+        desktop: { count: dc.desktop, pct: Math.round((dc.desktop / total) * 100) },
+        mobile:  { count: dc.mobile,  pct: Math.round((dc.mobile  / total) * 100) },
+        tablet:  { count: dc.tablet,  pct: Math.round((dc.tablet  / total) * 100) },
+      },
+    });
   } catch {
-    return NextResponse.json({ pageViews: 0, uniqueVisitors: 0, bounceRate: '—', avgSessionTime: '—', topPages: [], devices: { desktop: { count: 0, pct: 0 }, mobile: { count: 0, pct: 0 }, tablet: { count: 0, pct: 0 } } });
+    return NextResponse.json({
+      onlineNow: 0, viewsToday: 0, visitorsToday: 0,
+      devices: { desktop: { count: 0, pct: 0 }, mobile: { count: 0, pct: 0 }, tablet: { count: 0, pct: 0 } },
+    });
   }
 }

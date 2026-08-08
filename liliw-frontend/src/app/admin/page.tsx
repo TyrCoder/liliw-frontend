@@ -18,6 +18,7 @@ import BadgeSVG, { BADGE_ICONS } from '@/components/BadgeSVG';
 import Avatar from '@/components/Avatar';
 import MediaUploader from '@/components/admin/cms/MediaUploader';
 import ConfirmDialog from '@/components/admin/cms/ConfirmDialog';
+import AdminOverview from '@/components/admin/dashboard/AdminOverview';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx-js-style';
 
@@ -944,201 +945,15 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 py-8">
 
         {/* ── OVERVIEW ───────────────────────────────────────── */}
+        {/* Rebuilt as a role dashboard: see components/admin/dashboard.
+            The old block was eight stat cards over a page of white space,
+            with Page Views and Unique Visitors showing the same number. */}
         {activeTab === 'overview' && (
-          <div className="space-y-8">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={<Eye className="w-5 h-5" />}       label="Page Views"       value={loadingStats ? '—' : (analytics?.pageViews ?? 0).toLocaleString()} color="#1565C0" />
-              <StatCard icon={<Users className="w-5 h-5" />}     label="Unique Visitors"  value={loadingStats ? '—' : (analytics?.uniqueVisitors ?? 0).toLocaleString()} color="#3B82F6" />
-              <StatCard icon={<MapPin className="w-5 h-5" />}    label="Attractions"       value={loadingAttr ? '—' : attractions.length} sub="in the CMS" color="#F59E0B" />
-              <StatCard icon={<Activity className="w-5 h-5" />}  label="CMS Changes"       value={loadingActivity ? '—' : strapiActivity.length} sub="content edits tracked" color="#6366F1" />
-            </div>
-            <div className={`grid grid-cols-2 lg:grid-cols-${isAdmin ? 4 : 2} gap-4`}>
-              <StatCard icon={<FileText className="w-5 h-5" />}    label="Submissions"     value={loadingSubs ? '—' : submissions.length} sub={`${newCount} new`} color="#8B5CF6" />
-              <StatCard icon={<MessageSquare className="w-5 h-5" />} label="Participations" value={loadingPart ? '—' : participation.length} sub="requests" color="#EC4899" />
-              {isAdmin && <StatCard icon={<UserCheck className="w-5 h-5" />} label="Registered Users" value={loadingUsers ? '—' : users.filter((u: any) => { const rn = (u.role?.name || '').toLowerCase(); return rn.includes('authenticated') || rn.includes('tourist') || rn === ''; }).length} sub="tourist accounts" color="#10B981" />}
-              {isAdmin && <StatCard icon={<Calendar className="w-5 h-5" />}  label="Event Sign-ups"   value={loadingSignups ? '—' : signups.length} sub="total" color="#F59E0B" />}
-            </div>
-
-            {/* Sync search — admin only */}
-            {isAdmin && <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <p className="text-sm font-bold text-gray-900">Search Index</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {syncStatus === 'done' ? `Synced ${syncCount} items to Algolia` : syncStatus === 'error' ? 'Sync failed — check Algolia credentials' : 'Sync CMS content to Algolia for up-to-date search'}
-                </p>
-              </div>
-              <button onClick={handleSyncSearch} disabled={syncStatus === 'syncing'}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-60"
-                style={{ backgroundColor: syncStatus === 'error' ? '#EF4444' : syncStatus === 'done' ? '#10B981' : '#1565C0' }}>
-                {syncStatus === 'syncing' ? <><Loader2 className="w-4 h-4 animate-spin" /> Syncing…</>
-                 : syncStatus === 'done' ? <><CheckCircle className="w-4 h-4" /> Synced</>
-                 : syncStatus === 'error' ? <><AlertCircle className="w-4 h-4" /> Retry Sync</>
-                 : <><RefreshCw className="w-4 h-4" /> Sync Search</>}
-              </button>
-            </div>}
-
-            {/* Live Visitors */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-2.5">
-                  <div className="relative">
-                    <Wifi className="w-5 h-5" style={{ color: '#1565C0' }} />
-                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                  </div>
-                  <div>
-                    <h2 className="text-base font-bold text-gray-900">Live on Site</h2>
-                    <p className="text-xs text-gray-400">Active in the last 5 minutes</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-sm font-bold text-gray-700">{liveVisitors.length} active</span>
-                </div>
-              </div>
-
-              {/* Device summary */}
-              <div className="grid grid-cols-3 gap-3 mb-5">
-                {[
-                  { label: 'Desktop', icon: <Monitor className="w-4 h-4" />, count: liveVisitors.filter(v => v.device === 'desktop').length, color: '#3B82F6' },
-                  { label: 'Mobile',  icon: <Smartphone className="w-4 h-4" />, count: liveVisitors.filter(v => v.device === 'mobile').length,  color: '#1565C0' },
-                  { label: 'Tablet',  icon: <Tablet className="w-4 h-4" />,     count: liveVisitors.filter(v => v.device === 'tablet').length,  color: '#8B5CF6' },
-                ].map(({ label, icon, count, color }) => (
-                  <div key={label} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}20`, color }}>
-                      {icon}
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-gray-900">{count}</p>
-                      <p className="text-xs text-gray-400">{label}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Session feed */}
-              {liveVisitors.length === 0 ? (
-                <div className="flex flex-col items-center py-8 text-center text-gray-400">
-                  <Wifi className="w-8 h-8 mb-2 opacity-20" />
-                  <p className="text-sm font-semibold">No active visitors right now</p>
-                  <p className="text-xs mt-0.5">Sessions appear here within 30 seconds of a page visit</p>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {liveVisitors.filter(v => {
-                    const INTERNAL = ['/admin', '/lbo', '/login', '/register'];
-                    return !INTERNAL.some(prefix => v.page === prefix || v.page?.startsWith(prefix + '/'));
-                  }).map((v) => {
-                    const secsAgo = Math.floor((Date.now() - new Date(v.last_seen).getTime()) / 1000);
-                    const timeAgo = secsAgo < 60 ? 'just now' : secsAgo < 3600 ? `${Math.floor(secsAgo / 60)}m ago` : `${Math.floor(secsAgo / 3600)}h ago`;
-                    const DeviceIcon = v.device === 'mobile' ? Smartphone : v.device === 'tablet' ? Tablet : Monitor;
-                    const deviceColor = v.device === 'mobile' ? '#1565C0' : v.device === 'tablet' ? '#8B5CF6' : '#3B82F6';
-                    const staticLabels: Record<string, string> = {
-                      '/': 'Home', '/attractions': 'Attractions', '/map': 'Map',
-                      '/about': 'About', '/heritage': 'Heritage Sites', '/dining': 'Dining',
-                      '/itineraries': 'Itineraries', '/news': 'News & Events',
-                      '/community': 'Community', '/immersive': 'Immersive Tour', '/stories': 'Stories',
-                    };
-                    const attrMatch = v.page?.match(/^\/attractions\/(.+)$/);
-                    const attrName = attrMatch ? attractions.find(a => a.id === attrMatch[1])?.attributes?.name : null;
-                    const pageLabel = attrName || staticLabels[v.page] || v.page || '/';
-                    return (
-                      <div key={v.session_id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-100">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${deviceColor}18`, color: deviceColor }}>
-                          <DeviceIcon className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-800 truncate">{pageLabel}</p>
-                          <p className="text-xs text-gray-400 capitalize">{v.device}</p>
-                        </div>
-                        <span className="text-xs text-gray-400 shrink-0 font-medium">{timeAgo}</span>
-                        <span className="w-2 h-2 rounded-full shrink-0 bg-green-400" />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Participation breakdown */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-              <h2 className="text-base font-bold text-gray-900 mb-5">Submission Breakdown</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {[
-                  { label: 'Feedback',    count: feedbackCount,                                                      icon: <MessageSquare className="w-5 h-5" />, color: '#8B5CF6' },
-                  { label: 'Volunteer',   count: volunteerCount,                                                     icon: <Users className="w-5 h-5" />,         color: '#1565C0' },
-                  { label: 'Partnership', count: submissions.filter(s => s.attributes?.type === 'partnership').length, icon: <BarChart3 className="w-5 h-5" />,    color: '#F59E0B' },
-                ].map(({ label, count, icon, color }) => (
-                  <div key={label} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}20`, color }}>{icon}</div>
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900">{loadingSubs ? '—' : count}</p>
-                      <p className="text-xs text-gray-500">{label}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Recent CMS activity preview */}
-            {strapiActivity.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold text-gray-900">Recent CMS Activity</h2>
-                  <button onClick={() => setActiveTab('audit')} className="text-xs font-semibold" style={{ color: '#1565C0' }}>View all →</button>
-                </div>
-                <div className="space-y-3">
-                  {strapiActivity.slice(0, 5).map(act => (
-                    <div key={act.id} className="flex items-center gap-3 text-sm">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${act.action === 'created' ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700'}`}>
-                        {act.action}
-                      </span>
-                      <span className="font-medium text-gray-800 truncate">{act.entryName}</span>
-                      <span className="text-gray-400 text-xs shrink-0">{act.contentType}</span>
-                      {act.performer && (
-                        <span className="text-gray-500 text-xs shrink-0 truncate max-w-[120px]">{act.performer.email}</span>
-                      )}
-                      <span className="text-gray-300 text-xs ml-auto shrink-0">{new Date(act.at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Top pages */}
-            {analytics?.topPages && analytics.topPages.length > 0 && (() => {
-              const INTERNAL = ['/admin', '/lbo', '/login', '/register'];
-              const isInternal = (p: string) => INTERNAL.some(prefix => p === prefix || p.startsWith(prefix + '/'));
-              const staticLabels: Record<string, string> = {
-                '/': 'Home', '/attractions': 'Attractions', '/map': 'Map',
-                '/about': 'About', '/heritage': 'Heritage Sites', '/dining': 'Dining',
-                '/itineraries': 'Itineraries', '/news': 'News & Events',
-                '/community': 'Community', '/immersive': 'Immersive Tour', '/stories': 'Stories',
-              };
-              const getLabel = (p: string) => {
-                const attrMatch = p?.match(/^\/attractions\/(.+)$/);
-                const attrName = attrMatch ? attractions.find(a => a.id === attrMatch[1])?.attributes?.name : null;
-                return attrName || staticLabels[p] || p || '/';
-              };
-              const publicPages = analytics.topPages.filter(({ path }) => !isInternal(path));
-              const max = publicPages[0]?.views || 1;
-              return publicPages.length > 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-                  <h2 className="text-base font-bold text-gray-900 mb-5">Top Pages</h2>
-                  <div className="space-y-3">
-                    {publicPages.slice(0, 8).map(({ path, views }) => (
-                      <div key={path} className="flex items-center gap-3">
-                        <span className="text-sm text-gray-600 w-40 shrink-0 truncate">{getLabel(path)}</span>
-                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${(views / max) * 100}%`, backgroundColor: '#1565C0' }} />
-                        </div>
-                        <span className="text-sm font-semibold text-gray-700 w-12 text-right">{views}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null;
-            })()}
-          </div>
+          <AdminOverview
+            token={token}
+            username={user?.username ?? 'Admin'}
+            onGoToTab={(t) => setActiveTab(t as Tab)}
+          />
         )}
 
         {/* ── USERS ──────────────────────────────────────────── */}
