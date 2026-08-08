@@ -31,6 +31,16 @@ export function normaliseFacebookUrl(raw: string): string | null {
   }
 }
 
+/**
+ * Reels are shot vertically. Played inside a 16:9 frame the picture is
+ * pillarboxed down to almost nothing, which reads as a black player rather
+ * than a small one — so the shape of the frame has to follow the source.
+ */
+export function isFacebookReel(url: string): boolean {
+  const clean = normaliseFacebookUrl(url);
+  return !!clean && /\/(reel|reels)\//i.test(clean);
+}
+
 /** The plugin URL that renders a given post as a player. */
 export function facebookEmbedSrc(url: string, opts?: { showText?: boolean }): string | null {
   const clean = normaliseFacebookUrl(url);
@@ -38,11 +48,9 @@ export function facebookEmbedSrc(url: string, opts?: { showText?: boolean }): st
   const params = new URLSearchParams({
     href: clean,
     show_text: opts?.showText ? 'true' : 'false',
-    // The plugin sizes itself to this; the wrapper scales it responsively.
-    width: '560',
-    appId: '',
+    // The plugin lays out to this width; the wrapper scales the result.
+    width: isFacebookReel(clean) ? '320' : '560',
   });
-  params.delete('appId');
   return `https://www.facebook.com/plugins/video.php?${params.toString()}`;
 }
 
