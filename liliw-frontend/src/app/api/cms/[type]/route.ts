@@ -43,7 +43,16 @@ export async function POST(req: NextRequest, { params }: Params) {
   const label = body[nameField] || body.name || body.title;
   if (!label) return NextResponse.json({ error: `${nameField} is required` }, { status: 400 });
 
-  const { created_by, ...rest } = body;
+  // `media` is not a column — photos live in cms_media and are attached below.
+  // It was being passed straight into the insert, so creating anything with a
+  // photo field failed with "Could not find the 'media' column". PUT has always
+  // stripped it; POST never did. The rest are server-owned: a client must not
+  // be able to create an entry that is already approved, or backdate one.
+  const {
+    created_by, media, id, status, published_at, reviewed_by, created_at, updated_at,
+    ...rest
+  } = body;
+
   const insertData = {
     ...rest,
     created_by: created_by || 'staff',
