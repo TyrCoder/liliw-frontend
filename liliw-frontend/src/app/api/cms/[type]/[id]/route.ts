@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
-import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES } from '@/lib/cms-auth';
+import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES, slugify } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
 import { invalidateContentCache } from '@/lib/content';
 
@@ -44,6 +44,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const body = await req.json();
   const { media, created_by, status, published_at, reviewed_by, reject_remarks, ...fields } = body;
+
+  // Entries created before slugs were generated still carry '', and slug is
+  // unique — so saving a second one would collide the same way creating did.
+  if ('slug' in fields && (typeof fields.slug !== 'string' || !fields.slug.trim())) {
+    const label = fields.name || fields.title || fields.question || '';
+    fields.slug = slugify(String(label)) || `entry-${Date.now().toString(36)}`;
+  }
 
   const { data, error } = await supabaseServer
     .from(table)

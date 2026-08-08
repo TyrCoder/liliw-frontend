@@ -81,13 +81,35 @@ export async function getCmsRole(req: NextRequest): Promise<CmsRole | null> {
   }
 }
 
+/**
+ * A URL-safe slug from a title.
+ *
+ * Nothing generated one before, so every entry was created with slug '' — and
+ * because slug carries a unique constraint, the first save in a table
+ * succeeded and every one after it failed on "duplicate key value violates
+ * unique constraint". The detail pages route by slug too, so an empty one was
+ * never going to resolve.
+ */
+export function slugify(input: string): string {
+  return (input || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')   // strip accents
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 60)
+    .replace(/^-|-$/g, '');
+}
+
 export const CMS_TABLES: Record<string, string> = {
   attractions:   'cms_attractions',
   events:        'cms_events',
   news:          'cms_news',
   'art-forms':   'cms_art_forms',
   artisans:      'cms_artisans',
-  stories:       'cms_stories',
+  stories:       'cms_stories',
   faqs:          'cms_faqs',
   itineraries:   'cms_itineraries',
 };
@@ -98,7 +120,7 @@ export const CMS_CONTENT_TYPES: Record<string, string> = {
   news:          'news',
   'art-forms':   'art_form',
   artisans:      'artisan',
-  stories:       'story',
+  stories:       'story',
   faqs:          'faq',
   itineraries:   'itinerary',
 };

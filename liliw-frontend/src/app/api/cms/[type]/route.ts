@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
-import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES } from '@/lib/cms-auth';
+import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES, slugify } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
 import { invalidateContentCache } from '@/lib/content';
 
@@ -53,17 +53,26 @@ export async function POST(req: NextRequest, { params }: Params) {
     ...rest
   } = body;
 
-  const insertData = {
+  const insertData: Record<string, unknown> = {
     ...rest,
     created_by: created_by || 'staff',
     status: 'draft',
   };
 
-  const { data, error } = await supabaseServer
-    .from(table)
-    .insert(insertData)
-    .select()
-    .single();
+  // slug is unique and the form never fills it, so without this every entry
+  // after the first in a table collided on the empty string.
+  if (!insertData.slug || typeof insertData.slug !== 'string' || !insertData.slug.trim()) {
+    insertData.slug = slugify(String(label)) || `entry-${Date.now().toString(36)}`;
+  }
+
+  let { data, error } = await supabaseServer.from(table).insert(insertData).select().single();
+
+  // Two entries can legitimately share a title. Rather than refuse the second,
+  // give it a distinct slug and try once more.
+  if (error?.code === '23505') {
+    insertData.slug = `${insertData.slug}-${Date.now().toString(36).slice(-4)}`;
+    ({ data, error } = await supabaseServer.from(table).insert(insertData).select().single());
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

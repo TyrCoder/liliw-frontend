@@ -49,14 +49,26 @@ const extractText = (richText: any): string => {
   return '';
 };
 
+// Must cover what the CMS actually offers. It previously listed advisory,
+// press_release and competition — none of which an editor can choose — while
+// four of the six news categories and three of the six event categories had no
+// entry at all, so they fell through to the grey "other" badge.
 const CATEGORY_STYLE: Record<string, { bg: string; text: string }> = {
-  advisory:     { bg: 'rgba(21,101,192,0.1)',  text: '#1565C0' },
-  announcement: { bg: 'rgba(11,61,145,0.1)',   text: '#0B3D91' },
-  press_release:{ bg: 'rgba(103,58,183,0.1)',  text: '#673AB7' },
-  festival:     { bg: 'rgba(245,197,24,0.15)', text: '#B8860B' },
-  cultural:     { bg: 'rgba(245,197,24,0.1)',  text: '#9A7D0A' },
-  competition:  { bg: 'rgba(46,125,50,0.1)',   text: '#2E7D32' },
-  other:        { bg: 'rgba(0,0,0,0.06)',      text: '#555' },
+  // News — NewsTab CATEGORIES
+  announcement:  { bg: 'rgba(11,61,145,0.1)',   text: '#0B3D91' },
+  event:         { bg: 'rgba(212,61,141,0.12)', text: '#B02A72' },
+  tourism:       { bg: 'rgba(46,196,214,0.15)', text: '#0E7C8C' },
+  culture:       { bg: 'rgba(245,197,24,0.15)', text: '#9A7D0A' },
+  'local-news':  { bg: 'rgba(21,101,192,0.1)',  text: '#1565C0' },
+
+  // Events — EventsTab CATEGORIES, which land here through the same badge
+  festival:      { bg: 'rgba(247,148,29,0.15)', text: '#B45309' },
+  seminar:       { bg: 'rgba(103,58,183,0.1)',  text: '#673AB7' },
+  workshop:      { bg: 'rgba(13,148,136,0.12)', text: '#0F766E' },
+  sports:        { bg: 'rgba(46,125,50,0.1)',   text: '#2E7D32' },
+  cultural:      { bg: 'rgba(245,197,24,0.1)',  text: '#9A7D0A' },
+
+  other:         { bg: 'rgba(0,0,0,0.06)',      text: '#555' },
 };
 
 interface NewsItem {
@@ -314,7 +326,7 @@ function NewsDetailModal({ item, onClose }: { item: NewsItem; onClose: () => voi
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="px-3 py-1 rounded-full text-xs font-bold capitalize"
               style={{ backgroundColor: catStyle.bg, color: catStyle.text, fontFamily: HL }}>
-              {item.category.replace('_', ' ')}
+              {item.category.replace(/[-_]/g, ' ')}
             </span>
             {item.isEvent && (
               <span className="px-2 py-1 rounded-full text-xs font-bold"
@@ -565,7 +577,7 @@ export default function NewsPage() {
                               <Bell className="w-4 h-4 shrink-0" style={{ color: '#0B3D91' }} />
                               <span className="px-3 py-1 rounded-full text-xs font-bold capitalize"
                                 style={{ backgroundColor: catStyle.bg, color: catStyle.text, fontFamily: HL }}>
-                                {item.category.replace('_', ' ')}
+                                {item.category.replace(/[-_]/g, ' ')}
                               </span>
                               {item.isEvent && (
                                 <span className="px-2 py-1 rounded-full text-xs font-bold"
