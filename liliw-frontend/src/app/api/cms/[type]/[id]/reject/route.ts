@@ -19,7 +19,9 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { remarks } = body;
   if (!remarks?.trim()) return NextResponse.json({ error: 'Rejection remarks are required' }, { status: 400 });
 
-  const { data: existing } = await supabaseServer.from(table).select('status, name, title, question').eq('id', id).single();
+  // See the note in submit/route.ts — no CMS table has name, title and
+  // question, so selecting all three failed and every entry read as missing.
+  const { data: existing } = await supabaseServer.from(table).select('*').eq('id', id).single();
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (existing.status !== 'pending') {
     return NextResponse.json({ error: 'Only pending entries can be rejected' }, { status: 409 });

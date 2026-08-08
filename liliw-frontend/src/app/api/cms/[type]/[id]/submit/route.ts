@@ -14,7 +14,12 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!role) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (role === 'officer') return NextResponse.json({ error: 'Officers cannot submit content for approval' }, { status: 403 });
 
-  const { data: existing } = await supabaseServer.from(table).select('status, name, title, question').eq('id', id).single();
+  // Asking for name, title and question together requested columns two thirds
+  // of these tables do not have — attractions have name, news has title, FAQs
+  // have question, none has all three — so the query errored, `existing` came
+  // back null, and every entry reported itself as Not found. Take the row and
+  // read whichever label it turns out to carry.
+  const { data: existing } = await supabaseServer.from(table).select('*').eq('id', id).single();
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!['draft', 'rejected'].includes(existing.status)) {
     return NextResponse.json({ error: 'Only draft or rejected entries can be submitted' }, { status: 409 });
