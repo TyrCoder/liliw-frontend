@@ -376,11 +376,10 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════
           HERO — full-screen video
           ══════════════════════════════════════════════════════ */}
-      {/* The hero used to be the video alone, falling back to a hero-slide
-          image and then to nothing — so with no video configured and no slides
-          published, the top of the page was an empty navy block. The wordmark
-          and the two actions below always render; the video, when there is
-          one, sits behind them. */}
+      {/* The video carries its own titling, so nothing is laid over it — an
+          overlaid wordmark simply repeated what the footage already says.
+          The gradient only appears if no video is configured, so the top of
+          the page is never the empty navy block it used to be. */}
       <section className="relative overflow-hidden w-full hero-full" style={{ background: '#0B3D91' }}>
         <div className="absolute inset-0">
           {process.env.NEXT_PUBLIC_HERO_VIDEO_URL ? (
@@ -388,8 +387,6 @@ export default function Home() {
               <source src={process.env.NEXT_PUBLIC_HERO_VIDEO_URL} type="video/mp4" />
             </video>
           ) : (
-            // Standing in for the video: the festival palette woven into the
-            // navy, so an unconfigured hero still looks deliberate.
             <div className="absolute inset-0" style={{
               background:
                 'radial-gradient(90% 70% at 15% 20%, rgba(212,61,141,0.34) 0%, transparent 60%),' +
@@ -398,45 +395,6 @@ export default function Home() {
                 'linear-gradient(160deg, #0B3D91 0%, #0F5FB5 55%, #0A3172 100%)',
             }} />
           )}
-        </div>
-
-        {/* Legibility over whatever is behind */}
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom, rgba(8,20,45,0.55) 0%, rgba(8,20,45,0.25) 45%, rgba(11,61,145,0.75) 100%)' }} />
-
-        <div className="relative h-full flex flex-col items-center justify-center text-center px-5 py-20 sm:py-0">
-          <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-            className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.4em] mb-4"
-            style={{ color: 'rgba(247,201,72,0.9)', fontFamily: HL }}>
-            Republika ng Pilipinas · Laguna
-          </motion.p>
-
-          <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.08 }}
-            className="text-white font-bold leading-[0.95] tracking-[0.04em]"
-            style={{ fontFamily: DL, fontSize: 'clamp(2.75rem, 11vw, 6rem)', textShadow: '0 6px 30px rgba(0,0,0,0.45)' }}>
-            LILIW
-          </motion.h1>
-
-          <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.16 }}
-            className="text-white/90 mt-4 max-w-xl text-sm sm:text-lg"
-            style={{ fontFamily: BL, textShadow: '0 2px 14px rgba(0,0,0,0.5)' }}>
-            The Footwear Capital of the Philippines — home of the Tsinelas Festival,
-            centuries-old heritage and the craftsmanship behind every pair.
-          </motion.p>
-
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.24 }}
-            className="flex flex-wrap gap-3 justify-center mt-8">
-            <Link href="/attractions"
-              className="px-6 py-3 rounded-full font-bold text-sm transition hover:opacity-90"
-              style={{ backgroundColor: '#F7C948', color: '#0B3D91', fontFamily: BL, boxShadow: '0 10px 30px -10px rgba(247,201,72,0.8)' }}>
-              Explore Attractions
-            </Link>
-            <Link href="/map"
-              className="px-6 py-3 rounded-full font-bold text-sm border transition hover:bg-white/10"
-              style={{ borderColor: 'rgba(255,255,255,0.55)', color: '#fff', fontFamily: BL }}>
-              Open the Map
-            </Link>
-          </motion.div>
         </div>
       </section>
 
