@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, MessageSquare, Users, Briefcase, Eye, Calendar, CheckCircle, AlertCircle, Loader2, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import ParticipationModal from '@/components/ParticipationModal';
+import CommunityEventsList from '@/components/CommunityEventsList';
 import { stripHtml } from '@/lib/text';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
@@ -365,6 +366,26 @@ export default function CommunityPage() {
             </div>
           )}
         </section>
+
+        {/* Community Events — the concrete opportunities behind the three
+            general "ways to participate" cards above. The header is handed to
+            the list so that both disappear together when nothing is posted;
+            a section title standing over an empty space is worse than no
+            section at all. */}
+        <CommunityEventsList
+          showHeading={false}
+          onJoin={title => { window.location.href = `/participate?type=volunteer&event=${encodeURIComponent(title)}`; }}
+          header={
+            <div className="mb-8">
+              <p className="section-label mb-2" style={{ color: '#1565C0' }}>Get Involved</p>
+              <h2 className="text-3xl font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>Community Events</h2>
+              <div className="w-8 h-0.5 rounded-full mb-3" style={{ backgroundColor: '#F5C518' }} />
+              <p className="text-gray-500 text-sm max-w-lg" style={{ fontFamily: BL }}>
+                Activities you can take part in right now — posted by the tourism office.
+              </p>
+            </div>
+          }
+        />
 
         {/* Joinable Events */}
         {(loadingJE || joinableEvents.length > 0) && (

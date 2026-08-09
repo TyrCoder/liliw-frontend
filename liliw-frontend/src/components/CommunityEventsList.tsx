@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, MapPin, Users, Mail, Loader2, HeartHandshake, AlertCircle } from 'lucide-react';
 
@@ -43,7 +43,19 @@ function dateRange(start: string | null, end: string | null) {
  * Renders nothing at all when there is nothing on — an empty "no events"
  * panel on a page whose job is to invite people in reads as a dead site.
  */
-export default function CommunityEventsList({ onJoin }: { onJoin?: (title: string) => void }) {
+export default function CommunityEventsList({
+  onJoin, showHeading = true, header,
+}: {
+  onJoin?: (title: string) => void;
+  /** Off where the host page supplies its own section header. */
+  showHeading?: boolean;
+  /**
+   * A replacement header, drawn only when there is something to head. The host
+   * page cannot decide that for itself without duplicating the fetch, and a
+   * section title sitting above nothing is worse than no section at all.
+   */
+  header?: ReactNode;
+}) {
   const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -89,16 +101,21 @@ export default function CommunityEventsList({ onJoin }: { onJoin?: (title: strin
   if (!events.length) return null;
 
   return (
-    <div className="mb-10">
-      <div className="flex items-center gap-2.5 mb-1">
-        <HeartHandshake className="w-5 h-5" style={{ color: '#0D9488' }} />
-        <h2 className="text-xl font-extrabold" style={{ color: '#1A1A2E', fontFamily: HL }}>
-          What&rsquo;s happening
-        </h2>
-      </div>
-      <p className="text-sm text-gray-500 mb-5" style={{ fontFamily: BL }}>
-        Activities you can take part in right now.
-      </p>
+    <div className={showHeading ? 'mb-10' : ''}>
+      {header}
+      {!header && showHeading && (
+        <>
+          <div className="flex items-center gap-2.5 mb-1">
+            <HeartHandshake className="w-5 h-5" style={{ color: '#0D9488' }} />
+            <h2 className="text-xl font-extrabold" style={{ color: '#1A1A2E', fontFamily: HL }}>
+              What&rsquo;s happening
+            </h2>
+          </div>
+          <p className="text-sm text-gray-500 mb-5" style={{ fontFamily: BL }}>
+            Activities you can take part in right now.
+          </p>
+        </>
+      )}
 
       <div className="grid sm:grid-cols-2 gap-4">
         {events.map((e, i) => {

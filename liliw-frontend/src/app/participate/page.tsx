@@ -58,7 +58,14 @@ const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm f
 
 function ParticipateForm({ prefill }: { prefill?: { type: string; message: string } | null }) {
   const params = useSearchParams();
-  const [form, setForm] = useState({ full_name: '', email: '', phone: '', type: params.get('type') || 'feedback', message: '' });
+  // ?event=… carries the title across from the Community page's "I want to
+  // join", so the form arrives already saying which event is meant rather than
+  // leaving someone to describe it from memory.
+  const [form, setForm] = useState({
+    full_name: '', email: '', phone: '',
+    type: params.get('type') || 'feedback',
+    message: params.get('event') ? `I would like to join: ${params.get('event')}` : '',
+  });
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
