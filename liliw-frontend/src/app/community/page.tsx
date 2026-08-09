@@ -373,8 +373,7 @@ export default function CommunityPage() {
             a section title standing over an empty space is worse than no
             section at all. */}
         <CommunityEventsList
-          showHeading={false}
-          onJoin={title => { window.location.href = `/participate?type=volunteer&event=${encodeURIComponent(title)}`; }}
+          showHeading={false}
           header={
             <div className="mb-8">
               <p className="section-label mb-2" style={{ color: '#1565C0' }}>Get Involved</p>

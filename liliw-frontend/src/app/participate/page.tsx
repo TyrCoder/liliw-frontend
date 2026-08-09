@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import CommunityEventsList from '@/components/CommunityEventsList';
 import { motion } from 'framer-motion';
 import { ChevronLeft, CheckCircle, AlertCircle, Loader2, MessageSquare, Users, Briefcase } from 'lucide-react';
@@ -56,11 +56,12 @@ const TYPE_OPTIONS = [
 
 const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 bg-white';
 
-function ParticipateForm({ prefill }: { prefill?: { type: string; message: string } | null }) {
+function ParticipateForm() {
   const params = useSearchParams();
-  // ?event=… carries the title across from the Community page's "I want to
-  // join", so the form arrives already saying which event is meant rather than
-  // leaving someone to describe it from memory.
+  // ?event=… is no longer produced by anything — joining an event now posts
+  // against the event itself so the office gets a participant list. It is still
+  // honoured because links already shared, or bookmarked, should not land on a
+  // blank form.
   const [form, setForm] = useState({
     full_name: '', email: '', phone: '',
     type: params.get('type') || 'feedback',
@@ -68,18 +69,6 @@ function ParticipateForm({ prefill }: { prefill?: { type: string; message: strin
   });
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
-
-  // Clicking "I want to join" on a community event fills the form in rather
-  // than leaving someone to describe which event they mean. Their own typing
-  // is kept — the prefill only supplies what is still blank.
-  useEffect(() => {
-    if (!prefill) return;
-    setForm(prev => ({
-      ...prev,
-      type: prefill.type,
-      message: prev.message.trim() ? prev.message : prefill.message,
-    }));
-  }, [prefill]);
 
   const meta = TYPE_META[form.type] ?? TYPE_META.feedback;
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -183,14 +172,6 @@ function ParticipateForm({ prefill }: { prefill?: { type: string; message: strin
 }
 
 export default function ParticipatePage() {
-  const [prefill, setPrefill] = useState<{ type: string; message: string } | null>(null);
-  const formRef = useRef<HTMLDivElement>(null);
-
-  const joinEvent = (title: string) => {
-    setPrefill({ type: 'volunteer', message: `I would like to join: ${title}` });
-    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }}>
       {/* Hero */}
@@ -211,11 +192,11 @@ export default function ParticipatePage() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-12">
-        <CommunityEventsList onJoin={joinEvent} />
+        <CommunityEventsList />
 
-        <div ref={formRef} className="bg-white rounded-2xl p-8 shadow-sm border scroll-mt-6" style={{ borderColor: 'rgba(11,61,145,0.1)' }}>
+        <div className="bg-white rounded-2xl p-8 shadow-sm border scroll-mt-6" style={{ borderColor: 'rgba(11,61,145,0.1)' }}>
           <Suspense fallback={<div className="h-96 flex items-center justify-center text-gray-400 text-sm">Loading…</div>}>
-            <ParticipateForm prefill={prefill} />
+            <ParticipateForm />
           </Suspense>
         </div>
       </div>

@@ -21,6 +21,7 @@ import ConfirmDialog from '@/components/admin/cms/ConfirmDialog';
 import AdminOverview from '@/components/admin/dashboard/AdminOverview';
 import { toast } from 'sonner';
 import ContactInbox, { type InboxMessage } from '@/components/admin/Inbox';
+import CommunityEventsManager from '@/components/admin/CommunityEventsManager';
 import * as XLSX from 'xlsx-js-style';
 
 /* ─── types ──────────────────────────────────────────────── */
@@ -32,7 +33,7 @@ interface StrapiActivity { id: string; contentType: string; entryName: string; a
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'achievements' | 'rewards' | 'redeemcodes' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'participation' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses';
+type Tab = 'overview' | 'users' | 'roles' | 'achievements' | 'rewards' | 'redeemcodes' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'communityevents' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses';
 
 const TRIGGER_TYPE_LABELS: Record<string, string> = {
   event_count: 'Event sign-ups',
@@ -847,6 +848,7 @@ export default function AdminDashboard() {
     { key: 'changerequests',     label: 'Change Requests',      badge: changeRequests.filter(cr => cr.status === 'pending').length,                                  roles: ['officer', 'editor'] },
     { key: 'attractionrequests', label: 'Attraction Requests',  badge: attractionReqs.filter(r => r.status === 'pending' || r.status === 'editor_reviewed').length,  roles: ['officer', 'editor'] },
     { key: 'submissions',        label: 'Inbox',          badge: inboxUnread,                                                                                     roles: ['officer'] },
+    { key: 'communityevents',    label: 'Community Events',     badge: undefined,                                                                                    roles: ['officer'] },
     { key: 'signups',            label: 'Event Sign-ups',       badge: signups.length,                                                                               roles: ['officer'] },
     { key: 'visitorrecords',     label: 'Visitor Records',      badge: undefined,                                                                                    roles: ['officer'] },
     { key: 'externalreviews',    label: 'Online Reviews',       badge: undefined,                                                                                    roles: ['officer'] },
@@ -1747,6 +1749,11 @@ export default function AdminDashboard() {
             token={token || ''}
             onRefresh={refreshInbox}
           />
+        )}
+
+        {/* ── COMMUNITY EVENTS ───────────────────────────────── */}
+        {activeTab === 'communityevents' && (
+          <CommunityEventsManager token={token || ''} />
         )}
 
 
