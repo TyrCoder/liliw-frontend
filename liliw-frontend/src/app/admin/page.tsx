@@ -20,7 +20,7 @@ import MediaUploader from '@/components/admin/cms/MediaUploader';
 import ConfirmDialog from '@/components/admin/cms/ConfirmDialog';
 import AdminOverview from '@/components/admin/dashboard/AdminOverview';
 import { toast } from 'sonner';
-import ContactInbox from '@/components/admin/Inbox';
+import ContactInbox, { type InboxMessage } from '@/components/admin/Inbox';
 import * as XLSX from 'xlsx-js-style';
 
 /* ─── types ──────────────────────────────────────────────── */
@@ -258,10 +258,6 @@ export default function AdminDashboard() {
   const [formIsActive,     setFormIsActive]     = useState(true);
   const [savingForm,       setSavingForm]       = useState(false);
   const [formSaveMsg,      setFormSaveMsg]      = useState<{ ok: boolean; text: string } | null>(null);
-  // Event form responses (officer)
-  const [efResponseData,   setEfResponseData]   = useState<{ form: any; responses: any[] } | null>(null);
-  const [loadingEFR,       setLoadingEFR]       = useState(false);
-  const [selectedFormId,   setSelectedFormId]   = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
@@ -295,16 +291,19 @@ export default function AdminDashboard() {
     }
   }, [loading, isStaff, isChatoEditor, isChatoOfficer]);
 
+  const [inbox, setInbox] = useState<InboxMessage[]>([]);
+  const [loadingInbox, setLoadingInbox] = useState(true);
+
   // Pulled out of the initial load so the inbox can refetch after a reply or a
   // status change — the thread it just wrote has to come back from the server.
-  const refreshSubmissions = useCallback(() => {
+  const refreshInbox = useCallback(() => {
     if (!token) return;
-    setLoadingSubs(true);
-    fetch('/api/admin/submissions', { headers: { Authorization: `Bearer ${token}` } })
+    setLoadingInbox(true);
+    fetch('/api/admin/inbox', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
-      .then(d => setSubmissions(d.data || []))
+      .then(d => setInbox(d.data || []))
       .catch(() => {})
-      .finally(() => setLoadingSubs(false));
+      .finally(() => setLoadingInbox(false));
   }, [token]);
 
   useEffect(() => {
@@ -336,7 +335,10 @@ export default function AdminDashboard() {
     // Admin is included in these officer/editor blocks because admin now sees
     // every tab; without the data fetch those tabs would render empty.
     if (isChatoOfficer || isAdmin) {
-      refreshSubmissions();
+      refreshInbox();
+      // Still fetched for the reports tab, which counts contact messages and
+      // participation requests separately — the inbox merges them.
+      fetch('/api/admin/submissions',    { headers: h }).then(r => r.json()).then(d => setSubmissions(d.data || [])).catch(() => {}).finally(() => setLoadingSubs(false));
       fetch('/api/admin/participation',  { headers: h }).then(r => r.json()).then(d => setParticipation(d.data || [])).catch(() => {}).finally(() => setLoadingPart(false));
       fetch('/api/event-signup',         { headers: h }).then(r => r.json()).then(d => setSignups(d.data || [])).catch(() => {}).finally(() => setLoadingSignups(false));
       setLoadingVR(true);
@@ -788,7 +790,7 @@ export default function AdminDashboard() {
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1565C0' }} /></div>;
   if (!user || !isStaff) return null;
 
-  const newCount      = submissions.filter(s => s.attributes?.status === 'new').length;
+  const inboxUnread  = inbox.filter(m => m.status === 'new').length;
   const feedbackCount = submissions.filter(s => s.attributes?.type === 'feedback').length;
   const volunteerCount= submissions.filter(s => s.attributes?.type === 'volunteer').length;
 
@@ -828,35 +830,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const loadFormResponses = async (formId: string) => {
-    if (!token) return;
-    setSelectedFormId(formId); setLoadingEFR(true); setEfResponseData(null);
-    try {
-      const res = await fetch(`/api/admin/event-forms/${formId}/responses`, { headers: { Authorization: `Bearer ${token}` } });
-      const d = await res.json();
-      if (res.ok) setEfResponseData(d);
-    } catch {}
-    finally { setLoadingEFR(false); }
-  };
-
-  const downloadResponsesCSV = () => {
-    if (!efResponseData) return;
-    const { form, responses } = efResponseData;
-    const fields: FormField[] = form.fields || [];
-    const headers = ['Submitted At', 'Name', 'Email', ...fields.map((f: FormField) => f.label)];
-    const rows = responses.map((r: any) => [
-      new Date(r.submitted_at).toLocaleString(),
-      r.respondent_name || '—',
-      r.respondent_email || '—',
-      ...fields.map((f: FormField) => { const a = r.answers?.[f.id]; return Array.isArray(a) ? a.join(', ') : (a ?? ''); }),
-    ]);
-    const csv = [headers, ...rows].map(row => row.map((v: any) => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `${form.event_title}-responses.csv`; a.click();
-    URL.revokeObjectURL(url);
-  };
-
 
   // Tab visibility per role
   const ALL_TABS: { key: Tab; label: string; badge?: number; roles: string[] }[] = [
@@ -873,8 +846,7 @@ export default function AdminDashboard() {
     { key: 'lbo',                label: 'LBO Applications',     badge: lboApps.filter(a => (a.attributes?.status || a.status) === 'pending').length,                roles: ['officer', 'editor'] },
     { key: 'changerequests',     label: 'Change Requests',      badge: changeRequests.filter(cr => cr.status === 'pending').length,                                  roles: ['officer', 'editor'] },
     { key: 'attractionrequests', label: 'Attraction Requests',  badge: attractionReqs.filter(r => r.status === 'pending' || r.status === 'editor_reviewed').length,  roles: ['officer', 'editor'] },
-    { key: 'submissions',        label: 'Inbox',          badge: newCount,                                                                                     roles: ['officer'] },
-    { key: 'participation',      label: 'Participation',        badge: participation.length,                                                                         roles: ['officer'] },
+    { key: 'submissions',        label: 'Inbox',          badge: inboxUnread,                                                                                     roles: ['officer'] },
     { key: 'signups',            label: 'Event Sign-ups',       badge: signups.length,                                                                               roles: ['officer'] },
     { key: 'visitorrecords',     label: 'Visitor Records',      badge: undefined,                                                                                    roles: ['officer'] },
     { key: 'externalreviews',    label: 'Online Reviews',       badge: undefined,                                                                                    roles: ['officer'] },
@@ -883,7 +855,6 @@ export default function AdminDashboard() {
     { key: 'attractions',        label: 'Attractions',          badge: attractions.length,                                                                           roles: ['editor'] },
     { key: 'eventforms',         label: 'Event Forms',          badge: eventForms.length,                                                                            roles: ['editor'] },
     // Officer: event form responses
-    { key: 'eventresponses',     label: 'Event Responses',      badge: undefined,                                                                                    roles: ['officer'] },
   ];
 
   const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
@@ -1771,53 +1742,14 @@ export default function AdminDashboard() {
         {/* ── SUBMISSIONS (inbox) ───────────────────────────── */}
         {activeTab === 'submissions' && (
           <ContactInbox
-            messages={submissions as any}
-            loading={loadingSubs}
+            messages={inbox}
+            loading={loadingInbox}
             token={token || ''}
-            onRefresh={refreshSubmissions}
+            onRefresh={refreshInbox}
           />
         )}
 
 
-        {/* ── PARTICIPATION ──────────────────────────────────── */}
-        {activeTab === 'participation' && (
-          <TableWrap title="Participation Requests" count={participation.length} loading={loadingPart} empty={participation.length === 0} emptyIcon={<MessageSquare className="w-12 h-12" />}>
-            <table className="w-full text-sm">
-              <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                <th className="px-5 py-3 text-left">Name</th>
-                <th className="px-5 py-3 text-left">Contact</th>
-                <th className="px-5 py-3 text-left">Type</th>
-                <th className="px-5 py-3 text-left">Message</th>
-                <th className="px-5 py-3 text-left">Date</th>
-                <th className="px-5 py-3" />
-              </tr></thead>
-              <tbody className="divide-y divide-gray-50">
-                {participation.map(p => (
-                  <tr key={p.id} className="hover:bg-blue-50/40 transition-colors cursor-pointer group"
-                      onClick={() => openSubDetail('participation', { full_name: p.full_name, email: p.email, phone: p.phone, type: p.type, message: p.message, created_at: p.created_at })}>
-                    <td className="px-5 py-4 font-semibold text-gray-900">{p.full_name}</td>
-                    <td className="px-5 py-4">
-                      <p className="flex items-center gap-1 text-gray-600"><Mail className="w-3 h-3 shrink-0" />{p.email}</p>
-                      {p.phone && <p className="flex items-center gap-1 text-gray-400 mt-0.5"><Phone className="w-3 h-3 shrink-0" />{p.phone}</p>}
-                    </td>
-                    <td className="px-5 py-4">
-                      {p.type && <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${TYPE_BADGE[p.type] || 'bg-gray-100 text-gray-600'}`}>{p.type}</span>}
-                    </td>
-                    <td className="px-5 py-4 max-w-xs"><p className="text-gray-600 line-clamp-2">{p.message || '—'}</p></td>
-                    <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
-                      <Clock className="w-3 h-3 inline mr-1" />{new Date(p.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </td>
-                    <td className="px-4 py-4 text-right">
-                      <span className="text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity px-2.5 py-1 rounded-lg" style={{ color: '#1565C0', backgroundColor: '#1565C010' }}>View →</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableWrap>
-        )}
-
-        {/* ── EVENT SIGN-UPS ─────────────────────────────────── */}
         {activeTab === 'signups' && (
           <TableWrap title="Event Sign-ups" count={signups.length} loading={loadingSignups} empty={signups.length === 0} emptyIcon={<Calendar className="w-12 h-12" />}>
             <table className="w-full text-sm">
@@ -3371,90 +3303,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ── EVENT RESPONSES (Officer) ──────────────────────── */}
-        {activeTab === 'eventresponses' && (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Event Form Responses</h2>
-              <p className="text-sm text-gray-400 mt-0.5">View sign-up responses submitted by users for each event.</p>
-            </div>
-
-            {loadingEF ? (
-              <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
-            ) : eventForms.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
-                <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-400 text-sm">No event forms created yet. Ask the editor to build one first.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {eventForms.map(form => (
-                  <button key={form.id} onClick={() => loadFormResponses(form.id)}
-                    className={`bg-white rounded-2xl border p-5 text-left transition hover:shadow-md ${selectedFormId === form.id ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200'}`}>
-                    <p className="font-bold text-gray-900 text-sm mb-1 line-clamp-2">{form.event_title}</p>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${form.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {form.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                      <span className="text-xs text-gray-400">{(form.fields || []).length} questions</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {loadingEFR && <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-gray-300" /></div>}
-
-            {efResponseData && !loadingEFR && (
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
-                  <div>
-                    <h3 className="font-bold text-gray-900">{efResponseData.form.event_title}</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">{efResponseData.responses.length} response{efResponseData.responses.length !== 1 ? 's' : ''}</p>
-                  </div>
-                  {efResponseData.responses.length > 0 && (
-                    <button onClick={downloadResponsesCSV}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
-                      <Download className="w-4 h-4" /> Export CSV
-                    </button>
-                  )}
-                </div>
-
-                {efResponseData.responses.length === 0 ? (
-                  <div className="py-12 text-center text-gray-400 text-sm">No responses yet.</div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-100">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Submitted</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Name</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Email</th>
-                          {(efResponseData.form.fields as FormField[]).map((f: FormField) => (
-                            <th key={f.id} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{f.label}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {efResponseData.responses.map((r: any) => (
-                          <tr key={r.id} className="hover:bg-gray-50 transition">
-                            <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{new Date(r.submitted_at).toLocaleDateString('en-PH', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' })}</td>
-                            <td className="px-4 py-3 font-medium text-gray-900">{r.respondent_name || '—'}</td>
-                            <td className="px-4 py-3 text-gray-600">{r.respondent_email || '—'}</td>
-                            {(efResponseData.form.fields as FormField[]).map((f: FormField) => {
-                              const ans = r.answers?.[f.id];
-                              return <td key={f.id} className="px-4 py-3 text-gray-700 max-w-xs truncate">{Array.isArray(ans) ? ans.join(', ') : (ans ?? '—')}</td>;
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
 
 
       </div>

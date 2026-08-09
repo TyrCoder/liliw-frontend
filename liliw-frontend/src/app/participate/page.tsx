@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
+import CommunityEventsList from '@/components/CommunityEventsList';
 import { motion } from 'framer-motion';
 import { ChevronLeft, CheckCircle, AlertCircle, Loader2, MessageSquare, Users, Briefcase } from 'lucide-react';
 
@@ -55,11 +56,23 @@ const TYPE_OPTIONS = [
 
 const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 bg-white';
 
-function ParticipateForm() {
+function ParticipateForm({ prefill }: { prefill?: { type: string; message: string } | null }) {
   const params = useSearchParams();
   const [form, setForm] = useState({ full_name: '', email: '', phone: '', type: params.get('type') || 'feedback', message: '' });
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Clicking "I want to join" on a community event fills the form in rather
+  // than leaving someone to describe which event they mean. Their own typing
+  // is kept — the prefill only supplies what is still blank.
+  useEffect(() => {
+    if (!prefill) return;
+    setForm(prev => ({
+      ...prev,
+      type: prefill.type,
+      message: prev.message.trim() ? prev.message : prefill.message,
+    }));
+  }, [prefill]);
 
   const meta = TYPE_META[form.type] ?? TYPE_META.feedback;
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -163,6 +176,14 @@ function ParticipateForm() {
 }
 
 export default function ParticipatePage() {
+  const [prefill, setPrefill] = useState<{ type: string; message: string } | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  const joinEvent = (title: string) => {
+    setPrefill({ type: 'volunteer', message: `I would like to join: ${title}` });
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }}>
       {/* Hero */}
@@ -182,10 +203,12 @@ export default function ParticipatePage() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="bg-white rounded-2xl p-8 shadow-sm border" style={{ borderColor: 'rgba(11,61,145,0.1)' }}>
+      <div className="max-w-3xl mx-auto px-4 py-12">
+        <CommunityEventsList onJoin={joinEvent} />
+
+        <div ref={formRef} className="bg-white rounded-2xl p-8 shadow-sm border scroll-mt-6" style={{ borderColor: 'rgba(11,61,145,0.1)' }}>
           <Suspense fallback={<div className="h-96 flex items-center justify-center text-gray-400 text-sm">Loading…</div>}>
-            <ParticipateForm />
+            <ParticipateForm prefill={prefill} />
           </Suspense>
         </div>
       </div>
