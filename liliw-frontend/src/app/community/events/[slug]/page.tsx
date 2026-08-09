@@ -133,7 +133,9 @@ export default function EventDetailPage() {
   if (!event) return null;
 
   const a           = event.attributes || event;
-  const coverUrl    = getPhotoUrl(a.cover_image?.data?.attributes || a.cover_image?.attributes || a.cover_image);
+  // _media is where the CMS keeps photos; cover_image is the legacy Strapi
+  // shape. Reading only the second showed every CMS event with no picture.
+  const coverUrl    = getPhotoUrl(a._media?.[0] || a.cover_image?.data?.attributes || a.cover_image?.attributes || a.cover_image);
   const descHtml    = blocksToHtml(Array.isArray(a.description) ? a.description : []);
   const programHtml = blocksToHtml(Array.isArray(a.program) ? a.program : []);
   const category    = a.category || 'other';

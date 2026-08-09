@@ -8,6 +8,7 @@ import MediaUploader, { MediaItem } from './MediaUploader';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import RejectModal from './RejectModal';
 import ConfirmDialog, { IrreversibleNote } from './ConfirmDialog';
+import DateTimePicker from './DateTimePicker';
 
 // One template for every CMS content type.
 //
@@ -307,11 +308,13 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
       case 'richtext':
         return <RichTextEditor value={(val(f.name) as string) || ''} onChange={v => setField(f.name, v)} placeholder={f.placeholder} />;
       case 'datetime':
-        // The column stores a full ISO timestamp; the input wants it trimmed
-        // to the minute, and gives it back without a zone.
-        return <input type="datetime-local" className={inputCls}
-          value={((val(f.name) as string) || '').slice(0, 16)}
-          onChange={e => setField(f.name, e.target.value || null)} />;
+        // The column stores a full ISO timestamp; the picker wants it trimmed
+        // to the minute, and gives it back without a zone — the same contract
+        // the native datetime-local input had before it was replaced.
+        return <DateTimePicker
+          value={((val(f.name) as string) || '').slice(0, 16) || null}
+          onChange={v => setField(f.name, v)}
+          placeholder={f.placeholder} />;
       case 'checkbox':
         return (
           <label className="flex items-center gap-2.5 cursor-pointer select-none py-1">
