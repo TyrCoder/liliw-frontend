@@ -292,11 +292,14 @@ export async function sendAttractionRequestUpdate(data: {
 }
 
 export async function sendContactNotification(data: {
-  name: string; email: string; phone?: string; type: string; message: string;
+  name: string; email: string; phone?: string; type: string; message: string; to?: string[];
 }) {
   await transporter.sendMail({
     from: FROM,
-    to: ADMIN,
+    to: data.to?.length ? data.to.join(', ') : ADMIN,
+    // So a staff member can answer straight from their mail client if they
+    // are away from the dashboard, rather than copying the address out.
+    replyTo: `"${data.name}" <${data.email}>`,
     subject: `New ${data.type} submission — ${data.name}`,
     html: base(
       `New ${data.type.charAt(0).toUpperCase() + data.type.slice(1)} Submission`,
@@ -311,6 +314,58 @@ export async function sendContactNotification(data: {
       ${btn('View in Admin Dashboard', `${SITE}/admin`)}`,
     ),
   });
+}
+
+/**
+ * A staff reply to someone who wrote in through the contact form.
+ *
+ * Sent from the tourism office address with the sender's own message quoted
+ * underneath, so the reply arrives with its context the way any mail thread
+ * would — the recipient wrote days ago and should not have to guess what this
+ * is about.
+ *
+ * `replyTo` is the office address rather than the individual staff member, so
+ * a continued conversation comes back to the shared mailbox and not to one
+ * person's inbox.
+ */
+export async function sendSubmissionReply(data: {
+  to: string; name: string; subject: string; body: string; originalMessage: string; sentBy: string;
+}) {
+  const paragraphs = data.body
+    .trim()
+    .split(/\n{2,}/)
+    .map(p => `<p style="margin:0 0 16px;color:#1E293B;font-size:15px;line-height:1.65">${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+
+  await transporter.sendMail({
+    from: FROM,
+    to: data.to,
+    replyTo: ADMIN,
+    subject: data.subject,
+    html: base(
+      'A reply from the Tourism Office',
+      `<p style="color:#475569;font-size:15px;margin:0 0 24px">Hello ${escapeHtml(data.name)}, thank you for writing to us.</p>
+      ${paragraphs}
+      <div style="margin-top:28px;padding:16px 20px;background:#F8FAFC;border-left:3px solid #CBD5E1;border-radius:0 12px 12px 0">
+        <p style="margin:0 0 8px;font-size:10px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.08em">Your original message</p>
+        <p style="margin:0;color:#64748B;font-size:14px;line-height:1.6;white-space:pre-wrap">${escapeHtml(data.originalMessage)}</p>
+      </div>
+      <p style="margin:24px 0 0;color:#94A3B8;font-size:13px">Sent by ${escapeHtml(data.sentBy)} · Culture, History, Arts and Tourism Office, Liliw, Laguna</p>`,
+    ),
+  });
+}
+
+/**
+ * Staff type replies by hand, so the text is untrusted as far as the template
+ * is concerned — without this, an angle bracket would break the markup and a
+ * pasted tag would be rendered as part of the mail.
+ */
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 export { otpBox };
