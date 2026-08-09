@@ -139,6 +139,9 @@ export const CMS_TABLES: Record<string, string> = {
   stories:       'cms_stories',
   faqs:          'cms_faqs',
   itineraries:   'cms_itineraries',
+  // Activities residents can join, as opposed to cms_events, which is the
+  // public what's-on listing for visitors.
+  'community-events': 'cms_community_events',
 };
 
 export const CMS_CONTENT_TYPES: Record<string, string> = {
@@ -150,4 +153,5 @@ export const CMS_CONTENT_TYPES: Record<string, string> = {
   stories:       'story',
   faqs:          'faq',
   itineraries:   'itinerary',
+  'community-events': 'community_event',
 };

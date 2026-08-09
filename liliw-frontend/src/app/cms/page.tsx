@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, MapPin, Calendar, Newspaper, Palette, Users,
   BookOpen, ImageIcon, HelpCircle, Route, ClipboardCheck, Edit3, LayoutDashboard,
+  HeartHandshake,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import AttractionsTab    from '@/components/admin/cms/AttractionsTab';
@@ -16,12 +17,14 @@ import ArtisansTab       from '@/components/admin/cms/ArtisansTab';
 import StoriesTab        from '@/components/admin/cms/StoriesTab';
 import FaqsTab           from '@/components/admin/cms/FaqsTab';
 import ItinerariesTab    from '@/components/admin/cms/ItinerariesTab';
+import CommunityEventsTab from '@/components/admin/cms/CommunityEventsTab';
 import ContentApprovalsTab from '@/components/admin/cms/ContentApprovalsTab';
 import CmsOverview from '@/components/admin/dashboard/CmsOverview';
 
 type CMSTab =
   | 'dashboard' | 'approvals' | 'attractions' | 'events' | 'news'
-  | 'art-forms' | 'artisans' | 'stories' | 'faqs' | 'itineraries';
+  | 'art-forms' | 'artisans' | 'stories' | 'faqs' | 'itineraries'
+  | 'community-events';
 
 interface NavItem {
   key: CMSTab;
@@ -53,6 +56,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
       { key: 'art-forms',   label: 'Art Forms',    icon: <Palette     className="w-4 h-4" />, roles: ['editor', 'officer', 'admin'], color: '#EC4899' },
       { key: 'artisans',    label: 'Artisans',     icon: <Users       className="w-4 h-4" />, roles: ['editor', 'officer', 'admin'], color: '#10B981' },
       { key: 'stories',     label: 'Stories',      icon: <BookOpen    className="w-4 h-4" />, roles: ['editor', 'officer', 'admin'], color: '#F97316' },
+      { key: 'community-events', label: 'Community Events', icon: <HeartHandshake className="w-4 h-4" />, roles: ['editor', 'officer', 'admin'], color: '#0D9488' },
     ],
   },
   {
@@ -207,6 +211,9 @@ export default function CMSPage() {
           )}
           {activeTab === 'itineraries' && (
             <ItinerariesTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
+          )}
+          {activeTab === 'community-events' && (
+            <CommunityEventsTab token={token} userEmail={user.email} isOfficer={isChatoOfficer} isAdmin={isAdmin} />
           )}
         </main>
       </div>

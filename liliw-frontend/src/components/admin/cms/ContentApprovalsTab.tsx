@@ -22,6 +22,9 @@ const TYPE_LABELS: Record<string, string> = {
   stories:       'Story',
   faqs:          'FAQ',
   itineraries:   'Itinerary',
+  // Omitting a type here does not just hide a filter chip — it leaves entries
+  // of that type unapprovable, which is how FAQs went unpublishable.
+  'community-events': 'Community Event',
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -33,6 +36,7 @@ const TYPE_COLORS: Record<string, string> = {
   stories:       '#F97316',
   faqs:          '#6366F1',
   itineraries:   '#84CC16',
+  'community-events': '#0D9488',
 };
 
 interface Props { token: string | null; }
