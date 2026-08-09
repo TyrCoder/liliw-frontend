@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import JoinEventModal from './JoinEventModal';
 import { Calendar, MapPin, Users, Mail, Loader2, HeartHandshake, AlertCircle } from 'lucide-react';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -44,9 +45,8 @@ function dateRange(start: string | null, end: string | null) {
  * panel on a page whose job is to invite people in reads as a dead site.
  */
 export default function CommunityEventsList({
-  onJoin, showHeading = true, header,
+  showHeading = true, header,
 }: {
-  onJoin?: (title: string) => void;
   /** Off where the host page supplies its own section header. */
   showHeading?: boolean;
   /**
@@ -59,6 +59,7 @@ export default function CommunityEventsList({
   const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [joining, setJoining] = useState<CommunityEvent | null>(null);
 
   useEffect(() => {
     fetch('/api/content/community-events')
@@ -168,9 +169,9 @@ export default function CommunityEventsList({
                 )}
 
                 <div className="mt-4 pt-3 flex items-center gap-2 border-t" style={{ borderColor: 'rgba(11,61,145,0.07)' }}>
-                  {e.is_open && onJoin && (
+                  {e.is_open && (
                     <button
-                      onClick={() => onJoin(e.title)}
+                      onClick={() => setJoining(e)}
                       className="px-4 py-2 rounded-xl text-xs font-bold transition hover:opacity-90"
                       style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: BL }}
                     >
@@ -189,6 +190,10 @@ export default function CommunityEventsList({
           );
         })}
       </div>
+
+      {joining && (
+        <JoinEventModal event={joining} onClose={() => setJoining(null)} />
+      )}
     </div>
   );
 }
