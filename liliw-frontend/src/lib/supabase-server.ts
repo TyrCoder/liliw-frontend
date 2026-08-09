@@ -21,6 +21,13 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     'which cannot bypass RLS — writes to protected tables will fail with policy errors. ' +
     'Set it in the deployment environment.',
   );
+} else if (keyRole(process.env.SUPABASE_SERVICE_ROLE_KEY) !== 'service_role') {
+  console.error(
+    '[supabase-server] SUPABASE_SERVICE_ROLE_KEY is set but reads as ' +
+    `"${keyRole(process.env.SUPABASE_SERVICE_ROLE_KEY)}", not service_role. It cannot bypass ` +
+    'RLS, so protected writes will fail as policy errors. Copy the service_role key from ' +
+    'Supabase → Settings → API.',
+  );
 }
 
 export const supabaseServer = createClient(
@@ -29,8 +36,35 @@ export const supabaseServer = createClient(
   { auth: { persistSession: false } },
 );
 
-/** True when the server client actually has elevated rights. */
-export const hasServiceRole = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+/**
+ * What the key actually is, rather than which variable it arrived in.
+ *
+ * Supabase issues two shapes: legacy JWTs carrying a `role` claim, and the
+ * newer `sb_secret_…` / `sb_publishable_…` strings. Both are read here so that
+ * setting SUPABASE_SERVICE_ROLE_KEY to the wrong value — the anon key pasted
+ * into the service role slot, which looks correct in a dashboard and is easy
+ * to do — is detected as anon rather than trusted as elevated.
+ */
+export function keyRole(k: string | undefined): 'service_role' | 'anon' | 'unknown' {
+  if (!k) return 'unknown';
+  if (k.startsWith('sb_secret_')) return 'service_role';
+  if (k.startsWith('sb_publishable_')) return 'anon';
+  try {
+    const payload = JSON.parse(Buffer.from(k.split('.')[1], 'base64').toString());
+    return payload.role === 'service_role' ? 'service_role' : payload.role === 'anon' ? 'anon' : 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
+/**
+ * True when the client can actually bypass RLS.
+ *
+ * Deliberately not `!!process.env.SUPABASE_SERVICE_ROLE_KEY` — that only says
+ * the variable is set, so a wrong value read as elevated and every diagnostic
+ * built on it pointed away from the real problem.
+ */
+export const hasServiceRole = keyRole(key) === 'service_role';
 
 /**
  * Turns a database error into something that names the actual cause.
@@ -49,9 +83,15 @@ export function explainDbError(error: { code?: string; message: string } | null)
   if (!error) return '';
   const isRls = error.code === '42501' || /row-level security/i.test(error.message);
   if (isRls && !hasServiceRole) {
-    return 'The server is running without SUPABASE_SERVICE_ROLE_KEY, so it cannot write to the '
-         + 'database. Add it to the deployment environment (Production scope) and redeploy — '
-         + 'the content itself is fine.';
+    const set = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+    return set
+      ? 'The server has a SUPABASE_SERVICE_ROLE_KEY, but it is not a service role key — it reads '
+        + `as "${keyRole(process.env.SUPABASE_SERVICE_ROLE_KEY)}", so it cannot bypass RLS. Copy the `
+        + 'service_role key from Supabase → Settings → API into that variable and redeploy. The '
+        + 'content itself is fine.'
+      : 'The server is running without SUPABASE_SERVICE_ROLE_KEY, so it cannot write to the '
+        + 'database. Add it to the deployment environment (Production scope) and redeploy — '
+        + 'the content itself is fine.';
   }
   return error.message;
 }

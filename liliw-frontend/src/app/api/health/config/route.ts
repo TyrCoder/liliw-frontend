@@ -49,7 +49,11 @@ export async function GET(req: NextRequest) {
     supabase: {
       urlSet: present('NEXT_PUBLIC_SUPABASE_URL'),
       anonKeySet: present('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
-      serviceRoleKeySet: hasServiceRole,
+      // Two separate questions. The variable can be set and still hold the
+      // wrong key — the anon key pasted into the service role slot looks
+      // right in a dashboard and fails exactly like a missing one.
+      serviceRoleVarSet: present('SUPABASE_SERVICE_ROLE_KEY'),
+      serviceRoleKeyValid: hasServiceRole,
       keyInUseRole: keyRole,
       keyProjectRef: keyProject,
       canReadProtectedTable: canBypassRls,
@@ -66,7 +70,10 @@ export async function GET(req: NextRequest) {
     // SUPABASE_SERVICE_ROLE_KEY in the deployment environment and redeploy.
     // Vercel only applies environment changes to builds made after them.
     hint: hasServiceRole
-      ? 'Service role key is present.'
-      : 'SUPABASE_SERVICE_ROLE_KEY is missing from this deployment — set it in Vercel (Production scope) and redeploy.',
+      ? 'Service role key is present and grants service_role.'
+      : present('SUPABASE_SERVICE_ROLE_KEY')
+        ? `SUPABASE_SERVICE_ROLE_KEY is set but grants "${keyRole ?? 'unknown'}", not service_role. `
+          + 'Copy the service_role key from Supabase → Settings → API and redeploy.'
+        : 'SUPABASE_SERVICE_ROLE_KEY is missing from this deployment — set it in Vercel (Production scope) and redeploy.',
   });
 }
