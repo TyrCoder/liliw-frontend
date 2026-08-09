@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar, Bell, X, MapPin, Maximize2, CheckCircle, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Bell, X, MapPin, Maximize2, CheckCircle, Loader2, PlayCircle } from 'lucide-react';
 import PhotoLightbox from '@/components/PhotoLightbox';
 import FacebookVideo from '@/components/FacebookVideo';
 import { extractFacebookVideos } from '@/lib/facebook';
@@ -125,23 +125,26 @@ function EventCalendar({
   const nextMonth = () => setView(new Date(year, month + 1, 1));
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-6 border" style={{ borderColor: 'rgba(11,61,145,0.1)' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <button onClick={prevMonth}
-          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-blue-50 transition"
+    <div className="bg-white rounded-2xl shadow-sm border overflow-hidden" style={{ borderColor: 'rgba(11,61,145,0.1)' }}>
+      {/* Month bar — tinted so the calendar reads as a panel with a head,
+          rather than a grid floating in a white box. */}
+      <div className="flex items-center justify-between px-4 py-3 border-b"
+        style={{ backgroundColor: 'rgba(15,95,181,0.045)', borderColor: 'rgba(11,61,145,0.08)' }}>
+        <button onClick={prevMonth} aria-label="Previous month"
+          className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white transition"
           style={{ color: '#0B3D91' }}>
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-4 h-4" />
         </button>
-        <h3 className="font-bold text-base" style={{ color: '#0B3D91', fontFamily: HL }}>
+        <h3 className="font-bold text-[15px]" style={{ color: '#0B3D91', fontFamily: DL }}>
           {MONTH_NAMES[month]} {year}
         </h3>
-        <button onClick={nextMonth}
-          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-blue-50 transition"
+        <button onClick={nextMonth} aria-label="Next month"
+          className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white transition"
           style={{ color: '#0B3D91' }}>
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
+      <div className="p-5">
 
       {/* Day labels */}
       <div className="grid grid-cols-7 mb-2">
@@ -223,6 +226,7 @@ function EventCalendar({
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }
@@ -611,8 +615,12 @@ export default function NewsPage() {
                       <motion.div key={`${item.dateKey}-${idx}`}
                         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
                         onClick={() => setSelectedItem(item)}
-                        className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                        style={{ borderLeft: '4px solid #0B3D91' }}>
+                        /* The left rule was navy on every card regardless of
+                           what the card was about. Taking the category's own
+                           colour makes the list scannable by kind, which is
+                           what the coloured chips were already promising. */
+                        className="bg-white rounded-2xl overflow-hidden border border-gray-200/70 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
+                        style={{ borderLeft: `4px solid ${catStyle.text}` }}>
                         {/* Cover photo strip */}
                         {item.photos.length > 0 && (
                           <div className="h-40 overflow-hidden">
@@ -620,35 +628,45 @@ export default function NewsPage() {
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           </div>
                         )}
-                        <div className="p-6">
+                        <div className="p-5 sm:p-6">
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <Bell className="w-4 h-4 shrink-0" style={{ color: '#0B3D91' }} />
-                              <span className="px-3 py-1 rounded-full text-xs font-bold capitalize"
+                              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold capitalize"
                                 style={{ backgroundColor: catStyle.bg, color: catStyle.text, fontFamily: HL }}>
                                 {item.category.replace(/[-_]/g, ' ')}
                               </span>
                               {item.isEvent && (
-                                <span className="px-2 py-1 rounded-full text-xs font-bold"
-                                  style={{ backgroundColor: 'rgba(249,115,22,0.1)', color: '#C2410C', fontFamily: HL }}>
+                                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold"
+                                  style={{ backgroundColor: 'rgba(247,148,29,0.12)', color: '#B45309', fontFamily: HL }}>
                                   Event
                                 </span>
                               )}
+                              {/* Says there is something to watch before you open it. */}
+                              {(item.videoUrl || /facebook\.com|fb\.watch/i.test(item.fullText || '')) && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
+                                  style={{ backgroundColor: 'rgba(15,95,181,0.1)', color: '#0F5FB5', fontFamily: HL }}>
+                                  <PlayCircle className="w-3 h-3" /> Video
+                                </span>
+                              )}
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-400 shrink-0" style={{ fontFamily: BL }}>
-                              <Calendar className="w-4 h-4" />
-                              {item.date
-                                ? new Date(item.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })
-                                : '—'}
-                            </div>
+                            {/* Omitted rather than shown as a dash when the
+                                entry has no date — an announcement often has none. */}
+                            {item.date && (
+                              <div className="flex items-center gap-1.5 text-xs text-gray-400 shrink-0" style={{ fontFamily: BL }}>
+                                <Calendar className="w-3.5 h-3.5" />
+                                {new Date(item.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                              </div>
+                            )}
                           </div>
-                          <h3 className="text-lg font-bold mb-2" style={{ color: '#1A1A2E', fontFamily: HL }}>{item.title}</h3>
+                          <h3 className="text-[19px] font-bold mb-2 leading-snug transition-colors group-hover:text-[#0F5FB5]"
+                            style={{ color: '#0B3D91', fontFamily: DL }}>{item.title}</h3>
                           <p className="text-gray-600 text-sm leading-relaxed line-clamp-3" style={{ fontFamily: BL }}>
                             {item.excerpt}{item.fullText.length > 200 ? '...' : ''}
                           </p>
-                          <div className="flex items-center justify-between mt-3">
-                            <span className="text-xs text-gray-400" style={{ fontFamily: BL }}>{item.source}</span>
-                            <span className="text-xs font-semibold" style={{ color: '#1565C0', fontFamily: BL }}>
+                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                            <span className="text-[11px] text-gray-400 truncate min-w-0" style={{ fontFamily: BL }}>{item.source}</span>
+                            <span className="text-xs font-bold shrink-0 inline-flex items-center gap-1 transition-transform group-hover:translate-x-0.5"
+                              style={{ color: '#0F5FB5', fontFamily: BL }}>
                               View Details →
                             </span>
                           </div>
