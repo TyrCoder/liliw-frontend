@@ -7,7 +7,7 @@ import {
   ArrowRight, MapPin, History, Leaf, HelpCircle,
   Calendar, ChevronLeft, ChevronRight, Star,
   Compass, UtensilsCrossed, Mountain, Camera, Users, Globe,
-  Layers, Sparkles, QrCode, Award, Gift,
+  Layers, Sparkles, QrCode, Award, Gift, Play,
 } from 'lucide-react';
 import { stripHtml } from '@/lib/text';
 
@@ -57,6 +57,22 @@ function photoUrl(photos: any[] = []): string | null {
   const raw = p?.formats?.medium?.url || p?.formats?.small?.url || p?.url;
   if (!raw) return null;
   return raw.startsWith('http') ? raw : `${STRAPI_BASE}${raw}`;
+}
+
+/**
+ * The cover image for a news item or event.
+ *
+ * CMS uploads live in cms_media and arrive as `_media`; `cover_image` and
+ * `photos` are the older Strapi shapes. Only the latter were ever read here,
+ * which is why every card on this section rendered as a bare blue gradient
+ * however many photos the article actually had.
+ */
+function coverOf(a: any): string | null {
+  return a?._media?.[0]?.url
+    || photoUrl(a?.photos ?? [])
+    || a?.cover_image?.data?.attributes?.url
+    || a?.cover_image?.url
+    || null;
 }
 
 /* ─── Bunting decoration ─────────────────────────────────── */
@@ -197,8 +213,29 @@ function NewsOverlayCard({ item }: { item: any }) {
     <Link href={item.link || '/news'}
       className="block relative rounded-2xl overflow-hidden group shadow-md hover:shadow-xl transition-shadow"
       style={{ aspectRatio: '16/9' }}>
+      {/* The gradient stays as the backdrop, so an article with no photo still
+          looks deliberate rather than broken, and a slow image has something
+          behind it instead of a white flash. */}
       <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }} />
+      {item.photo && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={item.photo} alt={item.title}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy" />
+      )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+
+      {/* Facebook does not hand out a still for an embedded video, so the play
+          mark is what tells you there is one — over the cover photo when there
+          is one, over the gradient when there is not. */}
+      {item.hasVideo && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span className="w-14 h-14 rounded-full grid place-items-center backdrop-blur-sm shadow-lg transition-transform group-hover:scale-110"
+                style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}>
+            <Play className="w-6 h-6 ml-0.5" style={{ color: '#0B3D91' }} fill="#0B3D91" />
+          </span>
+        </div>
+      )}
       <div className="absolute bottom-0 left-0 right-0 p-4">
         <h3 className="text-white font-bold text-sm leading-tight mb-2 line-clamp-2"
           style={{ fontFamily: HL }}>{item.title}</h3>
@@ -344,6 +381,7 @@ export default function Home() {
             date: a.publishedAt ? new Date(a.publishedAt).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
             category: a.category || 'announcement',
             excerpt: extractText(a.content).substring(0, 120) || 'Read more.',
+            photo: coverOf(a), hasVideo: !!a.video_url,
             link: '/news',
           });
         });
@@ -354,6 +392,7 @@ export default function Home() {
             date: a.date_start ? new Date(a.date_start).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
             category: a.category || 'other',
             excerpt: extractText(a.description).substring(0, 120) || `At ${a.venue || 'Liliw'}`,
+            photo: coverOf(a), hasVideo: !!a.video_url,
             link: '/news',
           });
         });
