@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase-server';
+import { supabaseServer, explainDbError } from '@/lib/supabase-server';
 import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES, slugify, labelFieldFor } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
 import { invalidateContentCache } from '@/lib/content';
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     ({ data, error } = await supabaseServer.from(table).insert(insertData).select().single());
   }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: explainDbError(error) }, { status: 500 });
 
   logCmsAction({ table, entryId: data.id, entryTitle: label, event: 'entry.create', performedBy: email, role });
   invalidateContentCache();

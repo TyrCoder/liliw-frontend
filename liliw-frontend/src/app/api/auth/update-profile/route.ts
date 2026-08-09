@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { supabaseServer } from '@/lib/supabase-server';
+import { supabaseServer, explainDbError } from '@/lib/supabase-server';
 import { normaliseAvatar } from '@/lib/avatars';
 
 const USER_TYPES = ['liliw_local', 'laguna', 'provincial', 'international'];
@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest) {
     if (error) {
       const taken = error.code === '23505';
       return NextResponse.json(
-        { error: taken ? 'That username is already taken.' : `Could not save your username: ${error.message}` },
+        { error: taken ? 'That username is already taken.' : `Could not save your username: ${explainDbError(error)}` },
         { status: taken ? 409 : 500 },
       );
     }
@@ -68,7 +68,7 @@ export async function PUT(req: NextRequest) {
 
     if (error) {
       return NextResponse.json(
-        { error: `Could not save your profile: ${error.message}` },
+        { error: `Could not save your profile: ${explainDbError(error)}` },
         { status: 500 },
       );
     }

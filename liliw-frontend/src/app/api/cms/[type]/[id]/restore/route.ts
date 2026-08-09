@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase-server';
+import { supabaseServer, explainDbError } from '@/lib/supabase-server';
 import { getCmsIdentity, CMS_TABLES } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
 import { invalidateContentCache } from '@/lib/content';
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     .from(table)
     .update({ status: 'draft', reject_remarks: null })
     .eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: explainDbError(error) }, { status: 500 });
 
   const entryTitle = existing.name || existing.title || existing.question || id;
   logCmsAction({ table, entryId: id, entryTitle: String(entryTitle), event: 'entry.restore', performedBy: email, role });

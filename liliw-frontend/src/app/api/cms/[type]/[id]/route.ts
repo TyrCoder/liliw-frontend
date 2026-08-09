@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase-server';
+import { supabaseServer, explainDbError } from '@/lib/supabase-server';
 import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES, slugify } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
 import { invalidateContentCache } from '@/lib/content';
@@ -59,7 +59,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: explainDbError(error) }, { status: 500 });
 
   const title = data?.name || data?.title || data?.question || id;
   logCmsAction({ table, entryId: id, entryTitle: String(title), event: 'entry.update', performedBy: email, role });
@@ -136,7 +136,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const entryTitle = existing.name || existing.title || existing.question || id;
     await supabaseServer.from('cms_media').delete().eq('content_id', id);
     const { error } = await supabaseServer.from(table).delete().eq('id', id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: explainDbError(error) }, { status: 500 });
 
     logCmsAction({ table, entryId: id, entryTitle: String(entryTitle), event: 'entry.delete', performedBy: email, role });
     invalidateContentCache();
@@ -156,7 +156,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     .from(table)
     .update({ status: 'archived' })
     .eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: explainDbError(error) }, { status: 500 });
 
   logCmsAction({ table, entryId: id, entryTitle: String(entryTitle), event: 'entry.archive', performedBy: email, role });
   invalidateContentCache();
