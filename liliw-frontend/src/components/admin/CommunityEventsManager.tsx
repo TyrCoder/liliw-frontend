@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { exportSheet } from '@/lib/excel';
 import {
   Loader2, HeartHandshake, Users, Calendar, MapPin, ChevronLeft, Download,
   CheckCircle, XCircle, Mail, Phone, RefreshCw, AlertCircle, UserPlus,
@@ -37,7 +38,6 @@ function fmtWhen(iso: string) {
     month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
   });
 }
-const csvCell = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 
 /**
  * The community events manager — what is on, and who has joined it.
@@ -139,19 +139,30 @@ export default function CommunityEventsManager({ token }: { token: string }) {
     }
   };
 
-  const exportCsv = () => {
+  const exportExcel = () => {
     if (!selected) return;
-    const rows = [
-      ['Signed up', 'Name', 'Email', 'Phone', 'Status', 'Message'],
-      ...signups.map(s => [s.created_at, s.full_name, s.email, s.phone, s.status, s.message]),
-    ];
-    const blob = new Blob([rows.map(r => r.map(csvCell).join(',')).join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${selected.title.replace(/[^\w-]+/g, '-')}-participants.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const active = signups.filter(s => s.status !== 'cancelled').length;
+    exportSheet({
+      filename: `${selected.title.replace(/[^\w-]+/g, '-')}-participants`,
+      sheetName: selected.title,
+      title: `${selected.title} — Participants`,
+      subtitle: [
+        fmtDate(selected.date_start),
+        selected.venue,
+        `${active} joined${selected.slots ? ` of ${selected.slots}` : ''}`,
+        `Exported ${new Date().toLocaleDateString('en-PH', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+      ].filter(Boolean).join('  ·  '),
+      columns: [
+        { header: 'Name',      value: s => s.full_name },
+        { header: 'Email',     value: s => s.email || '—' },
+        { header: 'Phone',     value: s => s.phone || '—' },
+        { header: 'Status',    value: s => s.status, align: 'center', width: 12 },
+        // A real date cell, so the organiser can sort by who signed up first.
+        { header: 'Signed up', value: s => new Date(s.created_at), width: 18 },
+        { header: 'Note',      value: s => s.message || '', width: 40 },
+      ],
+      rows: signups,
+    });
   };
 
   // ── Participants for one event ────────────────────────────
@@ -179,9 +190,9 @@ export default function CommunityEventsManager({ token }: { token: string }) {
             </div>
             <div className="ml-auto flex items-center gap-2">
               {signups.length > 0 && (
-                <button onClick={exportCsv}
+                <button onClick={exportExcel}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-                  <Download className="w-3.5 h-3.5" />Export CSV
+                  <Download className="w-3.5 h-3.5" />Export Excel
                 </button>
               )}
               <button onClick={() => setAdding(a => !a)}
