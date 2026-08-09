@@ -8,6 +8,7 @@ import {
   Users, ClipboardList, RefreshCw, Download, CheckCheck,
 } from 'lucide-react';
 import { replySubject, typeLabel } from '@/lib/inbox-labels';
+import { exportSheet } from '@/lib/excel';
 
 export interface InboxReply {
   id: string; body: string; sentBy: string; sentAt: string; delivered: boolean; error: string | null;
@@ -63,9 +64,6 @@ function initials(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
 }
 
-function csvCell(v: string) {
-  return `"${(v ?? '').replace(/"/g, '""')}"`;
-}
 
 /**
  * The staff inbox — everything the public sends the office, in one queue.
@@ -196,19 +194,32 @@ export default function Inbox({
   };
 
   // Kept from the old Event Responses tab, which existed mainly to export.
-  const exportCsv = () => {
-    const rows = [
-      ['Received', 'Source', 'Type', 'Name', 'Email', 'Phone', 'Status', 'Message'],
-      ...filtered.map(m => [
-        m.createdAt, SOURCE_LABEL[m.source], m.type, m.name, m.email, m.phone, m.status,
-        m.message || m.details.map(d => `${d.label}: ${d.value}`).join(' | '),
-      ]),
-    ];
-    const blob = new Blob([rows.map(r => r.map(c => csvCell(String(c))).join(',')).join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `inbox-${folder}-${Date.now()}.csv`; a.click();
-    URL.revokeObjectURL(url);
+  // Exports what is on screen, so a folder or a search narrows it.
+  const exportExcel = () => {
+    exportSheet({
+      filename: `liliw-inbox-${folder}`,
+      sheetName: FOLDERS.find(f => f.key === folder)?.label ?? 'Inbox',
+      title: `Liliw Tourism — Inbox (${FOLDERS.find(f => f.key === folder)?.label ?? 'All mail'})`,
+      subtitle: [
+        `${filtered.length} message${filtered.length === 1 ? '' : 's'}`,
+        query ? `matching “${query}”` : '',
+        `Exported ${new Date().toLocaleDateString('en-PH', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+      ].filter(Boolean).join('  ·  '),
+      columns: [
+        { header: 'Received', value: m => new Date(m.createdAt), width: 18 },
+        { header: 'Source',   value: m => SOURCE_LABEL[m.source], width: 14 },
+        { header: 'Type',     value: m => typeLabel(m.source, m.type), width: 18 },
+        { header: 'Name',     value: m => m.name },
+        { header: 'Email',    value: m => m.email || '—' },
+        { header: 'Phone',    value: m => m.phone || '—', width: 14 },
+        { header: 'Status',   value: m => m.status, align: 'center', width: 11 },
+        { header: 'Replies',  value: m => m.replies.length, align: 'center', width: 9 },
+        // An event response has answers rather than a body, so they are
+        // flattened here — otherwise those rows export blank.
+        { header: 'Message',  value: m => m.message || m.details.map(d => `${d.label}: ${d.value}`).join('\n'), width: 46 },
+      ],
+      rows: filtered,
+    });
   };
 
   return (
@@ -237,9 +248,9 @@ export default function Inbox({
             className="pl-9 pr-3 py-2 w-56 max-w-full text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
           />
         </div>
-        <button onClick={exportCsv} disabled={!filtered.length}
+        <button onClick={exportExcel} disabled={!filtered.length}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 disabled:opacity-40 transition-colors">
-          <Download className="w-3.5 h-3.5" />Export
+          <Download className="w-3.5 h-3.5" />Export Excel
         </button>
         <button onClick={onRefresh}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors">
