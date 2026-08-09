@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -20,10 +20,11 @@ import MediaUploader from '@/components/admin/cms/MediaUploader';
 import ConfirmDialog from '@/components/admin/cms/ConfirmDialog';
 import AdminOverview from '@/components/admin/dashboard/AdminOverview';
 import { toast } from 'sonner';
+import ContactInbox from '@/components/admin/Inbox';
 import * as XLSX from 'xlsx-js-style';
 
 /* ─── types ──────────────────────────────────────────────── */
-interface Submission { id: any; attributes: { name: string; email: string; phone: string; message: string; type: string; status: string; createdAt: string }; }
+interface Submission { id: any; attributes: { name: string; email: string; phone: string; message: string; type: string; status: string; createdAt: string; handledBy?: string | null; handledAt?: string | null; replies?: { id: string; body: string; sentBy: string; sentAt: string; delivered: boolean; error: string | null }[] }; }
 interface EventSignup { id: any; attributes: { full_name: string; email: string; phone: string; notes: string; username: string; status: string; createdAt: string; event: { data: { id: number; attributes: { title: string; date_start: string } } } }; }
 interface Analytics { pageViews: number; uniqueVisitors: number; avgSessionTime: string; bounceRate: string; topPages: { path: string; views: number }[]; devices?: { desktop: { count: number; pct: number }; mobile: { count: number; pct: number }; tablet: { count: number; pct: number } }; }
 interface AuditLog { id: string; event: string; model: string; uid?: string; entry_id: string; entry_title: string; performed_by?: string; changes?: any; created_at: string; }
@@ -294,6 +295,18 @@ export default function AdminDashboard() {
     }
   }, [loading, isStaff, isChatoEditor, isChatoOfficer]);
 
+  // Pulled out of the initial load so the inbox can refetch after a reply or a
+  // status change — the thread it just wrote has to come back from the server.
+  const refreshSubmissions = useCallback(() => {
+    if (!token) return;
+    setLoadingSubs(true);
+    fetch('/api/admin/submissions', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setSubmissions(d.data || []))
+      .catch(() => {})
+      .finally(() => setLoadingSubs(false));
+  }, [token]);
+
   useEffect(() => {
     if (!isStaff || !token) return;
     const h = { Authorization: `Bearer ${token}` };
@@ -323,7 +336,7 @@ export default function AdminDashboard() {
     // Admin is included in these officer/editor blocks because admin now sees
     // every tab; without the data fetch those tabs would render empty.
     if (isChatoOfficer || isAdmin) {
-      fetch('/api/admin/submissions',   { headers: h }).then(r => r.json()).then(d => setSubmissions(d.data || [])).catch(() => {}).finally(() => setLoadingSubs(false));
+      refreshSubmissions();
       fetch('/api/admin/participation',  { headers: h }).then(r => r.json()).then(d => setParticipation(d.data || [])).catch(() => {}).finally(() => setLoadingPart(false));
       fetch('/api/event-signup',         { headers: h }).then(r => r.json()).then(d => setSignups(d.data || [])).catch(() => {}).finally(() => setLoadingSignups(false));
       setLoadingVR(true);
@@ -860,7 +873,7 @@ export default function AdminDashboard() {
     { key: 'lbo',                label: 'LBO Applications',     badge: lboApps.filter(a => (a.attributes?.status || a.status) === 'pending').length,                roles: ['officer', 'editor'] },
     { key: 'changerequests',     label: 'Change Requests',      badge: changeRequests.filter(cr => cr.status === 'pending').length,                                  roles: ['officer', 'editor'] },
     { key: 'attractionrequests', label: 'Attraction Requests',  badge: attractionReqs.filter(r => r.status === 'pending' || r.status === 'editor_reviewed').length,  roles: ['officer', 'editor'] },
-    { key: 'submissions',        label: 'Submissions',          badge: newCount,                                                                                     roles: ['officer'] },
+    { key: 'submissions',        label: 'Inbox',          badge: newCount,                                                                                     roles: ['officer'] },
     { key: 'participation',      label: 'Participation',        badge: participation.length,                                                                         roles: ['officer'] },
     { key: 'signups',            label: 'Event Sign-ups',       badge: signups.length,                                                                               roles: ['officer'] },
     { key: 'visitorrecords',     label: 'Visitor Records',      badge: undefined,                                                                                    roles: ['officer'] },
@@ -1755,52 +1768,16 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ── SUBMISSIONS ────────────────────────────────────── */}
+        {/* ── SUBMISSIONS (inbox) ───────────────────────────── */}
         {activeTab === 'submissions' && (
-          <TableWrap title="Contact / Feedback Submissions" count={submissions.length} loading={loadingSubs} empty={submissions.length === 0} emptyIcon={<FileText className="w-12 h-12" />}>
-            <table className="w-full text-sm">
-              <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                <th className="px-5 py-3 text-left">Name</th>
-                <th className="px-5 py-3 text-left">Contact</th>
-                <th className="px-5 py-3 text-left">Type</th>
-                <th className="px-5 py-3 text-left">Message</th>
-                <th className="px-5 py-3 text-left">Status</th>
-                <th className="px-5 py-3 text-left">Date</th>
-                <th className="px-5 py-3" />
-              </tr></thead>
-              <tbody className="divide-y divide-gray-50">
-                {submissions.map(s => {
-                  const a = s.attributes;
-                  return (
-                    <tr key={s.id} className="hover:bg-blue-50/40 transition-colors cursor-pointer group"
-                        onClick={() => openSubDetail('submission', { name: a.name, email: a.email, phone: a.phone, type: a.type, message: a.message, status: a.status, createdAt: a.createdAt })}>
-                      <td className="px-5 py-4 font-semibold text-gray-900">{a.name}</td>
-                      <td className="px-5 py-4">
-                        <p className="flex items-center gap-1 text-gray-600"><Mail className="w-3 h-3 shrink-0" />{a.email}</p>
-                        {a.phone && <p className="flex items-center gap-1 text-gray-400 mt-0.5"><Phone className="w-3 h-3 shrink-0" />{a.phone}</p>}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${TYPE_BADGE[a.type] || 'bg-gray-100 text-gray-600'}`}>{a.type}</span>
-                      </td>
-                      <td className="px-5 py-4 max-w-xs"><p className="text-gray-600 line-clamp-2">{a.message}</p></td>
-                      <td className="px-5 py-4">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${STATUS_BADGE[a.status] || 'bg-gray-100 text-gray-600'}`}>
-                          {a.status === 'new' ? <AlertCircle className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}{a.status}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
-                        <Clock className="w-3 h-3 inline mr-1" />{new Date(a.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </td>
-                      <td className="px-4 py-4 text-right">
-                        <span className="text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity px-2.5 py-1 rounded-lg" style={{ color: '#1565C0', backgroundColor: '#1565C010' }}>View →</span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </TableWrap>
+          <ContactInbox
+            messages={submissions as any}
+            loading={loadingSubs}
+            token={token || ''}
+            onRefresh={refreshSubmissions}
+          />
         )}
+
 
         {/* ── PARTICIPATION ──────────────────────────────────── */}
         {activeTab === 'participation' && (
