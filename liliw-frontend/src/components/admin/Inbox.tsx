@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import {
   Mail, Phone, Send, Search, Inbox as InboxIcon, CheckCircle, Archive,
   CornerUpLeft, Clock, AlertTriangle, Loader2, User, MessageSquare,
-  Users, ClipboardList, RefreshCw, Download,
+  Users, ClipboardList, RefreshCw, Download, CheckCheck,
 } from 'lucide-react';
 
 export interface InboxReply {
@@ -87,6 +87,7 @@ export default function Inbox({
   const [draft, setDraft] = useState('');
   const [subject, setSubject] = useState('');
   const [sending, setSending] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
 
   const counts = useMemo(() => ({
     all:           messages.length,
@@ -113,6 +114,7 @@ export default function Inbox({
     });
   }, [messages, folder, query]);
 
+  const unreadHere = filtered.filter(m => m.status === 'new').length;
   const selected = messages.find(m => m.id === selectedId) ?? null;
 
   useEffect(() => {
@@ -133,6 +135,34 @@ export default function Inbox({
     } catch (err) {
       // Marking read is a background nicety; failing it loudly would be noise.
       if (!quiet) toast.error(err instanceof Error ? err.message : 'Could not update the message');
+    }
+  };
+
+  /**
+   * Clears the unread flags in one write rather than one request per message.
+   *
+   * Only the messages currently listed are marked, so a search or a source
+   * filter narrows what gets cleared — "mark all read" while looking at three
+   * event sign-ups should not silently clear forty contact messages.
+   */
+  const markAllRead = async () => {
+    const unread = filtered.filter(m => m.status === 'new');
+    if (!unread.length || markingAll) return;
+    setMarkingAll(true);
+    try {
+      const res = await fetch('/api/admin/inbox/read-all', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: unread.map(m => m.id) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not mark them read');
+      toast.success(`${unread.length} message${unread.length === 1 ? '' : 's'} marked as read`);
+      onRefresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not mark them read');
+    } finally {
+      setMarkingAll(false);
     }
   };
 
@@ -249,6 +279,24 @@ export default function Inbox({
 
         {/* ── Message list ───────────────────────────────────── */}
         <div className="border-b lg:border-b-0 lg:border-r border-gray-100 max-h-[640px] overflow-y-auto">
+          {/* Sits above the list rather than in the toolbar so it reads as an
+              action on what is listed, which is exactly what it does. */}
+          {unreadHere > 0 && (
+            <div className="sticky top-0 z-10 flex items-center gap-2 px-4 py-2 bg-blue-50/80 backdrop-blur-sm border-b border-blue-100">
+              <span className="text-xs font-semibold" style={{ color: '#1565C0' }}>
+                {unreadHere} unread{folder !== 'all' && folder !== 'unread' ? ' here' : ''}
+              </span>
+              <button
+                onClick={markAllRead}
+                disabled={markingAll}
+                className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-white transition-opacity disabled:opacity-50"
+                style={{ backgroundColor: '#1565C0' }}
+              >
+                {markingAll ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCheck className="w-3 h-3" />}
+                Mark all read
+              </button>
+            </div>
+          )}
           {loading ? (
             <div className="p-8 text-center text-sm text-gray-400">
               <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />Loading mail…
