@@ -7,6 +7,7 @@ import {
   CornerUpLeft, Clock, AlertTriangle, Loader2, User, MessageSquare,
   Users, ClipboardList, RefreshCw, Download, CheckCheck,
 } from 'lucide-react';
+import { replySubject, typeLabel } from '@/lib/inbox-labels';
 
 export interface InboxReply {
   id: string; body: string; sentBy: string; sentAt: string; delivered: boolean; error: string | null;
@@ -169,7 +170,7 @@ export default function Inbox({
   const open = (m: InboxMessage) => {
     setSelectedId(m.id);
     setDraft('');
-    setSubject(`Re: your ${m.type} to Liliw Tourism`);
+    setSubject(replySubject(m.source, m.type));
     if (m.status === 'new') patchStatus(m, 'read', true);
   };
 
@@ -341,7 +342,7 @@ export default function Inbox({
                       <span className="ml-auto text-[11px] text-gray-400 shrink-0">{when(m.createdAt)}</span>
                     </div>
                     <p className="text-[11px] font-semibold mt-0.5 truncate" style={{ color: SOURCE_COLOR[m.source] }}>
-                      {SOURCE_LABEL[m.source]} · <span className="text-gray-400 capitalize font-medium">{m.type}</span>
+                      {SOURCE_LABEL[m.source]} · <span className="text-gray-400 font-medium">{typeLabel(m.source, m.type)}</span>
                     </p>
                     <p className={`text-xs mt-1 line-clamp-2 ${isNew ? 'text-gray-600' : 'text-gray-400'}`}>
                       {m.message || m.details.map(d => `${d.label}: ${d.value}`).join(' · ') || 'No message'}
@@ -406,7 +407,7 @@ export default function Inbox({
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 bg-gray-50/40">
               <div className="bg-white rounded-2xl border border-gray-100 p-4">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-2">
-                  {selected.name} · {selected.type}
+                  {selected.name} · {typeLabel(selected.source, selected.type)}
                 </p>
                 {selected.message && (
                   <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{selected.message}</p>

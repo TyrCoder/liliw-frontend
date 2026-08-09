@@ -1,4 +1,5 @@
 import { supabaseServer } from './supabase-server';
+export { replySubject, typeLabel } from './inbox-labels';
 
 /**
  * The three doors the public writes to the office through, behind one shape.
