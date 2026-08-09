@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
   Loader2, HeartHandshake, Users, Calendar, MapPin, ChevronLeft, Download,
-  CheckCircle, XCircle, Mail, Phone, RefreshCw, AlertCircle,
+  CheckCircle, XCircle, Mail, Phone, RefreshCw, AlertCircle, UserPlus,
 } from 'lucide-react';
 
 interface Signups { total: number; confirmed: number; cancelled: number }
@@ -15,7 +15,7 @@ interface CommunityEvent {
   status: string; signups: Signups;
 }
 interface Signup {
-  id: string; full_name: string; email: string; phone: string;
+  id: string; full_name: string; email: string | null; phone: string;
   message: string; status: string; created_at: string;
 }
 
@@ -55,6 +55,10 @@ export default function CommunityEventsManager({ token }: { token: string }) {
   const [selected, setSelected] = useState<CommunityEvent | null>(null);
   const [signups, setSignups] = useState<Signup[]>([]);
   const [loadingSignups, setLoadingSignups] = useState(false);
+
+  const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState({ full_name: '', email: '', phone: '', message: '' });
 
   const load = useCallback(() => {
     if (!token) return;
@@ -110,6 +114,31 @@ export default function CommunityEventsManager({ token }: { token: string }) {
     }
   };
 
+  /** Records someone who signed up in person, by phone, or on a paper sheet. */
+  const addParticipant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selected || !draft.full_name.trim() || saving) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/community-events/${selected.id}/signups`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'Could not add them');
+      setSignups(prev => [...prev, d.signup]);
+      setDraft({ full_name: '', email: '', phone: '', message: '' });
+      setAdding(false);
+      toast.success(`${d.signup.full_name} added`);
+      load();   // the count on the events list has changed
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not add them');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const exportCsv = () => {
     if (!selected) return;
     const rows = [
@@ -148,13 +177,60 @@ export default function CommunityEventsManager({ token }: { token: string }) {
                 </span>
               </div>
             </div>
-            {signups.length > 0 && (
-              <button onClick={exportCsv}
-                className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-                <Download className="w-3.5 h-3.5" />Export CSV
+            <div className="ml-auto flex items-center gap-2">
+              {signups.length > 0 && (
+                <button onClick={exportCsv}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+                  <Download className="w-3.5 h-3.5" />Export CSV
+                </button>
+              )}
+              <button onClick={() => setAdding(a => !a)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white"
+                style={{ backgroundColor: '#1565C0' }}>
+                <UserPlus className="w-3.5 h-3.5" />Add participant
               </button>
-            )}
+            </div>
           </div>
+
+          {/* Recording someone who signed up away from the website — at the
+              office, over the phone, or on a sheet at the barangay hall. */}
+          {adding && (
+            <form onSubmit={addParticipant} className="px-6 py-4 border-b border-gray-100 bg-blue-50/40">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <input autoFocus required value={draft.full_name}
+                  onChange={e => setDraft(d => ({ ...d, full_name: e.target.value }))}
+                  placeholder="Full name *"
+                  className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                <input type="email" value={draft.email}
+                  onChange={e => setDraft(d => ({ ...d, email: e.target.value }))}
+                  placeholder="Email (optional)"
+                  className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                <input value={draft.phone}
+                  onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))}
+                  placeholder="Phone (optional)"
+                  className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                <input value={draft.message}
+                  onChange={e => setDraft(d => ({ ...d, message: e.target.value }))}
+                  placeholder="Note (optional)"
+                  className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
+              </div>
+              <div className="flex items-center gap-2 mt-3">
+                <button type="submit" disabled={!draft.full_name.trim() || saving}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white disabled:opacity-40"
+                  style={{ backgroundColor: '#1565C0' }}>
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
+                  {saving ? 'Adding…' : 'Add to this event'}
+                </button>
+                <button type="button" onClick={() => setAdding(false)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-500 hover:bg-gray-100">
+                  Cancel
+                </button>
+                <span className="text-[11px] text-gray-400 ml-1">
+                  Only a name is required — added participants count as confirmed.
+                </span>
+              </div>
+            </form>
+          )}
 
           {loadingSignups ? (
             <div className="py-16 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-gray-300" /></div>
@@ -163,7 +239,8 @@ export default function CommunityEventsManager({ token }: { token: string }) {
               <Users className="w-10 h-10 text-gray-200 mx-auto mb-3" />
               <p className="text-sm font-semibold text-gray-500">Nobody has joined yet</p>
               <p className="text-xs text-gray-400 mt-1">
-                Sign-ups from the Community page appear here.
+                Sign-ups from the Community page appear here — or use
+                <strong className="text-gray-500"> Add participant</strong> to record someone who joined in person.
               </p>
             </div>
           ) : (
@@ -184,9 +261,15 @@ export default function CommunityEventsManager({ token }: { token: string }) {
                     <tr key={s.id} className={s.status === 'cancelled' ? 'opacity-50' : ''}>
                       <td className="px-5 py-4 font-semibold text-gray-900">{s.full_name}</td>
                       <td className="px-5 py-4">
-                        <a href={`mailto:${s.email}`} className="flex items-center gap-1 text-gray-600 hover:underline">
-                          <Mail className="w-3 h-3 shrink-0" />{s.email}
-                        </a>
+                        {/* Staff can record a walk-in who only left a phone
+                            number, so there may be no address to link to. */}
+                        {s.email ? (
+                          <a href={`mailto:${s.email}`} className="flex items-center gap-1 text-gray-600 hover:underline">
+                            <Mail className="w-3 h-3 shrink-0" />{s.email}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-300">No email</span>
+                        )}
                         {s.phone && (
                           <p className="flex items-center gap-1 text-gray-400 mt-0.5">
                             <Phone className="w-3 h-3 shrink-0" />{s.phone}
