@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, Users, Mail, Loader2, HeartHandshake } from 'lucide-react';
+import { Calendar, MapPin, Users, Mail, Loader2, HeartHandshake, AlertCircle } from 'lucide-react';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
@@ -46,12 +46,22 @@ function dateRange(start: string | null, end: string | null) {
 export default function CommunityEventsList({ onJoin }: { onJoin?: (title: string) => void }) {
   const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     fetch('/api/content/community-events')
-      .then(r => r.json())
+      .then(async r => {
+        if (!r.ok) throw new Error(`${r.status}`);
+        return r.json();
+      })
       .then(d => setEvents(d.data || []))
-      .catch(() => setEvents([]))
+      // Swallowing this made "the request failed" and "nothing is posted"
+      // identical from the outside — both showed an empty page, which is
+      // exactly the ambiguity that makes a working feature look broken.
+      .catch(err => {
+        console.error('[community-events] could not load:', err);
+        setFailed(true);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -59,6 +69,19 @@ export default function CommunityEventsList({ onJoin }: { onJoin?: (title: strin
     return (
       <div className="flex items-center justify-center py-10 text-gray-400 text-sm">
         <Loader2 className="w-4 h-4 animate-spin mr-2" />Loading community events…
+      </div>
+    );
+  }
+
+  // A failure says so. Only a genuinely empty list renders nothing — an empty
+  // "no events" panel on a page whose job is to invite people in reads as a
+  // dead site.
+  if (failed) {
+    return (
+      <div className="mb-8 flex items-center gap-2 px-4 py-3 rounded-xl text-sm bg-amber-50 border border-amber-100 text-amber-700"
+           style={{ fontFamily: BL }}>
+        <AlertCircle className="w-4 h-4 shrink-0" />
+        We couldn&rsquo;t load what&rsquo;s happening right now. The form below still works.
       </div>
     );
   }
