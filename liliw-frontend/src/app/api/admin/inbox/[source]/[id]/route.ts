@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer, explainDbError } from '@/lib/supabase-server';
 import { getCmsIdentity } from '@/lib/cms-auth';
 import { sendSubmissionReply } from '@/lib/email';
-import { loadOne, setInboxState, INBOX_SOURCES, InboxSource } from '@/lib/inbox';
+import { loadOne, setInboxState, replySubject, INBOX_SOURCES, InboxSource } from '@/lib/inbox';
 import { logger } from '@/lib/logger';
 
 type Params = { params: Promise<{ source: string; id: string }> };
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     await sendSubmissionReply({
       to:              message.email,
       name:            message.name,
-      subject:         subject?.trim() || `Re: your ${message.type} to Liliw Tourism`,
+      subject:         subject?.trim() || replySubject(source as InboxSource, message.type),
       body:            body.trim(),
       originalMessage: quoted,
       sentBy:          gate.email!,
