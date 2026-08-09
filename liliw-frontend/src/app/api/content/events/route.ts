@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { fetchApproved } from '@/lib/supabase-cms';
+import { fetchApprovedWithMedia } from '@/lib/supabase-cms';
 
 export async function GET() {
   try {
@@ -9,8 +9,11 @@ export async function GET() {
     // festivals sat in the CMS. Callers that specifically want joinable events
     // (the community page's "Join an Upcoming Event" section, the admin picker)
     // already filter on the flag themselves.
-    const data = await fetchApproved(
+    // With media: the cover photo is a cms_media row, not a column, so
+    // fetching the event alone silently drops every picture.
+    const data = await fetchApprovedWithMedia(
       'cms_events',
+      'event',
       q => q.order('date_start', { ascending: true }),
     );
     return NextResponse.json({ data }, {

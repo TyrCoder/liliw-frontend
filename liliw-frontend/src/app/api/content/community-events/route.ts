@@ -20,8 +20,20 @@ export async function GET() {
 
     const now = Date.now();
     const upcoming = items.filter((e: Record<string, unknown>) => {
-      const end = (e.date_end || e.date_start) as string | null;
-      return !end || new Date(end).getTime() >= now;
+      if (e.date_end) return new Date(e.date_end as string).getTime() >= now;
+
+      // With no end time, the event is treated as running to the end of its
+      // day. Comparing against the start instead would drop a clean-up drive
+      // at 9:01am on the morning it happens — while people are still turning
+      // up for it — which is precisely when the listing matters most.
+      if (e.date_start) {
+        const end = new Date(e.date_start as string);
+        end.setHours(23, 59, 59, 999);
+        return end.getTime() >= now;
+      }
+
+      // Neither date: an open-ended call for volunteers, which stays up.
+      return true;
     });
 
     return NextResponse.json(

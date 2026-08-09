@@ -235,6 +235,10 @@ const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, ''
 
 function extractPhotos(raw: any): string[] {
   const lists = [
+    // How the CMS actually stores photos: rows in cms_media, attached to the
+    // entry as _media. Only the two legacy Strapi shapes below were read, so
+    // every picture uploaded through the CMS was dropped on the way out.
+    raw?._media,
     raw?.photos?.data ?? raw?.photos,
     raw?.cover_image?.data ? [raw.cover_image.data] : raw?.cover_image ? [raw.cover_image] : [],
   ];

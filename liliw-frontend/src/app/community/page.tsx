@@ -256,7 +256,12 @@ export default function CommunityPage() {
           title: e.attributes?.title || e.title,
           date_start: e.attributes?.date_start || e.date_start,
           category: e.attributes?.category || e.category,
-          coverUrl: e.attributes?.cover_image?.data?.attributes?.url || e.cover_image?.url || null,
+          // _media first — that is where CMS uploads live. The two legacy
+          // Strapi shapes stay as a fallback for older rows.
+          coverUrl: e._media?.[0]?.url
+            || e.attributes?.cover_image?.data?.attributes?.url
+            || e.cover_image?.url
+            || null,
         }))))
       .catch(() => {})
       .finally(() => setLoadingJE(false));
