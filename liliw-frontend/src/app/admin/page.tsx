@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -12,6 +12,8 @@ import {
   Monitor, Smartphone, Tablet, Wifi, Search,
   Building2, X, ChevronDown, ChevronUp, Key, Inbox,
   Download, BarChart2, Plus, Trash2, ArrowUp, ArrowDown, ClipboardList, Send,
+  LayoutDashboard, FileBarChart, Store, FileEdit, MapPinned, HeartHandshake,
+  FormInput, Globe, ClipboardCheck, Award, Gift, QrCode, ShieldCheck, ScrollText,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import BadgeSVG, { BADGE_ICONS } from '@/components/BadgeSVG';
@@ -33,7 +35,7 @@ interface StrapiActivity { id: string; contentType: string; entryName: string; a
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'achievements' | 'rewards' | 'redeemcodes' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'communityevents' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms' | 'eventresponses';
+type Tab = 'overview' | 'users' | 'roles' | 'achievements' | 'rewards' | 'redeemcodes' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'communityevents' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms';
 
 const TRIGGER_TYPE_LABELS: Record<string, string> = {
   event_count: 'Event sign-ups',
@@ -832,31 +834,70 @@ export default function AdminDashboard() {
   };
 
 
-  // Tab visibility per role
-  const ALL_TABS: { key: Tab; label: string; badge?: number; roles: string[] }[] = [
-    // Admin: analytics + user management
-    { key: 'overview',           label: 'Dashboard',           badge: undefined,                                                                                    roles: ['admin'] },
-    { key: 'users',              label: 'Users',                badge: users.length,                                                                                 roles: ['admin'] },
-    { key: 'roles',              label: 'Role Management',      badge: roleUsers.length,                                                                             roles: ['admin'] },
-    { key: 'achievements',       label: 'Achievements',         badge: achievements.length,                                                                          roles: ['admin'] },
-    { key: 'rewards',            label: 'Rewards Catalog',      badge: rewards.length,                                                                               roles: ['admin'] },
-    { key: 'redeemcodes',        label: 'Redeem Code',          badge: undefined,                                                                                    roles: ['admin', 'officer', 'editor'] },
-    { key: 'audit',              label: 'Audit Logs',           badge: strapiActivity.length,                                                                        roles: ['admin'] },
-    { key: 'reports',            label: 'Reports',              badge: undefined,                                                                                    roles: ['admin'] },
-    // Officer: all requests & submissions
-    { key: 'lbo',                label: 'LBO Applications',     badge: lboApps.filter(a => (a.attributes?.status || a.status) === 'pending').length,                roles: ['officer', 'editor'] },
-    { key: 'changerequests',     label: 'Change Requests',      badge: changeRequests.filter(cr => cr.status === 'pending').length,                                  roles: ['officer', 'editor'] },
-    { key: 'attractionrequests', label: 'Attraction Requests',  badge: attractionReqs.filter(r => r.status === 'pending' || r.status === 'editor_reviewed').length,  roles: ['officer', 'editor'] },
-    { key: 'submissions',        label: 'Inbox',          badge: inboxUnread,                                                                                     roles: ['officer'] },
-    { key: 'communityevents',    label: 'Community Events',     badge: undefined,                                                                                    roles: ['officer'] },
-    { key: 'signups',            label: 'Event Sign-ups',       badge: signups.length,                                                                               roles: ['officer'] },
-    { key: 'visitorrecords',     label: 'Visitor Records',      badge: undefined,                                                                                    roles: ['officer'] },
-    { key: 'externalreviews',    label: 'Online Reviews',       badge: undefined,                                                                                    roles: ['officer'] },
-    { key: 'ratings',            label: 'Ratings',              badge: reviews.length,                                                                               roles: ['officer'] },
-    // Editor: LBO + attractions management
-    { key: 'attractions',        label: 'Attractions',          badge: attractions.length,                                                                           roles: ['editor'] },
-    { key: 'eventforms',         label: 'Event Forms',          badge: eventForms.length,                                                                            roles: ['editor'] },
-    // Officer: event form responses
+  /**
+   * The tab bar was nineteen equal chips wrapping onto two lines, in the order
+   * features happened to be built: Redeem Code between Rewards and Audit Logs,
+   * Attractions between Ratings and Event Forms. Nothing said which tabs
+   * belonged together, so finding one meant reading all of them.
+   *
+   * Grouped by the job being done, and moved to the sidebar the CMS already
+   * uses — nineteen items is a sidebar's problem, not a tab bar's.
+   */
+  const NAV: { section: string; items: { key: Tab; label: string; icon: ReactNode; badge?: number; roles: string[]; color: string }[] }[] = [
+    {
+      section: 'Overview',
+      items: [
+        { key: 'overview',           label: 'Dashboard',          icon: <LayoutDashboard className="w-4 h-4" />, badge: undefined,                                                                                   roles: ['admin'],                      color: '#0F5FB5' },
+        { key: 'reports',            label: 'Reports',            icon: <FileBarChart className="w-4 h-4" />,    badge: undefined,                                                                                   roles: ['admin'],                      color: '#0F5FB5' },
+      ],
+    },
+    {
+      section: 'Messages',
+      items: [
+        { key: 'submissions',        label: 'Inbox',              icon: <Inbox className="w-4 h-4" />,           badge: inboxUnread,                                                                                 roles: ['officer'],                    color: '#1565C0' },
+      ],
+    },
+    {
+      section: 'Requests',
+      items: [
+        { key: 'lbo',                label: 'LBO Applications',   icon: <Store className="w-4 h-4" />,           badge: lboApps.filter(a => (a.attributes?.status || a.status) === 'pending').length,                roles: ['officer', 'editor'],          color: '#F59E0B' },
+        { key: 'changerequests',     label: 'Change Requests',    icon: <FileEdit className="w-4 h-4" />,        badge: changeRequests.filter(cr => cr.status === 'pending').length,                                 roles: ['officer', 'editor'],          color: '#F59E0B' },
+        { key: 'attractionrequests', label: 'Attraction Requests',icon: <MapPinned className="w-4 h-4" />,       badge: attractionReqs.filter(r => r.status === 'pending' || r.status === 'editor_reviewed').length, roles: ['officer', 'editor'],          color: '#F59E0B' },
+      ],
+    },
+    {
+      section: 'Events',
+      items: [
+        { key: 'communityevents',    label: 'Community Events',   icon: <HeartHandshake className="w-4 h-4" />,  badge: undefined,                                                                                   roles: ['officer'],                    color: '#0D9488' },
+        { key: 'signups',            label: 'Event Sign-ups',     icon: <ClipboardList className="w-4 h-4" />,   badge: signups.length,                                                                              roles: ['officer'],                    color: '#0D9488' },
+        { key: 'eventforms',         label: 'Event Forms',        icon: <FormInput className="w-4 h-4" />,       badge: eventForms.length,                                                                           roles: ['editor'],                     color: '#0D9488' },
+      ],
+    },
+    {
+      section: 'Places & Feedback',
+      items: [
+        { key: 'attractions',        label: 'Attractions',        icon: <MapPin className="w-4 h-4" />,          badge: attractions.length,                                                                          roles: ['editor'],                     color: '#8B5CF6' },
+        { key: 'ratings',            label: 'Ratings',            icon: <Star className="w-4 h-4" />,            badge: reviews.length,                                                                              roles: ['officer'],                    color: '#8B5CF6' },
+        { key: 'externalreviews',    label: 'Online Reviews',     icon: <Globe className="w-4 h-4" />,           badge: undefined,                                                                                   roles: ['officer'],                    color: '#8B5CF6' },
+        { key: 'visitorrecords',     label: 'Visitor Records',    icon: <ClipboardCheck className="w-4 h-4" />,  badge: undefined,                                                                                   roles: ['officer'],                    color: '#8B5CF6' },
+      ],
+    },
+    {
+      section: 'Rewards',
+      items: [
+        { key: 'achievements',       label: 'Achievements',       icon: <Award className="w-4 h-4" />,           badge: achievements.length,                                                                         roles: ['admin'],                      color: '#EC4899' },
+        { key: 'rewards',            label: 'Rewards Catalog',    icon: <Gift className="w-4 h-4" />,            badge: rewards.length,                                                                              roles: ['admin'],                      color: '#EC4899' },
+        { key: 'redeemcodes',        label: 'Redeem a Code',      icon: <QrCode className="w-4 h-4" />,          badge: undefined,                                                                                   roles: ['admin', 'officer', 'editor'], color: '#EC4899' },
+      ],
+    },
+    {
+      section: 'System',
+      items: [
+        { key: 'users',              label: 'Users',              icon: <Users className="w-4 h-4" />,           badge: users.length,                                                                                roles: ['admin'],                      color: '#64748B' },
+        { key: 'roles',              label: 'Role Management',    icon: <ShieldCheck className="w-4 h-4" />,     badge: roleUsers.length,                                                                            roles: ['admin'],                      color: '#64748B' },
+        { key: 'audit',              label: 'Audit Logs',         icon: <ScrollText className="w-4 h-4" />,      badge: strapiActivity.length,                                                                       roles: ['admin'],                      color: '#64748B' },
+      ],
+    },
   ];
 
   const myRole = isAdmin ? 'admin' : isChatoOfficer ? 'officer' : 'editor';
@@ -866,7 +907,9 @@ export default function AdminDashboard() {
   // editor-only, so an admin had to sign in as another role to reach them.
   // requireStaffAuth already authorises admin on those routes; only the tab
   // bar was hiding them.
-  const TABS = ALL_TABS.filter(t => isAdmin || t.roles.includes(myRole));
+  const VISIBLE_NAV = NAV
+    .map(g => ({ ...g, items: g.items.filter(t => isAdmin || t.roles.includes(myRole)) }))
+    .filter(g => g.items.length > 0);
 
   const roleBadge = isAdmin ? 'Admin' : isChatoOfficer ? 'Officer' : 'Editor';
 
@@ -907,31 +950,49 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap gap-1">
-          {TABS.map(({ key, label, badge }) => (
-            <button key={key} onClick={() => setActiveTab(key)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                activeTab === key
-                  ? 'text-white shadow-sm'
-                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
-              }`}
-              style={activeTab === key ? { backgroundColor: '#1565C0' } : undefined}>
-              {label}
-              {badge !== undefined && badge > 0 && (
-                <span className={`px-1.5 rounded-full text-[10px] font-bold leading-[18px] ${
-                  activeTab === key ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {badge}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Sidebar + content.
+          Nineteen chips wrapping onto two lines gave every tool the same
+          weight and no grouping, so finding one meant reading all of them.
+          A grouped rail matches the CMS and leaves the labels in one column
+          where they can be scanned rather than hunted. */}
+      <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-6 py-6">
+        <aside className="lg:w-56 shrink-0 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+          {/* Below lg the rail becomes a horizontal scroller rather than a
+              tall stack that would push the content off the screen. */}
+          <div className="flex lg:block gap-4 overflow-x-auto pb-2 lg:pb-0">
+            {VISIBLE_NAV.map(({ section, items }) => (
+              <div key={section} className="lg:mb-5 shrink-0">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-2 mb-1.5 whitespace-nowrap">{section}</p>
+                <nav className="flex lg:block gap-1 lg:space-y-0.5">
+                  {items.map(item => {
+                    const isActive = activeTab === item.key;
+                    return (
+                      <button key={item.key} onClick={() => setActiveTab(item.key)}
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left whitespace-nowrap ${
+                          isActive ? 'text-white shadow-sm' : 'text-gray-600 hover:bg-white hover:text-gray-900'
+                        }`}
+                        style={isActive ? { backgroundColor: item.color } : undefined}>
+                        <span className="flex items-center gap-2.5">
+                          <span style={{ color: isActive ? 'white' : item.color }}>{item.icon}</span>
+                          {item.label}
+                        </span>
+                        {item.badge !== undefined && item.badge > 0 && (
+                          <span className={`px-1.5 rounded-full text-[10px] font-bold leading-[18px] ${
+                            isActive ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+            ))}
+          </div>
+        </aside>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex-1 min-w-0">
 
         {/* ── OVERVIEW ───────────────────────────────────────── */}
         {/* Rebuilt as a role dashboard: see components/admin/dashboard.
@@ -3310,8 +3371,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-
-
+        </div>
       </div>
 
       {/* ── LBO REGISTER MODAL ───────────────────────────── */}
