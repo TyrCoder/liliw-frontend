@@ -42,6 +42,8 @@ export interface CmsField {
   /** `select` only. */
   options?: { value: string; label: string }[];
   placeholder?: string;
+  /** Guidance shown under the control, for things a label cannot carry. */
+  hint?: string;
   /** `textarea` only. */
   rows?: number;
   /** `media` only — a cover image wants exactly one. */
@@ -477,6 +479,12 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
                       </label>
                     )}
                     {renderField(f)}
+                    {/* Under the control rather than in the placeholder, which
+                        vanishes the moment anything is typed — exactly when a
+                        note about what the field is for still matters. */}
+                    {f.hint && (
+                      <p className="text-[11px] text-gray-400 mt-1.5 leading-relaxed">{f.hint}</p>
+                    )}
                   </div>
                 ))}
               </div>

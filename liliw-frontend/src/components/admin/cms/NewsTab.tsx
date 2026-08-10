@@ -29,7 +29,11 @@ const CONFIG: CmsTabConfig<Entry> = {
     { name: 'content',  label: 'Content',  type: 'richtext', placeholder: 'Write the news article…' },
     { name: 'video_url', label: 'Facebook Video Link', type: 'text',
       placeholder: 'https://www.facebook.com/LiliwCHATO/videos/… — plays inside the article' },
-    { name: 'media',    label: 'Photos',   type: 'media' },
+    // Facebook serves no thumbnail for a reel or video to anyone without an
+    // app token — the page, the Graph API and oEmbed all answer 400 — so the
+    // first photo here is the only cover a video post can have.
+    { name: 'media',    label: 'Photos',   type: 'media',
+      hint: 'The first photo is the thumbnail on the homepage and news list. Add one for video posts too — Facebook does not provide a still.' },
   ],
   columns: [
     { header: 'Title', primary: true, render: e => <p className="font-semibold text-gray-900">{e.title}</p> },
