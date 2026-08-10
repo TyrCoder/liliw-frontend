@@ -37,7 +37,10 @@ const CONFIG: CmsTabConfig<Entry> = {
     { name: 'description', label: 'Description', type: 'textarea', rows: 4 },
     { name: 'video_url',   label: 'Facebook Video Link', type: 'text',
       placeholder: 'https://www.facebook.com/LiliwCHATO/videos/… — plays inside the event' },
-    { name: 'media',       label: 'Cover Photo', type: 'media', maxFiles: 1 },
+    // Facebook serves no thumbnail for a video to anyone without an app token,
+    // so this is the only cover a video post can have.
+    { name: 'media',       label: 'Cover Photo', type: 'media', maxFiles: 1,
+      hint: 'Shown as the thumbnail on the homepage and events list. Add one for video posts too — Facebook does not provide a still.' },
   ],
   columns: [
     { header: 'Title', primary: true, render: e => <p className="font-semibold text-gray-900">{e.title}</p> },
