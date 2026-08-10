@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { requireStaffAuth } from '@/lib/auth';
 
 type Device = 'desktop' | 'mobile' | 'tablet';
 const DEVICES: Device[] = ['desktop', 'mobile', 'tablet'];
@@ -70,8 +71,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/** Live snapshot: who is on the site now, and on what. */
-export async function GET() {
+/**
+ * Live traffic figures — staff only.
+ *
+ * This was open to anyone: it answered onlineNow, viewsToday, visitorsToday
+ * and the device split to an unauthenticated request, which is operational
+ * data about the site rather than anything the public needs. The POST above
+ * stays open, because that is the browser recording its own page view.
+ */
+export async function GET(request: NextRequest) {
+  if (!await requireStaffAuth(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const since = new Date(Date.now() - 5 * 60_000).toISOString();
 

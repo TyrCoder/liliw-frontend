@@ -317,6 +317,17 @@ export default function CommunityPage() {
             <p className="text-gray-500 text-sm max-w-lg" style={{ fontFamily: BL }}>
               Whether you have time, skills, or a business — there&apos;s a place for you in the Liliw community.
             </p>
+            {/* The three cards below cover volunteering, partnership and
+                feedback. Cultural mapping and artisan listing exist only on
+                /participate, and nothing had linked there since the cards were
+                switched to in-page modals — so two request types the office
+                accepts were unreachable from anywhere on the site. */}
+            <Link href="/participate"
+              className="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold hover:gap-2.5 transition-all"
+              style={{ color: '#1565C0', fontFamily: BL }}>
+              Something else — cultural mapping, artisan listing or a general request
+              <ChevronRight className="w-4 h-4" />
+            </Link>
           </motion.div>
 
           {activitiesLoading ? (
@@ -373,7 +384,7 @@ export default function CommunityPage() {
             a section title standing over an empty space is worse than no
             section at all. */}
         <CommunityEventsList
-          showHeading={false}
+          showHeading={false}
           header={
             <div className="mb-8">
               <p className="section-label mb-2" style={{ color: '#1565C0' }}>Get Involved</p>
