@@ -319,7 +319,7 @@ export default function AdminDashboard() {
     if (isAdmin) {
       setLoadingUsers(true);
       fetch('/api/admin/users',           { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
-      fetch('/api/analytics/track').then(r => r.json()).then(d => setAnalytics(d)).catch(() => {}).finally(() => setLoadingStats(false));
+      fetch('/api/analytics/track', { headers: h }).then(r => r.json()).then(d => setAnalytics(d)).catch(() => {}).finally(() => setLoadingStats(false));
       fetch('/api/admin/audit-logs',      { headers: h }).then(r => r.json()).then(d => setAuditLogs(d.data || [])).catch(() => {}).finally(() => setLoadingAudit(false));
       fetch('/api/admin/strapi-activity', { headers: h }).then(r => r.json()).then(d => setStrapiActivity(d.data || [])).catch(() => {}).finally(() => setLoadingActivity(false));
       fetch('/api/admin/assign-role', { headers: h }).then(r => r.json()).then(d => {
