@@ -128,7 +128,7 @@ export default function Navbar() {
   const [notifItems,   setNotifItems]   = useState<NotifItem[]>([]);
   const [newCount,     setNewCount]     = useState(0);
   const [avatar,       setAvatar]       = useState<string | null>(null);
-  const { user, token, logout, isAdmin, isChatoOfficer, isChatoEditor, isStaff, isLocal, adminPanelRole } = useAuth();
+  const { user, token, logout, isAdmin, isChatoOfficer, isChatoEditor, isStaff, adminPanelRole } = useAuth();
   const pathname = usePathname();
   // Phones and tablets only: the scanner needs a camera pointed at a poster.
   const handheld = useHandheld();
@@ -165,12 +165,16 @@ export default function Navbar() {
     return () => window.removeEventListener('liliw-avatar-updated', load);
   }, [user, token]);
 
+  // Not gated on isLocal. Whether someone runs an approved business is a fact
+  // in lbo_applications, and /api/lbo/me answers it from there; requiring a
+  // particular client-side role first meant that any wobble in how the role
+  // was read hid the Business Dashboard from a business that plainly has one.
   useEffect(() => {
-    if (!isLocal || !token) { setIsLbo(false); return; }
+    if (!user || !token) { setIsLbo(false); return; }
     fetch('/api/lbo/me', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => setIsLbo(r.ok))
       .catch(() => setIsLbo(false));
-  }, [isLocal, token]);
+  }, [user, token]);
 
   useEffect(() => {
     if (!user || !token) return;
@@ -589,7 +593,7 @@ export default function Navbar() {
                               {isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'Officer Dashboard' : 'Editor Dashboard'}
                             </Link>
                           )}
-                          {isLocal && isLbo && (
+                          {isLbo && (
                             <Link href="/lbo" onClick={() => setUserMenuOpen(false)}
                               className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 transition border-t border-gray-100"
                               style={{ color: INK, fontFamily: BL }}>
@@ -660,7 +664,7 @@ export default function Navbar() {
                     </>
                   )}
                   {isStaff && <NavLink href="/admin" variant="menu" icon={LayoutDashboard} active={isCurrent(pathname, "/admin")} label={isAdmin ? "Admin Dashboard" : isChatoOfficer ? "Officer Dashboard" : "Editor Dashboard"} onClick={closeMenu} />}
-                  {isLocal && isLbo  && <NavLink href="/lbo" label="Business Dashboard" icon={Building2} variant="menu" active={isCurrent(pathname, "/lbo")} onClick={closeMenu} />}
+                  {isLbo && <NavLink href="/lbo" label="Business Dashboard" icon={Building2} variant="menu" active={isCurrent(pathname, "/lbo")} onClick={closeMenu} />}
 
                   <button onClick={() => { setSearchOpen(true); closeMenu(); }}
                     className="flex items-center gap-2 px-4 py-3 rounded-full text-sm font-medium transition border w-full hover:bg-blue-50 hover:text-[#0F5FB5]"

@@ -37,7 +37,21 @@ export async function GET(request: NextRequest) {
     clearTimeout(t);
     const existing = verifySession(request.cookies.get(SESSION_COOKIE)?.value);
     if (existing?.email) {
-      return NextResponse.json({ email: existing.email, role: existing.role });
+      // Same shape as the success path above.
+      //
+      // This returned `role` as a bare string while the caller reads
+      // `user.role.type`, so whenever Supabase was slow enough to fall through
+      // to here, every signed-in account came back as role 'public': staff
+      // lost the admin link, and an approved business lost its Business
+      // Dashboard. It resolved itself on the next load, which is what made it
+      // look like the link came and went at random.
+      const role = existing.role || 'authenticated';
+      return NextResponse.json({
+        id: '',
+        username: existing.email.split('@')[0],
+        email: existing.email,
+        role: { id: 0, name: role, type: role },
+      });
     }
     return NextResponse.json(null, { status: 503 });
   }
