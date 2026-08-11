@@ -201,3 +201,22 @@ body {
   0%, 100% { transform: rotate(-10deg); }
   50%       { transform: rotate(16deg); }
 }
+
+/* QR scanner sweep — the line that travels down the reticle and back, so the
+   viewfinder reads as actively looking rather than decorated. */
+@keyframes qrSweep {
+  0%   { transform: translateY(-3rem); }
+  50%  { transform: translateY(100%); }
+  100% { transform: translateY(-3rem); }
+}
+.qr-sweep {
+  top: 0;
+  animation: qrSweep 2.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* A continuously travelling line is exactly what this preference is for.
+     Held still at the top of the reticle, which still frames the code. */
+  .qr-sweep { animation: none; }
+}

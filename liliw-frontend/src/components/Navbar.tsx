@@ -16,7 +16,7 @@ import Avatar from '@/components/Avatar';
 
 type NotifItem = {
   id: string;
-  type: 'submission' | 'participation' | 'lbo_application' | 'attraction_request' | 'event' | 'news' | 'achievement';
+  type: 'submission' | 'participation' | 'lbo_application' | 'attraction_request' | 'event' | 'news' | 'achievement' | 'checkin';
   title: string;
   subtitle: string;
   status?: string;
@@ -41,6 +41,7 @@ function notifIcon(type: NotifItem['type']) {
   if (type === 'event')              return <CalendarDays className="w-3.5 h-3.5" />;
   if (type === 'news')               return <Newspaper className="w-3.5 h-3.5" />;
   if (type === 'achievement')        return <Trophy className="w-3.5 h-3.5" />;
+  if (type === 'checkin')            return <QrCode className="w-3.5 h-3.5" />;
 }
 
 function notifColor(type: NotifItem['type']) {
@@ -51,6 +52,7 @@ function notifColor(type: NotifItem['type']) {
   if (type === 'event')              return { bg: '#FEF3C7', color: '#B45309' };
   if (type === 'news')               return { bg: '#F0FDF4', color: '#065F46' };
   if (type === 'achievement')        return { bg: '#FEF9C3', color: '#A16207' };
+  if (type === 'checkin')            return { bg: '#ECFDF5', color: '#047857' };
   return { bg: '#F1F5F9', color: '#475569' };
 }
 

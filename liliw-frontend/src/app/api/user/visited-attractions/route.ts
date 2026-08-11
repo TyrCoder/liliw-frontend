@@ -51,7 +51,17 @@ export async function GET(req: NextRequest) {
   }
   const checkins = new Map((checkinRes.data ?? []).map(c => [c.attraction_id, c]));
 
-  const visits = earned.map(row => {
+  // A stamp means "I stood in front of the poster and scanned it".
+  //
+  // Every earned visit used to appear, including one collected by reading the
+  // page for a few minutes from anywhere in the world — which made the
+  // passport a browsing history rather than a record of places actually
+  // visited. Only a check-in the server confirmed as on-site counts now:
+  // via 'qr' is set solely when the in-app scanner posted a position within
+  // QR_PROXIMITY_METERS of the attraction's own coordinates.
+  const visits = earned
+    .filter(row => checkins.get(String(row.reference_id))?.via === 'qr')
+    .map(row => {
     const publicId = String(row.reference_id);
     const uuid = cmsAttractionId(publicId);
     const attr = attrs.get(uuid);
