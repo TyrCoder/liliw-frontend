@@ -65,7 +65,7 @@ function getPosition(): Promise<GeolocationPosition | null> {
     navigator.geolocation.getCurrentPosition(
       p => resolve(p),
       () => resolve(null),
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30_000 },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 120_000 },
     );
   });
 }
@@ -83,6 +83,8 @@ export default function ScanPage() {
   // the check-in would post more than once for a single scan.
   const claimedRef = useRef(false);
   const lastDecodeRef = useRef(0);
+  // The location fix, started when the camera opens rather than on decode.
+  const posRef = useRef<Promise<GeolocationPosition | null> | null>(null);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
@@ -93,6 +95,7 @@ export default function ScanPage() {
     rafRef.current = null;
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
+    posRef.current = null;
   }, []);
 
   // Releasing the camera on unmount matters more than usual here: a live
@@ -102,9 +105,17 @@ export default function ScanPage() {
 
   const checkIn = useCallback(async (attractionId: string) => {
     setPhase('checking');
+
+    // Taken before stopCamera(), which clears it. Read afterwards this would
+    // always be null and every scan would start a fresh cold GPS request —
+    // the exact wait the warm-up exists to remove.
+    const pending = posRef.current;
     stopCamera();
 
-    const pos = await getPosition();
+    // Whatever the warm-up started when the camera opened. By the time someone
+    // has framed a poster the fix is normally already in hand, so this
+    // resolves at once instead of adding a cold GPS wait to the scan.
+    const pos = await (pending ?? getPosition());
     try {
       const res = await fetch('/api/attractions/visit/checkin', {
         method: 'POST',
@@ -139,7 +150,7 @@ export default function ScanPage() {
 
       // Straight to the place they are standing in front of, which is what
       // they scanned the poster for.
-      setTimeout(() => router.push(`/attractions/${attractionId}`), 1600);
+      setTimeout(() => router.push(`/attractions/${attractionId}`), 1100);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not record your visit');
       setPhase('error');
@@ -210,6 +221,18 @@ export default function ScanPage() {
         audio: false,
       });
       streamRef.current = stream;
+
+      // Ask for location now, not after a code is decoded.
+      //
+      // A cold high-accuracy fix can take the best part of ten seconds, and
+      // asking for it only once the poster had been read put that wait between
+      // the scan and the confirmation — the visitor is stood there holding a
+      // phone at a wall wondering whether it worked. Started here, it runs
+      // while they are still framing the code and is almost always ready by
+      // the time it is needed. It also puts both permission prompts together
+      // at the start rather than one now and one later.
+      posRef.current = getPosition();
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         // iOS refuses to play inline without this being set before play().
