@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Download, Loader2, QrCode } from 'lucide-react';
+import { Download, FileDown, Loader2, QrCode, RefreshCw } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 // A printable check-in poster for a business or spot to display on site.
 // Composed on a canvas rather than screenshotting the DOM so the download is a
@@ -34,8 +35,15 @@ interface Props {
 
 export default function QRPoster({ attractionId, attractionName }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const qrHostRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [dlError, setDlError] = useState('');
+  // Bumped by Regenerate to redraw. The code itself is deterministic — the
+  // same listing always yields the same QR — so this repaints the poster
+  // rather than issuing a different code; see the note by the button.
+  const [regen, setRegen] = useState(0);
 
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
   // Same ?src=qr contract the check-in route reads — a scan of this poster is
@@ -162,7 +170,7 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
 
     /* ── the poster ──────────────────────────────────────────────── */
 
-    const draw = (qr: HTMLImageElement | null) => {
+    const draw = (qr: CanvasImageSource | null) => {
       if (cancelled) return;
       ctx.clearRect(0, 0, W, H);
 
@@ -327,31 +335,69 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
 
     // Wait for the webfonts the page already loads, or canvas silently falls
     // back to a default face and the poster prints in the wrong typeface.
-    const start = (qr: HTMLImageElement | null) => {
+    const start = (qr: CanvasImageSource | null) => {
       const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
       if (fonts?.ready) fonts.ready.then(() => draw(qr)).catch(() => draw(qr));
       else draw(qr);
     };
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous'; // required or the canvas taints and toDataURL throws
-    img.onload = () => start(img);
-    img.onerror = () => { if (!cancelled) { setFailed(true); start(null); } };
-    img.src = qrSrc;
+    // The QR is rendered locally by qrcode.react into the hidden canvas below,
+    // rather than fetched from api.qrserver.com as it used to be. A poster is
+    // printed once and displayed for months, so it should not depend on a
+    // third-party image host being up — and a remote image also risks tainting
+    // the canvas, which would break the download rather than just the QR.
+    const qrCanvas = qrHostRef.current?.querySelector('canvas') ?? null;
+    if (!qrCanvas) { setFailed(true); start(null); }
+    else { setFailed(false); start(qrCanvas); }
 
     return () => { cancelled = true; };
-  }, [attractionName, qrSrc]);
+  }, [attractionName, scanUrl, regen]);
 
-  const download = () => {
+  const fileBase = attractionName.replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'checkin';
+
+  const downloadPng = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     try {
       const link = document.createElement('a');
-      link.download = `${attractionName.replace(/\s+/g, '-').toLowerCase()}-checkin-poster.png`;
+      link.download = `${fileBase}-checkin-poster.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (err) {
       console.error('QR poster download failed:', err);
+      setDlError('The poster could not be saved. Reload the page and try again.');
+    }
+  };
+
+  /**
+   * The same poster as a print-ready A5 PDF.
+   *
+   * A PNG is fine on screen but a print shop wants a page with real
+   * dimensions — handed a PNG they guess the scale, and the QR comes back
+   * cropped or the wrong size. The canvas is already A5 at 150dpi, so it maps
+   * onto the page exactly with no resampling.
+   *
+   * jsPDF is imported only when the button is pressed: it is a few hundred KB
+   * and no visitor browsing the site should pay for it.
+   */
+  const downloadPdf = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas || pdfBusy) return;
+    setPdfBusy(true);
+    setDlError('');
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
+      // JPEG at high quality rather than PNG: the poster is photographic-ish
+      // flat colour, and an A5 PNG at this resolution makes a ~4MB file that
+      // is slow to open on the shop's machine.
+      doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 148, 210, undefined, 'FAST');
+      doc.save(`${fileBase}-checkin-poster.pdf`);
+    } catch (err) {
+      console.error('QR poster PDF failed:', err);
+      setDlError('The PDF could not be created. Try the PNG instead.');
+    } finally {
+      setPdfBusy(false);
     }
   };
 
@@ -362,12 +408,32 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
           className="w-full h-auto rounded-lg shadow-sm bg-white" />
       </div>
 
+      {/* Rendered off-screen and drawn onto the poster canvas. Level H so the
+          code still reads with a logo-sized chunk obscured, a scuff, or the
+          rain a poster by a farm entrance will meet. */}
+      <div ref={qrHostRef} className="hidden" aria-hidden>
+        <QRCodeCanvas value={scanUrl} size={800} level="H" marginSize={0} />
+      </div>
+
       <div className="flex items-center gap-3 mt-3 flex-wrap">
-        <button onClick={download} disabled={busy}
+        {/* PDF first: a print shop wants a page, not an image. */}
+        <button onClick={downloadPdf} disabled={busy || pdfBusy}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
           style={{ backgroundColor: BLUE }}>
+          {pdfBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+          Download PDF (A5)
+        </button>
+        <button onClick={downloadPng} disabled={busy}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition hover:bg-gray-50 disabled:opacity-50 border"
+          style={{ borderColor: 'rgba(11,61,145,0.25)', color: BLUE }}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-          Download poster
+          PNG
+        </button>
+        <button onClick={() => { setBusy(true); setRegen(n => n + 1); }} disabled={busy}
+          title="Redraws the poster. The code stays the same, so posters already on the wall keep working."
+          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-100 disabled:opacity-50">
+          <RefreshCw className={`w-4 h-4 ${busy ? 'animate-spin' : ''}`} />
+          Regenerate
         </button>
         <a href={scanUrl} target="_blank" rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
@@ -378,9 +444,10 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
 
       {failed && (
         <p className="text-xs text-red-500 mt-2">
-          The QR image could not be loaded, so the poster is incomplete. Check your connection and reload before printing.
+          The QR code could not be drawn, so the poster is incomplete — do not print it. Press Regenerate, or reload the page.
         </p>
       )}
+      {dlError && <p className="text-xs text-red-500 mt-2">{dlError}</p>}
     </div>
   );
 }

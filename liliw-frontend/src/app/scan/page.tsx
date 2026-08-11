@@ -298,7 +298,16 @@ export default function ScanPage() {
           {phase === 'scanning' && (
             <div className="absolute inset-0 pointer-events-none">
               <div className="absolute inset-8 rounded-2xl border-2 border-white/70" />
-              <div className="absolute inset-x-8 top-8 h-0.5 animate-pulse" style={{ backgroundColor: '#F5C518' }} />
+              {/* Travels down and back rather than fading in place: a line that
+                  only pulses reads as a decoration, while one that sweeps says
+                  the camera is looking. Clipped to the reticle so it scans the
+                  area the code actually has to sit in. */}
+              <div className="absolute inset-8 overflow-hidden rounded-2xl">
+                <div className="qr-sweep absolute inset-x-0 h-12"
+                     style={{
+                       background: 'linear-gradient(to bottom, rgba(245,197,24,0) 0%, rgba(245,197,24,0.35) 70%, #F5C518 100%)',
+                     }} />
+              </div>
             </div>
           )}
 
