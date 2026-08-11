@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck, ChevronDown, Search, Bell, MessageSquare, Users, Building2, MapPin, Newspaper, CalendarDays, Settings, Trophy, Compass, Route, Info, Sparkles } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck, ChevronDown, Search, Bell, MessageSquare, Users, Building2, MapPin, Newspaper, CalendarDays, Settings, Trophy, Compass, Route, Info, Sparkles, QrCode } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useHandheld } from '@/hooks/useHandheld';
 import AuthModal from '@/components/AuthModal';
 import SmartSearchModal from '@/components/SmartSearchModal';
 import { openPassport } from '@/components/PassportHost';
@@ -129,6 +130,8 @@ export default function Navbar() {
   const [avatar,       setAvatar]       = useState<string | null>(null);
   const { user, token, logout, isAdmin, isChatoOfficer, isChatoEditor, isStaff, isLocal, adminPanelRole } = useAuth();
   const pathname = usePathname();
+  // Phones and tablets only: the scanner needs a camera pointed at a poster.
+  const handheld = useHandheld();
 
   // Scroll fires far more often than this state can meaningfully change, and
   // every handler run sits on the main thread alongside the sticky bar's
@@ -394,6 +397,24 @@ export default function Navbar() {
                   <span className="hidden sm:inline">Map</span>
                 </Link>
               </motion.div>
+
+              {/* Scan — phones and tablets only, because it needs a camera you
+                  can point at a poster. Placed beside Map: both are things you
+                  reach for while out in the town, and this is the only way an
+                  on-site visit can be recorded. */}
+              {handheld && (
+                <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                  <Link href="/scan" aria-label="Scan a poster"
+                    className="w-9 h-9 sm:w-auto sm:h-auto sm:px-4 sm:py-2.5 rounded-full font-semibold text-xs sm:text-sm inline-flex items-center justify-center gap-1.5 border transition-colors hover:bg-blue-50"
+                    style={{
+                      borderColor: 'rgba(15,95,181,0.35)', color: ROYAL, fontFamily: BL,
+                      backgroundColor: 'rgba(255,255,255,0.75)',
+                    }}>
+                    <QrCode className="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0" strokeWidth={2} />
+                    <span className="hidden sm:inline">Scan</span>
+                  </Link>
+                </motion.div>
+              )}
 
               {/* 3D Tour — the secondary pill, outlined so the pair reads as
                   primary and secondary rather than two competing actions.

@@ -25,6 +25,7 @@
     "groq-sdk": "^1.1.2",
     "instantsearch.js": "^4.93.0",
     "isomorphic-dompurify": "^3.19.0",
+    "jsqr": "^1.4.0",
     "lucide-react": "^1.8.0",
     "mapbox-gl": "^3.20.0",
     "next": "16.2.10",
