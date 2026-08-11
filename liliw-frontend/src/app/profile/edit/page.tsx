@@ -125,6 +125,7 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
   const [fullName, setFullName] = useState('');
   const [uname, setUname] = useState(username);
   const [userType, setUserType] = useState('');
+  const [gender, setGender] = useState('');
   const [avatar, setAvatar] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
@@ -144,6 +145,7 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
       .then(d => {
         if (d?.full_name) setFullName(d.full_name);
         if (d?.user_type) setUserType(d.user_type);
+        if (d?.gender) setGender(d.gender);
         if (d?.avatar) setAvatar(d.avatar);
       })
       .catch(() => {});
@@ -223,7 +225,7 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
       const res = await fetch('/api/auth/update-profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ username: uname, full_name: fullName, user_type: userType }),
+        body: JSON.stringify({ username: uname, full_name: fullName, user_type: userType, gender }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Update failed.'); return; }
@@ -233,6 +235,7 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
       if (data.profile) {
         setFullName(data.profile.full_name ?? '');
         setUserType(data.profile.user_type ?? '');
+        setGender(data.profile.gender ?? '');
       }
       setSuccess(
         username !== uname
@@ -369,6 +372,26 @@ function ProfileTab({ token, email, username }: { token: string; email: string; 
         </select>
         <p className="text-xs text-gray-400 mt-1" style={{ fontFamily: BL }}>
           Shown on your travel passport and helps the Tourism Office understand who visits Liliw.
+        </p>
+      </div>
+
+      {/* Optional, and blank is a real answer. The monthly figures a business
+          reports split visitors by gender, and this is the only place that is
+          known — but a count of two with one unstated is more honest than a
+          guess, so nothing here is required. */}
+      <div>
+        <Label>Gender</Label>
+        <select
+          value={gender}
+          onChange={e => setGender(e.target.value)}
+          className={inputCls}
+        >
+          <option value="">Prefer not to say</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+        <p className="text-xs text-gray-400 mt-1" style={{ fontFamily: BL }}>
+          Optional. Used only in the Tourism Office&rsquo;s visitor statistics, never shown on your profile.
         </p>
       </div>
 

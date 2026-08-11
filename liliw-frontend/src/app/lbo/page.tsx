@@ -186,6 +186,7 @@ export default function LboDashboard() {
   const [vrCounts,     setVrCounts]    = useState<Record<string, string>>(BLANK_VISITORS);
   const [submittingVr, setSubmittingVr]= useState(false);
   const [vrMsg,        setVrMsg]       = useState<{ ok: boolean; text: string } | null>(null);
+  const [scanStats,    setScanStats]   = useState<{ linked: boolean; total: number; counts: Record<string, number>; unknownGender: number; unknownOrigin: number } | null>(null);
 
   /* ── Auth check ── */
   useEffect(() => {
@@ -200,6 +201,27 @@ export default function LboDashboard() {
       .catch(() => setNotLbo(true))
       .finally(() => setChecking(false));
   }, [authLoading, user, token]);
+
+  useEffect(() => {
+    if (!token) { setScanStats(null); return; }
+    let cancelled = false;
+    fetch(`/api/lbo/checkins?month=${vrMonth}&year=${vrYear}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (!cancelled) setScanStats(d); })
+      .catch(() => { if (!cancelled) setScanStats(null); });
+    return () => { cancelled = true; };
+  }, [token, vrMonth, vrYear]);
+
+  /** Copies the scanned figures into the form, leaving it editable. */
+  const fillFromScans = () => {
+    if (!scanStats) return;
+    setVrCounts(Object.fromEntries(
+      Object.entries(scanStats.counts).map(([k, v]) => [k, String(v)]),
+    ) as Record<string, string>);
+    setVrMsg({ ok: true, text: 'Filled from QR check-ins. Add anyone who did not scan, then submit.' });
+  };
 
   /* ── Fetch attraction data ── */
   useEffect(() => {
@@ -1339,6 +1361,66 @@ export default function LboDashboard() {
               <h2 className="font-bold text-gray-900">Visitor Records</h2>
               <p className="text-xs text-gray-400 mt-0.5">Submit monthly visitor counts for your attraction. These are used for tourism statistics reporting.</p>
             </div>
+
+            {/* What the app counted, next to what the owner is about to type.
+                Only signed-in visitors who scanned the poster appear here, so
+                it is the floor of the real number rather than the number —
+                walk-ins and groups never will. Offered as a starting point,
+                which is why it fills the form rather than replacing it. */}
+            {scanStats && scanStats.linked && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+                <div className="flex flex-wrap items-start gap-3">
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                      <QrCode className="w-4 h-4" style={{ color: '#16A34A' }} />
+                      QR check-ins in {MONTHS[vrMonth - 1]} {vrYear}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Counted automatically when a visitor scans your poster on site.
+                    </p>
+                  </div>
+                  <span className="ml-auto text-2xl font-extrabold" style={{ color: '#16A34A' }}>
+                    {scanStats.total}
+                  </span>
+                </div>
+
+                {scanStats.total > 0 && (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+                      {VISITOR_ROWS.map(row => {
+                        const m = scanStats.counts[row.male_key] ?? 0;
+                        const f = scanStats.counts[row.female_key] ?? 0;
+                        return (
+                          <div key={row.label} className="rounded-xl bg-gray-50 px-3 py-2.5">
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400 leading-tight">{row.label}</p>
+                            <p className="text-sm font-bold text-gray-800 mt-1">{m + f}</p>
+                            <p className="text-[11px] text-gray-400">{m} male · {f} female</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {(scanStats.unknownGender > 0 || scanStats.unknownOrigin > 0) && (
+                      <p className="text-[11px] text-gray-400 mt-2.5">
+                        {scanStats.unknownGender > 0 && `${scanStats.unknownGender} visitor${scanStats.unknownGender === 1 ? '' : 's'} did not state a gender`}
+                        {scanStats.unknownGender > 0 && scanStats.unknownOrigin > 0 && ', and '}
+                        {scanStats.unknownOrigin > 0 && `${scanStats.unknownOrigin} did not say where they travelled from`}
+                        {' '}— counted in the total above, but not in the boxes.
+                      </p>
+                    )}
+
+                    <button type="button" onClick={fillFromScans}
+                      className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white"
+                      style={{ backgroundColor: '#16A34A' }}>
+                      <ArrowRight className="w-3.5 h-3.5" /> Use these numbers
+                    </button>
+                    <span className="text-[11px] text-gray-400 ml-2">
+                      Fills the form below — add anyone who did not scan before submitting.
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
 
             <form onSubmit={handleSubmitVr} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
               <h3 className="font-bold text-gray-900 text-sm">Submit Monthly Record</h3>

@@ -4,6 +4,9 @@ import { supabaseServer, explainDbError } from '@/lib/supabase-server';
 import { normaliseAvatar } from '@/lib/avatars';
 
 const USER_TYPES = ['liliw_local', 'laguna', 'provincial', 'international'];
+// Must match the CHECK constraint in phase27. '' means 'prefer not to say' and
+// is stored as NULL, so declining is a real answer rather than a missing one.
+const GENDERS = ['male', 'female'];
 
 export async function PUT(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -13,7 +16,7 @@ export async function PUT(req: NextRequest) {
   const { data: { user } } = await supabaseServer.auth.getUser(token);
   if (!user) return NextResponse.json({ error: 'Could not fetch user' }, { status: 401 });
 
-  const { username, full_name, user_type, avatar } = await req.json();
+  const { username, full_name, user_type, gender, avatar } = await req.json();
 
   // Every write below used to discard its error and the route returned
   // success regardless, so a rejected write — a duplicate username, a missing
@@ -53,10 +56,15 @@ export async function PUT(req: NextRequest) {
     }
   }
 
-  if (full_name !== undefined || user_type !== undefined || avatar !== undefined) {
+  if (gender !== undefined && gender !== '' && !GENDERS.includes(gender)) {
+    return NextResponse.json({ error: 'Invalid gender' }, { status: 400 });
+  }
+
+  if (full_name !== undefined || user_type !== undefined || gender !== undefined || avatar !== undefined) {
     const patch: Record<string, string | null> = { email: user.email!.toLowerCase() };
     if (full_name !== undefined) patch.full_name = full_name?.trim() || null;
     if (user_type !== undefined) patch.user_type = user_type || null;
+    if (gender !== undefined) patch.gender = gender || null;
     if (avatar !== undefined) {
       patch.avatar = nextAvatar ?? null;
       patch.avatar_updated_at = new Date().toISOString();
@@ -78,7 +86,7 @@ export async function PUT(req: NextRequest) {
   // hoped it sent — the difference between the two is the whole bug above.
   const { data: saved } = await supabaseServer
     .from('tourist_profiles')
-    .select('user_type, full_name, avatar')
+    .select('user_type, full_name, gender, avatar')
     .eq('email', user.email!.toLowerCase())
     .maybeSingle();
 
