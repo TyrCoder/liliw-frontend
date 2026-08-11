@@ -3,6 +3,7 @@ import { verifyToken } from '@/lib/verifyToken';
 import { supabaseServer } from '@/lib/supabase-server';
 import { distanceMeters, toCoords, QR_PROXIMITY_METERS } from '@/lib/geo';
 import { cmsAttractionId } from '@/lib/content';
+import { awardPoints } from '@/lib/achievements';
 
 // Fired as soon as an attraction detail page loads (while logged in) so the
 // server has an authoritative start time to check the dwell requirement
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
   // to work and quietly awarding nothing.
   if (!auth) return NextResponse.json({ success: true, authenticated: false });
 
-  const { attractionId, via, lat, lng } = await request.json();
+  const { attractionId, attractionName, via, lat, lng } = await request.json();
   if (!attractionId) return NextResponse.json({ error: 'attractionId required' }, { status: 400 });
 
   // A place only counts once. user_points already refuses a duplicate
@@ -72,10 +73,35 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Never downgrade a scan that was already verified.
+  //
+  // This is why a genuine scan produced no stamp. The scanner posts via 'qr'
+  // and then sends the visitor to the attraction page, which posts its own
+  // check-in as 'web' — and the upsert below is keyed on
+  // (user_id, attraction_id), so the second write replaced the first and the
+  // verified scan became an ordinary page view seconds after it happened.
+  // Today's row for Esmeris Farm reads 'web' for exactly that reason.
+  const RANK = { web: 0, qr_unverified: 1, qr: 2 } as const;
+  const { data: existing } = await supabaseServer
+    .from('attraction_visit_checkins')
+    .select('via, distance_m, started_at')
+    .eq('user_id', auth.userId)
+    .eq('attraction_id', String(attractionId))
+    .maybeSingle();
+
+  const prevVia = (existing?.via ?? 'web') as keyof typeof RANK;
+  if (existing && RANK[prevVia] > RANK[source]) {
+    source = prevVia;
+    distance = existing.distance_m ?? distance;
+  }
+
   const row = {
     user_id: auth.userId,
     attraction_id: String(attractionId),
-    started_at: new Date().toISOString(),
+    // Keep the original arrival time too: the dwell window is measured from
+    // it, and restarting the clock on every page load would mean a visitor who
+    // reloads never accrues the 2.5 minutes.
+    started_at: existing?.started_at ?? new Date().toISOString(),
   };
 
   const { error } = await supabaseServer
@@ -91,6 +117,25 @@ export async function POST(request: NextRequest) {
       .upsert(row, { onConflict: 'user_id,attraction_id' });
   }
 
+  // A confirmed on-site scan earns the visit there and then.
+  //
+  // The 2.5-minute dwell rule exists to prove someone actually engaged with a
+  // place rather than clicking through — but standing within 150m of it with
+  // its poster in the camera is stronger evidence than any amount of time on a
+  // web page. Requiring both meant a visitor scanned at the gate, pocketed
+  // their phone, and earned nothing; and since the passport now stamps only
+  // verified scans, they got no stamp either.
+  //
+  // Page visits still go through the dwell path in /api/attractions/visit.
+  let unlockedAchievements: Awaited<ReturnType<typeof awardPoints>> = [];
+  let awarded = false;
+  if (source === 'qr') {
+    unlockedAchievements = await awardPoints(
+      auth.userId, 'attraction_visit', String(attractionId), attractionName || 'Attraction',
+    ).catch(() => []);
+    awarded = true;
+  }
+
   // Reported back so the page can tell the visitor what happened rather than
   // silently downgrading an unverified scan. authenticated/alreadyVisited let
   // the caller tell a fresh check-in from a repeat or a signed-out scan.
@@ -101,5 +146,7 @@ export async function POST(request: NextRequest) {
     via: source,
     distanceMeters: distance,
     verified: source === 'qr',
+    awarded,
+    unlockedAchievements,
   });
 }
