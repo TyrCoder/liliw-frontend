@@ -93,7 +93,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
   const [frontendCount, setFrontendCount] = useState(0);
   // Only meaningful when arriving via a scanned QR code.
   const [qrStatus, setQrStatus] = useState<
-    'idle' | 'locating' | 'verified' | 'unverified' | 'already' | 'signedout'>('idle');
+    'idle' | 'locating' | 'verified' | 'unverified' | 'usescanner' | 'already' | 'signedout'>('idle');
   const [visitedAt, setVisitedAt] = useState<string | null>(null);
   const [authModal, setAuthModal] = useState(false);
   // Set once the server confirms this place was already collected, so the dwell
@@ -186,7 +186,18 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
       return fetch('/api/attractions/visit/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ attractionId: attraction.id, via: isQr ? 'qr' : 'web', lat, lng }),
+        // Always 'web', even when the URL says ?src=qr.
+        //
+        // A poster URL is just a link: anyone who photographs one, or reads it
+        // off a friend's screen, can open it from anywhere and the page would
+        // have claimed a QR scan on their behalf. Proximity limited the damage
+        // but did not remove it — location can be spoofed far more easily than
+        // a camera can be pointed at a wall in Liliw.
+        //
+        // A verified on-site visit is now only what /scan produces, where the
+        // app itself decoded the code from the camera. This page still records
+        // the visit; it just cannot vouch for how the visitor got here.
+        body: JSON.stringify({ attractionId: attraction.id, via: 'web', lat, lng }),
       })
         .then(r => r.json())
         .then(d => {
@@ -198,9 +209,12 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
             setVisitedAt(d.visitedAt ?? null);
           }
           if (!isQr) return;
-          setQrStatus(d.alreadyVisited ? 'already' : d.verified ? 'verified' : 'unverified');
+          // 'verified' is no longer reachable from this page — only the
+          // in-app scanner can produce it — so a poster link lands on the
+          // prompt to scan properly rather than a bare 'not confirmed'.
+          setQrStatus(d.alreadyVisited ? 'already' : 'usescanner');
         });
-    }).catch(() => { if (!cancelled && isQr) setQrStatus('unverified'); });
+    }).catch(() => { if (!cancelled && isQr) setQrStatus('usescanner'); });
 
     return () => { cancelled = true; };
   }, [attraction?.id, token]);
@@ -316,6 +330,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
                 {qrStatus === 'locating' && 'Checking you in…'}
                 {qrStatus === 'verified' && "You're here! Visit confirmed"}
                 {qrStatus === 'unverified' && 'Checked in — location not confirmed'}
+                {qrStatus === 'usescanner' && 'Scan this poster in the app to confirm your visit'}
                 {qrStatus === 'already' && 'You have already collected this place'}
                 {qrStatus === 'signedout' && 'Sign in to collect this place'}
               </p>
@@ -323,6 +338,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
                 {qrStatus === 'locating' && 'Confirming you are at the location.'}
                 {qrStatus === 'verified' && `Stay on this page for ${Math.round(VISIT_DWELL_MS / 60000)} minutes to earn your points.`}
                 {qrStatus === 'unverified' && 'Allow location and scan again to have this count as an on-site visit.'}
+                {qrStatus === 'usescanner' && 'Opening the link counts as a normal visit. An on-site stamp needs the app’s own scanner, so a link cannot be shared or opened from home.'}
                 {qrStatus === 'already' && (visitedAt
                   ? `Collected on ${new Date(visitedAt).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}. Each place counts once — it is already in your passport.`
                   : 'Each place counts once, and this one is already in your passport.')}
