@@ -1,24 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
-import { verifySession, SESSION_COOKIE } from '@/lib/session';
+import { lboEmail } from '@/lib/lbo-auth';
 
-async function getEmail(req: NextRequest): Promise<string | null> {
-  const cookie = req.cookies.get(SESSION_COOKIE)?.value;
-  const session = cookie ? verifySession(cookie) : null;
-  if (session?.email) return session.email;
-
-  const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
-  if (!token) return null;
-  try {
-    const { data: { user } } = await supabaseServer.auth.getUser(token);
-    return user?.email ?? null;
-  } catch {
-    return null;
-  }
-}
 
 export async function GET(request: NextRequest) {
-  const email = await getEmail(request);
+  const email = await lboEmail(request);
   if (!email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: app } = await supabaseServer

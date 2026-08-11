@@ -36,8 +36,24 @@ export async function POST(request: NextRequest) {
       continue;
     }
 
+    // reward_unavailable means the row was not found or is inactive. Probing
+    // the function directly showed it resolves every active reward correctly,
+    // so when a visitor hits this the id that arrived is the thing worth
+    // knowing — logged with it rather than left to be guessed at from a
+    // sentence on screen.
+    if (error.message === 'reward_unavailable') {
+      const { data: row } = await supabaseServer
+        .from('rewards').select('id, is_active').eq('id', rewardId).maybeSingle();
+      console.error('[rewards/redeem] reward_unavailable', {
+        rewardId,
+        rowExists: !!row,
+        isActive: row?.is_active ?? null,
+        userId: auth.userId,
+      });
+    }
+
     const [status, message] = ERROR_RESPONSES[error.message] ?? [500, 'Failed to create redemption'];
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message, code: error.message }, { status });
   }
 
   return NextResponse.json({ error: 'Failed to create redemption' }, { status: 500 });

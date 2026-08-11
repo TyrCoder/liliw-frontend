@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
-import { verifySession, SESSION_COOKIE } from '@/lib/session';
+import { lboEmail } from '@/lib/lbo-auth';
 
-async function getUser(req: NextRequest): Promise<{ email: string; username?: string } | null> {
-  const cookie = req.cookies.get(SESSION_COOKIE)?.value;
-  const session = cookie ? verifySession(cookie) : null;
-  if (session?.email) return { email: session.email };
-
-  const token = (req.headers.get('Authorization') || '').replace('Bearer ', '');
-  if (!token) return null;
-  try {
-    const { data: { user } } = await supabaseServer.auth.getUser(token);
-    return user ? { email: user.email ?? '' } : null;
-  } catch {
-    return null;
-  }
+async function getUser(req: NextRequest): Promise<{ email: string } | null> {
+  const email = await lboEmail(req);
+  return email ? { email } : null;
 }
 
 export async function GET(request: NextRequest) {
@@ -58,7 +48,9 @@ export async function POST(request: NextRequest) {
       requested_value,
       reason:          reason         || null,
       lbo_email:       user.email,
-      lbo_name:        lbo_name || user.username,
+      // username only ever existed on the cookie path, so it was already
+      // undefined for anyone calling with a token. The email always resolves.
+      lbo_name:        lbo_name || user.email,
       status:          'pending',
     });
 
