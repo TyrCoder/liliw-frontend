@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Download, FileDown, Loader2, QrCode, RefreshCw } from 'lucide-react';
-import { QRCodeCanvas } from 'qrcode.react';
+import QRCode from 'qrcode';
 
 // A printable check-in poster for a business or spot to display on site.
 // Composed on a canvas rather than screenshotting the DOM so the download is a
@@ -33,9 +33,101 @@ interface Props {
   attractionName: string;
 }
 
+/**
+ * The QR itself: rounded modules, rounded-square eyes, and the Liliw mark in
+ * the middle.
+ *
+ * Drawn from the module matrix rather than dropped in as a finished image,
+ * because neither a QR image service nor qrcode.react can produce this shape —
+ * they emit plain squares. Working from the matrix means the poster's code
+ * looks like it belongs to the same design as everything around it.
+ *
+ * Error correction is level H, which tolerates roughly 30% loss. The logo
+ * covers about 5% of the area, so the code still reads with room to spare —
+ * that headroom is also what lets it survive a scuffed or rained-on print.
+ */
+function drawStyledQr(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, bg = '#FFFFFF') {
+  const qr = QRCode.create(text, { errorCorrectionLevel: 'H' });
+  const n = qr.modules.size;
+  const bits = qr.modules.data;
+  const cell = size / n;
+  const dark = (r: number, c: number) => r >= 0 && c >= 0 && r < n && c < n && !!bits[r * n + c];
+
+  // The three big squares are drawn by hand below, so the dot pass skips them.
+  const inEye = (r: number, c: number) =>
+    (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+
+  // Cleared for the logo. Odd span so it sits exactly on centre.
+  const logoSpan = Math.floor(n * 0.2) | 1;
+  const lo = (n - logoSpan) >> 1;
+  const inLogo = (r: number, c: number) => r >= lo && r < lo + logoSpan && c >= lo && c < lo + logoSpan;
+
+  // Modules as dots, slightly overlapping so runs read as soft bars rather
+  // than a dotted line — easier for a camera than isolated circles.
+  ctx.fillStyle = NAVY;
+  const rad = cell * 0.56;
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if (!dark(r, c) || inEye(r, c) || inLogo(r, c)) continue;
+      ctx.beginPath();
+      ctx.arc(x + c * cell + cell / 2, y + r * cell + cell / 2, rad, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Finder eyes: rounded outer ring with a rounded core, as in the reference.
+  const rrect = (px: number, py: number, w: number, h: number, r: number) => {
+    ctx.beginPath();
+    ctx.moveTo(px + r, py);
+    ctx.arcTo(px + w, py, px + w, py + h, r);
+    ctx.arcTo(px + w, py + h, px, py + h, r);
+    ctx.arcTo(px, py + h, px, py, r);
+    ctx.arcTo(px, py, px + w, py, r);
+    ctx.closePath();
+  };
+
+  // A finder pattern is read as dark ring / light gap / dark core. Both parts
+  // of that have to be true optically, not just structurally:
+  //
+  //  - the gap is painted in the background colour, not punched out with
+  //    destination-out, which erases to transparent; a decoder reading RGBA
+  //    sees transparent as black and the ring disappears.
+  //  - the core is drawn dark. It was gold, and gold is a light colour, so the
+  //    core read as part of the gap.
+  //
+  // Both were caught by rendering the code and decoding it back with jsQR —
+  // it looked correct on screen and scanned as nothing at all.
+  const eye = (row: number, col: number) => {
+    const ex = x + col * cell, ey = y + row * cell, s = cell * 7;
+    ctx.fillStyle = NAVY;
+    rrect(ex, ey, s, s, cell * 2.1);
+    ctx.fill();
+    ctx.fillStyle = bg;
+    rrect(ex + cell, ey + cell, s - cell * 2, s - cell * 2, cell * 1.4);
+    ctx.fill();
+    ctx.fillStyle = NAVY;
+    rrect(ex + cell * 2, ey + cell * 2, cell * 3, cell * 3, cell * 1);
+    ctx.fill();
+  };
+  eye(0, 0); eye(0, n - 7); eye(n - 7, 0);
+
+  // The mark. A filled disc rather than a knock-out, so it reads as deliberate
+  // rather than as a hole in the code.
+  const cx = x + size / 2, cy = y + size / 2;
+  const rOuter = (logoSpan * cell) / 2;
+  ctx.fillStyle = bg;
+  ctx.beginPath(); ctx.arc(cx, cy, rOuter, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = NAVY;
+  ctx.beginPath(); ctx.arc(cx, cy, rOuter * 0.82, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = GOLD;
+  ctx.font = `700 ${Math.round(rOuter * 1.05)}px ${HEAD}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('L', cx, cy + rOuter * 0.04);
+}
+
 export default function QRPoster({ attractionId, attractionName }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const qrHostRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(true);
   const [failed, setFailed] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -44,12 +136,12 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
   // same listing always yields the same QR — so this repaints the poster
   // rather than issuing a different code; see the note by the button.
   const [regen, setRegen] = useState(0);
+  const regenerated = regen > 0;
 
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
   // Same ?src=qr contract the check-in route reads — a scan of this poster is
   // what gets distance-verified against the attraction's coordinates.
   const scanUrl = `${baseUrl}/attractions/${attractionId}?src=qr`;
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=800x800&margin=0&data=${encodeURIComponent(scanUrl)}`;
 
   useEffect(() => {
     let cancelled = false;
@@ -170,7 +262,7 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
 
     /* ── the poster ──────────────────────────────────────────────── */
 
-    const draw = (qr: CanvasImageSource | null) => {
+    const draw = (qr: CanvasImageSource | 'styled' | null) => {
       if (cancelled) return;
       ctx.clearRect(0, 0, W, H);
 
@@ -256,7 +348,9 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
       ctx.stroke();
       cornerTicks(qx - 42, qy - 42, size + 84, size + 84, 32);
 
-      if (qr) {
+      if (qr === 'styled') {
+        drawStyledQr(ctx, scanUrl, qx, qy, size, '#FFFFFF');
+      } else if (qr) {
         ctx.drawImage(qr, qx, qy, size, size);
       } else {
         // Network blocked the QR service — say so on the poster rather than
@@ -335,20 +429,16 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
 
     // Wait for the webfonts the page already loads, or canvas silently falls
     // back to a default face and the poster prints in the wrong typeface.
-    const start = (qr: CanvasImageSource | null) => {
+    const start = (qr: CanvasImageSource | 'styled' | null) => {
       const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
       if (fonts?.ready) fonts.ready.then(() => draw(qr)).catch(() => draw(qr));
       else draw(qr);
     };
 
-    // The QR is rendered locally by qrcode.react into the hidden canvas below,
-    // rather than fetched from api.qrserver.com as it used to be. A poster is
-    // printed once and displayed for months, so it should not depend on a
-    // third-party image host being up — and a remote image also risks tainting
-    // the canvas, which would break the download rather than just the QR.
-    const qrCanvas = qrHostRef.current?.querySelector('canvas') ?? null;
-    if (!qrCanvas) { setFailed(true); start(null); }
-    else { setFailed(false); start(qrCanvas); }
+    // Drawn inline from the module matrix — see drawStyledQr. Nothing to load,
+    // so nothing to fail on a slow connection or a blocked image host.
+    setFailed(false);
+    start('styled');
 
     return () => { cancelled = true; };
   }, [attractionName, scanUrl, regen]);
@@ -408,13 +498,6 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
           className="w-full h-auto rounded-lg shadow-sm bg-white" />
       </div>
 
-      {/* Rendered off-screen and drawn onto the poster canvas. Level H so the
-          code still reads with a logo-sized chunk obscured, a scuff, or the
-          rain a poster by a farm entrance will meet. */}
-      <div ref={qrHostRef} className="hidden" aria-hidden>
-        <QRCodeCanvas value={scanUrl} size={800} level="H" marginSize={0} />
-      </div>
-
       <div className="flex items-center gap-3 mt-3 flex-wrap">
         {/* PDF first: a print shop wants a page, not an image. */}
         <button onClick={downloadPdf} disabled={busy || pdfBusy}
@@ -429,12 +512,22 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
           PNG
         </button>
-        <button onClick={() => { setBusy(true); setRegen(n => n + 1); }} disabled={busy}
-          title="Redraws the poster. The code stays the same, so posters already on the wall keep working."
+        {/* Redrawing produced an identical poster and no feedback, so it read
+            as a dead button. It now says it has run — and says plainly that
+            the code is unchanged, which is the point: posters already on a
+            wall must keep working. */}
+        <button
+          onClick={() => { setBusy(true); setDlError(''); setRegen(n => n + 1); }}
+          disabled={busy}
           className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-100 disabled:opacity-50">
           <RefreshCw className={`w-4 h-4 ${busy ? 'animate-spin' : ''}`} />
           Regenerate
         </button>
+        {regenerated && !busy && (
+          <span className="text-xs font-semibold" style={{ color: '#16A34A' }}>
+            Redrawn — same code, so printed posters still work.
+          </span>
+        )}
         <a href={scanUrl} target="_blank" rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
           style={{ color: BLUE }}>

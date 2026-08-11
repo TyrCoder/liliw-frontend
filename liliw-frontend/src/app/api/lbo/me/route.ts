@@ -3,24 +3,35 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { verifySession, SESSION_COOKIE } from '@/lib/session';
 
 export async function GET(request: NextRequest) {
-  // Fast path: signed session cookie
-  const cookie = request.cookies.get(SESSION_COOKIE)?.value;
-  const session = cookie ? verifySession(cookie) : null;
+  // The bearer token wins over the session cookie.
+  //
+  // The cookie used to be the fast path and was trusted first, which is wrong
+  // whenever the two disagree: sign in as an admin, then sign in as a business
+  // in the same browser, and the cookie still carried the previous email. This
+  // route then looked that address up, found no approved application, and told
+  // an approved owner their account had none — while the page printed their
+  // real address in the message, because it reads that from the client.
+  // The token is issued to the account making this request, so it is the
+  // authority; the cookie stays as the fallback for cookie-only callers.
+  let email: string | null = null;
 
-  let email: string | null = session?.email ?? null;
-
-  if (!email) {
-    const userToken = (request.headers.get('Authorization') || '').replace('Bearer ', '');
-    if (!userToken) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+  const userToken = (request.headers.get('Authorization') || '').replace('Bearer ', '').trim();
+  if (userToken) {
     try {
       const { data: { user } } = await supabaseServer.auth.getUser(userToken);
-      if (!user) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-      email = user.email ?? null;
+      email = user?.email ?? null;
     } catch {
-      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+      // Fall through to the cookie rather than failing outright — a Supabase
+      // blip should not lock an owner out of their own dashboard.
     }
   }
+
+  if (!email) {
+    const cookie = request.cookies.get(SESSION_COOKIE)?.value;
+    email = (cookie ? verifySession(cookie) : null)?.email ?? null;
+  }
+
+  if (!email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   if (!email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
