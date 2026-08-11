@@ -16,6 +16,28 @@ const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 type Phase = 'idle' | 'starting' | 'scanning' | 'checking' | 'done' | 'error';
 
+/** Downscale before decoding — see the note in tick(). */
+const DECODE_WIDTH = 640;
+const DECODE_INTERVAL_MS = 100;
+
+/**
+ * Browsers embedded inside another app — Facebook, Messenger, Instagram.
+ *
+ * They matter here because the tourism office's audience arrives from the
+ * Facebook page, and tapping a link there opens this inside Facebook's own
+ * browser, where getUserMedia is unreliable and on some iOS versions simply
+ * denied. Detected so the person is told to open it in Safari rather than
+ * being left tapping a button that does nothing.
+ */
+function isInAppBrowser(): boolean {
+  const ua = navigator.userAgent || '';
+  return /FBAN|FBAV|FB_IAB|Instagram|Line\/|Twitter|MicroMessenger/i.test(ua);
+}
+
+const isIOS = () =>
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 /**
  * Pulls the attraction id out of a scanned poster URL.
  *
@@ -60,6 +82,7 @@ export default function ScanPage() {
   // A decode can fire on several frames before the camera stops; without this
   // the check-in would post more than once for a single scan.
   const claimedRef = useRef(false);
+  const lastDecodeRef = useRef(0);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
@@ -128,9 +151,19 @@ export default function ScanPage() {
     const canvas = canvasRef.current;
     if (!video || !canvas || claimedRef.current) return;
 
-    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      const w = video.videoWidth, h = video.videoHeight;
-      if (w && h) {
+    // Decoding every frame at full sensor resolution pins the CPU and cooks
+    // the phone — on an iPhone the rear camera hands back 1920×1080, which is
+    // two million pixels to scan sixty times a second for a code that only
+    // needs a few hundred across. Ten times a second at 640px wide finds a
+    // poster just as fast and leaves the device cool.
+    const now = performance.now();
+    if (now - lastDecodeRef.current >= DECODE_INTERVAL_MS &&
+        video.readyState === video.HAVE_ENOUGH_DATA) {
+      lastDecodeRef.current = now;
+      const vw = video.videoWidth, vh = video.videoHeight;
+      if (vw && vh) {
+        const scale = Math.min(1, DECODE_WIDTH / vw);
+        const w = Math.round(vw * scale), h = Math.round(vh * scale);
         canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (ctx) {
@@ -160,6 +193,17 @@ export default function ScanPage() {
     setPhase('starting');
     claimedRef.current = false;
     try {
+      // Absent on an insecure origin and inside some embedded browsers. Saying
+      // "the camera could not be started" there sends people to check their
+      // camera permissions, which is not the problem.
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError(isInAppBrowser()
+          ? `This is running inside another app's browser, which blocks the camera. Tap the ⋯ menu and choose “Open in ${isIOS() ? 'Safari' : 'Browser'}”.`
+          : 'This browser cannot open a camera. Try Safari or Chrome.');
+        setPhase('error');
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         // The rear camera is the one pointed at a poster.
         video: { facingMode: { ideal: 'environment' } },
@@ -178,10 +222,18 @@ export default function ScanPage() {
       const name = (err as DOMException)?.name;
       setError(
         name === 'NotAllowedError'
-          ? 'Camera access was blocked. Allow the camera in your browser settings and try again.'
+          ? isInAppBrowser()
+            // Facebook's browser reports a refusal identically to a real one,
+            // so the advice has to differ by where you are, not by the error.
+            ? 'Facebook’s built-in browser blocks the camera. Tap the ⋯ menu and choose “Open in Safari”.'
+            : isIOS()
+              ? 'Camera access was blocked. Settings › Safari › Camera › Allow, then reload this page.'
+              : 'Camera access was blocked. Allow the camera in your browser settings and try again.'
           : name === 'NotFoundError'
             ? 'No camera was found on this device.'
-            : 'The camera could not be started.',
+            : name === 'NotReadableError'
+              ? 'Another app is using the camera. Close it and try again.'
+              : 'The camera could not be started.',
       );
       setPhase('error');
     }
