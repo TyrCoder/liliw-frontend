@@ -53,5 +53,16 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: 'Failed to confirm redemption' }, { status: 500 });
-  return NextResponse.json({ data });
+
+  // The guest's profile, exactly as the lookup above returns it.
+  //
+  // Without it the confirmation replaced a card naming the guest with one
+  // saying "Unknown", because the screen re-renders from this response — so
+  // the moment a staff member handed the reward over, the record of who they
+  // handed it to disappeared from view. The row was never wrong; the reply
+  // was just missing half of it.
+  const { data: profile } = await supabaseServer
+    .from('profiles').select('email, username').eq('id', data.user_id).maybeSingle();
+
+  return NextResponse.json({ data: { ...data, profile } });
 }
