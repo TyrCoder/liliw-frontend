@@ -33,11 +33,31 @@ export async function GET(req: NextRequest) {
   const start = new Date(now - days * 86_400_000);
   const prevStart = new Date(now - days * 2 * 86_400_000);
 
-  const { data, error } = await supabaseServer
-    .from('page_views')
-    .select('path, session_id, device, entity_type, entity_id, created_at')
-    .gte('created_at', prevStart.toISOString())
-    .order('created_at', { ascending: true });
+  // PostgREST caps a response at 1000 rows. Asked for ascending from the start
+  // of the *previous* window, that silently returned the oldest 1000 rows and
+  // nothing else: with 3,552 rows in range the totals came out at 854 instead
+  // of 1,651, and as the table grows the whole current window eventually falls
+  // outside the slice and the dashboard reports a site nobody visits. Paged
+  // through instead, with a ceiling so one query cannot pull an unbounded table
+  // into memory.
+  const PAGE = 1000;
+  const MAX_ROWS = 100_000;
+  let data: Row[] = [];
+  let error: { message: string } | null = null;
+
+  for (let from = 0; from < MAX_ROWS; from += PAGE) {
+    const res = await supabaseServer
+      .from('page_views')
+      .select('path, session_id, device, entity_type, entity_id, created_at')
+      .gte('created_at', prevStart.toISOString())
+      .order('created_at', { ascending: true })
+      .range(from, from + PAGE - 1);
+
+    if (res.error) { error = res.error; break; }
+    const batch = (res.data ?? []) as Row[];
+    data = data.concat(batch);
+    if (batch.length < PAGE) break;
+  }
 
   if (error) {
     // Almost always the migration not having been run. Say so rather than

@@ -922,7 +922,7 @@ export default function AdminDashboard() {
           different designs. What is left is what a header is actually for:
           where you are, who you are, and the way out. */}
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200/80">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+        <div className="h-14 px-4 sm:px-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link href="/"
               className="inline-flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-700 transition shrink-0">
@@ -955,8 +955,12 @@ export default function AdminDashboard() {
           weight and no grouping, so finding one meant reading all of them.
           A grouped rail matches the CMS and leaves the labels in one column
           where they can be scanned rather than hunted. */}
-      <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-6 py-6">
-        <aside className="lg:w-56 shrink-0 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+      {/* Full width, matching /cms. Capped at max-w-7xl the content sat in a
+          1280px column with the rail eating 224px of it, so the widest tables
+          — visitor records, audit logs — scrolled sideways while several
+          hundred pixels of page stayed empty either side. */}
+      <div className="flex flex-col lg:flex-row min-h-screen">
+        <aside className="lg:w-56 shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 px-3 py-4 lg:sticky lg:top-14 lg:self-start lg:h-[calc(100vh-3.5rem)] lg:overflow-y-auto">
           {/* Below lg the rail becomes a horizontal scroller rather than a
               tall stack that would push the content off the screen. */}
           <div className="flex lg:block gap-4 overflow-x-auto pb-2 lg:pb-0">
@@ -992,7 +996,7 @@ export default function AdminDashboard() {
           </div>
         </aside>
 
-        <div className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 p-4 sm:p-6">
 
         {/* ── OVERVIEW ───────────────────────────────────────── */}
         {/* Rebuilt as a role dashboard: see components/admin/dashboard.
@@ -3371,7 +3375,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        </div>
+        </main>
       </div>
 
       {/* ── LBO REGISTER MODAL ───────────────────────────── */}
