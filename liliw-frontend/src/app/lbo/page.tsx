@@ -554,7 +554,12 @@ export default function LboDashboard() {
 
         {/* ── OVERVIEW ── */}
         {activeTab === 'dashboard' && (
-          <LboOverview token={token} onGoToTab={(t) => setActiveTab(t as Tab)} />
+          <LboOverview token={token} onGoToTab={(t, anchor) => {
+            setActiveTab(t as Tab);
+            // The tab has to render before the target exists to scroll to.
+            if (anchor) requestAnimationFrame(() =>
+              document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+          }} />
         )}
 
         {activeTab === 'overview' && (
@@ -709,7 +714,7 @@ export default function LboDashboard() {
             {/* Printable check-in poster. Owners print this and display it at
                 the entrance; scanning it is what credits a visitor's visit. */}
             {attrData.attraction.id && (
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mt-6">
+              <div id="qr-poster" className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mt-6 scroll-mt-24">
                 <div className="px-6 py-5 border-b border-gray-100">
                   <h2 className="font-bold text-gray-900 flex items-center gap-2">
                     <QrCode className="w-4 h-4" style={{ color: '#1565C0' }} /> Your Check-In QR Poster
