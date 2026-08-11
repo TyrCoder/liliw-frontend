@@ -303,9 +303,11 @@ export default function ScanPage() {
                   the camera is looking. Clipped to the reticle so it scans the
                   area the code actually has to sit in. */}
               <div className="absolute inset-8 overflow-hidden rounded-2xl">
-                <div className="qr-sweep absolute inset-x-0 h-12"
+                {/* Full height on purpose — see the note on .qr-sweep. The
+                    bright bottom edge is the beam; the fade above it trails. */}
+                <div className="qr-sweep absolute inset-x-0 top-0 h-full"
                      style={{
-                       background: 'linear-gradient(to bottom, rgba(245,197,24,0) 0%, rgba(245,197,24,0.35) 70%, #F5C518 100%)',
+                       background: 'linear-gradient(to bottom, rgba(245,197,24,0) 55%, rgba(245,197,24,0.30) 88%, rgba(245,197,24,0.95) 100%)',
                      }} />
               </div>
             </div>

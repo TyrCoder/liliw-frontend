@@ -202,15 +202,24 @@ body {
   50%       { transform: rotate(16deg); }
 }
 
-/* QR scanner sweep — the line that travels down the reticle and back, so the
-   viewfinder reads as actively looking rather than decorated. */
+/* QR scanner sweep — the beam that travels down the reticle and back, so the
+   viewfinder reads as actively looking rather than decorated.
+ *
+ * The element is the full height of the reticle and carries a gradient that is
+ * transparent at the top and bright at its bottom edge; that edge is the beam,
+ * and the fade above it is its trail. Sliding the whole thing from fully above
+ * the frame to flush with it walks the beam from top to bottom.
+ *
+ * It is sized this way because a percentage translate resolves against the
+ * element's own height, not its container's. A short bar translated 100% moved
+ * only its own height — about a quarter of the way down the frame — which is
+ * what the first version did. */
 @keyframes qrSweep {
-  0%   { transform: translateY(-3rem); }
-  50%  { transform: translateY(100%); }
-  100% { transform: translateY(-3rem); }
+  0%   { transform: translateY(-100%); }
+  50%  { transform: translateY(0); }
+  100% { transform: translateY(-100%); }
 }
 .qr-sweep {
-  top: 0;
   animation: qrSweep 2.6s ease-in-out infinite;
   will-change: transform;
 }
