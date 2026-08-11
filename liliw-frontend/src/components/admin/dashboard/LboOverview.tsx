@@ -22,7 +22,8 @@ export default function LboOverview({
   token, onGoToTab,
 }: {
   token: string | null;
-  onGoToTab: (tab: string) => void;
+  /** The optional second argument scrolls to an element once the tab is on. */
+  onGoToTab: (tab: string, anchor?: string) => void;
 }) {
   const [d, setD] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -64,9 +65,12 @@ export default function LboOverview({
       )}
 
       <MetricGrid>
+        {/* At zero the count is not the useful thing to say — "print the
+            poster" is. An owner reading 0 confirmed on-site otherwise has no
+            way to know a poster is what produces that number. */}
         <Metric icon={<QrCode className="w-4 h-4" />} label="Visitor Check-ins"
           value={m.checkins ?? 0}
-          sub={`${m.verifiedCheckins ?? 0} confirmed on-site`}
+          sub={m.checkins ? `${m.verifiedCheckins ?? 0} confirmed on-site` : 'print your QR poster to start'}
           loading={loading} accent="#16A34A" />
         <Metric icon={<Star className="w-4 h-4" />} label="Rating"
           value={m.rating ?? '—'}
@@ -131,6 +135,9 @@ export default function LboOverview({
 
       <Panel title="Quick Actions" subtitle="The things owners do most">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4">
+          {/* First, because an owner with no poster on the wall gets no
+              check-ins, and this dashboard opens on a check-in count of 0. */}
+          <QuickAction icon={<QrCode className="w-4 h-4" />}   label="QR Poster"      onClick={() => onGoToTab('overview', 'qr-poster')} accent="#0B3D91" />
           <QuickAction icon={<Building2 className="w-4 h-4" />} label="Your Listing"    onClick={() => onGoToTab('overview')} accent="#F7941D" />
           <QuickAction icon={<Users className="w-4 h-4" />}     label="Visitor Records" onClick={() => onGoToTab('visitors')} accent="#16A34A" />
           <QuickAction icon={<Send className="w-4 h-4" />}      label="Request Change"  onClick={() => onGoToTab('requests')} accent="#2EC4D6" />
