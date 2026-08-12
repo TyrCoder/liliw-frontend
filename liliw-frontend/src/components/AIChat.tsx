@@ -267,7 +267,7 @@ export default function AIChat() {
               {/* Lilio's head rather than a map pin — the button is the only
                   place he appears before you open the chat, so it should look
                   like a guide you can talk to. */}
-              <LilioAvatar size={28} crop="head" ring />
+              <LilioAvatar size={32} crop="head" />
               <span className="text-sm font-bold" style={{ fontFamily: HL }}>Lilio</span>
             </div>
         }
@@ -288,7 +288,7 @@ export default function AIChat() {
             <div className="flex items-center justify-between px-5 py-4 text-white"
               style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)' }}>
               <div className="flex items-center gap-3">
-                <LilioAvatar size={38} crop="head" ring />
+                <LilioAvatar size={42} crop="head" />
                 <div>
                   <p className="font-extrabold text-base leading-tight" style={{ fontFamily: HL }}>Lilio</p>
                   <p className="text-xs opacity-75" style={{ fontFamily: BL }}>Your Liliw Travel Guide</p>
