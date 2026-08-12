@@ -130,8 +130,25 @@ export async function POST(request: NextRequest) {
   let unlockedAchievements: Awaited<ReturnType<typeof awardPoints>> = [];
   let awarded = false;
   if (source === 'qr') {
+    // The name is looked up, not taken from the caller.
+    //
+    // The scanner decodes an id off a poster and has no idea what the place is
+    // called, so it sends none — and the award fell through to the literal
+    // string 'Attraction'. That name is snapshotted onto the points row, which
+    // is what the passport stamp and the bell notification both read, so a
+    // real check-in announced itself as "Checked in at Attraction".
+    let name = attractionName;
+    if (!name) {
+      const { data: attr } = await supabaseServer
+        .from('cms_attractions')
+        .select('name')
+        .eq('id', cmsAttractionId(String(attractionId)))
+        .maybeSingle();
+      name = attr?.name ?? null;
+    }
+
     unlockedAchievements = await awardPoints(
-      auth.userId, 'attraction_visit', String(attractionId), attractionName || 'Attraction',
+      auth.userId, 'attraction_visit', String(attractionId), name || 'Attraction',
     ).catch(() => []);
     awarded = true;
   }
