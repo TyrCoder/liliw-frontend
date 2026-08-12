@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Send, X, Loader, MapPin, Star, Utensils, Landmark } from 'lucide-react';
+import LilioAvatar from '@/components/LilioAvatar';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logger } from '@/lib/logger';
@@ -205,7 +206,10 @@ export default function AIChat() {
         {isOpen
           ? <X size={22} />
           : <div className="flex items-center gap-2">
-              <MapPin size={18} />
+              {/* Lilio's head rather than a map pin — the button is the only
+                  place he appears before you open the chat, so it should look
+                  like a guide you can talk to. */}
+              <LilioAvatar size={28} crop="head" ring />
               <span className="text-sm font-bold" style={{ fontFamily: HL }}>Lilio</span>
             </div>
         }
@@ -226,10 +230,7 @@ export default function AIChat() {
             <div className="flex items-center justify-between px-5 py-4 text-white"
               style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)' }}>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(255,255,255,0.15)' }}>
-                  <MapPin size={18} />
-                </div>
+                <LilioAvatar size={38} crop="head" ring />
                 <div>
                   <p className="font-extrabold text-base leading-tight" style={{ fontFamily: HL }}>Lilio</p>
                   <p className="text-xs opacity-75" style={{ fontFamily: BL }}>Your Liliw Travel Guide</p>
@@ -245,8 +246,11 @@ export default function AIChat() {
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: '#F8FAFF' }}>
               {messages.map(msg => (
                 <motion.div key={msg.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`${msg.sender === 'user' ? 'max-w-[78%]' : 'max-w-[92%]'}`}>
+                  className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {/* Lilio beside what he says, so a long thread still reads as
+                      a conversation with someone rather than blocks of text. */}
+                  {msg.sender === 'bot' && <LilioAvatar size={26} crop="head" />}
+                  <div className={`${msg.sender === 'user' ? 'max-w-[78%]' : 'max-w-[86%]'}`}>
                     <div
                       className={`px-4 py-3 rounded-2xl shadow-sm ${
                         msg.sender === 'user'
@@ -274,7 +278,8 @@ export default function AIChat() {
               ))}
 
               {loading && (
-                <div className="flex justify-start">
+                <div className="flex items-end gap-2 justify-start">
+                  <LilioAvatar size={26} crop="head" />
                   <div className="bg-white border border-blue-100 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm flex items-center gap-2">
                     <Loader size={16} className="animate-spin" style={{ color: '#1565C0' }} />
                     <span className="text-xs text-gray-400" style={{ fontFamily: BL }}>Lilio is thinking…</span>
