@@ -15,12 +15,20 @@
 const SRC = '/images/lilio.png';
 
 /**
- * Where the head sits in the source image, as fractions of its width and
- * height. The artwork is a full-length standing figure on a square canvas, so
- * the head occupies roughly the top third and is centred a little right of the
- * middle — the character leans, and centring on the canvas would clip an ear.
+ * Where the head sits in the source image.
+ *
+ * Measured from the artwork rather than eyeballed: the figure occupies
+ * x 116-398, y 19-488 of the 512px square, which puts the head's centre at
+ * 50.2% / 18.4% and makes it 55% of the canvas wide. Filling the circle with
+ * it works out at about 1.67x — not the 2.6x first guessed, which would have
+ * zoomed past the hat into his face. Backed off to 1.45x with the origin a
+ * little lower, because a circular mask bites hardest at top centre and 1.67x
+ * left the crown of the hat sitting on the edge.
+ *
+ * Re-measure if the artwork is redrawn; a differently framed figure moves all
+ * three numbers.
  */
-const HEAD = { scale: 2.6, x: 52, y: 20 };
+const HEAD = { scale: 1.45, x: 50, y: 22 };
 
 export default function LilioAvatar({
   size = 36,
