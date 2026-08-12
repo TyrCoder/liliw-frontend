@@ -19,7 +19,7 @@ const BLUE = '#1565C0';
 const GOLD = '#F5C518';
 const CREAM = '#FBF7EC';
 
-// A5 at 150dpi — prints sharp, and the PNG stays a few hundred KB.
+// A4 at 150dpi — prints sharp, and the PNG stays a few hundred KB.
 const W = 1240;
 const H = 1754;
 
@@ -292,7 +292,7 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
       ctx.shadowColor = 'rgba(0,0,0,0.25)';
       ctx.shadowBlur = 18;
       ctx.shadowOffsetY = 6;
-      ctx.fillText('Scan to Check In', W / 2, 450);
+      ctx.fillText('Scan to Earn Points', W / 2, 450);
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
 
@@ -363,25 +363,46 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
       // Three steps
       const stepY = qy + size + 115;   // 1425 — inside the panel
       const steps = ['OPEN', 'SCAN', 'EARN'];
-      const subs = ['your camera', 'the QR code', 'points'];
+      const subs = ['the Liliw app', 'the QR code', 'points'];
       const colW = pWidth / 3;
+      // Each step is centred on its column by measuring it, not by nudging it.
+      //
+      // The circle sat at cx-78 and the text at cx-36 — fixed offsets that
+      // assumed every caption was the same width. "your camera" and "points"
+      // are not, so each group hung a different distance left of centre and
+      // the row read as crooked. Measuring the widest line in the group and
+      // centring circle-plus-text as one unit makes all three line up whatever
+      // the wording.
+      const R = 30, GAP = 16;
       steps.forEach((s, i) => {
         const cx = px + colW * i + colW / 2;
+
+        ctx.font = `bold 34px ${HEAD}`;
+        const labelW = ctx.measureText(s).width;
+        ctx.font = `26px ${BODY}`;
+        const subW = ctx.measureText(subs[i]).width;
+
+        const textW = Math.max(labelW, subW);
+        const groupW = R * 2 + GAP + textW;
+        const left = cx - groupW / 2;
+        const circleX = left + R;
+        const textX = left + R * 2 + GAP;
+
         ctx.beginPath();
-        ctx.arc(cx - 78, stepY - 10, 30, 0, Math.PI * 2);
+        ctx.arc(circleX, stepY - 10, R, 0, Math.PI * 2);
         ctx.fillStyle = BLUE;
         ctx.fill();
         ctx.fillStyle = '#FFFFFF';
         ctx.font = `bold 30px ${HEAD}`;
-        ctx.fillText(String(i + 1), cx - 78, stepY);
+        ctx.fillText(String(i + 1), circleX, stepY);
 
         ctx.textAlign = 'left';
         ctx.fillStyle = NAVY;
         ctx.font = `bold 34px ${HEAD}`;
-        ctx.fillText(s, cx - 36, stepY - 6);
+        ctx.fillText(s, textX, stepY - 6);
         ctx.fillStyle = '#64748B';
         ctx.font = `26px ${BODY}`;
-        ctx.fillText(subs[i], cx - 36, stepY + 28);
+        ctx.fillText(subs[i], textX, stepY + 28);
         ctx.textAlign = 'center';
 
         if (i < 2) {
@@ -398,8 +419,8 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
       const noteY = py + pHeight - 40; // 1500 — above the panel's bottom edge
       ctx.fillStyle = BLUE;
       ctx.font = `600 29px ${BODY}`;
-      ctx.fillText('Allow location so your visit counts as on-site.', W / 2, noteY);
-      const noteW = ctx.measureText('Allow location so your visit counts as on-site.').width;
+      ctx.fillText('Scan in the Liliw app and allow location, or it will not count.', W / 2, noteY);
+      const noteW = ctx.measureText('Scan in the Liliw app and allow location, or it will not count.').width;
       diamond(W / 2 - noteW / 2 - 28, noteY - 10, 7, 'rgba(21,101,192,0.45)');
       diamond(W / 2 + noteW / 2 + 28, noteY - 10, 7, 'rgba(21,101,192,0.45)');
 
@@ -477,11 +498,11 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
     setDlError('');
     try {
       const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       // JPEG at high quality rather than PNG: the poster is photographic-ish
       // flat colour, and an A5 PNG at this resolution makes a ~4MB file that
       // is slow to open on the shop's machine.
-      doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 148, 210, undefined, 'FAST');
+      doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
       doc.save(`${fileBase}-checkin-poster.pdf`);
     } catch (err) {
       console.error('QR poster PDF failed:', err);
@@ -504,7 +525,7 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
           style={{ backgroundColor: BLUE }}>
           {pdfBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-          Download PDF (A5)
+          Download PDF (A4)
         </button>
         <button onClick={downloadPng} disabled={busy}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition hover:bg-gray-50 disabled:opacity-50 border"
