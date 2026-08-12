@@ -126,12 +126,30 @@ export default function AIChat() {
     { id: '1', text: getRandomGreeting(), sender: 'bot', timestamp: new Date() },
   ]);
   const [input, setInput] = useState('');
+  const [showInvite, setShowInvite] = useState(false);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // localStorage rather than state: the point is that it stays dismissed on
+  // the next page and the next visit. Wrapped because Safari's private mode
+  // throws on access, and a greeting bubble is not worth breaking the chat for.
+  const INVITE_KEY = 'liliw-lilio-invite-seen';
+  const dismissInvite = () => {
+    setShowInvite(false);
+    try { localStorage.setItem(INVITE_KEY, '1'); } catch { /* nothing to do */ }
+  };
+
+  useEffect(() => {
+    let seen = false;
+    try { seen = localStorage.getItem(INVITE_KEY) === '1'; } catch { seen = false; }
+    if (seen) return;
+    const t = setTimeout(() => setShowInvite(true), 4000);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,13 +210,53 @@ export default function AIChat() {
 
   return (
     <>
+      {/* A word from Lilio before you have opened anything.
+          Shown once per browser: an invitation that reappears on every page
+          load stops being an invitation and becomes something to dismiss. It
+          also waits a few seconds, so it does not land on top of someone still
+          reading the page they just opened. */}
+      <AnimatePresence>
+        {showInvite && !isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.94 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.94 }}
+            transition={{ duration: 0.22 }}
+            className={`fixed bottom-24 z-40 max-w-[15rem] ${isMapPage ? 'right-24' : 'right-6'}`}
+          >
+            <button
+              onClick={() => { setIsOpen(true); dismissInvite(); }}
+              className="relative block text-left rounded-2xl rounded-br-sm bg-white shadow-xl px-4 py-3 pr-8 border hover:shadow-2xl transition-shadow"
+              style={{ borderColor: 'rgba(21,101,192,0.25)' }}
+            >
+              <p className="text-sm font-bold leading-snug" style={{ color: '#0B3D91', fontFamily: HL }}>
+                Kumusta! I&rsquo;m Lilio 👋
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5 leading-snug" style={{ fontFamily: BL }}>
+                Ask me anything about Liliw — where to eat, what to see, how to get around.
+              </p>
+            </button>
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label="Dismiss"
+              onClick={dismissInvite}
+              onKeyDown={e => { if (e.key === 'Enter') dismissInvite(); }}
+              className="absolute top-2 right-2 w-5 h-5 grid place-items-center rounded-full text-gray-300 hover:text-gray-600 hover:bg-gray-100 cursor-pointer"
+            >
+              <X size={12} />
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Floating button */}
       <motion.button
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.92 }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => { setIsOpen(!isOpen); dismissInvite(); }}
         className={`fixed bottom-6 z-40 rounded-full text-white shadow-xl transition-shadow hover:shadow-2xl ${isMapPage ? 'right-24' : 'right-6'}`}
         style={{ background: 'linear-gradient(135deg, #0B3D91, #1565C0)', padding: '14px 18px' }}
         title="Chat with Lilio"
