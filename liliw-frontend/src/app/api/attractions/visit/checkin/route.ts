@@ -146,6 +146,10 @@ export async function POST(request: NextRequest) {
     via: source,
     distanceMeters: distance,
     verified: source === 'qr',
+    // So the scanner can say how far off it was rather than just "not
+    // confirmed" — 17km and 160m are the same message otherwise, and only
+    // one of them means the visitor did anything wrong.
+    withinMeters: QR_PROXIMITY_METERS,
     awarded,
     unlockedAchievements,
   });

@@ -27,7 +27,40 @@ export function distanceMeters(
  * a large site (a farm, a church grounds) can be a hundred metres across, so
  * a tight radius would reject genuine visitors standing at the gate.
  */
-export const QR_PROXIMITY_METERS = 150;
+const DEFAULT_QR_PROXIMITY_METERS = 150;
+
+/**
+ * Overridable so the scan can be demonstrated away from the place itself —
+ * a defence room, a laptop at home — without editing an attraction's real
+ * coordinates to fake it.
+ *
+ * Deliberately noisy about it. This gates who earns points and a passport
+ * stamp, so a widened radius left on by accident quietly turns "I was there"
+ * into "I had the link". The value is logged at startup whenever it is not the
+ * default, and the check-in response reports the radius it judged against, so
+ * a loosened setting is visible rather than something you have to remember.
+ *
+ * Set QR_PROXIMITY_METERS in the environment; unset it to go back to 150.
+ */
+function resolveProximity(): number {
+  const raw = process.env.QR_PROXIMITY_METERS;
+  if (!raw) return DEFAULT_QR_PROXIMITY_METERS;
+
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) {
+    console.error(`[geo] QR_PROXIMITY_METERS="${raw}" is not a positive number — using ${DEFAULT_QR_PROXIMITY_METERS}m.`);
+    return DEFAULT_QR_PROXIMITY_METERS;
+  }
+  if (n !== DEFAULT_QR_PROXIMITY_METERS) {
+    console.warn(
+      `[geo] QR check-in radius is ${n}m, not the usual ${DEFAULT_QR_PROXIMITY_METERS}m. ` +
+      'Anyone within that distance can earn a visit — unset QR_PROXIMITY_METERS in production.',
+    );
+  }
+  return n;
+}
+
+export const QR_PROXIMITY_METERS = resolveProximity();
 
 /**
  * Validates a coordinate pair, returning it as a tuple or null. Returns the

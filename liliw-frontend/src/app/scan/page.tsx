@@ -88,7 +88,7 @@ export default function ScanPage() {
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
-  const [result, setResult] = useState<{ alreadyVisited: boolean; verified: boolean } | null>(null);
+  const [result, setResult] = useState<{ alreadyVisited: boolean; verified: boolean; distanceM: number | null; withinM: number | null } | null>(null);
 
   const stopCamera = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -145,6 +145,8 @@ export default function ScanPage() {
       setResult({
         alreadyVisited: !!d.alreadyVisited,
         verified: d.verified === true,
+        distanceM: typeof d.distanceMeters === 'number' ? d.distanceMeters : null,
+        withinM: typeof d.withinMeters === 'number' ? d.withinMeters : null,
       });
       setPhase('done');
 
@@ -364,7 +366,14 @@ export default function ScanPage() {
                       ? 'This place is already in your passport.'
                       : result.verified
                         ? 'Verified on-site. Taking you there…'
-                        : 'Recorded. Taking you there…'}
+                        // "Recorded" alone left someone at the gate and someone
+                        // at home reading the same sentence. The distance says
+                        // which of the two happened.
+                        : result.distanceM != null
+                          ? `You are about ${result.distanceM >= 1000
+                              ? `${(result.distanceM / 1000).toFixed(1)}km`
+                              : `${result.distanceM}m`} away — a stamp needs you within ${result.withinM ?? 150}m of the place.`
+                          : 'Recorded, but your location was not shared, so it is not stamped.'}
                   </p>
                 </div>
               )}
