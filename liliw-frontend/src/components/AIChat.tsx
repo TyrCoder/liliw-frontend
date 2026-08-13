@@ -175,6 +175,26 @@ export default function AIChat() {
   const [showInvite, setShowInvite] = useState(false);
   // Page focus: while on, every question is answered against the page.
   const [pageMode, setPageMode] = useState(false);
+  // Set while a drag is in progress so the click it ends with does not open
+  // the chat. A ref rather than state: it must be read inside the click
+  // handler in the same tick, and it should not cause a re-render.
+  const draggedRef = useRef(false);
+  // Keeps the button inside the window. Measured rather than guessed, and
+  // recalculated on resize — the numbers are offsets from where it already
+  // sits, which is 24px in from the bottom-right.
+  const [dragBounds, setDragBounds] = useState({ top: 0, left: 0, right: 0, bottom: 0 });
+
+  useEffect(() => {
+    const measure = () => setDragBounds({
+      top: -(window.innerHeight - 140),
+      left: -(window.innerWidth - 110),
+      right: 8,
+      bottom: 8,
+    });
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -316,13 +336,29 @@ export default function AIChat() {
         )}
       </AnimatePresence>
 
-      {/* Floating button */}
+      {/* Floating button.
+          Draggable, because it is fixed to the bottom-right and that is
+          exactly where a form's submit button, a cookie notice or the last
+          row of a table tends to be. Dragging is constrained to the viewport
+          so it cannot be thrown off-screen and lost. */}
       <motion.button
+        drag
+        dragMomentum={false}
+        dragElastic={0.06}
+        dragConstraints={dragBounds}
+        onDragStart={() => { draggedRef.current = false; }}
+        onDrag={() => { draggedRef.current = true; }}
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.92 }}
-        onClick={() => { setIsOpen(!isOpen); dismissInvite(); }}
+        // A drag ends in a click, so without this the chat opens every time
+        // the button is moved.
+        onClick={() => {
+          if (draggedRef.current) { draggedRef.current = false; return; }
+          setIsOpen(!isOpen);
+          dismissInvite();
+        }}
         // No `relative` here: `fixed` already establishes a containing block
         // for the absolutely positioned head and dot below. Adding both put
         // two position utilities on one element, and Tailwind emits `relative`
