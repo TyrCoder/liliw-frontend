@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Map, { Marker, Popup, NavigationControl, GeolocateControl, Source, Layer } from 'react-map-gl/mapbox';
+import type { GeolocateControl as MapboxGeolocateControl } from 'mapbox-gl';
 import type { MapRef } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -379,6 +380,12 @@ export default function MapPage() {
   const [routeDestination,  setRouteDestination]  = useState<MapAttraction | null>(null);
   const [travelMode,        setTravelMode]        = useState<TravelMode>('driving');
   const [userLocation,      setUserLocation]      = useState<{ lat: number; lng: number } | null>(null);
+  const [locationError,     setLocationError]     = useState<string | null>(null);
+  // Lets the legend's own button ask for a fix, rather than leaving the
+  // crosshair in the map corner as the only way in.
+  // The control forwards the underlying mapbox-gl instance, so that is the
+  // type the ref must carry; react-map-gl does not re-export one.
+  const geolocateRef = useRef<MapboxGeolocateControl>(null);
   const [markersReady,      setMarkersReady]      = useState(false);
   const [lilliwBoundary,    setLilliwBoundary]    = useState<GeoJSON.FeatureCollection | null>(null);
   const [stops,             setStops]             = useState<MapAttraction[]>([]);
@@ -595,8 +602,32 @@ export default function MapPage() {
             onLoad={handleMapLoad}>
 
             <NavigationControl position="bottom-right" />
-            <GeolocateControl position="bottom-right"
-              onGeolocate={e => setUserLocation({ lat: e.coords.latitude, lng: e.coords.longitude })} />
+            {/* Location.
+                trackUserLocation keeps the dot with you instead of dropping a
+                single pin and going quiet — on a phone, walking between two
+                spots was leaving the marker where you started. The heading
+                arrow is what makes "which way am I facing" answerable at all.
+                onError matters as much as the rest: a refused or unavailable
+                fix used to fail silently, so the hint below stayed up and the
+                map looked broken rather than un-permitted. */}
+            <GeolocateControl
+              ref={geolocateRef}
+              position="bottom-right"
+              positionOptions={{ enableHighAccuracy: true, timeout: 10_000 }}
+              trackUserLocation
+              showUserHeading
+              onGeolocate={e => {
+                setLocationError(null);
+                setUserLocation({ lat: e.coords.latitude, lng: e.coords.longitude });
+              }}
+              onError={err => {
+                setLocationError(
+                  err?.code === 1
+                    ? 'Location is blocked. Allow it for this site in your browser settings, then try again.'
+                    : 'Your location could not be found. Check that location services are on.',
+                );
+              }}
+            />
 
             {/* Liliw boundary */}
             {lilliwBoundary && (
@@ -741,8 +772,19 @@ export default function MapPage() {
                 <span className="text-white/70">{cfg.label}</span>
               </div>
             ))}
+            {/* Was a sentence telling you to do something with no way to do
+                it — the control that grants location is a small crosshair at
+                the far corner of the map. Now it is the button. */}
             {!userLocation && (
-              <p className="text-white/30 pt-1 border-t border-white/10 mt-1">Enable location for directions</p>
+              <button
+                onClick={() => { setLocationError(null); geolocateRef.current?.trigger(); }}
+                className="pt-1 border-t border-white/10 mt-1 w-full text-left text-white/70 hover:text-white transition-colors"
+              >
+                📍 Use my location for directions
+              </button>
+            )}
+            {locationError && (
+              <p className="pt-1 mt-1 max-w-[13rem] leading-snug" style={{ color: '#FCA5A5' }}>{locationError}</p>
             )}
           </motion.div>
         )}
