@@ -173,6 +173,8 @@ export default function AIChat() {
   ]);
   const [input, setInput] = useState('');
   const [showInvite, setShowInvite] = useState(false);
+  // Page focus: while on, every question is answered against the page.
+  const [pageMode, setPageMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -215,7 +217,7 @@ export default function AIChat() {
    * and the form can both use it. Previously the send path could only be
    * driven by whatever was typed, which is why a chip could not simply ask.
    */
-  const sendMessage = async (text: string, withPage = false) => {
+  const sendMessage = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
 
@@ -238,7 +240,7 @@ export default function AIChat() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed, history, pageContext: withPage ? readPage() : undefined }),
+        body: JSON.stringify({ message: trimmed, history, pageContext: pageMode ? readPage() : undefined }),
       });
 
       const data = await response.json();
@@ -394,6 +396,19 @@ export default function AIChat() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
+                {/* Page focus — a mode, not an action. Pressing it sends
+                    nothing; it means every question that follows is answered
+                    against what is on screen, until it is switched off. */}
+                <button
+                  onClick={() => setPageMode(v => !v)}
+                  title={pageMode ? 'Focused on this page — tap to stop' : 'Focus on this page'}
+                  aria-pressed={pageMode}
+                  aria-label="Focus on this page"
+                  className={`w-8 h-8 flex items-center justify-center rounded-full transition ${pageMode ? '' : 'hover:bg-white/20'}`}
+                  style={pageMode ? { backgroundColor: '#22C55E', color: '#06281A' } : undefined}
+                >
+                  <Eye size={17} strokeWidth={2.2} />
+                </button>
                 {/* Only offered once there is something to clear — on a fresh
                     thread it would do nothing visible and read as a broken
                     button. Starting over also brings the quick questions back,
@@ -487,27 +502,10 @@ export default function AIChat() {
                 type="text"
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                placeholder="Ask about Liliw…"
+                placeholder={pageMode ? "Ask about this page…" : "Ask about Liliw…"}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200 text-sm text-gray-800 placeholder-gray-400 transition"
                 style={{ fontFamily: BL }}
               />
-              {/* Read this page.
-                  Sends whatever the visitor is looking at along with the
-                  question, so "what is this?" and "is it open?" resolve
-                  against the page instead of against Liliw in general. Only
-                  offered where there is something to read — the chat itself is
-                  excluded, or it would summarise its own transcript. */}
-              <motion.button
-                type="button"
-                disabled={loading}
-                onClick={() => sendMessage('Tell me about this page in a sentence or two.', true)}
-                whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }}
-                title="Let Lilio read this page"
-                aria-label="Let Lilio read this page"
-                className="w-10 h-10 flex items-center justify-center rounded-xl border transition disabled:opacity-40 hover:bg-blue-50"
-                style={{ borderColor: 'rgba(21,101,192,0.3)', color: '#1565C0' }}>
-                <Eye size={17} strokeWidth={2.2} />
-              </motion.button>
               <motion.button type="submit" disabled={loading}
                 whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }}
                 className="w-10 h-10 flex items-center justify-center rounded-xl text-white shadow transition disabled:opacity-40"
