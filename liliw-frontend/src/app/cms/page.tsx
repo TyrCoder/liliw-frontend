@@ -20,6 +20,7 @@ import ItinerariesTab    from '@/components/admin/cms/ItinerariesTab';
 import CommunityEventsTab from '@/components/admin/cms/CommunityEventsTab';
 import ContentApprovalsTab from '@/components/admin/cms/ContentApprovalsTab';
 import CmsOverview from '@/components/admin/dashboard/CmsOverview';
+import DesktopOnly from '@/components/DesktopOnly';
 
 type CMSTab =
   | 'dashboard' | 'approvals' | 'attractions' | 'events' | 'news'
@@ -68,7 +69,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
   },
 ];
 
-export default function CMSPage() {
+function CMSPage() {
   const { user, loading, isAdmin, isChatoOfficer, isChatoEditor, isStaff, token } = useAuth();
   const router = useRouter();
 
@@ -218,5 +219,13 @@ export default function CMSPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function CMSPagePage() {
+  return (
+    <DesktopOnly>
+      <CMSPage />
+    </DesktopOnly>
   );
 }

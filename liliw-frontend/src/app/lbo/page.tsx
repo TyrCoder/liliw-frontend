@@ -13,6 +13,7 @@ import QRPoster from '@/components/QRPoster';
 import LboOverview from '@/components/admin/dashboard/LboOverview';
 import { stripHtml } from '@/lib/text';
 import SafeHtml from '@/components/SafeHtml';
+import DesktopOnly from '@/components/DesktopOnly';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -124,7 +125,7 @@ function fmt(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function LboDashboard() {
+function LboDashboard() {
   const { user, token, loading: authLoading } = useAuth();
 
   const [checking, setChecking] = useState(true);
@@ -1554,5 +1555,13 @@ export default function LboDashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function LboDashboardPage() {
+  return (
+    <DesktopOnly>
+      <LboDashboard />
+    </DesktopOnly>
   );
 }

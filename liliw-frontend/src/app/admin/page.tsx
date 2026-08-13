@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import ContactInbox, { type InboxMessage } from '@/components/admin/Inbox';
 import CommunityEventsManager from '@/components/admin/CommunityEventsManager';
 import * as XLSX from 'xlsx-js-style';
+import DesktopOnly from '@/components/DesktopOnly';
 
 /* ─── types ──────────────────────────────────────────────── */
 interface Submission { id: any; attributes: { name: string; email: string; phone: string; message: string; type: string; status: string; createdAt: string; handledBy?: string | null; handledAt?: string | null; replies?: { id: string; body: string; sentBy: string; sentAt: string; delivered: boolean; error: string | null }[] }; }
@@ -144,7 +145,7 @@ function TableWrap({ title, count, loading, empty, emptyIcon, children }: { titl
 }
 
 /* ─── page ───────────────────────────────────────────────── */
-export default function AdminDashboard() {
+function AdminDashboard() {
   const { user, loading, isAdmin, isChatoOfficer, isChatoEditor, isStaff, token } = useAuth();
   const router = useRouter();
 
@@ -3828,5 +3829,13 @@ export default function AdminDashboard() {
         onCancel={() => setConfirmBox(null)}
       />
     </div>
+  );
+}
+
+export default function AdminDashboardPage() {
+  return (
+    <DesktopOnly>
+      <AdminDashboard />
+    </DesktopOnly>
   );
 }
