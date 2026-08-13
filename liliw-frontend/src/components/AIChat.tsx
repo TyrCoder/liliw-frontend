@@ -282,16 +282,27 @@ export default function AIChat() {
             <span className="absolute inset-0 rounded-full overflow-hidden grid place-items-center">
               <LilioAvatar size={62} crop="head" />
             </span>
-            {/* Online dot. Lilio answers whenever the page is up, so this is a
-                statement about availability rather than decoration. */}
+            {/* His name rather than a status dot. A green dot claims he is
+                online, which says nothing useful — he answers whenever the
+                page loads. The name is what a first-time visitor actually
+                needs before deciding to tap a face. Sits on the bottom edge,
+                overlapping it, so it reads as a label on the avatar rather
+                than a separate element. */}
             <span
-              className="absolute rounded-full"
+              className="absolute left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 leading-none"
               style={{
-                width: 15, height: 15, right: 2, bottom: 2,
+                bottom: -7,
                 backgroundColor: '#22C55E',
-                boxShadow: '0 0 0 3px #0B1220',
+                color: '#06281A',
+                fontFamily: HL,
+                fontSize: 11,
+                fontWeight: 800,
+                letterSpacing: '0.02em',
+                boxShadow: '0 0 0 2.5px #0B1220',
               }}
-            />
+            >
+              Lilio
+            </span>
           </>
         )}
       </motion.button>
