@@ -132,7 +132,9 @@ export default function Navbar() {
   const [avatar,       setAvatar]       = useState<string | null>(null);
   const { user, token, logout, isAdmin, isChatoOfficer, isChatoEditor, isStaff, adminPanelRole } = useAuth();
   const pathname = usePathname();
-  // Phones and tablets only: the scanner needs a camera pointed at a poster.
+  // Drives two things: the scanner is offered only where there is a camera
+  // to point at a poster, and the staff dashboards are hidden where they
+  // cannot be used — see components/DesktopOnly.
   const handheld = useHandheld();
 
   // Scroll fires far more often than this state can meaningfully change, and
@@ -587,7 +589,7 @@ export default function Navbar() {
                             style={{ color: INK, fontFamily: BL }}>
                             <Settings className="w-4 h-4 text-blue-600" /> Edit Profile
                           </Link>
-                          {isStaff && (
+                          {isStaff && !handheld && (
                             <Link href="/admin" onClick={() => setUserMenuOpen(false)}
                               className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 transition border-t border-gray-100"
                               style={{ color: INK, fontFamily: BL }}>
@@ -595,7 +597,7 @@ export default function Navbar() {
                               {isAdmin ? 'Admin Dashboard' : isChatoOfficer ? 'Officer Dashboard' : 'Editor Dashboard'}
                             </Link>
                           )}
-                          {isLbo && (
+                          {isLbo && !handheld && (
                             <Link href="/lbo" onClick={() => setUserMenuOpen(false)}
                               className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 transition border-t border-gray-100"
                               style={{ color: INK, fontFamily: BL }}>
@@ -665,8 +667,8 @@ export default function Navbar() {
                       <NavLink href="/rewards" label="Rewards" icon={Trophy} variant="menu" active={isCurrent(pathname, "/rewards")} onClick={closeMenu} />
                     </>
                   )}
-                  {isStaff && <NavLink href="/admin" variant="menu" icon={LayoutDashboard} active={isCurrent(pathname, "/admin")} label={isAdmin ? "Admin Dashboard" : isChatoOfficer ? "Officer Dashboard" : "Editor Dashboard"} onClick={closeMenu} />}
-                  {isLbo && <NavLink href="/lbo" label="Business Dashboard" icon={Building2} variant="menu" active={isCurrent(pathname, "/lbo")} onClick={closeMenu} />}
+                  {isStaff && !handheld && <NavLink href="/admin" variant="menu" icon={LayoutDashboard} active={isCurrent(pathname, "/admin")} label={isAdmin ? "Admin Dashboard" : isChatoOfficer ? "Officer Dashboard" : "Editor Dashboard"} onClick={closeMenu} />}
+                  {isLbo && !handheld && <NavLink href="/lbo" label="Business Dashboard" icon={Building2} variant="menu" active={isCurrent(pathname, "/lbo")} onClick={closeMenu} />}
 
                   <button onClick={() => { setSearchOpen(true); closeMenu(); }}
                     className="flex items-center gap-2 px-4 py-3 rounded-full text-sm font-medium transition border w-full hover:bg-blue-50 hover:text-[#0F5FB5]"
