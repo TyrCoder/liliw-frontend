@@ -13,13 +13,19 @@
  * white of his eyes: those are the same colour, and what distinguishes them is
  * being enclosed by his outline rather than connected to the border.
  *
+ * The -v2 suffix is a cache buster, not a version scheme. The first upload
+ * had a white background; replacing the bytes at the same URL left browsers
+ * and the CDN serving the old opaque copy, so the head kept appearing inside
+ * a white disc long after the file was fixed. A new name is the only reliable
+ * way to retire a cached image.
+ *
  *   head — the drawn cut-out, for buttons and message bubbles
  *   full — the whole character, where there is room for him
  */
 
 const SRC = {
-  head: '/images/lilio-head.png',
-  full: '/images/lilio.png',
+  head: '/images/lilio-head-v2.png',
+  full: '/images/lilio-v2.png',
 };
 
 export default function LilioAvatar({
