@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { Send, X, Loader, MapPin, Star, Utensils, Landmark } from 'lucide-react';
+import { Send, X, Loader, MapPin, Star, Utensils, Landmark, MessageSquarePlus } from 'lucide-react';
 import LilioAvatar from '@/components/LilioAvatar';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -165,6 +165,19 @@ export default function AIChat() {
     const t = setTimeout(() => setShowInvite(true), 4000);
     return () => clearTimeout(t);
   }, []);
+
+  /**
+   * Clears the thread back to a fresh greeting.
+   *
+   * The history sent to the model is built from `messages`, so emptying it
+   * genuinely starts over rather than only hiding what came before — ask about
+   * food, start again, and Lilio is no longer answering in the context of
+   * restaurants.
+   */
+  const startNewChat = () => {
+    setMessages([{ id: String(Date.now()), text: getRandomGreeting(), sender: 'bot', timestamp: new Date() }]);
+    setInput('');
+  };
 
   /**
    * Takes the text rather than reading the input box, so a quick-reply chip
@@ -348,10 +361,22 @@ export default function AIChat() {
                   <p className="text-xs opacity-75" style={{ fontFamily: BL }}>Your Liliw Travel Guide</p>
                 </div>
               </div>
-              <button onClick={() => setIsOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full transition hover:bg-white/20">
-                <X size={16} />
-              </button>
+              <div className="flex items-center gap-1">
+                {/* Only offered once there is something to clear — on a fresh
+                    thread it would do nothing visible and read as a broken
+                    button. Starting over also brings the quick questions back,
+                    since the thread is a greeting again. */}
+                {messages.length > 1 && (
+                  <button onClick={startNewChat} title="Start a new chat" aria-label="Start a new chat"
+                    className="w-8 h-8 flex items-center justify-center rounded-full transition hover:bg-white/20">
+                    <MessageSquarePlus size={17} />
+                  </button>
+                )}
+                <button onClick={() => setIsOpen(false)} title="Close" aria-label="Close chat"
+                  className="w-8 h-8 flex items-center justify-center rounded-full transition hover:bg-white/20">
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             {/* Messages */}
