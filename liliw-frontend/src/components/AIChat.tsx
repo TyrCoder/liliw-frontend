@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { Send, X, Loader, MapPin, Star, Utensils, Landmark, MessageSquarePlus } from 'lucide-react';
+import { Send, X, Loader, MapPin, Star, Utensils, Landmark, MessageSquarePlus, Eye } from 'lucide-react';
 import LilioAvatar from '@/components/LilioAvatar';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,6 +47,37 @@ const QUICK_ASKS: { label: string; ask: string }[] = [
   { label: '🎉 Festivals',          ask: 'What festivals and events happen in Liliw?' },
   { label: '🚗 Getting here',       ask: 'How do I get to Liliw from Manila?' },
 ];
+
+/**
+ * Reads the page the visitor is on, so Lilio can answer about what is in front
+ * of them rather than about Liliw in general.
+ *
+ * Takes the main content where a page marks one, because otherwise the nav,
+ * the footer and the chat's own transcript come along and the useful part is
+ * buried. Everything is collapsed to plain text — the model gains nothing from
+ * markup, and it would eat the budget.
+ */
+function readPage(): { title: string; path: string; text: string } {
+  const main = document.querySelector('main') ?? document.body;
+
+  const clone = main.cloneNode(true) as HTMLElement;
+  // Strip what is furniture rather than content, plus the chat itself: without
+  // this the assistant reads its own replies back and answers those.
+  clone.querySelectorAll('script, style, nav, footer, [data-lilio-chat]').forEach(n => n.remove());
+
+  const text = (clone.textContent ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 2000);
+
+  const heading = document.querySelector('h1')?.textContent?.trim();
+
+  return {
+    title: heading || document.title || 'Liliw Tourism',
+    path: window.location.pathname,
+    text,
+  };
+}
 
 const getRandomGreeting = () => {
   const greetings = [
@@ -184,7 +215,7 @@ export default function AIChat() {
    * and the form can both use it. Previously the send path could only be
    * driven by whatever was typed, which is why a chip could not simply ask.
    */
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, withPage = false) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
 
@@ -207,7 +238,7 @@ export default function AIChat() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed, history }),
+        body: JSON.stringify({ message: trimmed, history, pageContext: withPage ? readPage() : undefined }),
       });
 
       const data = await response.json();
@@ -348,6 +379,7 @@ export default function AIChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ duration: 0.2 }}
+            data-lilio-chat
             className={`fixed bottom-24 z-40 w-96 max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl flex flex-col overflow-hidden ${isMapPage ? 'right-24' : 'right-6'}`}
             style={{ maxHeight: 600, border: '1.5px solid #1565C0', background: '#fff' }}
           >
@@ -459,6 +491,23 @@ export default function AIChat() {
                 className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200 text-sm text-gray-800 placeholder-gray-400 transition"
                 style={{ fontFamily: BL }}
               />
+              {/* Read this page.
+                  Sends whatever the visitor is looking at along with the
+                  question, so "what is this?" and "is it open?" resolve
+                  against the page instead of against Liliw in general. Only
+                  offered where there is something to read — the chat itself is
+                  excluded, or it would summarise its own transcript. */}
+              <motion.button
+                type="button"
+                disabled={loading}
+                onClick={() => sendMessage('Tell me about this page in a sentence or two.', true)}
+                whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }}
+                title="Let Lilio read this page"
+                aria-label="Let Lilio read this page"
+                className="w-10 h-10 flex items-center justify-center rounded-xl border transition disabled:opacity-40 hover:bg-blue-50"
+                style={{ borderColor: 'rgba(21,101,192,0.3)', color: '#1565C0' }}>
+                <Eye size={17} strokeWidth={2.2} />
+              </motion.button>
               <motion.button type="submit" disabled={loading}
                 whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }}
                 className="w-10 h-10 flex items-center justify-center rounded-xl text-white shadow transition disabled:opacity-40"
