@@ -257,20 +257,38 @@ export default function AIChat() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.92 }}
         onClick={() => { setIsOpen(!isOpen); dismissInvite(); }}
-        className={`fixed bottom-6 z-40 rounded-full text-white shadow-xl transition-shadow hover:shadow-2xl ${isMapPage ? 'right-24' : 'right-6'}`}
-        style={{ background: 'linear-gradient(135deg, #0B3D91, #1565C0)', padding: '14px 18px' }}
+        className={`fixed bottom-6 z-40 rounded-full text-white shadow-xl transition-shadow hover:shadow-2xl grid place-items-center relative ${isMapPage ? 'right-24' : 'right-6'}`}
+        style={{
+          width: 64, height: 64,
+          background: isOpen ? 'linear-gradient(135deg, #0B3D91, #1565C0)' : '#0B1220',
+          // The ring is the avatar's own edge rather than a border on the
+          // button, so the head can sit right against it without a gap.
+          boxShadow: isOpen
+            ? '0 10px 30px -10px rgba(11,61,145,0.7)'
+            : '0 0 0 3px #22C55E, 0 10px 30px -10px rgba(0,0,0,0.6)',
+        }}
         title="Chat with Lilio"
+        aria-label={isOpen ? 'Close chat' : 'Chat with Lilio'}
       >
-        {isOpen
-          ? <X size={22} />
-          : <div className="flex items-center gap-2">
-              {/* Lilio's head rather than a map pin — the button is the only
-                  place he appears before you open the chat, so it should look
-                  like a guide you can talk to. */}
-              <LilioAvatar size={32} crop="head" />
-              <span className="text-sm font-bold" style={{ fontFamily: HL }}>Lilio</span>
-            </div>
-        }
+        {isOpen ? <X size={24} /> : (
+          <>
+            {/* Slightly larger than the button so the head fills the disc the
+                way a profile picture does, with the overflow clipped. */}
+            <span className="absolute inset-0 rounded-full overflow-hidden grid place-items-center">
+              <LilioAvatar size={62} crop="head" />
+            </span>
+            {/* Online dot. Lilio answers whenever the page is up, so this is a
+                statement about availability rather than decoration. */}
+            <span
+              className="absolute rounded-full"
+              style={{
+                width: 15, height: 15, right: 2, bottom: 2,
+                backgroundColor: '#22C55E',
+                boxShadow: '0 0 0 3px #0B1220',
+              }}
+            />
+          </>
+        )}
       </motion.button>
 
       {/* Chat window */}
