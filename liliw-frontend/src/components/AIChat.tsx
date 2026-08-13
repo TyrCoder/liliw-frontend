@@ -33,6 +33,21 @@ const TYPE_META: Record<string, { label: string; color: string; Icon: any }> = {
   dining:   { label: 'Dining',  color: '#F97316', Icon: Utensils },
 };
 
+/**
+ * Openers for someone facing an empty box.
+ *
+ * Chosen to match what the town is actually known for and what the chat can
+ * answer from the CMS — slippers, the church, food, the festival — rather than
+ * generic prompts that would send Lilio hunting for content nobody has written.
+ */
+const QUICK_ASKS: { label: string; ask: string }[] = [
+  { label: '🥿 Tsinelas shopping', ask: 'Where can I buy tsinelas in Liliw?' },
+  { label: '🍽️ Where to eat',      ask: 'Where should I eat in Liliw?' },
+  { label: '⛪ Heritage sites',     ask: 'What heritage sites should I visit in Liliw?' },
+  { label: '🎉 Festivals',          ask: 'What festivals and events happen in Liliw?' },
+  { label: '🚗 Getting here',       ask: 'How do I get to Liliw from Manila?' },
+];
+
 const getRandomGreeting = () => {
   const greetings = [
     'Kumusta! Welcome to Liliw! I\'m Lilio, your tour guide. What brings you to our wonderful town?',
@@ -151,13 +166,18 @@ export default function AIChat() {
     return () => clearTimeout(t);
   }, []);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+  /**
+   * Takes the text rather than reading the input box, so a quick-reply chip
+   * and the form can both use it. Previously the send path could only be
+   * driven by whatever was typed, which is why a chip could not simply ask.
+   */
+  const sendMessage = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || loading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: input,
+      text: trimmed,
       sender: 'user',
       timestamp: new Date(),
     };
@@ -174,7 +194,7 @@ export default function AIChat() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, history }),
+        body: JSON.stringify({ message: trimmed, history }),
       });
 
       const data = await response.json();
@@ -381,8 +401,30 @@ export default function AIChat() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Quick questions.
+                Shown only while the thread is still just the greeting: they
+                exist to get someone past the blank box, and once a
+                conversation is going they would be answering a question
+                nobody asked. Each sends the full sentence rather than the
+                short label, because the model reads the message and "Food"
+                on its own is not a question. */}
+            {messages.length === 1 && !loading && (
+              <div className="px-4 pt-1 pb-2 flex flex-wrap gap-1.5 bg-white border-t border-blue-50">
+                {QUICK_ASKS.map(q => (
+                  <button
+                    key={q.label}
+                    onClick={() => sendMessage(q.ask)}
+                    className="px-3 py-1.5 rounded-full text-xs font-semibold border transition hover:bg-blue-50"
+                    style={{ borderColor: 'rgba(21,101,192,0.3)', color: '#1565C0', fontFamily: BL }}
+                  >
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Input */}
-            <form onSubmit={handleSendMessage}
+            <form onSubmit={e => { e.preventDefault(); sendMessage(input); }}
               className="px-4 py-3 border-t border-blue-100 bg-white flex gap-2 items-center">
               <input
                 type="text"
