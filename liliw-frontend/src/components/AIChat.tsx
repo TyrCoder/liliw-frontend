@@ -257,7 +257,12 @@ export default function AIChat() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.92 }}
         onClick={() => { setIsOpen(!isOpen); dismissInvite(); }}
-        className={`fixed bottom-6 z-40 rounded-full text-white shadow-xl transition-shadow hover:shadow-2xl grid place-items-center relative ${isMapPage ? 'right-24' : 'right-6'}`}
+        // No `relative` here: `fixed` already establishes a containing block
+        // for the absolutely positioned head and dot below. Adding both put
+        // two position utilities on one element, and Tailwind emits `relative`
+        // after `fixed`, so it won — the button stopped being pinned to the
+        // viewport and rendered inline at the end of the page, out of sight.
+        className={`fixed bottom-6 z-40 rounded-full text-white shadow-xl transition-shadow hover:shadow-2xl grid place-items-center ${isMapPage ? 'right-24' : 'right-6'}`}
         style={{
           width: 64, height: 64,
           background: isOpen ? 'linear-gradient(135deg, #0B3D91, #1565C0)' : '#0B1220',
