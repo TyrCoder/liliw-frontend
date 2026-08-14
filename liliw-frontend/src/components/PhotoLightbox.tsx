@@ -97,8 +97,8 @@ export default function PhotoLightbox({ photos, initial = 0, onClose }: Props) {
             transition={{ duration: 0.25 }}
             onClick={handleImgClick}
             style={{
-              maxWidth: '100vw',
-              maxHeight: '100vh',
+              maxWidth: '100dvw',
+              maxHeight: '100dvh',
               objectFit: 'contain',
               transform: zoomed ? `scale(2.5)` : 'scale(1)',
               transformOrigin: zoomed ? `${origin.x}% ${origin.y}%` : 'center center',

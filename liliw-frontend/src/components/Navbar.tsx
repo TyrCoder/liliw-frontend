@@ -645,7 +645,26 @@ export default function Navbar() {
                 className="xl:hidden mt-4 pt-4 border-t border-gray-100">
                 {/* Capped so a long menu — staff links, business dashboard —
                     scrolls on a short screen instead of running off it. */}
-                <div className="flex flex-col gap-1 max-h-[calc(100vh-9rem)] overflow-y-auto overscroll-contain pb-1">
+                <div className="flex flex-col gap-1 max-h-[calc(100dvh-9rem)] overflow-y-auto overscroll-contain pb-1">
+                  {/* Map and 3D Tour lead the menu.
+                      They used to sit under About, the whole Explore group,
+                      the profile actions and the staff links — far enough down
+                      a scrolling panel that on a phone the 3D tour looked like
+                      it was not in the navigation at all. They are the two
+                      things the site is for; they go first. */}
+                  <div className="flex gap-2.5 mb-2">
+                    <Link href="/map" onClick={closeMenu}
+                      className="flex-1 py-3 rounded-full font-semibold text-sm text-center text-white inline-flex items-center justify-center gap-1.5"
+                      style={{ backgroundColor: ROYAL, fontFamily: BL, boxShadow: '0 8px 20px -8px rgba(15,95,181,0.8)' }}>
+                      <MapPin className="w-3.5 h-3.5" strokeWidth={2} /> Map
+                    </Link>
+                    <Link href="/immersive" onClick={closeMenu}
+                      className="flex-1 py-3 rounded-full font-semibold text-sm text-center border inline-flex items-center justify-center gap-1.5"
+                      style={{ borderColor: 'rgba(15,95,181,0.35)', color: ROYAL, fontFamily: BL, backgroundColor: 'rgba(15,95,181,0.06)' }}>
+                      <Sparkles className="w-3.5 h-3.5" strokeWidth={2} /> 3D Tours
+                    </Link>
+                  </div>
+
                   <NavLink href="/about" label="About Liliw" icon={Info} variant="menu"
                     active={isCurrent(pathname, '/about')} onClick={closeMenu} />
                   <div className="pl-3 border-l-2 space-y-0.5 my-1" style={{ borderColor: ROYAL }}>
@@ -675,19 +694,6 @@ export default function Navbar() {
                     style={{ color: '#64748B', fontFamily: BL, borderColor: '#E2E8F0', backgroundColor: 'rgba(248,250,252,0.9)' }}>
                     <Search className="w-4 h-4" strokeWidth={1.9} /> Discover Liliw...
                   </button>
-
-                  <div className="flex gap-2.5 mt-2">
-                    <Link href="/map" onClick={closeMenu}
-                      className="flex-1 py-3 rounded-full font-semibold text-sm text-center text-white inline-flex items-center justify-center gap-1.5"
-                      style={{ backgroundColor: ROYAL, fontFamily: BL, boxShadow: '0 8px 20px -8px rgba(15,95,181,0.8)' }}>
-                      <MapPin className="w-3.5 h-3.5" strokeWidth={2} /> Map
-                    </Link>
-                    <Link href="/immersive" onClick={closeMenu}
-                      className="flex-1 py-3 rounded-full font-semibold text-sm text-center border inline-flex items-center justify-center gap-1.5"
-                      style={{ borderColor: 'rgba(15,95,181,0.35)', color: ROYAL, fontFamily: BL }}>
-                      <Sparkles className="w-3.5 h-3.5" strokeWidth={2} /> 3D Tour
-                    </Link>
-                  </div>
 
                   {!user && (
                     <button onClick={() => { setAuthModal('login'); closeMenu(); }}

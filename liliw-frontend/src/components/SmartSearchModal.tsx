@@ -104,7 +104,7 @@ export default function SmartSearchModal({ onClose }: Props) {
             exit={{ scale: 0.96, opacity: 0, y: -16 }} transition={{ duration: 0.18 }}
             onClick={e => e.stopPropagation()}
             className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
-            style={{ maxHeight: 'calc(100vh - 80px)' }}>
+            style={{ maxHeight: 'calc(100dvh - 80px)' }}>
 
             {/* Search input */}
             <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100">
@@ -124,7 +124,7 @@ export default function SmartSearchModal({ onClose }: Props) {
             </div>
 
             {/* Body */}
-            <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 80px - 56px - 40px)' }}>
+            <div className="overflow-y-auto" style={{ maxHeight: 'calc(100dvh - 80px - 56px - 40px)' }}>
 
               {/* Loading */}
               {loading && (

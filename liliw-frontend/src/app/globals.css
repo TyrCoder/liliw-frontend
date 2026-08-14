@@ -38,6 +38,22 @@ body {
   font-family: var(--font-body), 'Plus Jakarta Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* A long unbroken string — an email address, a pasted URL in a submitted
+     story — otherwise widens its container past a 360px screen and takes the
+     whole page sideways with it. */
+  overflow-wrap: break-word;
+}
+
+/* Media may never be wider than what holds it. A single oversized image from
+   the CMS is the usual cause of a page that scrolls sideways on a phone, and
+   it is not something a page author can be relied on to catch every time.
+   svg is deliberately excluded: icons carry their own width and capping them
+   squashes them inside narrow flex rows. */
+img,
+video,
+iframe,
+canvas {
+  max-width: 100%;
 }
 
 /* ── Font utilities ─────────────────────────── */
