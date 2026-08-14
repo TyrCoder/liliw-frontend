@@ -251,6 +251,7 @@ export default function Footer() {
             <span>&copy; {year} Municipality of Liliw, Laguna. All rights reserved.</span>
             <div className="flex items-center gap-5">
               <Link href="/faq" className="hover:text-white transition-colors">Help &amp; FAQ</Link>
+              <Link href="/terms" className="hover:text-white transition-colors">Terms &amp; Privacy</Link>
               <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
             </div>
           </div>
