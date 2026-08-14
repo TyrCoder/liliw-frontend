@@ -7,6 +7,7 @@ import {
   ShieldCheck, RefreshCw, User, Lock, AtSign,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import MarqueeHeader from '@/components/auth/MarqueeHeader';
 
 interface Props {
   defaultTab?: 'login' | 'register';
@@ -259,9 +260,12 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
     'reg-otp': `Verification code sent to ${email}`,
   };
 
+  // Deep blue with a gold hairline inset, picking up the header's ornament
+  // rather than being a plain blue slab under a decorated panel.
   const primaryBtn = {
     background: 'linear-gradient(135deg,#1565C0,#0B3D91)',
-    boxShadow: '0 6px 24px rgba(21,101,192,.35)',
+    boxShadow: '0 6px 24px rgba(21,101,192,.35), inset 0 0 0 1px rgba(245,197,24,.55)',
+    letterSpacing: '0.08em',
   };
   const canSubmit = captchaOk;
   const strength  = pwStrength(regPw);
@@ -284,46 +288,21 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
           style={{ scrollbarWidth: 'none' }}>
 
           {/* ── Header ── */}
-          <div className="relative overflow-hidden px-8 pt-10 pb-8"
-            style={{ background: 'linear-gradient(145deg,#0B3D91 0%,#1565C0 55%,#1976D2 100%)' }}>
+          <div className="relative">
+            <MarqueeHeader title={TITLE[view]} subtitle={SUB[view]} />
 
-            {/* Grid overlay */}
-            <div className="absolute inset-0 opacity-[0.06]" style={{
-              backgroundImage: 'repeating-linear-gradient(0deg,#fff 0,#fff 1px,transparent 1px,transparent 32px),repeating-linear-gradient(90deg,#fff 0,#fff 1px,transparent 1px,transparent 32px)',
-            }} />
-            {/* Glow orb */}
-            <div className="absolute -top-10 -right-10 w-52 h-52 rounded-full opacity-20"
-              style={{ background: 'radial-gradient(circle,#F5C518,transparent 70%)' }} />
-
-            {/* Close */}
-            <button onClick={onClose}
-              className="absolute top-4 right-4 p-2 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition z-10">
+            {/* Controls sit above the artwork, and take the dark ink of the
+                header rather than the white they used on the old blue panel. */}
+            <button onClick={onClose} aria-label="Close"
+              className="absolute top-3 right-3 p-2 rounded-full transition z-20 text-[#0B3D91]/45 hover:text-[#0B3D91] hover:bg-[#0B3D91]/10">
               <X className="w-4 h-4" />
             </button>
-
-            {/* Back */}
             {isSubView && (
-              <button onClick={() => reset(backView[view] as View)}
-                className="absolute top-4 left-4 p-2 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition z-10">
+              <button onClick={() => reset(backView[view] as View)} aria-label="Back"
+                className="absolute top-3 left-3 p-2 rounded-full transition z-20 text-[#0B3D91]/45 hover:text-[#0B3D91] hover:bg-[#0B3D91]/10">
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
-
-            <div className="relative z-10">
-              {/* Brand label */}
-              <p className="text-[10px] font-black tracking-[0.25em] uppercase mb-4"
-                style={{ color: '#F5C518', fontFamily: 'var(--font-heading), Outfit, sans-serif' }}>
-                Liliw Tourism
-              </p>
-              {/* Title */}
-              <h2 className="text-3xl font-black text-white leading-tight mb-1.5"
-                style={{ fontFamily: 'var(--font-display), "Cormorant Garamond", Georgia, serif' }}>
-                {TITLE[view]}
-              </h2>
-              <p className="text-white/55 text-sm" style={{ fontFamily: 'var(--font-body), "Plus Jakarta Sans", sans-serif' }}>
-                {SUB[view]}
-              </p>
-            </div>
           </div>
 
           {/* ── Context message ── */}
@@ -337,18 +316,34 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
 
           {/* ── Tabs ── */}
           {(view === 'login' || view === 'register') && (
-            <div className="flex border-b border-gray-100 mx-8 mt-6">
-              {(['login', 'register'] as const).map(t => (
-                <button key={t} onClick={() => reset(t)}
-                  className={`flex-1 pb-3 text-sm font-bold transition-all border-b-2 -mb-px ${
-                    view === t
-                      ? 'border-[#1565C0] text-[#1565C0]'
-                      : 'border-transparent text-gray-400 hover:text-gray-600'
-                  }`}>
-                  {t === 'login' ? 'Log In' : 'Register'}
-                </button>
-              ))}
+            <>
+            <div className="flex mx-8 mt-5">
+              {(['login', 'register'] as const).map(t => {
+                const on = view === t;
+                return (
+                  <button key={t} onClick={() => reset(t)} aria-selected={on} role="tab"
+                    className="flex-1 pb-2.5 text-sm font-black uppercase tracking-wider transition-colors relative"
+                    style={{
+                      color: on ? '#0B3D91' : '#94A3B8',
+                      fontFamily: 'var(--font-heading), Outfit, sans-serif',
+                    }}>
+                    {t === 'login' ? 'Log In' : 'Register'}
+                    {/* Gold under the active tab, with the same lozenge the
+                        header rule uses, so the two read as one system. */}
+                    {on && (
+                      <>
+                        <span className="absolute left-1/2 -translate-x-1/2 bottom-0 h-[3px] w-16 rounded-full"
+                          style={{ backgroundColor: '#F5C518' }} />
+                        <span className="absolute left-1/2 -translate-x-1/2 bottom-[-3px] rotate-45"
+                          style={{ width: 5, height: 5, backgroundColor: '#0B3D91' }} />
+                      </>
+                    )}
+                  </button>
+                );
+              })}
             </div>
+            <div className="mx-8 h-px" style={{ backgroundColor: '#E8EDF5' }} />
+            </>
           )}
 
           {/* ── Body ── */}
