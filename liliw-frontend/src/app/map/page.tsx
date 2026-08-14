@@ -197,7 +197,7 @@ function RouteOverlay({
           className="absolute top-4 left-4 z-20 w-72 max-w-[calc(100vw-2rem)]"
         >
           <div className="rounded-2xl shadow-2xl"
-            style={{ backgroundColor: 'rgba(11,61,145,0.97)', border: '1px solid rgba(245,197,24,0.35)', backdropFilter: 'blur(14px)', maxHeight: 'calc(100vh - 7rem)', overflowY: 'auto', overflowX: 'hidden' }}>
+            style={{ backgroundColor: 'rgba(11,61,145,0.97)', border: '1px solid rgba(245,197,24,0.35)', backdropFilter: 'blur(14px)', maxHeight: 'calc(100dvh - 7rem)', overflowY: 'auto', overflowX: 'hidden' }}>
 
             {/* Loading */}
             {routeLoading && (
@@ -547,7 +547,7 @@ export default function MapPage() {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 65px)', backgroundColor: '#1565C0' }}>
+    <div className="flex flex-col" style={{ height: 'calc(100dvh - 65px)', backgroundColor: '#1565C0' }}>
 
       {/* Top bar */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b shrink-0"
