@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prebuild": "node scripts/stamp-sw.mjs"
   },
   "dependencies": {
     "@mapbox/mapbox-gl-draw": "^1.5.1",
