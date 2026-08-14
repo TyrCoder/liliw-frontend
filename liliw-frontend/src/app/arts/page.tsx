@@ -7,6 +7,7 @@ import { Star, MapPin, Phone, ExternalLink, Search, ChevronLeft, ChevronRight, X
 import PhotoLightbox from '@/components/PhotoLightbox';
 import SafeHtml from '@/components/SafeHtml';
 import { stripHtml } from '@/lib/text';
+import PageBanner from '@/components/liliw/PageBanner';
 
 const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || '';
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -218,22 +219,11 @@ export default function ArtsPage() {
   return (
     <div className="min-h-screen bg-white">
 
-      {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
-        <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
-          <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-            <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
-              <Bunting />
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>
-                Arts &amp; Creatives
-              </h1>
-              <Bunting flip />
-            </div>
-            <p className="text-center text-white/70 text-base mt-2" style={{ fontFamily: BL }}>From tsinelas craftsmanship to contemporary Filipino art — Liliw&apos;s creative soul</p>
-          </motion.div>
-        </div>
-      </div>
-      <WaveDown from="#1565C0" to="#ffffff" />
+      <PageBanner
+        title="Arts & Creatives"
+        subtitle="From tsinelas craftsmanship to contemporary Filipino art — Liliw's creative soul"
+        backHref={null}
+      />
 
       {/* Art Forms */}
       <div className="max-w-6xl mx-auto px-4 py-12">

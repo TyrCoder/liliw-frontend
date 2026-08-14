@@ -38,30 +38,37 @@ export function Marquee({
     ...Array.from({ length: 6 }, (_, i) => `${i + 1}px ${i + 1}px 0 ${side}`),
     `7px 7px 0 ${tone === 'dark' ? 'rgba(4,20,50,0.7)' : 'rgba(11,61,145,0.55)'}`,
     tone === 'dark' ? '0 16px 26px rgba(3,15,40,0.5)' : '0 14px 22px rgba(11,61,145,0.28)',
+    // A lit sign spills a little light onto what is behind it. Only on the
+    // blue, where there is a night scene for it to fall on.
+    ...(tone === 'dark' ? ['0 0 34px rgba(245,197,24,0.30)'] : []),
   ].join(', ');
 
   return (
     <span className="relative inline-block">
-      {/* The letter face.
+      {/* The letter face: a plain gold fill, nothing clever.
        *
-       * No -webkit-text-stroke here. It was 1.5px of navy drawn on a glyph
-       * whose fill is transparent (the gradient arrives via background-clip),
-       * so at heading weight the stroke was most of the letter and the words
-       * came out dark with dots — unreadable on the blue banner. The extrusion
-       * below already gives the edge the stroke was there for.
-       *
-       * `color` is set as well as the gradient: where background-clip: text is
-       * unsupported, a transparent fill would leave the headline invisible
-       * rather than merely flat. */}
+       * It used to be a gradient delivered by background-clip: text over a
+       * transparent fill, which meant that wherever that clip did not paint,
+       * the words vanished and all that remained was the extrusion behind them
+       * — dark letter-shapes on dark blue. The banner rendered exactly that.
+       * The base colour must not depend on it. */}
+      <span className="relative block" style={{ color: GOLD, textShadow: extrusion }}>
+        {children}
+      </span>
+
+      {/* Shading, as an enhancement only. Bright along the top of the letter,
+          deeper at the base, the way a lit sign falls off. If background-clip
+          fails here nothing is lost — the solid gold underneath still reads. */}
       <span
-        className="relative block"
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
         style={{
-          color: GOLD,
-          backgroundImage: `linear-gradient(180deg, #FFF6D0 0%, ${GOLD} 46%, ${GOLD_DEEP} 100%)`,
+          backgroundImage:
+            'linear-gradient(180deg, rgba(255,250,225,0.85) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0) 62%, rgba(120,80,0,0.28) 100%)',
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
-          textShadow: extrusion,
+          color: 'transparent',
         }}
       >
         {children}
