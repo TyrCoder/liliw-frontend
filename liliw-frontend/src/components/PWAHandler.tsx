@@ -27,33 +27,52 @@ export default function PWAHandler() {
 
     // ── Register service worker ───────────────────────────────────────────
     if ('serviceWorker' in navigator) {
+      const offerReload = (reg: ServiceWorkerRegistration) =>
+        toast('A new version is available.', {
+          id: 'sw-update',
+          duration: Infinity,
+          action: {
+            label: 'Reload',
+            onClick: () => {
+              // The reload comes from the controllerchange handler below, once
+              // the new worker is actually in charge. Reloading here as well
+              // raced it and could land back on the old version.
+              reg.waiting?.postMessage({ type: 'SKIP_WAITING' });
+            },
+          },
+        });
+
       navigator.serviceWorker
         .register('/sw.js', { scope: '/' })
         .then((reg) => {
-          // Watch for updates
+          // A worker may already be waiting from a previous visit where the
+          // reload was never taken. Without this it sits there indefinitely
+          // and the site stays on the old build with nothing on screen to say
+          // so — which is what "still outdated" looked like.
+          if (reg.waiting && navigator.serviceWorker.controller) offerReload(reg);
+
+          // Check for a new deploy on every load, not only when the browser
+          // decides to. This is cheap: one conditional request for sw.js.
+          reg.update().catch(() => {});
+
           reg.addEventListener('updatefound', () => {
             const next = reg.installing;
             if (!next) return;
             next.addEventListener('statechange', () => {
               if (next.state === 'installed' && navigator.serviceWorker.controller) {
-                toast('A new version is available.', {
-                  duration: Infinity,
-                  action: {
-                    label: 'Reload',
-                    onClick: () => {
-                      reg.waiting?.postMessage({ type: 'SKIP_WAITING' });
-                      window.location.reload();
-                    },
-                  },
-                });
+                offerReload(reg);
               }
             });
           });
         })
         .catch(() => {});
 
-      // Handle SW skip-waiting from another tab
+      // Reload once the new worker takes control — whether that was triggered
+      // here or in another tab. Guarded because Chrome can fire this twice.
+      let reloading = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloading) return;
+        reloading = true;
         window.location.reload();
       });
     }

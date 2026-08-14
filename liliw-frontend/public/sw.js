@@ -1,17 +1,34 @@
-const CACHE_NAME  = 'liliw-v6';
-const API_CACHE   = 'liliw-api-v2';
-const IMAGE_CACHE = 'liliw-img-v2';
+/**
+ * Liliw Tourism service worker.
+ *
+ * BUILD is rewritten by scripts/stamp-sw.mjs before every production build.
+ * That matters more than anything else in this file: a service worker is only
+ * reinstalled when its own bytes change, so while this was a fixed string the
+ * worker installed once and never again. Every visitor kept serving pages
+ * precached on the day they first opened the site — which is exactly the
+ * "offline mode is out of date" people were seeing. The stamp forces a new
+ * install per deploy, and the cache names carry it so the old shell is dropped
+ * rather than accumulating.
+ */
+const BUILD = 'dev';
 
-const IMAGE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;  // 7 days
+const CACHE_NAME = `liliw-shell-${BUILD}`;
+const API_CACHE  = `liliw-api-${BUILD}`;
+// Images are addressed by URL and a given URL never changes content, so they
+// survive a deploy. Re-downloading every panorama on each release would be a
+// slow, expensive way to gain nothing.
+const IMAGE_CACHE = 'liliw-img-v3';
+
+const IMAGE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;  // 30 days
 const API_MAX_AGE   = 5 * 60 * 1000;             // 5 minutes
 
-// Pages to pre-cache on install
+// Every page a visitor can reach, precached on install.
 const PRECACHE_URLS = [
   '/',
-  '/about', '/arts', '/attractions', '/business', '/community',
-  '/contact', '/culture', '/dining', '/faq', '/gallery',
-  '/heritage', '/itineraries', '/lbo', '/news', '/participate',
-  '/profile', '/stories', '/tourist-spots',
+  '/about', '/arts', '/attractions', '/business/apply', '/community',
+  '/contact', '/culture', '/dining', '/faq', '/gallery', '/heritage',
+  '/immersive', '/itineraries', '/news', '/participate', '/profile',
+  '/rewards', '/scan', '/stories', '/terms', '/tourist-spots',
   '/offline.html',
 ];
 
@@ -29,26 +46,41 @@ const PRECACHE_ASSETS = [
   '/images/gat/arm-free.png',
   '/images/gat/arm-staff.png',
   '/images/liliw-dog.png',
+  '/images/lilio-head.png',
+  '/images/login-banner.webp',
   '/manifest.json',
 ];
 
-// Strapi API routes to cache with stale-while-revalidate
+/**
+ * Content endpoints, cached stale-while-revalidate.
+ *
+ * These used to be /api/strapi/*, which stopped existing when Strapi was
+ * removed. Nothing matched, so no content was ever cached and an offline visit
+ * showed pages with empty lists.
+ */
 const CACHEABLE_API = [
-  '/api/strapi/hero-slides',
-  '/api/strapi/events',
-  '/api/strapi/news-events',
-  '/api/strapi/arts',
-  '/api/strapi/culture-aspects',
-  '/api/strapi/stories',
-  '/api/strapi/attractions',
-  '/api/strapi/faqs',
-  '/api/strapi/gallery',
-  '/api/strapi/itineraries',
-  '/api/strapi/culture-heritages',
+  '/api/content/attractions',
+  '/api/content/news-events',
+  '/api/content/events',
+  '/api/content/stories',
+  '/api/content/arts',
+  '/api/content/culture-heritages',
+  '/api/content/faqs',
+  '/api/content/gallery',
+  '/api/content/itineraries',
+  '/api/content/community-events',
+  '/api/content/participation-options',
+  '/api/content/reviews',
 ];
 
-// Pages that require live network — show offline message when offline
-const NETWORK_ONLY_PATHS = ['/map', '/immersive'];
+/**
+ * The map is the one page that genuinely cannot work offline: it is map tiles
+ * streamed from Mapbox, and there is no version of it to show without them.
+ * The 3D tours are no longer on this list — the attraction data is cached
+ * above and panoramas already seen are in the image cache, so a tour that has
+ * been opened once opens again with no connection.
+ */
+const NETWORK_ONLY_PATHS = ['/map'];
 
 function isCacheableApi(pathname) {
   return CACHEABLE_API.some((p) => pathname.startsWith(p));
@@ -70,12 +102,17 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
       Promise.allSettled([
-        ...PRECACHE_URLS.map((url) => cache.add(url).catch(() => {})),
-        ...PRECACHE_ASSETS.map((url) => cache.add(url).catch(() => {})),
+        // `cache: 'reload'` so the precache is filled from the network rather
+        // than from the browser's own HTTP cache, which is how a fresh install
+        // can still end up storing the previous deploy's HTML.
+        ...PRECACHE_URLS.map((url) => cache.add(new Request(url, { cache: 'reload' })).catch(() => {})),
+        ...PRECACHE_ASSETS.map((url) => cache.add(new Request(url, { cache: 'reload' })).catch(() => {})),
       ])
     )
   );
-  self.skipWaiting();
+  // No skipWaiting here on purpose. It made the new worker take over mid-visit
+  // and the controllerchange handler then reloaded the page under the reader.
+  // The app offers a Reload action instead, and that is what posts SKIP_WAITING.
 });
 
 // ── Activate ──────────────────────────────────────────────────────────────────
@@ -97,7 +134,7 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   if (!url.protocol.startsWith('http')) return;
 
-  // ── Map + Virtual Tour: network-only with offline fallback page ───────────
+  // ── Map: network-only with an offline explanation ─────────────────────────
   if (request.mode === 'navigate' && isNetworkOnly(url.pathname)) {
     event.respondWith(
       fetch(request).catch(() =>
@@ -107,7 +144,7 @@ self.addEventListener('fetch', (event) => {
           <title>Liliw — Offline</title>
           <style>
             *{box-sizing:border-box;margin:0;padding:0}
-            body{font-family:system-ui,sans-serif;min-height:100vh;display:flex;
+            body{font-family:system-ui,sans-serif;min-height:100dvh;display:flex;
                  align-items:center;justify-content:center;background:#F9F6F0;padding:24px}
             .card{background:#fff;border-radius:20px;padding:48px 32px;max-width:400px;
                   width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.08)}
@@ -119,7 +156,7 @@ self.addEventListener('fetch', (event) => {
           <body><div class="card">
             <p style="font-size:48px;margin-bottom:16px">🗺️</p>
             <h1>Requires Internet</h1>
-            <p>The map and virtual tours need an active internet connection to load.</p>
+            <p>The map streams its tiles as you move, so it needs a connection. The 3D tours you have already opened still work offline.</p>
             <a href="/">Go Back</a>
           </div></body></html>`,
           { headers: { 'Content-Type': 'text/html' } }
@@ -129,7 +166,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ── Strapi API: stale-while-revalidate ────────────────────────────────────
+  // ── Content API: stale-while-revalidate ───────────────────────────────────
   if (isCacheableApi(url.pathname)) {
     event.respondWith(
       caches.open(API_CACHE).then(async (cache) => {
@@ -185,7 +222,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ── Images (Cloudinary + local): cache-first, 7-day expiry ───────────────
+  // ── Images (Cloudinary + local): cache-first, 30-day expiry ──────────────
   if (url.hostname.includes('cloudinary.com') || request.destination === 'image') {
     event.respondWith(
       caches.open(IMAGE_CACHE).then(async (cache) => {
@@ -267,7 +304,7 @@ self.addEventListener('fetch', (event) => {
             <title>Liliw Tourism — Offline</title>
             <style>
               *{box-sizing:border-box;margin:0;padding:0}
-              body{font-family:system-ui,sans-serif;min-height:100vh;display:flex;
+              body{font-family:system-ui,sans-serif;min-height:100dvh;display:flex;
                    align-items:center;justify-content:center;background:#F9F6F0;padding:24px}
               .card{background:#fff;border-radius:20px;padding:48px 32px;max-width:400px;
                     width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.08)}
