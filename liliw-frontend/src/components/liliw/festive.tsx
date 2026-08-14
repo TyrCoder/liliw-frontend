@@ -42,31 +42,44 @@ export function Marquee({
 
   return (
     <span className="relative inline-block">
+      {/* The letter face.
+       *
+       * No -webkit-text-stroke here. It was 1.5px of navy drawn on a glyph
+       * whose fill is transparent (the gradient arrives via background-clip),
+       * so at heading weight the stroke was most of the letter and the words
+       * came out dark with dots — unreadable on the blue banner. The extrusion
+       * below already gives the edge the stroke was there for.
+       *
+       * `color` is set as well as the gradient: where background-clip: text is
+       * unsupported, a transparent fill would leave the headline invisible
+       * rather than merely flat. */}
       <span
         className="relative block"
         style={{
-          backgroundImage: `linear-gradient(180deg, #FFF3C4 0%, ${GOLD} 42%, ${GOLD_DEEP} 100%)`,
+          color: GOLD,
+          backgroundImage: `linear-gradient(180deg, #FFF6D0 0%, ${GOLD} 46%, ${GOLD_DEEP} 100%)`,
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',
-          color: 'transparent',
+          WebkitTextFillColor: 'transparent',
           textShadow: extrusion,
-          WebkitTextStroke: `1.5px ${side}`,
-          paintOrder: 'stroke fill',
         }}
       >
         {children}
       </span>
 
+      {/* Lamps, clipped to the letterforms. Dimmer than the face so they read
+          as bulbs set into gold rather than holes punched through it. */}
       <span
         aria-hidden
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage:
-            'radial-gradient(circle at center, #FFFBE8 0 1.6px, rgba(255,246,200,0.55) 2.1px, transparent 2.6px)',
-          backgroundSize: '13px 13px',
-          backgroundPosition: '3px 3px',
+            'radial-gradient(circle at center, rgba(255,252,232,0.95) 0 1.5px, rgba(255,244,190,0.45) 2px, transparent 2.5px)',
+          backgroundSize: '14px 14px',
+          backgroundPosition: '4px 4px',
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
           color: 'transparent',
         }}
       >
