@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Users, Heart } from 'lucide-react';
+import PageBanner from '@/components/liliw/PageBanner';
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -47,22 +48,10 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
 
-      {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
-        <div className="max-w-6xl mx-auto px-4 py-14">
-          <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-            <Link href="/" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>
-              <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to Home
-            </Link>
-            <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
-              <Bunting />
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>About Liliw</h1>
-              <Bunting flip />
-            </div>
-            <p className="text-white/70 text-sm sm:text-base text-center" style={{ fontFamily: BL }}>Discover the beauty, history, and heritage of Liliw, Laguna</p>
-          </motion.div>
-        </div>
-      </div>
+      <PageBanner
+        title="About Liliw"
+        subtitle="Discover the beauty, history, and heritage of Liliw, Laguna"
+      />
 
       <div className="max-w-4xl mx-auto px-4 py-16">
         <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="space-y-16">

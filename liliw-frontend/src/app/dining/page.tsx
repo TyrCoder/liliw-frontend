@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MapPin, Star, Utensils } from 'lucide-react';
 import FavoriteButton from '@/components/FavoriteButton';
+import PageBanner from '@/components/liliw/PageBanner';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -77,24 +78,11 @@ export default function DiningPage() {
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
 
-      {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }}>
-        <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
-          <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-            <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
-              <Bunting />
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>
-                Dining &amp; Food
-              </h1>
-              <Bunting flip />
-            </div>
-            <p className="text-center text-white/70 text-base mt-2" style={{ fontFamily: BL }}>
-              Taste the local flavors and culinary gems of Liliw, Laguna
-            </p>
-          </motion.div>
-        </div>
-      </div>
-      <WaveDown from="#1565C0" to="#ffffff" />
+      <PageBanner
+        title="Dining & Food"
+        subtitle="Taste the local flavors and culinary gems of Liliw, Laguna"
+        backHref={null}
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-20">
         {loading && (

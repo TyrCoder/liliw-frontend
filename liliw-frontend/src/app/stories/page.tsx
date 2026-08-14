@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, User, Play } from 'lucide-react';
 import GatTayaw from '@/components/GatTayaw';
 import DogMascot from '@/components/DogMascot';
+import PageBanner from '@/components/liliw/PageBanner';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -116,24 +117,11 @@ export default function StoriesPage() {
   return (
     <div className="min-h-screen bg-white" suppressHydrationWarning>
 
-      {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
-        <div className="max-w-6xl mx-auto px-4 pt-14 pb-4">
-          <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-            <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
-              <Bunting />
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>
-                Stories of Liliw
-              </h1>
-              <Bunting flip />
-            </div>
-            <p className="text-center text-white/70 text-base mt-2" style={{ fontFamily: BL }}>
-              Narratives, history, and the people that make Liliw alive
-            </p>
-          </motion.div>
-        </div>
-      </div>
-      <WaveDown from="#1565C0" to="#ffffff" />
+      <PageBanner
+        title="Stories of Liliw"
+        subtitle="Narratives, history, and the people that make Liliw alive"
+        backHref={null}
+      />
 
       <div className="max-w-7xl mx-auto px-4 py-8 pb-24">
 
