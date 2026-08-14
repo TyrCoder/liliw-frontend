@@ -492,6 +492,16 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                 <p className="text-center text-xs text-gray-400">
                   A 6-digit code will be sent to verify your email.
                 </p>
+                {/* Consent has to be visible where it is given, not only in the
+                    footer. Registering is the point at which personal
+                    information is first collected. */}
+                <p className="text-center text-xs text-gray-400 leading-relaxed">
+                  By creating an account you agree to the{' '}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer"
+                    className="font-semibold underline underline-offset-2 hover:text-gray-600">
+                    Terms &amp; Privacy Notice
+                  </a>.
+                </p>
               </form>
             )}
 
