@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
+import PageBanner from '@/components/liliw/PageBanner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar, Bell, X, MapPin, Maximize2, CheckCircle, Loader2, PlayCircle } from 'lucide-react';
 import PhotoLightbox from '@/components/PhotoLightbox';
@@ -12,35 +13,6 @@ import { stripHtml } from '@/lib/text';
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
-
-const PENNANT = ['#EF4444','#F97316','#EAB308','#22C55E','#0D9488','#3B82F6','#8B5CF6'];
-function Bunting({ flip = false }: { flip?: boolean }) {
-  const r = 14, panels = 8, arc = Math.PI * 2 / panels, spacing = 30;
-  const W = r + (PENNANT.length - 1) * spacing + r;
-  const cy = r;
-  return (
-    <svg width={W} height={r * 2} viewBox={`0 0 ${W} ${r * 2}`} className="hidden sm:inline-block" style={{ transform: flip ? 'scaleX(-1)' : undefined, verticalAlign: 'middle' }}>
-      <line x1="0" y1={cy} x2={W} y2={cy} stroke="#9CA3AF" strokeWidth="1.2" />
-      {PENNANT.map((color, idx) => {
-        const cx = r + idx * spacing;
-        return (
-          <g key={idx}>
-            {Array.from({ length: panels }).map((_, i) => {
-              const a1 = -Math.PI / 2 + i * arc;
-              const a2 = -Math.PI / 2 + (i + 1) * arc;
-              const x1 = (cx + r * Math.cos(a1)).toFixed(2);
-              const y1 = (cy + r * Math.sin(a1)).toFixed(2);
-              const x2 = (cx + r * Math.cos(a2)).toFixed(2);
-              const y2 = (cy + r * Math.sin(a2)).toFixed(2);
-              return <path key={i} d={`M ${cx},${cy} L ${x1},${y1} A ${r},${r} 0 0,1 ${x2},${y2} Z`}
-                fill={i % 2 === 0 ? color : color + 'bb'} />;
-            })}
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
 
 const extractText = (richText: any): string => {
   if (!richText) return '';
@@ -528,26 +500,11 @@ export default function NewsPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
 
-      {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #0B3D91 0%, #1565C0 100%)', borderBottom: '2px solid #F5C518' }}>
-        <div className="max-w-6xl mx-auto px-4 py-14">
-          <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-            <Link href="/" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>
-              <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to Home
-            </Link>
-            <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
-              <Bunting />
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white text-center uppercase tracking-wide" style={{ fontFamily: HL }}>
-                News &amp; Events
-              </h1>
-              <Bunting flip />
-            </div>
-            <p className="text-white/70 text-sm sm:text-base text-center" style={{ fontFamily: BL }}>
-              Stay updated on Liliw events, festivals, and community initiatives
-            </p>
-          </motion.div>
-        </div>
-      </div>
+      {/* Hero — the shared banner, so this page matches every other. */}
+      <PageBanner
+        title="News & Events"
+        subtitle="Stay updated on Liliw events, festivals, and community initiatives"
+      />
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-10 pb-20">
