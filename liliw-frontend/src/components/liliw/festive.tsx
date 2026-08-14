@@ -172,3 +172,130 @@ export function marqueeLines(title: string): string[] {
   const mid = Math.ceil(words.length / 2);
   return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
 }
+
+/**
+ * The Liliw night scene with a marquee headline over it.
+ *
+ * One implementation for the login modal and every page banner. The artwork
+ * carries the church, the tsinelas, the sampaguita, the woven border and the
+ * gold frame, so the drawn motifs above are not layered on top of it — doing
+ * that gave two churches and a doubled frame.
+ *
+ * The lettering stays CSS rather than being baked into the image, because the
+ * headline changes per page and per auth view. Baking it in would mean an
+ * export for every title, which is the work this avoids.
+ */
+export function LiliwScene({
+  title,
+  subtitle,
+  eyebrow,
+  size = 'page',
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  /** Small label above the title — the brand line on the modal. */
+  eyebrow?: string;
+  /** 'modal' is the narrow login header; 'page' is the wide page banner. */
+  size?: 'modal' | 'page';
+  /** Anything that sits above the title, such as a back link. */
+  children?: React.ReactNode;
+}) {
+  const lines = marqueeLines(title);
+  const modal = size === 'modal';
+
+  return (
+    <div
+      className={`relative overflow-hidden ${modal ? 'px-7 pt-9 pb-11' : 'px-5 pt-10 pb-12 sm:pt-12 sm:pb-14'}`}
+      style={{
+        // The church sits left and the slippers right in the artwork, so the
+        // middle stays clear for the words however the image is cropped.
+        backgroundImage: 'url(/images/login-banner.webp)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundColor: '#0A2A6B',
+      }}
+    >
+      {/* A vignette through the centre only. The scene is detailed behind the
+          letters, and the subtitle loses contrast without it — dimming the
+          whole image would flatten artwork that is the point of the design. */}
+      <div
+        className="absolute inset-0"
+        style={{ background: 'radial-gradient(ellipse at 50% 55%, rgba(6,26,72,0.62) 0%, rgba(6,26,72,0.26) 55%, transparent 80%)' }}
+        aria-hidden
+      />
+
+      <div className={`relative z-10 ${modal ? '' : 'max-w-6xl mx-auto'}`}>
+        {children}
+
+        <div className="text-center">
+          {eyebrow && (
+            <>
+              <p
+                className="text-[10px] font-black tracking-[0.3em] uppercase"
+                style={{ color: GOLD, fontFamily: 'var(--font-heading), Outfit, sans-serif' }}
+              >
+                {eyebrow}
+              </p>
+              <div className="my-2 flex justify-center">
+                <Rule width={48} />
+              </div>
+            </>
+          )}
+
+          <div className="flex items-center justify-center gap-3 sm:gap-6">
+            {!modal && <Ornament className="w-7 h-7 sm:w-9 sm:h-9 shrink-0 hidden sm:block" />}
+            <h1
+              className="uppercase leading-[0.94] select-none"
+              style={{
+                fontFamily: 'var(--font-heading), Outfit, sans-serif',
+                fontWeight: 900,
+                letterSpacing: '0.005em',
+                fontSize: modal
+                  ? (lines.length > 1 ? 'clamp(28px, 8.5vw, 44px)' : 'clamp(26px, 7.5vw, 40px)')
+                  : (lines.length > 1 ? 'clamp(26px, 6.4vw, 58px)' : 'clamp(30px, 7.6vw, 66px)'),
+              }}
+            >
+              {lines.map(line => (
+                <span key={line} className="block">
+                  <Marquee tone="dark">{line}</Marquee>
+                </span>
+              ))}
+            </h1>
+            {!modal && <Ornament className="w-7 h-7 sm:w-9 sm:h-9 shrink-0 hidden sm:block" />}
+          </div>
+
+          {!modal && (
+            <div className="mt-5 flex justify-center">
+              <Rule width={110} />
+            </div>
+          )}
+
+          {subtitle && (
+            <p
+              className={`${modal ? 'mt-3 text-sm' : 'mt-4 text-sm sm:text-base max-w-2xl mx-auto'}`}
+              style={{
+                color: 'rgba(255,255,255,0.85)',
+                fontFamily: 'var(--font-body), "Plus Jakarta Sans", sans-serif',
+                textShadow: '0 1px 6px rgba(4,18,50,0.55)',
+              }}
+            >
+              {subtitle}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Wave into whatever follows — the device the rest of the site uses
+          between sections. */}
+      <svg
+        viewBox="0 0 400 26" preserveAspectRatio="none"
+        className="absolute bottom-0 left-0 w-full h-6"
+        aria-hidden
+      >
+        <path d="M0 14c60 12 120-12 200-6s140 18 200 6v12H0z" fill="#F9F6F0" />
+        <path d="M0 14c60 12 120-12 200-6s140 18 200 6" fill="none" stroke={GOLD} strokeWidth="1.5" opacity="0.75" />
+      </svg>
+    </div>
+  );
+}
