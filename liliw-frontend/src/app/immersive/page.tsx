@@ -3,7 +3,11 @@
 import { useEffect, useState, useCallback, useRef, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { ChevronLeft, Layers, PenLine, Lock, X, Eye, EyeOff, Camera, Trash2, Upload, Images } from 'lucide-react';
+import {
+  ChevronLeft, Layers, PenLine, Lock, X, Eye, EyeOff, Camera, Trash2, Upload, Images,
+  Box, Hand, MousePointer2, Smartphone, Maximize2, Headphones,
+} from 'lucide-react';
+import { Rule, weaveStyle } from '@/components/liliw/festive';
 import { logger } from '@/lib/logger';
 import ImmersiveViewer from '@/components/ImmersiveViewer';
 import CloudinaryPicker, { type CloudinaryAsset } from '@/components/CloudinaryPicker';
@@ -13,6 +17,7 @@ import { fitForUpload, MAX_UPLOAD_BYTES } from '@/lib/image-fit';
 
 const EDITOR_PASSWORD = 'LiliwOffice2026';
 const CLOUDINARY_FOLDER = 'liliw-virtual-tours';
+const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 
 interface VirtualTourPhoto {
   url: string;
@@ -35,6 +40,49 @@ interface Attraction {
   };
   type: 'heritage' | 'spot' | 'dining';
 }
+
+/**
+ * The picture on a tour card.
+ *
+ * A normal photograph of the place first, and only the panorama as a fallback:
+ * a 14×11 crop of an equirectangular image is a smear of sky and floor, which
+ * is the opposite of what a chooser needs. Relative URLs are resolved the same
+ * way the attractions page resolves them.
+ */
+function tourThumb(a: Attraction): string | null {
+  const p: any = a.attributes.photos?.[0];
+  const raw = p?.formats?.small?.url || p?.formats?.medium?.url || p?.url
+    || a.attributes.virtual_tour_photos?.[0]?.url;
+  if (!raw) return null;
+  const url = raw.startsWith('http') ? raw : `${STRAPI_BASE}${raw}`;
+  return url.includes('res.cloudinary.com')
+    ? url.replace('/upload/', '/upload/w_160,h_128,c_fill,q_auto,f_auto/')
+    : url;
+}
+
+/** The sidebar card. One object so the two panels cannot drift apart. */
+const PANEL = {
+  backgroundColor: 'rgba(10,29,72,0.82)',
+  border: '1px solid rgba(245,197,24,0.22)',
+  boxShadow: '0 10px 30px rgba(3,12,36,0.45)',
+} as const;
+
+function PanelTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mb-3">
+      <h2 className="text-white font-black text-[11px] uppercase tracking-[0.18em]">{children}</h2>
+      <div className="mt-1.5 h-px w-10" style={{ backgroundColor: '#F5C518' }} />
+    </div>
+  );
+}
+
+const CONTROLS = [
+  { Icon: Hand,          verb: 'Drag',       what: 'Look around' },
+  { Icon: MousePointer2, verb: 'Scroll',     what: 'Zoom in and out' },
+  { Icon: Smartphone,    verb: 'Touch',      what: 'Swipe to move around' },
+  { Icon: Maximize2,     verb: 'Fullscreen', what: 'Expand the view' },
+  { Icon: Headphones,    verb: 'VR',         what: 'Enter VR with a headset' },
+] as const;
 
 export default function ImmersivePage() {
   const [editMode, setEditMode] = useState(false);
@@ -326,7 +374,19 @@ export default function ImmersivePage() {
   }, [selectedAttraction]);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#0F1F3C' }}>
+    <div className="min-h-screen relative" style={{ backgroundColor: '#08183C' }}>
+      {/* The weave, at the edges only and barely there. The panorama is the
+          brightest thing on the page and has to stay that way, so the pattern
+          fades out well before it reaches the viewer. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          ...weaveStyle('#F5C518', 0.055),
+          maskImage: 'radial-gradient(ellipse at 50% 45%, transparent 45%, black 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at 50% 45%, transparent 45%, black 100%)',
+        }}
+      />
       {/* Password Modal */}
       <AnimatePresence>
         {showPasswordModal && !isAdmin && (
@@ -386,37 +446,44 @@ export default function ImmersivePage() {
         )}
       </AnimatePresence>
 
-      {/* Navigation */}
+      {/* Header. A thin woven band, a royal-blue bar and a gold hairline —
+          the same three notes the page banners use, at nav height. */}
       <motion.nav
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="sticky top-0 z-40 border-b-2 backdrop-blur-sm"
+        className="sticky top-0 z-40 backdrop-blur-sm"
         style={{
-          borderBottomColor: '#F5C518',
           backgroundColor: 'rgba(11, 61, 145, 0.97)',
-          boxShadow: '0 4px 12px rgba(245,197,24,0.1)',
+          borderBottom: '1px solid rgba(245,197,24,0.85)',
+          boxShadow: '0 6px 20px rgba(3,12,36,0.45)',
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <motion.div whileHover={{ x: -2 }} whileTap={{ x: -4 }}>
-            <Link href="/attractions" className="inline-flex items-center gap-2 text-white hover:opacity-100 opacity-80 font-semibold transition px-3 py-2 rounded-lg hover:bg-white/10">
-              <ChevronLeft className="w-5 h-5" />
+        <div aria-hidden className="h-1 w-full" style={weaveStyle('#F5C518', 0.3)} />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3">
+          <motion.div whileHover={{ x: -2 }} whileTap={{ x: -4 }} className="shrink-0">
+            <Link href="/attractions"
+              className="inline-flex items-center gap-1.5 text-sm font-bold transition px-2.5 py-2 rounded-lg hover:bg-white/10"
+              style={{ color: '#F5C518' }}>
+              <ChevronLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Back</span>
             </Link>
           </motion.div>
 
-          <motion.h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2" whileHover={{ scale: 1.02 }}>
-            <Layers className="w-6 h-6" style={{ color: '#F5C518' }} />
-            <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent hidden sm:inline">3D Tours</span>
-            <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent sm:hidden">3D</span>
-            {editMode && (
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1"
-                style={{ backgroundColor: '#FFB400', color: '#0F1F3C' }}>
-                <PenLine className="w-3 h-3" /> Editor
-              </span>
-            )}
-          </motion.h1>
+          <div className="flex flex-col items-center min-w-0">
+            <h1 className="text-lg sm:text-2xl font-black text-white flex items-center gap-2.5 uppercase tracking-[0.16em] whitespace-nowrap">
+              <Box className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" style={{ color: '#F5C518' }} />
+              3D Tours
+              {editMode && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 tracking-normal"
+                  style={{ backgroundColor: '#FFB400', color: '#0F1F3C' }}>
+                  <PenLine className="w-3 h-3" /> Editor
+                </span>
+              )}
+            </h1>
+            <div className="mt-1.5 hidden sm:block"><Rule width={90} /></div>
+          </div>
 
           {/* Hidden admin lock */}
           <div className="w-12 sm:w-16 flex justify-end">
@@ -445,11 +512,11 @@ export default function ImmersivePage() {
       </motion.nav>
 
       {/* Main Content */}
-      <div className="px-3 sm:px-5 py-4">
+      <div className="relative z-10 max-w-[1600px] mx-auto px-3 sm:px-5 py-5">
         {loading ? (
-          <div className="text-center py-12">
+          <div className="text-center py-24">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto" style={{ borderColor: '#F5C518' }} />
-            <p className="text-white mt-4">Loading immersive experiences...</p>
+            <p className="text-white/70 mt-4 text-sm tracking-wide">Loading the tours…</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
@@ -480,11 +547,11 @@ export default function ImmersivePage() {
                   <p className="text-gray-400 text-sm">Upload photos using the panel on the right</p>
                 </div>
               ) : selectedAttraction && scenes.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-24 text-center"
-                  style={{ borderColor: 'rgba(245,197,24,0.3)', backgroundColor: 'rgba(245,197,24,0.03)' }}>
-                  <Layers className="w-16 h-16 mb-4 opacity-30" style={{ color: '#F5C518' }} />
-                  <p className="text-gray-300 font-bold text-lg mb-2">No 3D tour available</p>
-                  <p className="text-gray-500 text-sm">Select a tour from the list to explore</p>
+                <div className="flex flex-col items-center justify-center rounded-2xl py-24 text-center"
+                  style={{ border: '1px dashed rgba(245,197,24,0.28)', backgroundColor: 'rgba(10,29,72,0.6)' }}>
+                  <Layers className="w-14 h-14 mb-4 opacity-30" style={{ color: '#F5C518' }} />
+                  <p className="text-white font-bold text-lg mb-1">No 3D tour available</p>
+                  <p className="text-sm" style={{ color: '#8FA6CC' }}>Pick a tour from the list to start exploring</p>
                 </div>
               ) : null}
             </motion.div>
@@ -498,41 +565,61 @@ export default function ImmersivePage() {
             >
               {/* Attraction List */}
               <div className="sticky top-24 space-y-4">
-                <div className="bg-gray-900 rounded-xl p-4 border-2" style={{ borderColor: 'rgba(245,197,24,0.3)' }}>
-                  <h2 className="text-white font-bold mb-4">
-                    {editMode ? 'All Attractions' : 'Available Tours'}
-                  </h2>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {(editMode ? attractions : attractions.filter(a => a.attributes.has_virtual_tour)).map((attraction, index) => (
-                      <motion.button
-                        key={attraction.id}
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.3, delay: index * 0.05 }}
-                        onClick={() => setSelectedAttractionId(attraction.id)}
-                        className={`w-full text-left p-3 rounded-lg transition-all ${
-                          selectedAttractionId === attraction.id ? 'text-white font-semibold' : 'text-gray-300 hover:text-white'
-                        }`}
-                        style={{
-                          backgroundColor: selectedAttractionId === attraction.id ? 'rgba(245,197,24,0.15)' : 'transparent',
-                          borderLeft: selectedAttractionId === attraction.id ? '3px solid #F5C518' : 'none',
-                          paddingLeft: '12px',
-                        }}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-semibold text-sm leading-tight">{attraction.attributes.name}</span>
-                          {attraction.attributes.has_virtual_tour && (
-                            <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                              style={{ backgroundColor: 'rgba(245,197,24,0.2)', color: '#F5C518' }}>
-                              360°
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs opacity-70 mt-0.5">
-                          {attraction.type === 'heritage' ? 'Heritage' : 'Tourist Spot'}
-                        </div>
-                      </motion.button>
-                    ))}
+                <div className="rounded-2xl p-4" style={PANEL}>
+                  <PanelTitle>{editMode ? 'All Attractions' : 'Available Tours'}</PanelTitle>
+
+                  <div className="space-y-2 max-h-[26rem] overflow-y-auto pr-0.5 tour-scroll">
+                    {(editMode ? attractions : attractions.filter(a => a.attributes.has_virtual_tour)).map((attraction, index) => {
+                      const active = selectedAttractionId === attraction.id;
+                      const thumb = tourThumb(attraction);
+                      return (
+                        <motion.button
+                          key={attraction.id}
+                          initial={{ y: 10, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                          onClick={() => setSelectedAttractionId(attraction.id)}
+                          className="w-full text-left rounded-xl transition-all flex items-center gap-3 p-2.5"
+                          style={{
+                            backgroundColor: active ? 'rgba(21,101,192,0.32)' : 'rgba(255,255,255,0.03)',
+                            border: `1px solid ${active ? 'rgba(245,197,24,0.55)' : 'rgba(255,255,255,0.07)'}`,
+                            borderLeft: `3px solid ${active ? '#F5C518' : 'transparent'}`,
+                            boxShadow: active ? '0 6px 18px rgba(3,12,36,0.5)' : 'none',
+                          }}
+                        >
+                          {/* A picture of the place beats its name for choosing
+                              between three tours, so the thumbnail leads. */}
+                          <div className="shrink-0 w-14 h-11 rounded-lg overflow-hidden"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                            {thumb
+                              ? <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" />
+                              : <div className="w-full h-full flex items-center justify-center">
+                                  <Layers className="w-4 h-4" style={{ color: 'rgba(245,197,24,0.4)' }} />
+                                </div>}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className={`text-sm leading-tight truncate ${active ? 'text-white font-bold' : 'text-gray-200 font-semibold'}`}>
+                              {attraction.attributes.name}
+                            </div>
+                            <div className="flex items-center justify-between gap-2 mt-1">
+                              <span className="text-[11px]" style={{ color: '#8FA6CC' }}>
+                                {attraction.type === 'heritage' ? 'Heritage' : attraction.type === 'dining' ? 'Dining' : 'Tourist Spot'}
+                              </span>
+                              {attraction.attributes.has_virtual_tour && (
+                                <span className="shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded"
+                                  style={{
+                                    backgroundColor: active ? '#F5C518' : 'rgba(245,197,24,0.16)',
+                                    color: active ? '#0A1A40' : '#F5C518',
+                                  }}>
+                                  360°
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </motion.button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -664,21 +751,27 @@ export default function ImmersivePage() {
                   )}
                 </AnimatePresence>
 
-                {/* How It Works card — hidden in edit mode to save space */}
+                {/* Tour controls — hidden in edit mode to save space */}
                 {!editMode && (
                   <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.4 }}
-                    className="rounded-xl p-4 border-2"
-                    style={{ backgroundColor: 'rgba(245,197,24,0.06)', borderColor: 'rgba(245,197,24,0.4)' }}
+                    className="rounded-2xl p-4"
+                    style={PANEL}
                   >
-                    <h3 className="text-white font-semibold mb-2">How It Works</h3>
-                    <ul className="text-gray-300 text-sm space-y-2">
-                      <li>✓ Drag to look around</li>
-                      <li>✓ Mobile: Touch & move</li>
-                      <li>✓ VR Mode: With headset</li>
-                      <li>✓ Screenshot: Save views</li>
+                    <PanelTitle>Tour Controls</PanelTitle>
+                    <ul className="space-y-2.5">
+                      {CONTROLS.map(({ Icon, verb, what }) => (
+                        <li key={verb} className="flex items-center gap-3">
+                          <span className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: 'rgba(245,197,24,0.12)', border: '1px solid rgba(245,197,24,0.22)' }}>
+                            <Icon className="w-3.5 h-3.5" style={{ color: '#F5C518' }} />
+                          </span>
+                          <span className="text-sm text-white font-semibold w-[4.5rem] shrink-0">{verb}</span>
+                          <span className="text-xs" style={{ color: '#8FA6CC' }}>{what}</span>
+                        </li>
+                      ))}
                     </ul>
                   </motion.div>
                 )}
@@ -687,6 +780,16 @@ export default function ImmersivePage() {
           </div>
         )}
       </div>
+
+      {/* The tour list scrolls; the default bar is a bright slab against the
+          navy panel, so it is toned to the card it sits in. */}
+      <style>{`
+        .tour-scroll { scrollbar-width: thin; scrollbar-color: rgba(245,197,24,0.35) transparent; }
+        .tour-scroll::-webkit-scrollbar { width: 6px; }
+        .tour-scroll::-webkit-scrollbar-track { background: transparent; }
+        .tour-scroll::-webkit-scrollbar-thumb { background: rgba(245,197,24,0.3); border-radius: 999px; }
+        .tour-scroll::-webkit-scrollbar-thumb:hover { background: rgba(245,197,24,0.5); }
+      `}</style>
 
       {/* Cloudinary library picker for 360° photos */}
       <CloudinaryPicker

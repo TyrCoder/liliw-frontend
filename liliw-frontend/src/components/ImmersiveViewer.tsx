@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Headphones, Camera,
   Maximize2, Minimize2, ScanLine, MapPin, X,
-  Info, Navigation, Save, PenLine, Check, Trash2, Upload, Move,
+  Info, Navigation, Save, PenLine, Check, Trash2, Upload, Move, Compass,
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import type { Hotspot } from '@/lib/types';
@@ -370,12 +370,28 @@ function HotspotMarker({
 
 // ─── Drag Controls (touch-action: none fixes mobile scroll) ───────────────
 
-function DragControls({ editMode, autoRotate, draggingRef }: { editMode: boolean; autoRotate: boolean; draggingRef: React.MutableRefObject<boolean> }) {
+function DragControls({ editMode, autoRotate, draggingRef, resetSignal }: {
+  editMode: boolean;
+  autoRotate: boolean;
+  draggingRef: React.MutableRefObject<boolean>;
+  /** Bumped by the recentre button. The view eases back rather than snapping. */
+  resetSignal: number;
+}) {
   const { camera, gl } = useThree();
   const prev = useRef({ x: 0, y: 0 });
   const target = useRef({ x: 0, y: 0 });
   const smooth = useRef({ x: 0, y: 0 });
   const lastInteract = useRef(Date.now());
+  const fov = useRef(80);
+
+  // Recentre. The lerp in useFrame carries the camera home over about a
+  // second, which reads as the view swinging back rather than cutting.
+  useEffect(() => {
+    if (!resetSignal) return;
+    target.current = { x: 0, y: 0 };
+    fov.current = 80;
+    lastInteract.current = Date.now();
+  }, [resetSignal]);
 
   useEffect(() => {
     camera.rotation.order = 'YXZ';
@@ -409,12 +425,22 @@ function DragControls({ editMode, autoRotate, draggingRef }: { editMode: boolean
       prev.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
 
+    // Scroll zooms by narrowing the field of view, the way a panorama viewer
+    // is expected to behave. Only over the canvas, and only once the pointer
+    // is on it, so the page still scrolls normally everywhere else.
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      lastInteract.current = Date.now();
+      fov.current = Math.max(35, Math.min(90, fov.current + e.deltaY * 0.05));
+    };
+
     el.addEventListener('mousedown', onDown);
     window.addEventListener('mouseup', onUp);
     el.addEventListener('mousemove', onMove);
     el.addEventListener('touchstart', onTouchStart, { passive: false });
     window.addEventListener('touchend', onUp);
     el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('wheel', onWheel, { passive: false });
     return () => {
       el.removeEventListener('mousedown', onDown);
       window.removeEventListener('mouseup', onUp);
@@ -422,6 +448,7 @@ function DragControls({ editMode, autoRotate, draggingRef }: { editMode: boolean
       el.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchend', onUp);
       el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('wheel', onWheel);
     };
   }, [camera, gl]);
 
@@ -430,6 +457,13 @@ function DragControls({ editMode, autoRotate, draggingRef }: { editMode: boolean
     smooth.current.y += (target.current.y - smooth.current.y) * 0.05;
     camera.rotation.y = smooth.current.x;
     camera.rotation.x = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, smooth.current.y));
+
+    const cam = camera as THREE.PerspectiveCamera;
+    if (Math.abs(cam.fov - fov.current) > 0.01) {
+      cam.fov += (fov.current - cam.fov) * 0.12;
+      cam.updateProjectionMatrix();
+    }
+
     if (autoRotate && !editMode && !draggingRef.current && Date.now() - lastInteract.current > 3000) {
       target.current.x -= delta * 0.08;
     }
@@ -437,6 +471,21 @@ function DragControls({ editMode, autoRotate, draggingRef }: { editMode: boolean
 
   return null;
 }
+
+/**
+ * The shared look for every button floating over the panorama: navy glass with
+ * a gold hairline, not black. Kept as one object so the cluster cannot drift
+ * button by button, which is how it ended up with three different blacks.
+ */
+const CTRL = {
+  background: 'rgba(9,26,66,0.72)',
+  backdropFilter: 'blur(8px)',
+  border: '1px solid rgba(245,197,24,0.28)',
+  borderColor: 'rgba(245,197,24,0.28)',
+  boxShadow: '0 6px 18px rgba(0,0,0,0.35)',
+  minWidth: 40,
+  minHeight: 40,
+} as const;
 
 function ScreenshotHelper({ glRef }: { glRef: React.MutableRefObject<THREE.WebGLRenderer | null> }) {
   const { gl } = useThree();
@@ -662,6 +711,7 @@ export default function ImmersiveViewer({
   const [vrSupported, setVrSupported] = useState(false);
   const [arSupported, setArSupported] = useState(false);
   const [autoRotate, setAutoRotate] = useState(!editMode);
+  const [resetSignal, setResetSignal] = useState(0);
   // Hotspots initialized once from props — NOT synced on re-render to avoid losing edits
   const [hotspots, setHotspots] = useState<Hotspot[]>(initialHotspots);
   const [pending, setPending] = useState<PendingHotspot | null>(null);
@@ -842,10 +892,15 @@ export default function ImmersiveViewer({
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6 }}
       ref={containerRef}
-      className="rounded-xl overflow-hidden bg-black border-2 select-none"
+      className="rounded-2xl overflow-hidden bg-black select-none"
       style={{
-        borderColor: editMode ? '#FFB400' : '#1565C0',
-        ...(isFullscreen ? { height: '100vh', width: '100vw', borderRadius: 0 } : {}),
+        // A hairline rather than the 2px band: at this size the border was
+        // reading as a frame around the panorama instead of an edge to it.
+        border: `1px solid ${editMode ? '#FFB400' : 'rgba(245,197,24,0.38)'}`,
+        boxShadow: editMode
+          ? '0 18px 40px rgba(0,0,0,0.45)'
+          : '0 18px 44px rgba(3,12,36,0.55), 0 0 0 1px rgba(255,255,255,0.04)',
+        ...(isFullscreen ? { height: '100vh', width: '100vw', borderRadius: 0, border: 'none' } : {}),
       }}
     >
       <div className="relative w-full" style={{ height: isFullscreen ? '100%' : 'clamp(280px, calc(100svh - 120px), 900px)' }}>
@@ -945,7 +1000,7 @@ export default function ImmersiveViewer({
                   draggingRef={draggingRef}
                 />
               ))}
-              <DragControls editMode={editMode} autoRotate={autoRotate} draggingRef={draggingRef} />
+              <DragControls editMode={editMode} autoRotate={autoRotate} draggingRef={draggingRef} resetSignal={resetSignal} />
               <ScreenshotHelper glRef={glRef} />
             </XR>
           </Canvas>
@@ -959,8 +1014,16 @@ export default function ImmersiveViewer({
             <motion.div
               initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2, duration: 0.4 }}
-              className="pointer-events-auto px-3 py-2 rounded-xl"
-              style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              className="pointer-events-auto px-3 py-2 rounded-full"
+              style={{
+                // Navy rather than black, with a gold hairline: the scene label
+                // is the one piece of chrome that sits over the artwork all the
+                // time, so it should look like it belongs to the site.
+                background: 'rgba(9,26,66,0.82)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(245,197,24,0.34)',
+                boxShadow: '0 6px 18px rgba(0,0,0,0.35)',
+              }}>
               {editMode && (
                 <div className="text-xs font-bold mb-0.5 flex items-center gap-1" style={{ color: repositioning ? '#a78bfa' : '#FFB400' }}>
                   {repositioning ? <Move className="w-3 h-3" /> : <PenLine className="w-3 h-3" />}
@@ -980,8 +1043,10 @@ export default function ImmersiveViewer({
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: editMode ? '#FFB400' : '#1565C0' }} />
-                <span className="text-white font-bold text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{current.title}</span>
+                <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: '#F5C518' }} />
+                <span className="text-white font-bold text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none tracking-wide">
+                  {current.title}
+                </span>
               </div>
             </motion.div>
 
@@ -1078,7 +1143,7 @@ export default function ImmersiveViewer({
               {hasMultiple && (
                 <div className="flex-1 flex flex-col gap-1.5">
                   <div className="self-center text-white text-xs font-semibold px-3 py-1 rounded-full"
-                    style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+                    style={{ background: 'rgba(9,26,66,0.7)', backdropFilter: 'blur(4px)', border: '1px solid rgba(245,197,24,0.24)' }}>
                     {sceneIndex + 1} / {scenes.length}
                   </div>
                   <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
@@ -1086,7 +1151,7 @@ export default function ImmersiveViewer({
                       onClick={() => goToScene((sceneIndex - 1 + scenes.length) % scenes.length)}
                       whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                       className="shrink-0 p-2 sm:p-3 rounded-xl text-white transition"
-                      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      style={CTRL}>
                       <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                     </motion.button>
                     <div
@@ -1103,9 +1168,9 @@ export default function ImmersiveViewer({
                             // thumbnail shows the whole scene instead of a
                             // cropped sliver of it.
                             width: 'clamp(112px, 26vw, 176px)', height: 'clamp(56px, 13vw, 88px)',
-                            borderColor: idx === sceneIndex ? (editMode ? '#FFB400' : '#1565C0') : 'rgba(255,255,255,0.3)',
-                            opacity: idx === sceneIndex ? 1 : 0.72,
-                            boxShadow: idx === sceneIndex ? `0 0 12px ${editMode ? '#FFB400' : '#1565C0'}90` : 'none',
+                            borderColor: idx === sceneIndex ? '#F5C518' : 'rgba(255,255,255,0.28)',
+                            opacity: idx === sceneIndex ? 1 : 0.7,
+                            boxShadow: idx === sceneIndex ? '0 0 14px rgba(245,197,24,0.55)' : 'none',
                           }}>
                           <img src={scene.thumbUrl || scene.imageUrl} alt={scene.title} className="w-full h-full object-cover" />
                           {/* Which scene is which — the picture alone is not
@@ -1126,7 +1191,7 @@ export default function ImmersiveViewer({
                       onClick={() => goToScene((sceneIndex + 1) % scenes.length)}
                       whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                       className="shrink-0 p-2 sm:p-3 rounded-xl text-white transition"
-                      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      style={CTRL}>
                       <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                     </motion.button>
                   </div>
@@ -1142,37 +1207,51 @@ export default function ImmersiveViewer({
                 {!editMode && (
                   <motion.button
                     onClick={() => setAutoRotate((v) => !v)}
-                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                    className="p-2 sm:p-3 rounded-xl text-white text-lg font-bold leading-none transition"
+                    whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+                    title={autoRotate ? 'Stop the slow turn' : 'Turn slowly on its own'}
+                    className="p-2 sm:p-3 rounded-xl text-lg font-bold leading-none transition"
                     style={{
-                      background: autoRotate ? 'rgba(0,191,179,0.75)' : 'rgba(0,0,0,0.7)',
-                      backdropFilter: 'blur(6px)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      minWidth: 40, minHeight: 40,
+                      ...CTRL,
+                      background: autoRotate ? 'rgba(245,197,24,0.92)' : CTRL.background,
+                      color: autoRotate ? '#0A1A40' : 'white',
+                      borderColor: autoRotate ? '#F5C518' : CTRL.borderColor,
                     }}>
                     ↻
                   </motion.button>
                 )}
+                {/* Recentre. Two minutes of dragging leaves the horizon
+                    anywhere; without this the only way back is reloading. */}
+                <motion.button
+                  onClick={() => setResetSignal(n => n + 1)}
+                  whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+                  title="Recentre the view"
+                  className="p-2 sm:p-3 rounded-xl text-white transition"
+                  style={CTRL}>
+                  <Compass className="w-4 h-4 sm:w-5 sm:h-5" />
+                </motion.button>
                 <motion.button
                   onClick={takeScreenshot}
-                  whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+                  title="Save this view as an image"
                   className="p-2 sm:p-3 rounded-xl text-white transition"
-                  style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.12)', minWidth: 40, minHeight: 40 }}>
+                  style={CTRL}>
                   <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
                 </motion.button>
                 <motion.button
                   onClick={toggleFullscreen}
-                  whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+                  title={isFullscreen ? 'Leave fullscreen' : 'Fullscreen'}
                   className="p-2 sm:p-3 rounded-xl text-white transition"
-                  style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.12)', minWidth: 40, minHeight: 40 }}>
+                  style={CTRL}>
                   {isFullscreen ? <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize2 className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </motion.button>
                 {!editMode && vrSupported && (
                   <motion.button
                     onClick={() => xrStore.enterVR()}
-                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                    className="p-3 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition"
-                    style={{ backgroundColor: '#1565C0', color: '#0F1F3C', minWidth: 46, minHeight: 46 }}>
+                    whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+                    title="Enter VR"
+                    className="p-3 rounded-xl flex items-center gap-1.5 text-xs font-bold transition"
+                    style={{ backgroundColor: '#F5C518', color: '#0A1A40', minWidth: 46, minHeight: 46, boxShadow: '0 6px 18px rgba(0,0,0,0.4)' }}>
                     <Headphones className="w-5 h-5" />
                     <span className="hidden sm:inline">VR</span>
                   </motion.button>

@@ -364,21 +364,40 @@ export default function AIChat() {
         // two position utilities on one element, and Tailwind emits `relative`
         // after `fixed`, so it won — the button stopped being pinned to the
         // viewport and rendered inline at the end of the page, out of sight.
-        className={`fixed bottom-6 z-40 rounded-full text-white shadow-xl transition-shadow hover:shadow-2xl grid place-items-center ${isMapPage ? 'right-24' : 'right-6'}`}
+        className={`group fixed bottom-6 z-40 rounded-full text-white shadow-xl transition-shadow hover:shadow-2xl grid place-items-center ${isMapPage ? 'right-24' : 'right-6'}`}
         style={{
           width: 64, height: 64,
           background: isOpen ? 'linear-gradient(135deg, #0B3D91, #1565C0)' : '#0B1220',
           // The ring is the avatar's own edge rather than a border on the
-          // button, so the head can sit right against it without a gap.
+          // button, so the head can sit right against it without a gap. Gold
+          // over the old green: green read as a status light, and the site has
+          // exactly two accent colours.
           boxShadow: isOpen
             ? '0 10px 30px -10px rgba(11,61,145,0.7)'
-            : '0 0 0 3px #22C55E, 0 10px 30px -10px rgba(0,0,0,0.6)',
+            : '0 0 0 3px #F5C518, 0 0 0 5px rgba(11,61,145,0.55), 0 10px 30px -10px rgba(0,0,0,0.6)',
         }}
         title="Chat with Lilio"
         aria-label={isOpen ? 'Close chat' : 'Chat with Lilio'}
       >
         {isOpen ? <X size={24} /> : (
           <>
+            {/* Says what tapping the face does. Hover only, and on desktop
+                only — on a phone it would sit there permanently, and the
+                invite bubble already covers that case. */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute right-full mr-3 hidden md:block whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold opacity-0 translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0"
+              style={{
+                backgroundColor: '#0B3D91',
+                color: '#F5C518',
+                fontFamily: HL,
+                border: '1px solid rgba(245,197,24,0.5)',
+                boxShadow: '0 8px 20px rgba(3,12,36,0.45)',
+              }}
+            >
+              Ask Lilio
+            </span>
+
             {/* Slightly larger than the button so the head fills the disc the
                 way a profile picture does, with the overflow clipped. */}
             <span className="absolute inset-0 rounded-full overflow-hidden grid place-items-center">
@@ -394,8 +413,8 @@ export default function AIChat() {
               className="absolute left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 leading-none"
               style={{
                 bottom: -7,
-                backgroundColor: '#22C55E',
-                color: '#06281A',
+                backgroundColor: '#F5C518',
+                color: '#0A1A40',
                 fontFamily: HL,
                 fontSize: 11,
                 fontWeight: 800,
