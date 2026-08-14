@@ -30,8 +30,7 @@ export const metadata: Metadata = {
 const UPDATED = '14 August 2026';
 
 const OFFICE = 'Culture, History, Arts and Tourism Office (CHATO), Municipality of Liliw, Laguna';
-const EMAIL = 'info@liliwtourism.com';
-const PHONE = '+63 (49) 501-1234';
+const EMAIL = 'liliwturismo@gmail.com';
 
 function Section({
   n,
@@ -385,8 +384,7 @@ export default function TermsPage() {
             <Panel>
               <Row what="Office" why={OFFICE} />
               <Row what="Email" why={EMAIL} />
-              <Row what="Telephone" why={PHONE} />
-              <Row what="Address" why="Liliw, Laguna 4002, Philippines" />
+              <Row what="Address" why="Municipal Hall, Liliw, Laguna 4002, Philippines" />
             </Panel>
           </Section>
         </div>

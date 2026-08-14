@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
+import { ChevronLeft, Mail, MapPin, Clock, Send } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import PageBanner from '@/components/liliw/PageBanner';
 
@@ -90,9 +90,8 @@ export default function ContactPage() {
             <h2 className="text-2xl font-bold mb-8" style={{ color: '#1A1A2E', fontFamily: HL }}>Contact Information</h2>
             <div className="space-y-5 mb-10">
               {[
-                { Icon: Phone,  label: 'Phone',   value: '+63 (49) 501-1234' },
-                { Icon: Mail,   label: 'Email',   value: 'info@liliwtourism.com' },
-                { Icon: MapPin, label: 'Address', value: 'Liliw, Laguna 4002, Philippines' },
+                { Icon: Mail,   label: 'Email',   value: 'liliwturismo@gmail.com' },
+                { Icon: MapPin, label: 'Address', value: 'Municipal Hall, Liliw, Laguna 4002, Philippines' },
                 { Icon: Clock,  label: 'Hours',   value: 'Mon–Sun: 9:00 AM – 6:00 PM' },
               ].map(({ Icon, label, value }) => (
                 <div key={label} className="flex gap-4">
