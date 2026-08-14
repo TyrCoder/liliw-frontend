@@ -329,6 +329,25 @@ export default function TermsPage() {
               button in the app. A complaint may be brought to the National Privacy Commission.
             </p>
 
+            {/* RA 10173 requires a government agency to designate a Data
+                Protection Officer and to publish how to reach them. Until
+                CHATO names one, this routes to the office itself rather than
+                leaving the requirement unaddressed — replace the wording here
+                with the DPO's name once designated. */}
+            <h3 className="text-base font-bold pt-2" style={{ color: INK, fontFamily: HL }}>
+              Data protection contact
+            </h3>
+            <p>
+              Requests and complaints about personal information are handled by the {OFFICE}, which
+              acts as the point of contact for data protection matters for this service. Write to{' '}
+              <a href={`mailto:${EMAIL}`} className="font-semibold underline" style={{ color: NAVY }}>
+                {EMAIL}
+              </a>{' '}
+              with &quot;Data Privacy&quot; in the subject line so it is routed correctly. If a
+              request is not answered within a reasonable time, it may be raised with the National
+              Privacy Commission at privacy.gov.ph.
+            </p>
+
             <h3 className="text-base font-bold pt-2" style={{ color: INK, fontFamily: HL }}>
               Cookies and storage
             </h3>
