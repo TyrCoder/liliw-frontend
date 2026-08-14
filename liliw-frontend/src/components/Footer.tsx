@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Download, CheckCircle, X, Smartphone } from 'lucide-react';
+import { Mail, MapPin, Download, CheckCircle, X, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
@@ -198,11 +198,8 @@ export default function Footer() {
                 Tourism Office
               </p>
               <div className="space-y-2.5 text-sm text-white/75" style={{ fontFamily: BL }}>
-                <a href="tel:+63495011234" className="flex items-center gap-2.5 justify-center sm:justify-start hover:text-white transition-colors">
-                  <Phone size={13} className="shrink-0 text-white/40" /> +63 (49) 501-1234
-                </a>
-                <a href="mailto:info@liliwtourism.com" className="flex items-center gap-2.5 justify-center sm:justify-start hover:text-white transition-colors">
-                  <Mail size={13} className="shrink-0 text-white/40" /> info@liliwtourism.com
+                <a href="mailto:liliwturismo@gmail.com" className="flex items-center gap-2.5 justify-center sm:justify-start hover:text-white transition-colors">
+                  <Mail size={13} className="shrink-0 text-white/40" /> liliwturismo@gmail.com
                 </a>
                 <p className="flex items-start gap-2.5 justify-center sm:justify-start">
                   <MapPin size={13} className="shrink-0 mt-1 text-white/40" /> Municipal Hall, Liliw, Laguna 4002

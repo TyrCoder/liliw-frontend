@@ -58,7 +58,8 @@ export const generateSEOMetadata = (props: SEOProps): Metadata => {
       title: `${title} | Liliw Tourism`,
       description,
       images: [image],
-      creator: '@liliwtourism',
+      // No creator handle: the town has no X account, and naming one that is
+      // not the municipality's hands the card's attribution to a stranger.
     },
     alternates: {
       canonical: url,
