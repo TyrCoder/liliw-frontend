@@ -16,11 +16,12 @@ export const CREAM = '#FBF6EA';
 /**
  * Marquee lettering.
  *
- * A gold face over a stacked navy extrusion, with lamps painted through the
- * letterforms by background-clip: text — which is what a marquee physically
- * is: bulbs set into the face of the letter, following its shape and stopping
- * where the letter stops. Drawing them as elements would mean placing every
- * bulb by hand, per word, and it would break the moment a title changed.
+ * A gold face over a deep navy extrusion — a fairground sign seen side-on,
+ * where the depth of the letter does the work rather than any ornament on it.
+ *
+ * There were bulbs punched through the letterforms here. At the sizes these
+ * titles actually render they read as speckle rather than lamps, and they cost
+ * the words their weight; the letter is stronger plain.
  */
 export function Marquee({
   children,
@@ -35,9 +36,12 @@ export function Marquee({
   const side = tone === 'dark' ? '#062A66' : NAVY;
 
   const extrusion = [
-    ...Array.from({ length: 6 }, (_, i) => `${i + 1}px ${i + 1}px 0 ${side}`),
-    `7px 7px 0 ${tone === 'dark' ? 'rgba(4,20,50,0.7)' : 'rgba(11,61,145,0.55)'}`,
-    tone === 'dark' ? '0 16px 26px rgba(3,15,40,0.5)' : '0 14px 22px rgba(11,61,145,0.28)',
+    // A deeper stack than the letter is thick — the side of the letter is what
+    // gives it its solidity now that the face carries no detail of its own.
+    ...Array.from({ length: 9 }, (_, i) => `${i + 1}px ${i + 1}px 0 ${side}`),
+    `10px 10px 0 ${tone === 'dark' ? 'rgba(4,20,50,0.78)' : 'rgba(11,61,145,0.6)'}`,
+    `12px 12px 0 ${tone === 'dark' ? 'rgba(3,15,40,0.45)' : 'rgba(11,61,145,0.3)'}`,
+    tone === 'dark' ? '0 22px 34px rgba(2,10,32,0.62)' : '0 18px 28px rgba(11,61,145,0.34)',
     // A lit sign spills a little light onto what is behind it. Only on the
     // blue, where there is a night scene for it to fall on.
     ...(tone === 'dark' ? ['0 0 34px rgba(245,197,24,0.30)'] : []),
@@ -74,24 +78,6 @@ export function Marquee({
         {children}
       </span>
 
-      {/* Lamps, clipped to the letterforms. Dimmer than the face so they read
-          as bulbs set into gold rather than holes punched through it. */}
-      <span
-        aria-hidden
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle at center, rgba(255,252,232,0.95) 0 1.5px, rgba(255,244,190,0.45) 2px, transparent 2.5px)',
-          backgroundSize: '14px 14px',
-          backgroundPosition: '4px 4px',
-          WebkitBackgroundClip: 'text',
-          backgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          color: 'transparent',
-        }}
-      >
-        {children}
-      </span>
     </span>
   );
 }
