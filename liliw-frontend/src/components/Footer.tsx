@@ -130,9 +130,16 @@ export default function Footer() {
 
       <footer className="mt-0" style={{ backgroundColor: '#0F5FB5' }}>
         {/* Wave top — white wave on blue */}
-        <div style={{ lineHeight: 0, backgroundColor: '#fff' }}>
+        {/* Transparent, not white. This box sat above the footer's wave and
+            painted a white band across the cream ground for its full height —
+            a stripe of blank page between the last section and the footer.
+            The wave shape carries the blue; everything above the curve should
+            simply be whatever the page already is. */}
+        <div style={{ lineHeight: 0, backgroundColor: 'transparent' }}>
           <svg viewBox="0 0 1440 70" preserveAspectRatio="none" style={{ width: '100%', height: 70, display: 'block' }}>
             <path d="M0,0 C480,70 960,0 1440,70 L1440,70 L0,70 Z" fill="#0F5FB5" />
+            <path d="M0,0 C480,70 960,0 1440,70" fill="none" stroke="#F5C518" strokeWidth="2.5"
+              opacity="0.85" vectorEffect="non-scaling-stroke" />
           </svg>
         </div>
 
