@@ -48,6 +48,8 @@ const PRECACHE_ASSETS = [
   '/images/liliw-dog.png',
   '/images/lilio-head.png',
   '/images/login-banner.webp',
+  // The ground under every page. Without it an offline visit is blank cream.
+  '/images/liliw-cream.webp',
   '/manifest.json',
 ];
 
