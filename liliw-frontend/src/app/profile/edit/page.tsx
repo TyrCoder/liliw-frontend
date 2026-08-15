@@ -705,7 +705,7 @@ export default function EditProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }}>
+    <div className="min-h-screen page-ground">
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }}>

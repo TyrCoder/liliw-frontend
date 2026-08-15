@@ -174,7 +174,7 @@ function ParticipateForm() {
 
 export default function ParticipatePage() {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }}>
+    <div className="min-h-screen page-ground">
       <PageBanner
         title="Get Involved"
         subtitle="Fill out the form below and our team will get back to you shortly."

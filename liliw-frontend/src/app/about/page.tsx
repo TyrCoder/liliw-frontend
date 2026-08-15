@@ -46,7 +46,7 @@ function Bunting({ flip = false }: { flip?: boolean }) {
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+    <div className="min-h-screen page-ground" suppressHydrationWarning>
 
       <PageBanner
         title="About Liliw"

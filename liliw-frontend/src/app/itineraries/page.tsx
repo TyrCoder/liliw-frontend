@@ -2064,7 +2064,7 @@ function SavedTripsSection() {
 
 export default function ItinerariesPage() {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FFFFFF' }} suppressHydrationWarning>
+    <div className="min-h-screen page-ground" suppressHydrationWarning>
 
       <PageBanner
         title="Itineraries"

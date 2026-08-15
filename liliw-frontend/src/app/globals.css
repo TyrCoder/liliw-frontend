@@ -32,8 +32,28 @@
   box-sizing: border-box;
 }
 
+/*
+ * The cream heritage ground.
+ *
+ * One image on the body, behind every page. `cover` with a centred position
+ * so the church stays left and the tsinelas right and neither is squashed —
+ * the artwork is 3:2 and a browser window rarely is, so something has to be
+ * cropped, and cropping is the instruction rather than stretching.
+ *
+ * Fixed attachment on pointer-fine screens keeps it still while content
+ * scrolls, which is what makes it read as a ground rather than a long tiled
+ * sheet. iOS Safari renders fixed attachment badly — it repaints the whole
+ * layer per scroll frame — so touch devices scroll it normally.
+ *
+ * The cream underneath is not decoration: it is what shows while the image
+ * loads, and what shows on the parts of a tall page the image does not reach.
+ */
 body {
-  background: var(--warm-white);
+  background-color: #FBF7EE;
+  background-image: url('/images/liliw-cream.webp');
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
   color: var(--ink);
   font-family: var(--font-body), 'Plus Jakarta Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -54,6 +74,22 @@ video,
 iframe,
 canvas {
   max-width: 100%;
+}
+
+@media (pointer: fine) {
+  body {
+    background-attachment: fixed;
+  }
+}
+
+/*
+ * Pages used to paint their own white or cream over the whole viewport, which
+ * covered the ground completely. `page-ground` marks a page root that should
+ * let it through. Cards, panels and modals keep their own solid surfaces —
+ * this is only for the sheet the page is drawn on.
+ */
+.page-ground {
+  background-color: transparent !important;
 }
 
 /* ── Font utilities ─────────────────────────── */

@@ -187,7 +187,7 @@ export default function CulturePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white" suppressHydrationWarning>
+    <div className="min-h-screen page-ground" suppressHydrationWarning>
       {selectedItem && <CultureModal item={selectedItem} onClose={() => setSelectedItem(null)} />}
 
       <PageBanner

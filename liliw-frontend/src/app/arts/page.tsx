@@ -217,7 +217,7 @@ export default function ArtsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen page-ground">
 
       <PageBanner
         title="Arts & Creatives"

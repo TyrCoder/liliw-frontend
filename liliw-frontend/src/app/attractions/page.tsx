@@ -169,7 +169,7 @@ export default function AttractionsPage() {
   const hasFilters = query || selectedType !== 'all';
 
   return (
-    <div className="min-h-screen bg-white" suppressHydrationWarning>
+    <div className="min-h-screen page-ground" suppressHydrationWarning>
 
       <PageBanner
         title="Attractions"
