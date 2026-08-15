@@ -296,7 +296,10 @@ function FeaturedVideos() {
   const [activeId, setActiveId] = useState(FEATURED_VIDEOS[0].id);
   const others = FEATURED_VIDEOS.filter(v => v.id !== activeId);
   return (
-    <section className="py-14 bg-white">
+    // No bg-white here: it was the last full-width white slab on the page and
+    // cut a blank block out of the cream ground. The player is already a black
+    // rectangle; it needs no sheet behind it.
+    <section className="py-14">
       <div className="max-w-7xl mx-auto px-4">
         <FestiveHeading title="Featured Videos" sub="Watch and experience the beauty of Liliw" />
         <div className="flex flex-col lg:flex-row gap-5">
