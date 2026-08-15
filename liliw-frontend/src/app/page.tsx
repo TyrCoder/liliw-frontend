@@ -481,14 +481,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* The blue curve above is enough of a transition: the cream
-          ground behind this section is the site-wide background. */}
+      {/* Navy dissolving into the ground. */}
+      <Wave />
 
       {/* ══════════════════════════════════════════════════════
           FEATURED ATTRACTIONS
           ══════════════════════════════════════════════════════ */}
-
-        <section className="pt-16 pb-20 max-w-7xl mx-auto px-4">
+      <section className="pt-10 pb-16 max-w-7xl mx-auto px-4">
           {/* The five ways in, as one strip. The coloured squares above answer
               "what is here"; this answers "take me there" at the point where
               the reader is already looking at attractions. */}
@@ -559,10 +558,13 @@ export default function Home() {
           </div>
         </section>
 
+      {/* The ground rising into navy. */}
+      <Wave facing="up" />
+
       {/* ══════════════════════════════════════════════════════
           THINGS TO DO — dark navy scroll section
           ══════════════════════════════════════════════════════ */}
-      <section style={{ backgroundColor: '#0B3D91', paddingTop: 60, paddingBottom: 60 }}>
+      <section style={{ backgroundColor: '#0B3D91', paddingTop: 40, paddingBottom: 60 }}>
         <div className="max-w-7xl mx-auto px-4">
           <FestiveHeading title="Things to Do" sub="Activities and experiences across Liliw" light />
 
