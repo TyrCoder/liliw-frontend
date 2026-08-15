@@ -50,7 +50,14 @@
  */
 body {
   background-color: #FBF7EE;
-  background-image: url('/images/liliw-cream.webp');
+  /* A cream veil over the artwork, not a lower opacity on it: a background
+     image cannot be faded directly, and wrapping the whole site in a
+     semi-transparent layer would fade the content with it. Two stops of the same
+     cream at 86% leave the church and the slippers reading at roughly a tenth
+     of their painted strength — present, never competing with a card. */
+  background-image:
+    linear-gradient(rgba(251, 247, 238, 0.86), rgba(251, 247, 238, 0.86)),
+    url('/images/liliw-cream.webp');
   background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
