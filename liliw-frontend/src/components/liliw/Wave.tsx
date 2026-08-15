@@ -23,6 +23,7 @@ export default function Wave({
   facing = 'down',
   height = 70,
   from,
+  fill,
   className = '',
 }: {
   /** 'down' hangs the blue from the top edge; 'up' stands it on the bottom. */
@@ -30,6 +31,8 @@ export default function Wave({
   height?: number;
   /** Solid colour behind the wave, for continuing a coloured section. */
   from?: string;
+  /** Overrides the blue — the footer sits on a lighter one. */
+  fill?: string;
   className?: string;
 }) {
   const down = facing === 'down';
@@ -58,14 +61,14 @@ export default function Wave({
         <defs>
           {/* The woven diagonal, inside the blue only — the same motif as the
               banners, at an opacity that reads as texture and not as pattern. */}
-          <pattern id={`weave-${facing}`} width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <rect width="14" height="14" fill={ROYAL} />
+          <pattern id={`weave-${facing}-${fill ?? 'royal'}`} width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="14" height="14" fill={fill ?? ROYAL} />
             <rect width="2" height="14" fill={GOLD} opacity="0.10" />
             <rect width="14" height="2" fill={GOLD} opacity="0.07" />
           </pattern>
         </defs>
 
-        <path d={shape} fill={`url(#weave-${facing})`} />
+        <path d={shape} fill={`url(#weave-${facing}-${fill ?? 'royal'})`} />
         <path d={edge} fill="none" stroke={GOLD} strokeWidth="2.5" opacity="0.9" vectorEffect="non-scaling-stroke" />
       </svg>
     </div>
