@@ -44,13 +44,21 @@ export default function Wave({
   // side of centre. The first version undulated by a few units across 1440 and
   // came out looking like a slightly crooked straight line, which is worse
   // than no wave at all.
-  const shape = down
-    ? 'M0,0 H1440 V34 C1180,96 940,4 660,40 C420,71 200,20 0,52 Z'
-    : 'M0,90 H1440 V56 C1180,-6 940,86 660,50 C420,19 200,70 0,38 Z';
-
+  // Quadratics with a reflected control point (T), which is the one reliable
+  // way to draw a sine by hand: each hump mirrors the last automatically.
+  //
+  // The amplitude is where the earlier attempts went wrong. A cubic only
+  // travels about a third of the way towards its control points, so control
+  // values that looked extreme produced a curve that barely moved. A quadratic
+  // reaches (P0 + 2C + P2) / 4 at its midpoint, so a control at y = -25 puts
+  // the crest at y = 10 in a 90-tall box. That is a wave you can see.
   const edge = down
-    ? 'M0,52 C200,20 420,71 660,40 C940,4 1180,96 1440,34'
-    : 'M0,38 C200,70 420,19 660,50 C940,86 1180,-6 1440,56';
+    ? 'M0,45 Q360,115 720,45 T1440,45'
+    : 'M0,45 Q360,-25 720,45 T1440,45';
+
+  const shape = down
+    ? `${edge} L1440,0 L0,0 Z`
+    : `${edge} L1440,90 L0,90 Z`;
 
   return (
     <div

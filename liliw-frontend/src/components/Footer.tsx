@@ -129,14 +129,14 @@ export default function Footer() {
     <>
       {iosModalOpen && <IOSInstallModal onClose={() => setIosModalOpen(false)} />}
 
-      <footer className="mt-0" style={{ backgroundColor: '#0F5FB5' }}>
-        {/* Wave top — white wave on blue */}
-        {/* The shared wave, so the footer joins the page the same way every
-            other section does. Its own copy ran corner to corner — full height
-            at the left, nothing at the right — which read as the footer being
-            sliced off rather than flowing into. */}
-        <Wave facing="up" fill="#0F5FB5" />
+      {/* Outside the footer, not inside it.
+          Inside, the footer's own blue filled everything above the curve, so
+          the wave had blue on both sides of it and read as a gold squiggle
+          drawn across a solid band. Out here the page is above the curve and
+          the blue only below, which is what makes it a wave. */}
+      <Wave facing="up" fill="#0F5FB5" />
 
+      <footer className="mt-0" style={{ backgroundColor: '#0F5FB5' }}>
         <div className="max-w-6xl mx-auto px-5 pt-10 pb-10 text-white">
 
           {/* Three columns on desktop, stacked and centred on a phone. The
