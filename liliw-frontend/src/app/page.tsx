@@ -10,6 +10,8 @@ import {
   Layers, Sparkles, QrCode, Award, Gift, Play,
 } from 'lucide-react';
 import { stripHtml } from '@/lib/text';
+import ExploreBackdrop from '@/components/liliw/ExploreBackdrop';
+import { Marquee, Ornament } from '@/components/liliw/festive';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -158,24 +160,40 @@ function OverlayCard({ item }: { item: any }) {
 
   return (
     <Link href={`/attractions/${item.id}`}
-      className="block relative rounded-2xl overflow-hidden group shadow-md hover:shadow-2xl transition-shadow"
-      style={{ aspectRatio: '4/3' }}>
+      // The lift and the gold edge on hover: on a cream ground a shadow alone
+      // barely registers, and the card needs to look liftable before it lifts.
+      className="block relative rounded-2xl overflow-hidden group transition-all duration-300 hover:-translate-y-1.5"
+      style={{
+        aspectRatio: '4/3',
+        boxShadow: '0 8px 22px rgba(11,61,145,0.16)',
+        outline: '1px solid rgba(11,61,145,0.06)',
+        outlineOffset: -1,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 20px 44px rgba(11,61,145,0.3)';
+        e.currentTarget.style.outline = '2px solid rgba(245,197,24,0.75)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 8px 22px rgba(11,61,145,0.16)';
+        e.currentTarget.style.outline = '1px solid rgba(11,61,145,0.06)';
+      }}>
       {cover
-        ? <img src={cover} alt={a.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        ? <img src={cover} alt={a.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.07] transition-transform duration-700" />
         : <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${grads[0]}, ${grads[1]})` }} />
       }
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-4">
         <h3 className="text-white font-bold text-base leading-tight mb-2 line-clamp-2"
-          style={{ fontFamily: HL }}>{a.name || 'Unnamed'}</h3>
-        <div className="flex flex-wrap gap-1.5">
-          <span className="text-white text-xs font-bold px-2.5 py-0.5 rounded"
+          style={{ fontFamily: HL, textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>{a.name || 'Unnamed'}</h3>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-white text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
             style={{ backgroundColor: badge, fontFamily: HL }}>
             {label}
           </span>
           {a.location && (
-            <span className="text-white/90 text-xs font-semibold px-2.5 py-0.5 rounded"
-              style={{ backgroundColor: 'rgba(255,255,255,0.22)', fontFamily: BL }}>
+            <span className="inline-flex items-center gap-1 text-white/90 text-[11px] font-semibold px-2.5 py-1 rounded-full"
+              style={{ backgroundColor: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(4px)', fontFamily: BL }}>
+              <MapPin className="w-3 h-3 shrink-0" />
               {a.location}
             </span>
           )}
@@ -469,41 +487,78 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════
           FEATURED ATTRACTIONS
           ══════════════════════════════════════════════════════ */}
-      <section className="py-14 max-w-7xl mx-auto px-4">
-        <FestiveHeading
-          title="Explore Liliw"
-          sub="Hand-picked attractions waiting to be discovered" />
+      <ExploreBackdrop>
+        <section className="pt-24 pb-28 max-w-7xl mx-auto px-4">
+          {/* The five ways in, as one strip. The coloured squares above answer
+              "what is here"; this answers "take me there" at the point where
+              the reader is already looking at attractions. */}
+          <nav className="flex justify-center mb-12">
+            <div className="flex flex-wrap justify-center gap-1 p-1.5 rounded-full"
+              style={{
+                backgroundColor: '#0B3D91',
+                border: '1px solid rgba(245,197,24,0.55)',
+                boxShadow: '0 10px 28px rgba(11,61,145,0.25)',
+              }}>
+              {QUICK_LINKS.map(({ label, href }) => (
+                <Link key={href} href={href}
+                  className="px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider text-white/80 transition-colors hover:text-[#0B3D91] hover:bg-[#F5C518]"
+                  style={{ fontFamily: HL }}>
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </nav>
 
-        {featured.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {featured.slice(0, 6).map((item, i) => (
-              <motion.div key={`${item.id}-${i}`}
-                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.07 }} viewport={{ once: true }}>
-                <OverlayCard item={item} />
-              </motion.div>
-            ))}
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center gap-4 sm:gap-6">
+              <Ornament className="w-6 h-6 sm:w-8 sm:h-8 shrink-0" />
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-none"
+                style={{ fontFamily: HL, fontWeight: 900, letterSpacing: '0.02em' }}>
+                <Marquee>Explore Liliw</Marquee>
+              </h2>
+              <Ornament className="w-6 h-6 sm:w-8 sm:h-8 shrink-0" />
+            </div>
+            <p className="text-sm sm:text-base mt-5" style={{ fontFamily: BL, color: '#5C7099' }}>
+              Hand-picked attractions waiting to be discovered
+            </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="rounded-2xl bg-gray-200 animate-pulse" style={{ aspectRatio: '4/3' }} />
-            ))}
+
+          {featured.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featured.slice(0, 6).map((item, i) => (
+                <motion.div key={`${item.id}-${i}`}
+                  initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: i * 0.07 }} viewport={{ once: true }}>
+                  <OverlayCard item={item} />
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="rounded-2xl animate-pulse"
+                  style={{ aspectRatio: '4/3', backgroundColor: 'rgba(11,61,145,0.08)' }} />
+              ))}
+            </div>
+          )}
+
+          <div className="text-center mt-12">
+            <Link href="/attractions"
+              className="group inline-flex items-center gap-2.5 px-9 py-3.5 rounded-full font-bold text-sm transition-all hover:-translate-y-0.5"
+              style={{
+                backgroundColor: '#0B3D91',
+                color: '#FFFFFF',
+                fontFamily: HL,
+                letterSpacing: '0.06em',
+                border: '1.5px solid #F5C518',
+                boxShadow: '0 10px 26px rgba(11,61,145,0.32)',
+              }}>
+              View All Attractions
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" style={{ color: '#F5C518' }} />
+            </Link>
           </div>
-        )}
-
-        <div className="text-center mt-8">
-          <Link href="/attractions"
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-bold text-sm transition hover:opacity-90"
-            style={{ backgroundColor: '#1565C0', color: 'white', fontFamily: BL,
-              boxShadow: '0 4px 16px rgba(21,101,192,0.3)' }}>
-            View All Attractions <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </section>
-
-      {/* Wave: white → navy */}
-      <WaveUp from="#ffffff" to="#0B3D91" />
+        </section>
+      </ExploreBackdrop>
 
       {/* ══════════════════════════════════════════════════════
           THINGS TO DO — dark navy scroll section
