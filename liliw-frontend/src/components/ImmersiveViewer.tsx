@@ -3,7 +3,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { Html, Billboard, Text } from '@react-three/drei';
-import { XR, createXRStore, useXR } from '@react-three/xr';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -13,8 +12,6 @@ import {
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import type { Hotspot } from '@/lib/types';
-
-const xrStore = createXRStore();
 
 export interface Scene {
   id: string;
@@ -613,24 +610,21 @@ function StereoRenderer() {
   return null;
 }
 
-/* ── VR ──────────────────────────────────────────────────────────────────────
+/* ── Gaze ────────────────────────────────────────────────────────────────────
  *
- * Hotspots outside VR are DOM: drei's <Html>, which is an overlay positioned
- * on top of the canvas. A WebXR session does not composite the DOM, so inside
- * a headset those markers do not exist — the tour was a panorama with nothing
- * in it and no way to move between scenes.
+ * The ordinary hotspots are DOM: drei's <Html>, an overlay positioned over the
+ * canvas by the one main camera. In a split view they would land in a single
+ * eye and in the wrong place, so cardboard draws them again as geometry and
+ * aims at them with a reticle: look at one, hold for a moment, it fires.
  *
- * So in a session the hotspots are drawn again as actual geometry, and aimed
- * at with a gaze reticle: look at one, hold for a moment, and it fires. Gaze
- * rather than a controller ray because most people reaching this will be
- * holding a phone in a cardboard viewer with no controller at all.
+ * Gaze rather than a pointer because both hands are holding the viewer.
  */
 const GAZE_SECONDS = 1.4;
 const NAV_COLOR = '#1565C0';
 const INFO_COLOR = '#FFB400';
 
 /** A hotspot as geometry: a ring, a filled centre, and its label above. */
-function VRHotspot({
+function CardboardHotspot({
   hotspot, label, register,
 }: {
   hotspot: Hotspot;
@@ -680,20 +674,17 @@ function VRHotspot({
 /**
  * The reticle, and the gaze that drives it.
  *
- * Rendered only during a session. Outside one it would be a dot stuck in the
- * middle of the screen that the mouse already does a better job of.
+ * Only while cardboard is on. On the flat page it would be a dot stuck in the
+ * middle of the screen doing a worse job than the pointer already does.
  */
-function VRGaze({
-  hotspots, scenes, onSelect, cardboard,
+function CardboardGaze({
+  hotspots, scenes, onSelect, active,
 }: {
   hotspots: Hotspot[];
   scenes: Scene[];
   onSelect: (h: Hotspot) => void;
-  /** Cardboard has no XR session but needs exactly the same markers and dot. */
-  cardboard: boolean;
+  active: boolean;
 }) {
-  const session = useXR((s) => s.session);
-  const active = !!session || cardboard;
   const { camera } = useThree();
 
   const targets = useRef(new Map<string, THREE.Mesh>());
@@ -749,7 +740,7 @@ function VRGaze({
   return (
     <>
       {hotspots.map((h) => (
-        <VRHotspot
+        <CardboardHotspot
           key={h.id}
           hotspot={h}
           label={
@@ -776,9 +767,7 @@ function VRGaze({
 }
 
 /** A hotspot's description, as geometry, for when there is no DOM to put it in. */
-function VRInfoPanel({ hotspot, cardboard }: { hotspot: Hotspot | null; cardboard: boolean }) {
-  const session = useXR((s) => s.session);
-  const active = !!session || cardboard;
+function CardboardInfoPanel({ hotspot, active }: { hotspot: Hotspot | null; active: boolean }) {
   const { camera } = useThree();
   const group = useRef<THREE.Group>(null);
   const forward = useRef(new THREE.Vector3());
@@ -1051,8 +1040,6 @@ export default function ImmersiveViewer({
   // the viewport instead — iPhone. Treated as fullscreen everywhere below.
   const [fauxFullscreen, setFauxFullscreen] = useState(false);
   const filling = isFullscreen || fauxFullscreen;
-  const [vrSupported, setVrSupported] = useState(false);
-  const [arSupported, setArSupported] = useState(false);
   const [autoRotate, setAutoRotate] = useState(!editMode);
   const [resetSignal, setResetSignal] = useState(0);
   // Hotspots initialized once from props — NOT synced on re-render to avoid losing edits
@@ -1086,9 +1073,6 @@ export default function ImmersiveViewer({
       window.matchMedia('(pointer: coarse)').matches,
     );
 
-    if (!navigator.xr) return;
-    navigator.xr.isSessionSupported('immersive-vr').then(setVrSupported).catch(() => {});
-    navigator.xr.isSessionSupported('immersive-ar').then(setArSupported).catch(() => {});
   }, []);
 
   // Leaving fullscreen by the browser's own gesture — the back swipe, the
@@ -1204,7 +1188,7 @@ export default function ImmersiveViewer({
    * The info case cannot reuse setActiveInfo: that popup is DOM, and the whole
    * reason this exists is that the DOM is not composited in a session.
    */
-  const handleVRSelect = useCallback((h: Hotspot) => {
+  const handleGazeSelect = useCallback((h: Hotspot) => {
     if (h.type === 'navigate' && h.targetSceneIndex !== undefined) {
       setVrInfo(null);
       goToScene(h.targetSceneIndex);
@@ -1268,19 +1252,15 @@ export default function ImmersiveViewer({
   };
 
   /**
-   * One button, two routes.
+   * Into cardboard: motion sensors, the screen filled, and landscape.
    *
-   * A real headset gets a real WebXR session. Everything else — which in
-   * practice is every phone in Liliw — gets cardboard mode, which needs the
-   * motion sensors, the screen filled, and landscape.
+   * There is no WebXR path. It was tried and removed — Chrome on an ordinary
+   * Android phone reports immersive-vr as unsupported and Safari has no WebXR
+   * at all, so the branch existed for hardware nobody visiting Liliw is
+   * holding, while doubling what had to be kept working.
    */
-  const enterVR = async () => {
+  const enterCardboard = async () => {
     setVrNotice('');
-
-    if (vrSupported) {
-      xrStore.enterVR();
-      return;
-    }
 
     const granted = await requestOrientationAccess();
     if (!granted) {
@@ -1448,7 +1428,6 @@ export default function ImmersiveViewer({
               gl.domElement.addEventListener('webglcontextlost', (e) => e.preventDefault(), false);
             }}
           >
-            <XR store={xrStore}>
               <PanoramaSphere
                 key={current.imageUrl}
                 url={current.imageUrl}
@@ -1459,7 +1438,7 @@ export default function ImmersiveViewer({
               />
               {/* The DOM markers are positioned by the single main camera, so
                   in a split view they would sit in one eye and in the wrong
-                  place. The geometry markers in VRGaze replace them. */}
+                  place. CardboardGaze draws them as geometry instead. */}
               {!cardboard && sceneHotspots.map((h) => (
                 <HotspotMarker
                   key={h.id}
@@ -1486,14 +1465,13 @@ export default function ImmersiveViewer({
               <CardboardControls enabled={cardboard} />
               {cardboard && <StereoRenderer />}
 
-              {/* Alive in a WebXR session or in cardboard — see VRGaze. */}
+              {/* Only alive in cardboard — see CardboardGaze. */}
               {!editMode && (
                 <>
-                  <VRGaze hotspots={sceneHotspots} scenes={scenes} onSelect={handleVRSelect} cardboard={cardboard} />
-                  <VRInfoPanel hotspot={vrInfo} cardboard={cardboard} />
+                  <CardboardGaze hotspots={sceneHotspots} scenes={scenes} onSelect={handleGazeSelect} active={cardboard} />
+                  <CardboardInfoPanel hotspot={vrInfo} active={cardboard} />
                 </>
               )}
-            </XR>
           </Canvas>
         </div>
 
@@ -1783,11 +1761,11 @@ export default function ImmersiveViewer({
                   style={CTRL}>
                   {filling ? <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize2 className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </motion.button>
-                {!editMode && (vrSupported || canCardboard) && (
+                {!editMode && canCardboard && (
                   <motion.button
-                    onClick={enterVR}
+                    onClick={enterCardboard}
                     whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
-                    title={vrSupported ? 'Enter VR' : 'Split the screen for a cardboard viewer'}
+                    title="Split the screen for a cardboard viewer"
                     className="p-3 rounded-xl flex items-center gap-1.5 text-xs font-bold transition"
                     style={{ backgroundColor: '#F5C518', color: '#0A1A40', minWidth: 46, minHeight: 46, boxShadow: '0 6px 18px rgba(0,0,0,0.4)' }}>
                     <Headphones className="w-5 h-5" />
