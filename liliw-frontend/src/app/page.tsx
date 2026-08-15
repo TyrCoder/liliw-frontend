@@ -456,6 +456,19 @@ export default function Home() {
             }} />
           )}
         </div>
+
+        {/* The hero ends on a hard horizontal line against the navy below it —
+            two blues meeting edge to edge, which reads as a seam rather than a
+            join. This dissolves the last 120px of it into exactly the navy
+            that follows, so the two become one field. */}
+        <div
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 pointer-events-none"
+          style={{
+            height: 120,
+            background: 'linear-gradient(to bottom, rgba(11,61,145,0) 0%, rgba(11,61,145,0.55) 45%, #0B3D91 100%)',
+          }}
+        />
       </section>
 
       {/* ══════════════════════════════════════════════════════
