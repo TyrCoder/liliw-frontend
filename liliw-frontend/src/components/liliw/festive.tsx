@@ -214,22 +214,27 @@ export function LiliwScene({
     <div
       className={`relative overflow-hidden ${modal ? 'px-7 pt-9 pb-11' : 'px-5 pt-10 pb-12 sm:pt-12 sm:pb-14'}`}
       style={{
-        // The church sits left and the slippers right in the artwork, so the
-        // middle stays clear for the words however the image is cropped.
-        backgroundImage: 'url(/images/login-banner.webp)',
+        // Two pieces of artwork, one component. The modal keeps the painted
+        // night scene; pages take the deep-blue heritage banner, whose church
+        // sits left and slippers right so the middle stays clear for the words
+        // however the image is cropped.
+        backgroundImage: `url(${modal ? '/images/login-banner.webp' : '/images/liliw-banner.webp'})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundColor: '#0A2A6B',
       }}
     >
-      {/* A vignette through the centre only. The scene is detailed behind the
-          letters, and the subtitle loses contrast without it — dimming the
-          whole image would flatten artwork that is the point of the design. */}
-      <div
-        className="absolute inset-0"
-        style={{ background: 'radial-gradient(ellipse at 50% 55%, rgba(6,26,72,0.62) 0%, rgba(6,26,72,0.26) 55%, transparent 80%)' }}
-        aria-hidden
-      />
+      {/* A vignette through the centre only, and only on the modal. The night
+          scene is detailed behind the letters and the subtitle loses contrast
+          without it; the page banner is already an open blue field in the
+          middle, so dimming it would only mute the artwork. */}
+      {modal && (
+        <div
+          className="absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse at 50% 55%, rgba(6,26,72,0.62) 0%, rgba(6,26,72,0.26) 55%, transparent 80%)' }}
+          aria-hidden
+        />
+      )}
 
       <div className={`relative z-10 ${modal ? '' : 'max-w-6xl mx-auto'}`}>
         {children}
@@ -292,15 +297,27 @@ export function LiliwScene({
         </div>
       </div>
 
-      {/* Wave into whatever follows — the device the rest of the site uses
-          between sections. */}
+      {/* The wave out of the banner — one curve, every page.
+       *
+       * Filled with the ground's own base cream rather than masking the banner
+       * to the curve. A mask would let the heritage artwork show inside the
+       * wave, but it has to track this exact path at every width to avoid a
+       * hairline of blue along the edge, and at 24–36px tall the difference is
+       * invisible: the band reads as the cream page starting. */}
       <svg
         viewBox="0 0 400 26" preserveAspectRatio="none"
-        className="absolute bottom-0 left-0 w-full h-6"
+        className="absolute bottom-0 left-0 w-full h-6 sm:h-9"
         aria-hidden
       >
-        <path d="M0 14c60 12 120-12 200-6s140 18 200 6v12H0z" fill="#F9F6F0" />
-        <path d="M0 14c60 12 120-12 200-6s140 18 200 6" fill="none" stroke={GOLD} strokeWidth="1.5" opacity="0.75" />
+        <path d="M0 14c60 12 120-12 200-6s140 18 200 6v12H0z" fill="#FBF7EE" />
+        <path
+          d="M0 14c60 12 120-12 200-6s140 18 200 6"
+          fill="none"
+          stroke={GOLD}
+          strokeWidth="1.5"
+          opacity="0.8"
+          vectorEffect="non-scaling-stroke"
+        />
       </svg>
     </div>
   );
