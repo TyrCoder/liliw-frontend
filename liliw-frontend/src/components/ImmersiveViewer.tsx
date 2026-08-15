@@ -370,12 +370,14 @@ function HotspotMarker({
 
 // ─── Drag Controls (touch-action: none fixes mobile scroll) ───────────────
 
-function DragControls({ editMode, autoRotate, draggingRef, resetSignal }: {
+function DragControls({ editMode, autoRotate, draggingRef, resetSignal, enabled }: {
   editMode: boolean;
   autoRotate: boolean;
   draggingRef: React.MutableRefObject<boolean>;
   /** Bumped by the recentre button. The view eases back rather than snapping. */
   resetSignal: number;
+  /** Off while the phone's own motion is steering the camera. */
+  enabled: boolean;
 }) {
   const { camera, gl } = useThree();
   const prev = useRef({ x: 0, y: 0 });
@@ -453,6 +455,10 @@ function DragControls({ editMode, autoRotate, draggingRef, resetSignal }: {
   }, [camera, gl]);
 
   useFrame((_, delta) => {
+    // In cardboard mode the head is the input. Writing rotation here as well
+    // would fight the sensor and the horizon would judder.
+    if (!enabled) return;
+
     smooth.current.x += (target.current.x - smooth.current.x) * 0.05;
     smooth.current.y += (target.current.y - smooth.current.y) * 0.05;
     camera.rotation.y = smooth.current.x;
@@ -468,6 +474,141 @@ function DragControls({ editMode, autoRotate, draggingRef, resetSignal }: {
       target.current.x -= delta * 0.08;
     }
   });
+
+  return null;
+}
+
+/* ── Cardboard ───────────────────────────────────────────────────────────────
+ *
+ * WebXR reaches almost nobody here. Chrome on an ordinary Android phone
+ * reports immersive-vr as unsupported, and Safari has no WebXR at all, so the
+ * VR button was hidden on every device a visitor to Liliw is likely to own.
+ *
+ * Cardboard mode is the same experience without WebXR: the phone's own motion
+ * sensors turn the camera, the panorama is drawn twice side by side for a
+ * £5 plastic viewer, and the gaze reticle below does the selecting. It is not
+ * a headset — there is no positional tracking, only orientation — but it is
+ * the version of VR that the people holding these phones can actually use.
+ */
+
+/** Ask iOS for the motion sensors. Everywhere else they are simply available. */
+async function requestOrientationAccess(): Promise<boolean> {
+  if (typeof window === 'undefined' || !('DeviceOrientationEvent' in window)) return false;
+  const doe = window.DeviceOrientationEvent as any;
+  // iOS 13+ gates the sensors behind a user gesture and an explicit grant.
+  if (typeof doe.requestPermission === 'function') {
+    try {
+      return (await doe.requestPermission()) === 'granted';
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Turns the camera with the phone.
+ *
+ * The quaternion maths is the long-standing DeviceOrientationControls recipe:
+ * the device euler in YXZ, rotated -90° about x to bring the phone from
+ * screen-up to looking forward, then corrected for how the screen itself is
+ * rotated. three dropped the control from core, not the technique.
+ */
+function CardboardControls({ enabled }: { enabled: boolean }) {
+  const { camera } = useThree();
+  const angles = useRef<{ alpha: number; beta: number; gamma: number } | null>(null);
+  const screenAngle = useRef(0);
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const onOrient = (e: DeviceOrientationEvent) => {
+      if (e.alpha == null || e.beta == null || e.gamma == null) return;
+      angles.current = { alpha: e.alpha, beta: e.beta, gamma: e.gamma };
+    };
+    const onScreen = () => {
+      screenAngle.current = (screen.orientation?.angle ?? (window as any).orientation ?? 0) as number;
+    };
+
+    onScreen();
+    window.addEventListener('deviceorientation', onOrient, true);
+    window.addEventListener('orientationchange', onScreen);
+    screen.orientation?.addEventListener?.('change', onScreen);
+    return () => {
+      window.removeEventListener('deviceorientation', onOrient, true);
+      window.removeEventListener('orientationchange', onScreen);
+      screen.orientation?.removeEventListener?.('change', onScreen);
+    };
+  }, [enabled]);
+
+  const euler = useRef(new THREE.Euler());
+  const q1 = useRef(new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5)));
+  const spin = useRef(new THREE.Quaternion());
+  const zee = useRef(new THREE.Vector3(0, 0, 1));
+
+  useFrame(() => {
+    if (!enabled || !angles.current) return;
+    const d = Math.PI / 180;
+    const { alpha, beta, gamma } = angles.current;
+
+    euler.current.set(beta * d, alpha * d, -gamma * d, 'YXZ');
+    camera.quaternion.setFromEuler(euler.current);
+    camera.quaternion.multiply(q1.current);
+    camera.quaternion.multiply(spin.current.setFromAxisAngle(zee.current, -screenAngle.current * d));
+  });
+
+  return null;
+}
+
+/**
+ * Draws the scene twice, one eye either side.
+ *
+ * Mounted only in cardboard mode. A useFrame priority above zero takes over
+ * from r3f's own render loop, which is what makes the two passes possible —
+ * and is also why this must not be mounted otherwise, or nothing renders at
+ * all in the ordinary view.
+ */
+function StereoRenderer() {
+  const { gl, scene, camera, size } = useThree();
+  const stereo = useRef(new THREE.StereoCamera());
+
+  useEffect(() => {
+    stereo.current.eyeSep = 0.064; // average human interpupillary distance, in metres
+    const cam = camera as THREE.PerspectiveCamera;
+    const previousAspect = cam.aspect;
+    // Each eye owns half the width, so the projection has to be built for a
+    // half-width viewport or everything comes out stretched.
+    cam.aspect = size.width / 2 / size.height;
+    cam.updateProjectionMatrix();
+
+    return () => {
+      cam.aspect = previousAspect;
+      cam.updateProjectionMatrix();
+      gl.setScissorTest(false);
+      gl.setViewport(0, 0, size.width, size.height);
+      gl.setScissor(0, 0, size.width, size.height);
+    };
+  }, [camera, gl, size.width, size.height]);
+
+  useFrame(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    cam.updateWorldMatrix(true, false);
+    stereo.current.update(cam);
+
+    const w = size.width / 2;
+    const h = size.height;
+    const dpr = gl.getPixelRatio();
+
+    gl.setScissorTest(true);
+    gl.setScissor(0, 0, w * dpr, h * dpr);
+    gl.setViewport(0, 0, w * dpr, h * dpr);
+    gl.render(scene, stereo.current.cameraL);
+
+    gl.setScissor(w * dpr, 0, w * dpr, h * dpr);
+    gl.setViewport(w * dpr, 0, w * dpr, h * dpr);
+    gl.render(scene, stereo.current.cameraR);
+    gl.setScissorTest(false);
+  }, 1);
 
   return null;
 }
@@ -543,13 +684,16 @@ function VRHotspot({
  * middle of the screen that the mouse already does a better job of.
  */
 function VRGaze({
-  hotspots, scenes, onSelect,
+  hotspots, scenes, onSelect, cardboard,
 }: {
   hotspots: Hotspot[];
   scenes: Scene[];
   onSelect: (h: Hotspot) => void;
+  /** Cardboard has no XR session but needs exactly the same markers and dot. */
+  cardboard: boolean;
 }) {
   const session = useXR((s) => s.session);
+  const active = !!session || cardboard;
   const { camera } = useThree();
 
   const targets = useRef(new Map<string, THREE.Mesh>());
@@ -565,7 +709,7 @@ function VRGaze({
   const forward = useRef(new THREE.Vector3());
 
   useFrame((_, delta) => {
-    if (!session || !group.current) return;
+    if (!active || !group.current) return;
 
     // Sit the reticle a fixed distance ahead of wherever the head is looking,
     // facing the viewer. Close enough to focus on, far enough not to swim.
@@ -600,7 +744,7 @@ function VRGaze({
     }
   });
 
-  if (!session) return null;
+  if (!active) return null;
 
   return (
     <>
@@ -632,8 +776,9 @@ function VRGaze({
 }
 
 /** A hotspot's description, as geometry, for when there is no DOM to put it in. */
-function VRInfoPanel({ hotspot }: { hotspot: Hotspot | null }) {
+function VRInfoPanel({ hotspot, cardboard }: { hotspot: Hotspot | null; cardboard: boolean }) {
   const session = useXR((s) => s.session);
+  const active = !!session || cardboard;
   const { camera } = useThree();
   const group = useRef<THREE.Group>(null);
   const forward = useRef(new THREE.Vector3());
@@ -645,7 +790,7 @@ function VRInfoPanel({ hotspot }: { hotspot: Hotspot | null }) {
     group.current.quaternion.copy(camera.quaternion);
   });
 
-  if (!session || !hotspot) return null;
+  if (!active || !hotspot) return null;
 
   return (
     <group ref={group}>
@@ -920,6 +1065,10 @@ export default function ImmersiveViewer({
   const [armed, setArmed] = useState(false);
   const [activeInfo, setActiveInfo] = useState<Hotspot | null>(null);
   const [vrInfo, setVrInfo] = useState<Hotspot | null>(null);
+  const [cardboard, setCardboard] = useState(false);
+  const [canCardboard, setCanCardboard] = useState(false);
+  const [vrNotice, setVrNotice] = useState('');
+  const [isPortrait, setIsPortrait] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -929,10 +1078,30 @@ export default function ImmersiveViewer({
   const sceneHotspots = hotspots.filter((h) => (h.sceneIndex ?? 0) === sceneIndex);
 
   useEffect(() => {
+    // Cardboard needs orientation sensors and a phone-shaped device. A laptop
+    // reports DeviceOrientationEvent as a type but never fires it, and
+    // offering VR there would be a button that does nothing.
+    setCanCardboard(
+      'DeviceOrientationEvent' in window &&
+      window.matchMedia('(pointer: coarse)').matches,
+    );
+
     if (!navigator.xr) return;
     navigator.xr.isSessionSupported('immersive-vr').then(setVrSupported).catch(() => {});
     navigator.xr.isSessionSupported('immersive-ar').then(setArSupported).catch(() => {});
   }, []);
+
+  // Leaving fullscreen by the browser's own gesture — the back swipe, the
+  // Escape key — must take cardboard mode with it, or the reader is left in a
+  // split-screen page they cannot get out of.
+  useEffect(() => {
+    if (!cardboard) return;
+    const mq = window.matchMedia('(orientation: portrait)');
+    const sync = () => setIsPortrait(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, [cardboard]);
 
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -1098,6 +1267,66 @@ export default function ImmersiveViewer({
     }
   };
 
+  /**
+   * One button, two routes.
+   *
+   * A real headset gets a real WebXR session. Everything else — which in
+   * practice is every phone in Liliw — gets cardboard mode, which needs the
+   * motion sensors, the screen filled, and landscape.
+   */
+  const enterVR = async () => {
+    setVrNotice('');
+
+    if (vrSupported) {
+      xrStore.enterVR();
+      return;
+    }
+
+    const granted = await requestOrientationAccess();
+    if (!granted) {
+      setVrNotice('Motion access was declined, so the view cannot follow your phone.');
+      setTimeout(() => setVrNotice(''), 5000);
+      return;
+    }
+
+    setAutoRotate(false);
+    setCardboard(true);
+
+    const el = containerRef.current;
+    if (el && typeof el.requestFullscreen === 'function' && !document.fullscreenElement) {
+      try { await el.requestFullscreen(); } catch { setFauxFullscreen(true); }
+    } else {
+      setFauxFullscreen(true);
+    }
+
+    // Best effort: Android honours this, iOS ignores it and the hint below
+    // asks the reader to turn the phone themselves.
+    try { await (screen.orientation as any)?.lock?.('landscape'); } catch { /* not available */ }
+  };
+
+  const exitCardboard = useCallback(() => {
+    setCardboard(false);
+    setVrInfo(null);
+    setFauxFullscreen(false);
+    try { (screen.orientation as any)?.unlock?.(); } catch { /* not available */ }
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  }, []);
+
+  // Leaving fullscreen by the browser's own gesture — the back swipe, the
+  // Escape key — must take cardboard mode with it, or the reader is left in a
+  // split-screen page with no obvious way out.
+  useEffect(() => {
+    if (!cardboard) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') exitCardboard(); };
+    const onFs = () => { if (!document.fullscreenElement && !fauxFullscreen) exitCardboard(); };
+    window.addEventListener('keydown', onKey);
+    document.addEventListener('fullscreenchange', onFs);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('fullscreenchange', onFs);
+    };
+  }, [cardboard, fauxFullscreen, exitCardboard]);
+
   const takeScreenshot = () => {
     if (!glRef.current) return;
     const link = document.createElement('a');
@@ -1228,7 +1457,10 @@ export default function ImmersiveViewer({
                 onPlace={onPlace}
                 onReady={onReady}
               />
-              {sceneHotspots.map((h) => (
+              {/* The DOM markers are positioned by the single main camera, so
+                  in a split view they would sit in one eye and in the wrong
+                  place. The geometry markers in VRGaze replace them. */}
+              {!cardboard && sceneHotspots.map((h) => (
                 <HotspotMarker
                   key={h.id}
                   hotspot={h}
@@ -1242,22 +1474,68 @@ export default function ImmersiveViewer({
                   draggingRef={draggingRef}
                 />
               ))}
-              <DragControls editMode={editMode} autoRotate={autoRotate} draggingRef={draggingRef} resetSignal={resetSignal} />
+              <DragControls
+                editMode={editMode}
+                autoRotate={autoRotate}
+                draggingRef={draggingRef}
+                resetSignal={resetSignal}
+                enabled={!cardboard}
+              />
               <ScreenshotHelper glRef={glRef} />
 
-              {/* Only alive inside a session — see the note above VRGaze. */}
+              <CardboardControls enabled={cardboard} />
+              {cardboard && <StereoRenderer />}
+
+              {/* Alive in a WebXR session or in cardboard — see VRGaze. */}
               {!editMode && (
                 <>
-                  <VRGaze hotspots={sceneHotspots} scenes={scenes} onSelect={handleVRSelect} />
-                  <VRInfoPanel hotspot={vrInfo} />
+                  <VRGaze hotspots={sceneHotspots} scenes={scenes} onSelect={handleVRSelect} cardboard={cardboard} />
+                  <VRInfoPanel hotspot={vrInfo} cardboard={cardboard} />
                 </>
               )}
             </XR>
           </Canvas>
         </div>
 
+        {/* ── Cardboard chrome ──
+            Everything else on the glass is hidden while the screen is split:
+            a control cluster drawn once, off to one side, is worse than no
+            control at all through a pair of lenses. What is left is the way
+            out, mirrored so it lands in the same place for each eye. */}
+        {cardboard && (
+          <>
+            {[0, 1].map((eye) => (
+              <button
+                key={eye}
+                onClick={exitCardboard}
+                aria-label="Leave cardboard mode"
+                className="absolute top-3 z-30 rounded-full p-2 text-white"
+                style={{
+                  left: eye === 0 ? '3%' : '53%',
+                  background: 'rgba(9,26,66,0.75)',
+                  border: '1px solid rgba(245,197,24,0.35)',
+                }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            ))}
+
+            {isPortrait && (
+              <div className="absolute inset-x-0 bottom-6 z-30 flex justify-center pointer-events-none">
+                <span className="px-4 py-2 rounded-full text-xs font-bold text-white"
+                  style={{ background: 'rgba(9,26,66,0.85)', border: '1px solid rgba(245,197,24,0.35)' }}>
+                  Turn your phone sideways, then place it in the viewer
+                </span>
+              </div>
+            )}
+          </>
+        )}
+
         {/* ── UI Overlay ── */}
-        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none z-20">
+        <div
+          className="absolute inset-0 flex flex-col justify-between pointer-events-none z-20"
+          style={{ display: cardboard ? 'none' : undefined }}
+        >
 
           {/* Top bar */}
           <div className="flex items-start justify-between p-2 sm:p-3 gap-2">
@@ -1355,6 +1633,16 @@ export default function ImmersiveViewer({
 
           {/* Bottom section: hotspot list + thumbnails + control buttons */}
           <div className="flex flex-col gap-2 pb-2 sm:pb-3 px-2 sm:px-3">
+
+            {/* Declining motion access is a decision, not a failure — but with
+                nothing on screen the VR button simply looked broken. */}
+            {vrNotice && (
+              <div className="pointer-events-auto self-center px-3 py-2 rounded-full text-xs font-semibold text-white text-center"
+                style={{ background: 'rgba(9,26,66,0.9)', border: '1px solid rgba(245,197,24,0.35)' }}>
+                {vrNotice}
+              </div>
+            )}
+
 
             {/* Editor: hotspot list — sits just above thumbnails */}
             <AnimatePresence>
@@ -1495,11 +1783,11 @@ export default function ImmersiveViewer({
                   style={CTRL}>
                   {filling ? <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize2 className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </motion.button>
-                {!editMode && vrSupported && (
+                {!editMode && (vrSupported || canCardboard) && (
                   <motion.button
-                    onClick={() => xrStore.enterVR()}
+                    onClick={enterVR}
                     whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
-                    title="Enter VR"
+                    title={vrSupported ? 'Enter VR' : 'Split the screen for a cardboard viewer'}
                     className="p-3 rounded-xl flex items-center gap-1.5 text-xs font-bold transition"
                     style={{ backgroundColor: '#F5C518', color: '#0A1A40', minWidth: 46, minHeight: 46, boxShadow: '0 6px 18px rgba(0,0,0,0.4)' }}>
                     <Headphones className="w-5 h-5" />
