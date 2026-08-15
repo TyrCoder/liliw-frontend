@@ -10,8 +10,8 @@ import {
   Layers, Sparkles, QrCode, Award, Gift, Play,
 } from 'lucide-react';
 import { stripHtml } from '@/lib/text';
-import ExploreBackdrop from '@/components/liliw/ExploreBackdrop';
 import { Marquee, Ornament } from '@/components/liliw/festive';
+import Wave from '@/components/liliw/Wave';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -428,7 +428,7 @@ export default function Home() {
      RENDER
      ───────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-white" suppressHydrationWarning>
+    <div className="min-h-screen page-ground" suppressHydrationWarning>
 
       {/* ══════════════════════════════════════════════════════
           HERO — full-screen video
@@ -481,14 +481,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Wave: navy → white */}
-      <WaveDown from="#0B3D91" to="#ffffff" />
+      {/* The blue curve above is enough of a transition: the cream
+          ground behind this section is the site-wide background. */}
 
       {/* ══════════════════════════════════════════════════════
           FEATURED ATTRACTIONS
           ══════════════════════════════════════════════════════ */}
-      <ExploreBackdrop>
-        <section className="pt-24 pb-28 max-w-7xl mx-auto px-4">
+
+        <section className="pt-16 pb-20 max-w-7xl mx-auto px-4">
           {/* The five ways in, as one strip. The coloured squares above answer
               "what is here"; this answers "take me there" at the point where
               the reader is already looking at attractions. */}
@@ -558,7 +558,6 @@ export default function Home() {
             </Link>
           </div>
         </section>
-      </ExploreBackdrop>
 
       {/* ══════════════════════════════════════════════════════
           THINGS TO DO — dark navy scroll section
@@ -612,8 +611,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Wave: navy → white */}
-      <WaveDown from="#0B3D91" to="#ffffff" />
+      {/* Blue curve dissolving into the ground. Nothing is painted below it,
+          so the cream artwork carries straight on. */}
+      <Wave />
 
       {/* ══════════════════════════════════════════════════════
           LATEST NEWS & EVENTS
@@ -644,13 +644,13 @@ export default function Home() {
         </section>
       )}
 
-      {/* Wave: white → light blue */}
-      <WaveUp from="#ffffff" to="#EFF6FF" />
-
       {/* ══════════════════════════════════════════════════════
           DISCOVER MORE — CTA section on light blue
           ══════════════════════════════════════════════════════ */}
-      <section className="py-16" style={{ backgroundColor: '#EFF6FF' }}>
+      {/* No tinted slab. This was a pale-blue sheet covering a whole section
+          of the ground, and its three cards are solid navy, blue and teal
+          panels that read perfectly well on cream. */}
+      <section className="py-16">
         <div className="max-w-7xl mx-auto px-4">
           <FestiveHeading
             title="Discover the Soul of Liliw"
@@ -699,9 +699,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Wave: light blue → white */}
-      <WaveDown from="#EFF6FF" to="#ffffff" />
 
       {/* ══════════════════════════════════════════════════════
           HOW IT WORKS — quick guide to using the app

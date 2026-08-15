@@ -76,7 +76,7 @@ export default function DiningPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white" suppressHydrationWarning>
+    <div className="min-h-screen page-ground" suppressHydrationWarning>
 
       <PageBanner
         title="Dining & Food"

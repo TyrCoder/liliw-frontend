@@ -498,7 +498,7 @@ export default function NewsPage() {
   const hasEvents = news.some(n => n.isEvent);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+    <div className="min-h-screen page-ground" suppressHydrationWarning>
 
       {/* Hero — the shared banner, so this page matches every other. */}
       <PageBanner

@@ -239,7 +239,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white" suppressHydrationWarning>
+      <div className="min-h-screen page-ground" suppressHydrationWarning>
         <div className="max-w-4xl mx-auto px-4 py-12 animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-32 mb-8" />
           <div className="h-64 bg-gray-200 rounded-2xl mb-8" />
@@ -253,7 +253,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
 
   if (error || !attraction) {
     return (
-      <div className="min-h-screen bg-white" suppressHydrationWarning>
+      <div className="min-h-screen page-ground" suppressHydrationWarning>
         <div className="max-w-4xl mx-auto px-4 py-12">
           <Link href="/attractions" className="inline-flex items-center font-semibold text-sm" style={{ color: '#1565C0', fontFamily: BL }}>
             <ChevronLeft className="w-4 h-4 mr-2" /> Back to Attractions
@@ -269,7 +269,7 @@ export default function AttractionDetailPage({ params }: { params: Promise<{ id:
   const typeIcon = attraction.type === 'dining' ? <Utensils className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+    <div className="min-h-screen page-ground" suppressHydrationWarning>
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }}>

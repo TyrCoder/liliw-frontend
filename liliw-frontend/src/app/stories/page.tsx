@@ -115,7 +115,7 @@ export default function StoriesPage() {
   const activeVideos = STORY_VIDEOS.filter(v => v.id.trim());
 
   return (
-    <div className="min-h-screen bg-white" suppressHydrationWarning>
+    <div className="min-h-screen page-ground" suppressHydrationWarning>
 
       <PageBanner
         title="Stories of Liliw"

@@ -267,7 +267,7 @@ export default function ScanPage() {
   /* ── Desktop ─────────────────────────────────────────────── */
   if (handheld === null) {
     return (
-      <div className="min-h-screen grid place-items-center" style={{ backgroundColor: '#F9F6F0' }}>
+      <div className="min-h-screen grid place-items-center page-ground">
         <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
       </div>
     );
@@ -275,7 +275,7 @@ export default function ScanPage() {
 
   if (!handheld) {
     return (
-      <div className="min-h-screen grid place-items-center px-4" style={{ backgroundColor: '#F9F6F0' }}>
+      <div className="min-h-screen grid place-items-center px-4 page-ground">
         <div className="max-w-sm text-center">
           <div className="w-16 h-16 rounded-2xl grid place-items-center mx-auto mb-5"
                style={{ backgroundColor: 'rgba(11,61,145,0.08)' }}>

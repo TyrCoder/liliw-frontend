@@ -88,7 +88,7 @@ function Panel({ children }: { children: React.ReactNode }) {
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }}>
+    <div className="min-h-screen page-ground">
       <PageBanner
         title="Terms &amp; Privacy"
         subtitle="How the Liliw Virtual Guide may be used, and what it does with your information"

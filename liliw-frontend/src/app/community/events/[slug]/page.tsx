@@ -146,7 +146,7 @@ export default function EventDetailPage() {
   const fmtTime = (d: Date) => d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="min-h-screen bg-white" suppressHydrationWarning>
+    <div className="min-h-screen page-ground" suppressHydrationWarning>
 
       {/* Hero */}
       <div className="relative h-64 sm:h-80 bg-gray-900 overflow-hidden">

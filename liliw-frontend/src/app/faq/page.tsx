@@ -86,7 +86,7 @@ export default function FaqPage() {
   });
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F6F0' }} suppressHydrationWarning>
+    <div className="min-h-screen page-ground" suppressHydrationWarning>
 
       <PageBanner
         title="Frequently Asked Questions"

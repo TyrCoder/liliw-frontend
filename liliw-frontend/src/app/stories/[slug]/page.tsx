@@ -331,7 +331,7 @@ export default function StoryDetailPage() {
   const storyVids = (STORY_VIDEOS[audioKey] ?? []).filter(v => v.id.trim());
 
   return (
-    <div className="min-h-screen bg-white" suppressHydrationWarning>
+    <div className="min-h-screen page-ground" suppressHydrationWarning>
 
       {/* Cover photo carousel */}
       {story.images?.length > 0 && (
