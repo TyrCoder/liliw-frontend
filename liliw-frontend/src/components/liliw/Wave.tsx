@@ -21,7 +21,7 @@ const GOLD = '#F5C518';
  */
 export default function Wave({
   facing = 'down',
-  height = 70,
+  height = 90,
   from,
   fill,
   className = '',
@@ -39,13 +39,18 @@ export default function Wave({
 
   // The blue mass, and the same curve again as a stroke so the gold rides the
   // edge instead of sitting near it.
+  //
+  // Two cubic segments with real amplitude — roughly a third of the box either
+  // side of centre. The first version undulated by a few units across 1440 and
+  // came out looking like a slightly crooked straight line, which is worse
+  // than no wave at all.
   const shape = down
-    ? 'M0,0 H1440 V16 C1040,96 760,4 420,44 C260,62 120,52 0,32 Z'
-    : 'M0,70 H1440 V54 C1040,-26 760,66 420,26 C260,8 120,18 0,38 Z';
+    ? 'M0,0 H1440 V34 C1180,96 940,4 660,40 C420,71 200,20 0,52 Z'
+    : 'M0,90 H1440 V56 C1180,-6 940,86 660,50 C420,19 200,70 0,38 Z';
 
   const edge = down
-    ? 'M0,32 C120,52 260,62 420,44 C760,4 1040,96 1440,16'
-    : 'M0,38 C120,18 260,8 420,26 C760,66 1040,-26 1440,54';
+    ? 'M0,52 C200,20 420,71 660,40 C940,4 1180,96 1440,34'
+    : 'M0,38 C200,70 420,19 660,50 C940,86 1180,-6 1440,56';
 
   return (
     <div
@@ -54,7 +59,7 @@ export default function Wave({
       style={{ lineHeight: 0, backgroundColor: from ?? 'transparent' }}
     >
       <svg
-        viewBox="0 0 1440 70"
+        viewBox="0 0 1440 90"
         preserveAspectRatio="none"
         style={{ width: '100%', height, display: 'block' }}
       >
