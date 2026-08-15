@@ -2,8 +2,8 @@
 
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
-import { XR, createXRStore } from '@react-three/xr';
+import { Html, Billboard, Text } from '@react-three/drei';
+import { XR, createXRStore, useXR } from '@react-three/xr';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -472,6 +472,200 @@ function DragControls({ editMode, autoRotate, draggingRef, resetSignal }: {
   return null;
 }
 
+/* ── VR ──────────────────────────────────────────────────────────────────────
+ *
+ * Hotspots outside VR are DOM: drei's <Html>, which is an overlay positioned
+ * on top of the canvas. A WebXR session does not composite the DOM, so inside
+ * a headset those markers do not exist — the tour was a panorama with nothing
+ * in it and no way to move between scenes.
+ *
+ * So in a session the hotspots are drawn again as actual geometry, and aimed
+ * at with a gaze reticle: look at one, hold for a moment, and it fires. Gaze
+ * rather than a controller ray because most people reaching this will be
+ * holding a phone in a cardboard viewer with no controller at all.
+ */
+const GAZE_SECONDS = 1.4;
+const NAV_COLOR = '#1565C0';
+const INFO_COLOR = '#FFB400';
+
+/** A hotspot as geometry: a ring, a filled centre, and its label above. */
+function VRHotspot({
+  hotspot, label, register,
+}: {
+  hotspot: Hotspot;
+  label: string;
+  register: (id: string, mesh: THREE.Mesh | null) => void;
+}) {
+  const pos = anglesToPosition(hotspot.pitch, hotspot.yaw);
+  const color = hotspot.type === 'navigate' ? NAV_COLOR : INFO_COLOR;
+  // The sphere is 490 units out, so a marker has to be sized for that
+  // distance — at hand scale it would be a speck.
+  const s = 26 * (hotspot.size ?? 1);
+
+  return (
+    <Billboard position={pos}>
+      {/* The hit target is one invisible disc rather than the visible parts:
+          gaze should catch the whole marker, including the gap in the ring. */}
+      <mesh ref={(m) => register(hotspot.id, m)} visible={false}>
+        <circleGeometry args={[s, 24]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+
+      <mesh>
+        <ringGeometry args={[s * 0.72, s, 48]} />
+        <meshBasicMaterial color={color} transparent opacity={0.95} side={THREE.DoubleSide} depthTest={false} />
+      </mesh>
+      <mesh>
+        <circleGeometry args={[s * 0.5, 32]} />
+        <meshBasicMaterial color={color} transparent opacity={0.32} side={THREE.DoubleSide} depthTest={false} />
+      </mesh>
+
+      <Text
+        position={[0, s * 1.9, 0]}
+        fontSize={s * 0.62}
+        color="#FFFFFF"
+        anchorX="center"
+        anchorY="middle"
+        outlineWidth={s * 0.055}
+        outlineColor="#04102B"
+        maxWidth={s * 14}
+      >
+        {label}
+      </Text>
+    </Billboard>
+  );
+}
+
+/**
+ * The reticle, and the gaze that drives it.
+ *
+ * Rendered only during a session. Outside one it would be a dot stuck in the
+ * middle of the screen that the mouse already does a better job of.
+ */
+function VRGaze({
+  hotspots, scenes, onSelect,
+}: {
+  hotspots: Hotspot[];
+  scenes: Scene[];
+  onSelect: (h: Hotspot) => void;
+}) {
+  const session = useXR((s) => s.session);
+  const { camera } = useThree();
+
+  const targets = useRef(new Map<string, THREE.Mesh>());
+  const register = useCallback((id: string, mesh: THREE.Mesh | null) => {
+    if (mesh) targets.current.set(id, mesh);
+    else targets.current.delete(id);
+  }, []);
+
+  const group = useRef<THREE.Group>(null);
+  const fill = useRef<THREE.Mesh>(null);
+  const raycaster = useRef(new THREE.Raycaster());
+  const held = useRef<{ id: string | null; t: number }>({ id: null, t: 0 });
+  const forward = useRef(new THREE.Vector3());
+
+  useFrame((_, delta) => {
+    if (!session || !group.current) return;
+
+    // Sit the reticle a fixed distance ahead of wherever the head is looking,
+    // facing the viewer. Close enough to focus on, far enough not to swim.
+    camera.getWorldDirection(forward.current);
+    group.current.position.copy(camera.position).addScaledVector(forward.current, 3);
+    group.current.quaternion.copy(camera.quaternion);
+
+    raycaster.current.set(camera.position, forward.current);
+    const meshes = [...targets.current.values()];
+    const hit = meshes.length ? raycaster.current.intersectObjects(meshes, false)[0] : undefined;
+
+    const id = hit
+      ? [...targets.current.entries()].find(([, m]) => m === hit.object)?.[0] ?? null
+      : null;
+
+    if (id !== held.current.id) held.current = { id, t: 0 };
+    else if (id) held.current.t += delta;
+
+    const progress = id ? Math.min(1, held.current.t / GAZE_SECONDS) : 0;
+    if (fill.current) {
+      // The centre grows to fill the ring as the dwell completes — a countdown
+      // you can read without any text.
+      const scale = 0.25 + progress * 0.75;
+      fill.current.scale.setScalar(scale);
+      (fill.current.material as THREE.MeshBasicMaterial).opacity = id ? 1 : 0.75;
+    }
+
+    if (progress >= 1 && id) {
+      const chosen = hotspots.find((h) => h.id === id);
+      held.current = { id: null, t: 0 };
+      if (chosen) onSelect(chosen);
+    }
+  });
+
+  if (!session) return null;
+
+  return (
+    <>
+      {hotspots.map((h) => (
+        <VRHotspot
+          key={h.id}
+          hotspot={h}
+          label={
+            h.type === 'navigate' && h.targetSceneIndex !== undefined
+              ? scenes[h.targetSceneIndex]?.title ?? h.label
+              : h.label
+          }
+          register={register}
+        />
+      ))}
+
+      <group ref={group}>
+        <mesh>
+          <ringGeometry args={[0.028, 0.036, 32]} />
+          <meshBasicMaterial color="#FFFFFF" transparent opacity={0.75} depthTest={false} />
+        </mesh>
+        <mesh ref={fill}>
+          <circleGeometry args={[0.024, 24]} />
+          <meshBasicMaterial color="#F5C518" transparent opacity={0.75} depthTest={false} />
+        </mesh>
+      </group>
+    </>
+  );
+}
+
+/** A hotspot's description, as geometry, for when there is no DOM to put it in. */
+function VRInfoPanel({ hotspot }: { hotspot: Hotspot | null }) {
+  const session = useXR((s) => s.session);
+  const { camera } = useThree();
+  const group = useRef<THREE.Group>(null);
+  const forward = useRef(new THREE.Vector3());
+
+  useFrame(() => {
+    if (!group.current) return;
+    camera.getWorldDirection(forward.current);
+    group.current.position.copy(camera.position).addScaledVector(forward.current, 6);
+    group.current.quaternion.copy(camera.quaternion);
+  });
+
+  if (!session || !hotspot) return null;
+
+  return (
+    <group ref={group}>
+      <mesh position={[0, 0, -0.01]}>
+        <planeGeometry args={[5.4, 2.6]} />
+        <meshBasicMaterial color="#061A42" transparent opacity={0.92} depthTest={false} />
+      </mesh>
+      <Text position={[0, 0.82, 0]} fontSize={0.34} color="#F5C518" anchorX="center" maxWidth={4.8}>
+        {hotspot.label}
+      </Text>
+      <Text position={[0, -0.1, 0]} fontSize={0.22} color="#FFFFFF" anchorX="center" anchorY="middle" maxWidth={4.8}>
+        {hotspot.info || 'No description has been added for this point yet.'}
+      </Text>
+      <Text position={[0, -1.02, 0]} fontSize={0.16} color="#8FA6CC" anchorX="center">
+        Look at another point to continue
+      </Text>
+    </group>
+  );
+}
+
 /**
  * The shared look for every button floating over the panorama: navy glass with
  * a gold hairline, not black. Kept as one object so the cluster cannot drift
@@ -708,6 +902,10 @@ export default function ImmersiveViewer({
   const [isLoading, setIsLoading] = useState(true);
   const [fading, setFading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Set when the Fullscreen API is unavailable and the viewer pins itself over
+  // the viewport instead — iPhone. Treated as fullscreen everywhere below.
+  const [fauxFullscreen, setFauxFullscreen] = useState(false);
+  const filling = isFullscreen || fauxFullscreen;
   const [vrSupported, setVrSupported] = useState(false);
   const [arSupported, setArSupported] = useState(false);
   const [autoRotate, setAutoRotate] = useState(!editMode);
@@ -721,6 +919,7 @@ export default function ImmersiveViewer({
   // explicit tool you arm from the toolbar, and it disarms after one use.
   const [armed, setArmed] = useState(false);
   const [activeInfo, setActiveInfo] = useState<Hotspot | null>(null);
+  const [vrInfo, setVrInfo] = useState<Hotspot | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -743,7 +942,9 @@ export default function ImmersiveViewer({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setRepositioning(null); setPending(null); }
+      // Escape leaves real fullscreen by itself; the pinned fallback has no
+      // browser behaviour behind it, so it needs releasing here.
+      if (e.key === 'Escape') { setRepositioning(null); setPending(null); setFauxFullscreen(false); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -828,6 +1029,21 @@ export default function ImmersiveViewer({
     setSaved(false);
   };
 
+  /**
+   * The same two actions as a click, for a gaze.
+   *
+   * The info case cannot reuse setActiveInfo: that popup is DOM, and the whole
+   * reason this exists is that the DOM is not composited in a session.
+   */
+  const handleVRSelect = useCallback((h: Hotspot) => {
+    if (h.type === 'navigate' && h.targetSceneIndex !== undefined) {
+      setVrInfo(null);
+      goToScene(h.targetSceneIndex);
+    } else {
+      setVrInfo((prev) => (prev?.id === h.id ? null : h));
+    }
+  }, [goToScene]);
+
   const handleHotspotClick = (h: Hotspot) => {
     if (editMode) return;
     if (h.type === 'navigate' && h.targetSceneIndex !== undefined) {
@@ -854,11 +1070,32 @@ export default function ImmersiveViewer({
     }
   };
 
+  /**
+   * Fullscreen, with a fallback for iPhone.
+   *
+   * Safari on iOS implements the Fullscreen API for <video> only, so
+   * requestFullscreen on this container rejects and the button did nothing at
+   * all — on the device where filling the screen matters most. When the real
+   * thing is unavailable the viewer pins itself over the viewport instead,
+   * which is not the same as fullscreen but is the whole screen minus the
+   * browser bars, and it looks and behaves identically to the user.
+   */
   const toggleFullscreen = async () => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    if (typeof el.requestFullscreen !== 'function') {
+      setFauxFullscreen((v) => !v);
+      return;
+    }
+
     try {
-      if (!isFullscreen) await containerRef.current?.requestFullscreen();
+      if (!document.fullscreenElement) await el.requestFullscreen();
       else await document.exitFullscreen();
-    } catch (e) { logger.error('Fullscreen:', e); }
+    } catch (e) {
+      logger.error('Fullscreen:', e);
+      setFauxFullscreen((v) => !v);
+    }
   };
 
   const takeScreenshot = () => {
@@ -900,10 +1137,15 @@ export default function ImmersiveViewer({
         boxShadow: editMode
           ? '0 18px 40px rgba(0,0,0,0.45)'
           : '0 18px 44px rgba(3,12,36,0.55), 0 0 0 1px rgba(255,255,255,0.04)',
-        ...(isFullscreen ? { height: '100vh', width: '100vw', borderRadius: 0, border: 'none' } : {}),
+        ...(filling
+          ? {
+              position: 'fixed' as const, inset: 0, zIndex: 60,
+              height: '100dvh', width: '100vw', borderRadius: 0, border: 'none',
+            }
+          : {}),
       }}
     >
-      <div className="relative w-full" style={{ height: isFullscreen ? '100%' : 'clamp(280px, calc(100svh - 120px), 900px)' }}>
+      <div className="relative w-full" style={{ height: filling ? '100%' : 'clamp(280px, calc(100svh - 120px), 900px)' }}>
 
         {/* Loading */}
         <AnimatePresence>
@@ -1002,6 +1244,14 @@ export default function ImmersiveViewer({
               ))}
               <DragControls editMode={editMode} autoRotate={autoRotate} draggingRef={draggingRef} resetSignal={resetSignal} />
               <ScreenshotHelper glRef={glRef} />
+
+              {/* Only alive inside a session — see the note above VRGaze. */}
+              {!editMode && (
+                <>
+                  <VRGaze hotspots={sceneHotspots} scenes={scenes} onSelect={handleVRSelect} />
+                  <VRInfoPanel hotspot={vrInfo} />
+                </>
+              )}
             </XR>
           </Canvas>
         </div>
@@ -1240,10 +1490,10 @@ export default function ImmersiveViewer({
                 <motion.button
                   onClick={toggleFullscreen}
                   whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
-                  title={isFullscreen ? 'Leave fullscreen' : 'Fullscreen'}
+                  title={filling ? 'Leave fullscreen' : 'Fullscreen'}
                   className="p-2 sm:p-3 rounded-xl text-white transition"
                   style={CTRL}>
-                  {isFullscreen ? <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize2 className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  {filling ? <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize2 className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </motion.button>
                 {!editMode && vrSupported && (
                   <motion.button
