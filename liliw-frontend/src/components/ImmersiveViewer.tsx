@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Headphones, Camera,
   Maximize2, Minimize2, ScanLine, MapPin, X,
-  Info, Navigation, Save, PenLine, Check, Trash2, Upload, Move, Compass,
+  Info, Navigation, Save, PenLine, Check, Trash2, Upload, Move, Compass, Images,
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import type { Hotspot } from '@/lib/types';
@@ -1042,6 +1042,9 @@ export default function ImmersiveViewer({
   const filling = isFullscreen || fauxFullscreen;
   const [autoRotate, setAutoRotate] = useState(!editMode);
   const [resetSignal, setResetSignal] = useState(0);
+  // The scene strip is a wide band across the bottom of the panorama. Worth
+  // having while choosing a scene, in the way while looking at one.
+  const [showThumbs, setShowThumbs] = useState(true);
   // Hotspots initialized once from props — NOT synced on re-render to avoid losing edits
   const [hotspots, setHotspots] = useState<Hotspot[]>(initialHotspots);
   const [pending, setPending] = useState<PendingHotspot | null>(null);
@@ -1663,7 +1666,7 @@ export default function ImmersiveViewer({
                   than the viewer and shoved the next arrow and the whole
                   control cluster out past the edge. Allowing it to shrink is
                   what lets overflow-x-auto do its job. */}
-              {hasMultiple && (
+              {hasMultiple && showThumbs && (
                 <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                   <div className="self-center text-white text-xs font-semibold px-3 py-1 rounded-full"
                     style={{ background: 'rgba(9,26,66,0.7)', backdropFilter: 'blur(4px)', border: '1px solid rgba(245,197,24,0.24)' }}>
@@ -1742,6 +1745,28 @@ export default function ImmersiveViewer({
                     ↻
                   </motion.button>
                 )}
+                {/* Show or hide the scene strip. Gold while the strip is up,
+                    so the button reads as a state and not just an action. With
+                    it down, the scene count moves onto the button — otherwise
+                    hiding the strip also hides where you are in the tour. */}
+                {hasMultiple && (
+                  <motion.button
+                    onClick={() => setShowThumbs(v => !v)}
+                    whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+                    title={showThumbs ? 'Hide the scene thumbnails' : 'Show the scene thumbnails'}
+                    aria-pressed={showThumbs}
+                    className="px-2.5 sm:px-3 rounded-xl transition inline-flex items-center gap-1.5 text-xs font-bold"
+                    style={{
+                      ...CTRL,
+                      background: showThumbs ? 'rgba(245,197,24,0.92)' : CTRL.background,
+                      color: showThumbs ? '#0A1A40' : 'white',
+                      borderColor: showThumbs ? '#F5C518' : CTRL.borderColor,
+                    }}>
+                    <Images className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {!showThumbs && <span>{sceneIndex + 1}/{scenes.length}</span>}
+                  </motion.button>
+                )}
+
                 {/* Recentre. Two minutes of dragging leaves the horizon
                     anywhere; without this the only way back is reloading. */}
                 <motion.button
