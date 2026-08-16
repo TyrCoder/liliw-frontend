@@ -20,7 +20,10 @@ const API_CACHE  = `liliw-api-${BUILD}`;
 const IMAGE_CACHE = 'liliw-img-v3';
 
 const IMAGE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;  // 30 days
-const API_MAX_AGE   = 5 * 60 * 1000;             // 5 minutes
+// One minute, not five. This is how long a published change can keep showing
+// its old version to someone already on the site, and five minutes is long
+// enough for an editor to conclude the save did not work and do it again.
+const API_MAX_AGE   = 60 * 1000;
 
 // Every page a visitor can reach, precached on install.
 const PRECACHE_URLS = [
