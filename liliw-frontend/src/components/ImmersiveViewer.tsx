@@ -1656,8 +1656,15 @@ export default function ImmersiveViewer({
             <div className="flex items-end gap-2">
 
               {/* Thumbnail strip */}
+              {/* min-w-0, on this and on the scroller inside it.
+                  A flex item defaults to min-width:auto, which means it refuses
+                  to shrink below its content. Eight thumbnails at 176px is
+                  about 1400px of content, so the strip pushed the row wider
+                  than the viewer and shoved the next arrow and the whole
+                  control cluster out past the edge. Allowing it to shrink is
+                  what lets overflow-x-auto do its job. */}
               {hasMultiple && (
-                <div className="flex-1 flex flex-col gap-1.5">
+                <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                   <div className="self-center text-white text-xs font-semibold px-3 py-1 rounded-full"
                     style={{ background: 'rgba(9,26,66,0.7)', backdropFilter: 'blur(4px)', border: '1px solid rgba(245,197,24,0.24)' }}>
                     {sceneIndex + 1} / {scenes.length}
@@ -1671,7 +1678,7 @@ export default function ImmersiveViewer({
                       <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                     </motion.button>
                     <div
-                      className="flex gap-1.5 sm:gap-2 overflow-x-auto flex-1 py-1"
+                      className="flex gap-1.5 sm:gap-2 overflow-x-auto flex-1 min-w-0 py-1 px-0.5"
                       style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
                     >
                       {scenes.map((scene, idx) => (
