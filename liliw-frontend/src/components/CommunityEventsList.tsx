@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import JoinEventModal from './JoinEventModal';
+import { useAuth } from '@/context/AuthContext';
 import { Calendar, MapPin, Users, Mail, Loader2, HeartHandshake, AlertCircle } from 'lucide-react';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -56,6 +57,7 @@ export default function CommunityEventsList({
    */
   header?: ReactNode;
 }) {
+  const { isStaff } = useAuth();
   const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -99,7 +101,31 @@ export default function CommunityEventsList({
     );
   }
 
-  if (!events.length) return null;
+  /*
+   * Nothing posted.
+   *
+   * A visitor sees nothing at all — an empty "no events" panel on a page whose
+   * job is to invite people in reads as a dead site.
+   *
+   * Staff see why. Finished events are filtered out by the API, so the section
+   * vanishing is indistinguishable from the feature being broken, which is
+   * exactly the wrong thing for an officer to conclude while checking their
+   * own site.
+   */
+  if (!events.length) {
+    if (!isStaff) return null;
+    return (
+      <div className="mb-8 rounded-xl px-4 py-3 text-sm border"
+        style={{ backgroundColor: 'rgba(21,101,192,0.06)', borderColor: 'rgba(21,101,192,0.18)', color: '#1E3A5F', fontFamily: BL }}>
+        <p className="font-bold">No upcoming community events</p>
+        <p className="mt-1 opacity-80">
+          Events are hidden here once they finish. Post one with a future date in the
+          dashboard, under Community Events, and it appears on this page as soon as it is approved.
+        </p>
+        <p className="mt-1 opacity-60 text-xs">Only you and other staff can see this note.</p>
+      </div>
+    );
+  }
 
   return (
     <div className={showHeading ? 'mb-10' : ''}>
