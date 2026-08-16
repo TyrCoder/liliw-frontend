@@ -138,11 +138,21 @@ export default function ImmersivePage() {
     }
   }, []);
 
-  useEffect(() => { loadAttractions(false); }, [loadAttractions]);
-
-  // Entering the editor re-reads past the cache, so what is on screen is what
-  // is actually stored.
-  useEffect(() => { if (editMode) loadAttractions(true); }, [editMode, loadAttractions]);
+  /**
+   * Always read past the caches on this page.
+   *
+   * There are now three layers between a save and what is on screen: the
+   * five-minute memory cache in lib/content, the CDN's s-maxage=120, and — new
+   * — the service worker, which caches /api/content/* for offline use. A tour
+   * saved a minute ago could come back without its scenes from any of them,
+   * and to whoever placed those hotspots that looks exactly like the work
+   * having been thrown away.
+   *
+   * This page is a handful of visits a day and an editing tool. It can afford
+   * to skip every cache; being certain of what is stored matters more here
+   * than a cached response does.
+   */
+  useEffect(() => { loadAttractions(true); }, [loadAttractions]);
 
   const selectedAttraction = attractions.find((a) => a.id === selectedAttractionId);
 
