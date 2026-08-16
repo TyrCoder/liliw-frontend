@@ -60,6 +60,11 @@ export default function Wave({
     ? `${edge} L1440,0 L0,0 Z`
     : `${edge} L1440,90 L0,90 Z`;
 
+  // SVG ids are document-global. Two waves on one page sharing an id means the
+  // second one's mask resolves to the first one's — so each instance gets its
+  // own, derived from what actually varies between them.
+  const uid = `wave-${facing}-${(fill ?? ROYAL).replace('#', '')}`;
+
   return (
     <div
       aria-hidden
@@ -72,16 +77,37 @@ export default function Wave({
         style={{ width: '100%', height, display: 'block' }}
       >
         <defs>
-          {/* The woven diagonal, inside the blue only — the same motif as the
-              banners, at an opacity that reads as texture and not as pattern. */}
-          <pattern id={`weave-${facing}-${fill ?? 'royal'}`} width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <rect width="14" height="14" fill={fill ?? ROYAL} />
+          {/* The woven diagonal — the same motif as the banners, at an opacity
+              that reads as texture rather than pattern. The blue is painted
+              separately below, so this layer carries only the threads. */}
+          <pattern id={`${uid}-weave`} width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <rect width="2" height="14" fill={GOLD} opacity="0.10" />
             <rect width="14" height="2" fill={GOLD} opacity="0.07" />
           </pattern>
+
+          {/* The weave used to start on a hard horizontal line wherever this
+              element began — a band of texture with a straight top edge sitting
+              inside an untextured blue section. It now fades out towards
+              whichever side continues into plain blue, so the only edge it has
+              is the wave's own curve.
+
+              Down-facing: plain navy is above, so the weave fades in downward.
+              Up-facing: the plain footer is below, so it fades the other way.
+              Getting this backwards only moves the hard line to the far side. */}
+          <linearGradient id={`${uid}-fade`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fff" stopOpacity={down ? 0 : 1} />
+            <stop offset="55%" stopColor="#fff" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="#fff" stopOpacity={down ? 1 : 0} />
+          </linearGradient>
+          <mask id={`${uid}-mask`}>
+            <rect width="1440" height="90" fill={`url(#${uid}-fade)`} />
+          </mask>
         </defs>
 
-        <path d={shape} fill={`url(#weave-${facing}-${fill ?? 'royal'})`} />
+        <path d={shape} fill={fill ?? ROYAL} />
+        <g mask={`url(#${uid}-mask)`}>
+          <path d={shape} fill={`url(#${uid}-weave)`} />
+        </g>
         <path d={edge} fill="none" stroke={GOLD} strokeWidth="2.5" opacity="0.9" vectorEffect="non-scaling-stroke" />
       </svg>
     </div>
