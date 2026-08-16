@@ -21,6 +21,11 @@ export async function GET(request: NextRequest) {
     data: (data || []).map((r) => ({
       id: r.id,
       attributes: {
+        // Both of these were dropped here, which is why the admin ratings
+        // table grouped every review under "?" — it reads item_id, and the
+        // row's own item_name was never sent either.
+        item_id: r.item_id,
+        item_name: r.item_name,
         author: r.author,
         rating: r.rating,
         comment: r.comment,

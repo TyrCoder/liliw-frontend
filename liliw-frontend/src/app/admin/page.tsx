@@ -2003,21 +2003,29 @@ function AdminDashboard() {
 
         {/* ── RATINGS ────────────────────────────────────────── */}
         {activeTab === 'ratings' && (() => {
-          const byItem: Record<string, { count: number; total: number; latest: string }> = {};
+          // Grouped by id, labelled by name. The id is what makes two reviews
+          // the same attraction; the name is the only part worth reading, and
+          // it is stored on the review itself so a renamed or deleted
+          // attraction still shows what was rated.
+          const byItem: Record<string, { name: string; count: number; total: number; latest: string }> = {};
           reviews.forEach((r: any) => {
             const a = r.attributes || r;
-            const id = a.item_id || '?';
-            if (!byItem[id]) byItem[id] = { count: 0, total: 0, latest: '' };
+            const id = a.item_id || 'unknown';
+            const named = attractions.find((x: any) => x.id === id)?.attributes?.name;
+            if (!byItem[id]) byItem[id] = { name: named || a.item_name || id, count: 0, total: 0, latest: '' };
+            if (named) byItem[id].name = named;
             byItem[id].count++;
             byItem[id].total += Number(a.rating) || 0;
             if (!byItem[id].latest || a.createdAt > byItem[id].latest) byItem[id].latest = a.createdAt;
           });
-          const rows = Object.entries(byItem).map(([id, v]) => ({ id, avg: v.total / v.count, count: v.count, latest: v.latest })).sort((a, b) => b.count - a.count);
+          const rows = Object.entries(byItem)
+            .map(([id, v]) => ({ id, name: v.name, avg: v.total / v.count, count: v.count, latest: v.latest }))
+            .sort((a, b) => b.count - a.count);
           return (
             <TableWrap title="Attraction Ratings" count={reviews.length} loading={loadingReviews} empty={rows.length === 0} emptyIcon={<Star className="w-12 h-12" />}>
               <table className="w-full text-sm">
                 <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  <th className="px-5 py-3 text-left">Attraction ID</th>
+                  <th className="px-5 py-3 text-left">Attraction</th>
                   <th className="px-5 py-3 text-left">Avg Rating</th>
                   <th className="px-5 py-3 text-left">Reviews</th>
                   <th className="px-5 py-3 text-left">Latest</th>
@@ -2025,7 +2033,7 @@ function AdminDashboard() {
                 <tbody className="divide-y divide-gray-50">
                   {rows.map(row => (
                     <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-5 py-4 font-semibold text-gray-900">{row.id}</td>
+                      <td className="px-5 py-4 font-semibold text-gray-900">{row.name}</td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
                           <div className="flex gap-0.5">
