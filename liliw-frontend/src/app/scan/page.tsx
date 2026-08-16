@@ -9,6 +9,7 @@ import {
   MapPin, Smartphone, ChevronLeft,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import AuthModal from '@/components/AuthModal';
 import { useHandheld } from '@/hooks/useHandheld';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -86,6 +87,7 @@ export default function ScanPage() {
   // The location fix, started when the camera opens rather than on decode.
   const posRef = useRef<Promise<GeolocationPosition | null> | null>(null);
 
+  const [signInOpen, setSignInOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
   const [result, setResult] = useState<{ alreadyVisited: boolean; verified: boolean; distanceM: number | null; withinM: number | null } | null>(null);
@@ -395,7 +397,16 @@ export default function ScanPage() {
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>
               You are not signed in, so this scan will not be added to your passport.{' '}
-              <Link href="/login" className="underline font-semibold">Sign in first</Link>.
+              {/* Opens the modal rather than linking to /login, which does not
+                  exist — signing in has always been a modal. Someone standing
+                  at a poster, not signed in, tapped this and got a 404. */}
+              <button
+                type="button"
+                onClick={() => setSignInOpen(true)}
+                className="underline font-semibold"
+              >
+                Sign in first
+              </button>.
             </span>
           </div>
         )}
@@ -425,6 +436,8 @@ export default function ScanPage() {
           Visits count only when scanned here, in the app, while you are at the place.
         </p>
       </div>
+
+      {signInOpen && <AuthModal defaultTab="login" onClose={() => setSignInOpen(false)} />}
     </div>
   );
 }
