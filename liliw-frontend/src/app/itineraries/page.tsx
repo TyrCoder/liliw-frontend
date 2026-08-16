@@ -1160,8 +1160,18 @@ function ItineraryWizard() {
       if (res.ok) {
         setTripSaved(true);
         window.dispatchEvent(new Event('liliw-trips-updated'));
+        return;
       }
-    } catch {}
+      // A failed save used to do nothing at all — the button sat there and the
+      // trip was simply not stored. Saying so is the least this can do.
+      setError(
+        res.status === 401
+          ? 'Your session expired. Sign in again and save the trip.'
+          : 'The trip could not be saved. Please try again.',
+      );
+    } catch {
+      setError('The trip could not be saved — check your connection and try again.');
+    }
   };
 
   const reset = () => {
@@ -1975,14 +1985,24 @@ function SavedTripsSection() {
 
   if (!user || trips.length === 0) return null;
 
+  /**
+   * The row is removed first so the list responds immediately, and put back if
+   * the delete did not actually happen. Without that the trip vanished from
+   * the screen, stayed in the database, and returned on the next reload — the
+   * user is told it is gone when it is not.
+   */
   const deleteTrip = async (id: string) => {
+    const previous = trips;
     setTrips(prev => prev.filter(t => t.id !== id));
     if (expandedId === id) setExpandedId(null);
     try {
-      await fetch(`/api/itineraries?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/itineraries?id=${encodeURIComponent(id)}`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
       });
-    } catch {}
+      if (!res.ok) setTrips(previous);
+    } catch {
+      setTrips(previous);
+    }
   };
 
   return (
