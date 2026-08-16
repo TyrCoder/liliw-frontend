@@ -51,6 +51,24 @@ const FIELD_TYPE_LABELS: Record<FieldType, string> = { short_text: 'Short Text',
 const FIELD_TYPES: FieldType[] = ['short_text', 'paragraph', 'number', 'dropdown', 'multiple_choice', 'checkboxes'];
 function makeField(): FormField { return { id: `f_${Date.now()}_${Math.random().toString(36).slice(2,7)}`, type: 'short_text', label: '', required: false, options: [] }; }
 
+/**
+ * Reads a list response, and refuses to pretend a failure is an empty table.
+ *
+ * Every panel on this page loaded with `.then(readList).then(d => set(d.data || []))`.
+ * An expired session returns 401 with a JSON error body, so `r.json()` succeeds,
+ * `d.data` is undefined, `|| []` makes it an empty array, and the panel renders
+ * "no records" — which is what made the staff dashboards look empty rather than
+ * locked out. Throwing here sends it to the catch, which counts it and says so.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function readList(res: Response): Promise<any> {
+  if (!res.ok) {
+    const where = (() => { try { return new URL(res.url).pathname; } catch { return 'a request'; } })();
+    throw new Error(`${where} — ${res.status}`);
+  }
+  return res.json();
+}
+
 /* ─── csv export ──────────────────────────────────────────── */
 function downloadCSV(filename: string, headers: string[], rows: (string | number)[][]) {
   const escape = (v: string | number) => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -148,6 +166,13 @@ function TableWrap({ title, count, loading, empty, emptyIcon, children }: { titl
 function AdminDashboard() {
   const { user, loading, isAdmin, isChatoOfficer, isChatoEditor, isStaff, token } = useAuth();
   const router = useRouter();
+
+  // Which panel loads failed, so an empty dashboard can say why it is empty.
+  const [loadFailures, setLoadFailures] = useState<string[]>([]);
+  const noteFailure = useCallback((err: unknown) => {
+    const text = err instanceof Error ? err.message : String(err);
+    setLoadFailures(prev => (prev.includes(text) ? prev : [...prev, text]));
+  }, []);
 
   const [submissions,   setSubmissions]   = useState<Submission[]>([]);
   const [participation, setParticipation] = useState<Participation[]>([]);
@@ -304,9 +329,9 @@ function AdminDashboard() {
     if (!token) return;
     setLoadingInbox(true);
     fetch('/api/admin/inbox', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
+      .then(readList)
       .then(d => setInbox(d.data || []))
-      .catch(() => {})
+      .catch(noteFailure)
       .finally(() => setLoadingInbox(false));
   }, [token]);
 
@@ -315,24 +340,24 @@ function AdminDashboard() {
     const h = { Authorization: `Bearer ${token}` };
 
     // Editor + Officer — attractions & reviews
-    fetch('/api/content/attractions').then(r => r.json()).then(d => setAttractions(d.data || [])).catch(() => {}).finally(() => setLoadingAttr(false));
-    fetch('/api/content/reviews').then(r => r.json()).then(d => setReviews(d.data || [])).catch(() => {}).finally(() => setLoadingReviews(false));
+    fetch('/api/content/attractions').then(readList).then(d => setAttractions(d.data || [])).catch(noteFailure).finally(() => setLoadingAttr(false));
+    fetch('/api/content/reviews').then(readList).then(d => setReviews(d.data || [])).catch(noteFailure).finally(() => setLoadingReviews(false));
 
     // Admin — analytics, users, audit, reports
     if (isAdmin) {
       setLoadingUsers(true);
-      fetch('/api/admin/users',           { headers: h }).then(r => r.json()).then(d => setUsers(d.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
-      fetch('/api/analytics/track', { headers: h }).then(r => r.json()).then(d => setAnalytics(d)).catch(() => {}).finally(() => setLoadingStats(false));
-      fetch('/api/admin/audit-logs',      { headers: h }).then(r => r.json()).then(d => setAuditLogs(d.data || [])).catch(() => {}).finally(() => setLoadingAudit(false));
-      fetch('/api/admin/strapi-activity', { headers: h }).then(r => r.json()).then(d => setStrapiActivity(d.data || [])).catch(() => {}).finally(() => setLoadingActivity(false));
-      fetch('/api/admin/assign-role', { headers: h }).then(r => r.json()).then(d => {
+      fetch('/api/admin/users',           { headers: h }).then(readList).then(d => setUsers(d.data || [])).catch(noteFailure).finally(() => setLoadingUsers(false));
+      fetch('/api/analytics/track', { headers: h }).then(readList).then(d => setAnalytics(d)).catch(noteFailure).finally(() => setLoadingStats(false));
+      fetch('/api/admin/audit-logs',      { headers: h }).then(readList).then(d => setAuditLogs(d.data || [])).catch(noteFailure).finally(() => setLoadingAudit(false));
+      fetch('/api/admin/strapi-activity', { headers: h }).then(readList).then(d => setStrapiActivity(d.data || [])).catch(noteFailure).finally(() => setLoadingActivity(false));
+      fetch('/api/admin/assign-role', { headers: h }).then(readList).then(d => {
         setRoleUsers(d.users || []);
         setAvailRoles(d.roles || []);
-      }).catch(() => {}).finally(() => setLoadingRoles(false));
+      }).catch(noteFailure).finally(() => setLoadingRoles(false));
       setLoadingAch(true);
-      fetch('/api/admin/achievements', { headers: h }).then(r => r.json()).then(d => setAchievements(d.data || [])).catch(() => {}).finally(() => setLoadingAch(false));
+      fetch('/api/admin/achievements', { headers: h }).then(readList).then(d => setAchievements(d.data || [])).catch(noteFailure).finally(() => setLoadingAch(false));
       setLoadingRewards(true);
-      fetch('/api/admin/rewards', { headers: h }).then(r => r.json()).then(d => setRewards(d.data || [])).catch(() => {}).finally(() => setLoadingRewards(false));
+      fetch('/api/admin/rewards', { headers: h }).then(readList).then(d => setRewards(d.data || [])).catch(noteFailure).finally(() => setLoadingRewards(false));
     }
 
     // Officer — requests & submissions.
@@ -342,42 +367,42 @@ function AdminDashboard() {
       refreshInbox();
       // Still fetched for the reports tab, which counts contact messages and
       // participation requests separately — the inbox merges them.
-      fetch('/api/admin/submissions',    { headers: h }).then(r => r.json()).then(d => setSubmissions(d.data || [])).catch(() => {}).finally(() => setLoadingSubs(false));
-      fetch('/api/admin/participation',  { headers: h }).then(r => r.json()).then(d => setParticipation(d.data || [])).catch(() => {}).finally(() => setLoadingPart(false));
-      fetch('/api/event-signup',         { headers: h }).then(r => r.json()).then(d => setSignups(d.data || [])).catch(() => {}).finally(() => setLoadingSignups(false));
+      fetch('/api/admin/submissions',    { headers: h }).then(readList).then(d => setSubmissions(d.data || [])).catch(noteFailure).finally(() => setLoadingSubs(false));
+      fetch('/api/admin/participation',  { headers: h }).then(readList).then(d => setParticipation(d.data || [])).catch(noteFailure).finally(() => setLoadingPart(false));
+      fetch('/api/event-signup',         { headers: h }).then(readList).then(d => setSignups(d.data || [])).catch(noteFailure).finally(() => setLoadingSignups(false));
       setLoadingVR(true);
-      fetch('/api/admin/visitor-records', { headers: h }).then(r => r.json()).then(d => setVisitorRecords(d.data || [])).catch(() => {}).finally(() => setLoadingVR(false));
+      fetch('/api/admin/visitor-records', { headers: h }).then(readList).then(d => setVisitorRecords(d.data || [])).catch(noteFailure).finally(() => setLoadingVR(false));
       setLoadingExternal(true);
-      fetch('/api/admin/external-reviews', { headers: h }).then(r => r.json()).then(d => setExternalReviews(d.data || [])).catch(() => {}).finally(() => setLoadingExternal(false));
+      fetch('/api/admin/external-reviews', { headers: h }).then(readList).then(d => setExternalReviews(d.data || [])).catch(noteFailure).finally(() => setLoadingExternal(false));
     }
 
     // Officer + Editor — LBO applications & change requests
     if (isChatoOfficer || isChatoEditor || isAdmin) {
       setLoadingLbo(true);
-      fetch('/api/admin/lbo-applications',{ headers: h }).then(r => r.json()).then(d => { if (d._error) console.error('[LBO] Strapi error:', d._error, 'status:', d._status); setLboApps(d.data || []); }).catch(() => {}).finally(() => setLoadingLbo(false));
+      fetch('/api/admin/lbo-applications',{ headers: h }).then(readList).then(d => { if (d._error) console.error('[LBO] Strapi error:', d._error, 'status:', d._status); setLboApps(d.data || []); }).catch(noteFailure).finally(() => setLoadingLbo(false));
       setLoadingCR(true);
-      fetch('/api/admin/change-requests', { headers: h }).then(r => r.json()).then(d => setChangeRequests(d.data || [])).catch(() => {}).finally(() => setLoadingCR(false));
+      fetch('/api/admin/change-requests', { headers: h }).then(readList).then(d => setChangeRequests(d.data || [])).catch(noteFailure).finally(() => setLoadingCR(false));
     }
 
     // Officer + Editor — attraction requests
     setLoadingAR(true);
-    fetch('/api/admin/attraction-requests', { headers: h }).then(r => r.json()).then(d => {
+    fetch('/api/admin/attraction-requests', { headers: h }).then(readList).then(d => {
       if (d.error) console.error('[AttractionReqs]', d.error);
       setAttractionReqs(d.data || []);
-    }).catch(() => {}).finally(() => setLoadingAR(false));
+    }).catch(noteFailure).finally(() => setLoadingAR(false));
 
     // Editor — event forms + joinable events
     if (isChatoEditor || isAdmin) {
       setLoadingEF(true);
       setLoadingJE(true);
-      fetch('/api/admin/event-forms', { headers: h }).then(r => r.json()).then(d => setEventForms(d.data || [])).catch(() => {}).finally(() => setLoadingEF(false));
-      fetch('/api/content/events').then(r => r.json()).then(d => setJoinableEvents((d.data || []).filter((e: any) => e.attributes?.is_joinable || e.is_joinable).map((e: any) => ({ id: e.id, slug: e.attributes?.slug || e.slug, title: e.attributes?.title || e.title, date_start: e.attributes?.date_start || e.date_start })))).catch(() => {}).finally(() => setLoadingJE(false));
+      fetch('/api/admin/event-forms', { headers: h }).then(readList).then(d => setEventForms(d.data || [])).catch(noteFailure).finally(() => setLoadingEF(false));
+      fetch('/api/content/events').then(readList).then(d => setJoinableEvents((d.data || []).filter((e: any) => e.attributes?.is_joinable || e.is_joinable).map((e: any) => ({ id: e.id, slug: e.attributes?.slug || e.slug, title: e.attributes?.title || e.title, date_start: e.attributes?.date_start || e.date_start })))).catch(noteFailure).finally(() => setLoadingJE(false));
     }
 
     // Officer — event form list for responses viewer
     if (isChatoOfficer || isAdmin) {
       setLoadingEF(true);
-      fetch('/api/admin/event-forms', { headers: h }).then(r => r.json()).then(d => setEventForms(d.data || [])).catch(() => {}).finally(() => setLoadingEF(false));
+      fetch('/api/admin/event-forms', { headers: h }).then(readList).then(d => setEventForms(d.data || [])).catch(noteFailure).finally(() => setLoadingEF(false));
     }
   }, [isAdmin, isChatoOfficer, isChatoEditor, isStaff, token]);
 
@@ -387,9 +412,9 @@ function AdminDashboard() {
     const h = { Authorization: `Bearer ${token}` };
     const poll = () => {
       fetch('/api/admin/live-visitors', { headers: h })
-        .then(r => r.json())
+        .then(readList)
         .then(d => setLiveVisitors(d.data || []))
-        .catch(() => {});
+        .catch(noteFailure);
     };
     poll();
     const id = setInterval(poll, 10_000);
@@ -998,6 +1023,26 @@ function AdminDashboard() {
         </aside>
 
         <main className="flex-1 min-w-0 p-4 sm:p-6">
+
+        {/* An empty panel and a panel that failed to load look identical, and
+            the difference matters: one means there is nothing to do, the other
+            means you are seeing nothing that exists. */}
+        {loadFailures.length > 0 && (
+          <div className="mb-4 rounded-xl border px-4 py-3 text-sm"
+            style={{ backgroundColor: '#FEF2F2', borderColor: '#FECACA', color: '#991B1B' }}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-bold">
+                  {loadFailures.length === 1 ? 'A panel could not load' : `${loadFailures.length} panels could not load`}
+                  {loadFailures.some(f => f.includes('401') || f.includes('403')) && ' — your session may have expired'}
+                </p>
+                <p className="mt-1 opacity-80 break-words">{loadFailures.join(' · ')}</p>
+                <p className="mt-1 opacity-70">Anything below may be incomplete. Reload the page, or sign in again.</p>
+              </div>
+              <button onClick={() => setLoadFailures([])} className="shrink-0 font-bold opacity-60 hover:opacity-100">✕</button>
+            </div>
+          </div>
+        )}
 
         {/* ── OVERVIEW ───────────────────────────────────────── */}
         {/* Rebuilt as a role dashboard: see components/admin/dashboard.
@@ -2461,9 +2506,9 @@ function AdminDashboard() {
                       if (!token) return;
                       setLoadingAR(true);
                       fetch('/api/admin/attraction-requests', { headers: { Authorization: `Bearer ${token}` } })
-                        .then(r => r.json())
+                        .then(readList)
                         .then(d => { if (d.error) console.error('[AttractionReqs]', d.error); setAttractionReqs(d.data || []); })
-                        .catch(() => {})
+                        .catch(noteFailure)
                         .finally(() => setLoadingAR(false));
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition"
@@ -3012,7 +3057,7 @@ function AdminDashboard() {
                     setScrapeMsg({ id, ok: false, text: `Scraped but DB save failed: ${poll.dbError}` });
                   } else {
                     // Refresh cached data
-                    fetch('/api/admin/external-reviews', { headers: authH }).then(r => r.json()).then(d => setExternalReviews(d.data || []));
+                    fetch('/api/admin/external-reviews', { headers: authH }).then(readList).then(d => setExternalReviews(d.data || []));
                     setScrapeMsg({ id, ok: true, text: `Done! Found ${poll.result.reviewCount} reviews · ${poll.result.googleRating}★` });
                   }
                   break;
@@ -3055,7 +3100,7 @@ function AdminDashboard() {
                 const poll = await fetch(
                   `/api/admin/scrape-reviews?runId=${runId}&strapiId=${attr.strapiId}&attractionName=${encodeURIComponent(attr.attributes.name)}`,
                   { headers: authH }
-                ).then(r => r.json()).catch(() => ({}));
+                ).then(readList).catch(() => ({}));
                 if (poll.status === 'SUCCEEDED' || poll.status === 'FAILED' || poll.status === 'ABORTED') break;
               }
             } catch {}
@@ -3077,7 +3122,7 @@ function AdminDashboard() {
               setScrapeAllProgress({ current: completed, total: unscraped.length });
             }
 
-            fetch('/api/admin/external-reviews', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => setExternalReviews(d.data || []));
+            fetch('/api/admin/external-reviews', { headers: { Authorization: `Bearer ${token}` } }).then(readList).then(d => setExternalReviews(d.data || []));
             setScrapeAllActive(false);
             setScrapeAllProgress({ current: 0, total: 0 });
           };

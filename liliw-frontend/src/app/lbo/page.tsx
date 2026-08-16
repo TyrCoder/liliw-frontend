@@ -125,8 +125,30 @@ function fmt(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+/**
+ * Reads a list response instead of turning a failure into an empty panel.
+ * See the note on the admin page's readList — an expired session returns 401
+ * with a JSON body, so r.json() succeeds and `d.data || []` renders a table
+ * that says there is nothing here.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function readList(res: Response): Promise<any> {
+  if (!res.ok) {
+    const where = (() => { try { return new URL(res.url).pathname; } catch { return 'a request'; } })();
+    throw new Error(`${where} — ${res.status}`);
+  }
+  return res.json();
+}
+
 function LboDashboard() {
   const { user, token, loading: authLoading } = useAuth();
+
+  // Which panel loads failed, so an empty dashboard can say why it is empty.
+  const [loadFailures, setLoadFailures] = useState<string[]>([]);
+  const noteFailure = (err: unknown) => {
+    const text = err instanceof Error ? err.message : String(err);
+    setLoadFailures(prev => (prev.includes(text) ? prev : [...prev, text]));
+  };
 
   const [checking, setChecking] = useState(true);
   const [appInfo,  setAppInfo]  = useState<AppInfo | null>(null);
@@ -194,7 +216,7 @@ function LboDashboard() {
     if (authLoading) return;
     if (!user || !token) { setChecking(false); return; }
     fetch('/api/lbo/me', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
+      .then(readList)
       .then(d => {
         if (d.isLbo) setAppInfo(d.application);
         else setNotLbo(true);
@@ -229,7 +251,7 @@ function LboDashboard() {
     if (!appInfo || !token) return;
     setLoadingAttr(true);
     fetch('/api/lbo/attraction', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
+      .then(readList)
       .then(d => setAttrData(d))
       .catch(() => setAttrData({ linked: false }))
       .finally(() => setLoadingAttr(false));
@@ -240,9 +262,9 @@ function LboDashboard() {
     if (!appInfo || !token || appInfo.strapi_attraction_id) return;
     setLoadingAttrReqs(true);
     fetch('/api/lbo/attraction-request', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
+      .then(readList)
       .then(d => setAttrReqs(d.data || []))
-      .catch(() => {})
+      .catch(noteFailure)
       .finally(() => setLoadingAttrReqs(false));
   }, [appInfo, token]);
 
@@ -250,9 +272,9 @@ function LboDashboard() {
   useEffect(() => {
     if (!appInfo || !token) return;
     fetch('/api/lbo/change-requests', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
+      .then(readList)
       .then(d => setRequests(d.data || []))
-      .catch(() => {})
+      .catch(noteFailure)
       .finally(() => setLoadingReqs(false));
   }, [appInfo, token]);
 
@@ -261,9 +283,9 @@ function LboDashboard() {
     if (!attrData?.linked || !attrData.strapiId || !token) return;
     setLoadingRatings(true);
     fetch(`/api/content/reviews?itemId=${attrData.strapiId}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
+      .then(readList)
       .then(d => setRatings(d.data || []))
-      .catch(() => {})
+      .catch(noteFailure)
       .finally(() => setLoadingRatings(false));
   }, [attrData, token]);
 
@@ -271,9 +293,9 @@ function LboDashboard() {
   useEffect(() => {
     if (!appInfo || !token) return;
     fetch('/api/lbo/visitor-records', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
+      .then(readList)
       .then(d => setRecords(d.data || []))
-      .catch(() => {})
+      .catch(noteFailure)
       .finally(() => setLoadingRecs(false));
   }, [appInfo, token]);
 
@@ -316,7 +338,7 @@ function LboDashboard() {
         setArForm({ category: '', attraction_name: '', description: '', location: '', has_virtual_tour: false, opening_hours: '', entrance_fee: '', best_time_to_visit: '', difficulty_level: '', place_type: '', distance_from_center: '', cuisine_type: '', price_range: '', contact_number: '' });
         setShowArForm(false);
         fetch('/api/lbo/attraction-request', { headers: { Authorization: `Bearer ${token}` } })
-          .then(r => r.json()).then(d => setAttrReqs(d.data || []));
+          .then(readList).then(d => setAttrReqs(d.data || []));
       } else {
         setArMsg({ ok: false, text: data.error || 'Submission failed' });
       }
@@ -351,7 +373,7 @@ function LboDashboard() {
         setCrForm({ field_to_change: '', current_value: '', requested_value: '', reason: '' });
         setShowCrForm(false);
         fetch('/api/lbo/change-requests', { headers: { Authorization: `Bearer ${token}` } })
-          .then(r => r.json()).then(d => setRequests(d.data || []));
+          .then(readList).then(d => setRequests(d.data || []));
       } else {
         setCrMsg({ ok: false, text: data.error || 'Submission failed' });
       }
@@ -404,7 +426,7 @@ function LboDashboard() {
         setVtForm({ areas: '', preferred_date: '', contact: '', notes: '' });
         setShowVtForm(false);
         fetch('/api/lbo/change-requests', { headers: { Authorization: `Bearer ${token}` } })
-          .then(r => r.json()).then(d => setRequests(d.data || []));
+          .then(readList).then(d => setRequests(d.data || []));
       } else {
         setVtMsg({ ok: false, text: data.error || 'Submission failed' });
       }
@@ -436,7 +458,7 @@ function LboDashboard() {
         setVrMsg({ ok: true, text: `Visitor record for ${MONTHS[vrMonth - 1]} ${vrYear} submitted!` });
         setVrCounts({ ...BLANK_VISITORS });
         fetch('/api/lbo/visitor-records', { headers: { Authorization: `Bearer ${token}` } })
-          .then(r => r.json()).then(d => setRecords(d.data || []));
+          .then(readList).then(d => setRecords(d.data || []));
       } else {
         setVrMsg({ ok: false, text: data.error || 'Submission failed' });
       }
@@ -574,6 +596,25 @@ function LboDashboard() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+
+        {/* An empty panel and a panel that failed to load look identical, and
+            the difference matters to a business owner checking their listing. */}
+        {loadFailures.length > 0 && (
+          <div className="rounded-xl border px-4 py-3 text-sm"
+            style={{ backgroundColor: '#FEF2F2', borderColor: '#FECACA', color: '#991B1B' }}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-bold">
+                  {loadFailures.length === 1 ? 'Something could not load' : `${loadFailures.length} panels could not load`}
+                  {loadFailures.some(f => f.includes('401') || f.includes('403')) && ' — your session may have expired'}
+                </p>
+                <p className="mt-1 opacity-80 break-words">{loadFailures.join(' · ')}</p>
+                <p className="mt-1 opacity-70">What you see below may be incomplete. Reload, or sign in again.</p>
+              </div>
+              <button onClick={() => setLoadFailures([])} className="shrink-0 font-bold opacity-60 hover:opacity-100">✕</button>
+            </div>
+          </div>
+        )}
 
         {/* ── OVERVIEW ── */}
         {activeTab === 'dashboard' && (
