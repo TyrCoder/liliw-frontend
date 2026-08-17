@@ -619,40 +619,48 @@ function StereoRenderer() {
  *
  * Gaze rather than a pointer because both hands are holding the viewer.
  */
-const GAZE_SECONDS = 1.4;
+const GAZE_SECONDS = 1.1;
 const NAV_COLOR = '#1565C0';
 const INFO_COLOR = '#FFB400';
 
 /** A hotspot as geometry: a ring, a filled centre, and its label above. */
 function CardboardHotspot({
-  hotspot, label, register,
+  hotspot, label, register, aimed,
 }: {
   hotspot: Hotspot;
   label: string;
   register: (id: string, mesh: THREE.Mesh | null) => void;
+  /** True while the reticle is resting on this one. */
+  aimed: boolean;
 }) {
   const pos = anglesToPosition(hotspot.pitch, hotspot.yaw);
   const color = hotspot.type === 'navigate' ? NAV_COLOR : INFO_COLOR;
   // The sphere is 490 units out, so a marker has to be sized for that
   // distance — at hand scale it would be a speck.
-  const s = 26 * (hotspot.size ?? 1);
+  const s = 34 * (hotspot.size ?? 1);
 
   return (
     <Billboard position={pos}>
-      {/* The hit target is one invisible disc rather than the visible parts:
-          gaze should catch the whole marker, including the gap in the ring. */}
-      <mesh ref={(m) => register(hotspot.id, m)} visible={false}>
-        <circleGeometry args={[s, 24]} />
+      {/* The hit target, three times the drawn marker and invisible.
+       *
+       * It used to match the ring exactly: 26 units at 490 out is about 6
+       * degrees across, which on a 390px phone split into two eyes is a
+       * fifteen-pixel target that has to be held steady for well over a
+       * second. That is not a hotspot anyone can hit with their head — it is
+       * why nothing would trigger. Aim tolerance costs nothing here because
+       * hotspots are metres apart on the sphere. */}
+      <mesh ref={(m) => { register(hotspot.id, m); }} visible={false}>
+        <circleGeometry args={[s * 3, 20]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
-      <mesh>
+      <mesh scale={aimed ? 1.25 : 1}>
         <ringGeometry args={[s * 0.72, s, 48]} />
-        <meshBasicMaterial color={color} transparent opacity={0.95} side={THREE.DoubleSide} depthTest={false} />
+        <meshBasicMaterial color={aimed ? '#F5C518' : color} transparent opacity={0.95} side={THREE.DoubleSide} depthTest={false} />
       </mesh>
-      <mesh>
+      <mesh scale={aimed ? 1.25 : 1}>
         <circleGeometry args={[s * 0.5, 32]} />
-        <meshBasicMaterial color={color} transparent opacity={0.32} side={THREE.DoubleSide} depthTest={false} />
+        <meshBasicMaterial color={aimed ? '#F5C518' : color} transparent opacity={aimed ? 0.5 : 0.32} side={THREE.DoubleSide} depthTest={false} />
       </mesh>
 
       <Text
@@ -687,6 +695,7 @@ function CardboardGaze({
 }) {
   const { camera } = useThree();
 
+  const [aimedId, setAimedId] = useState<string | null>(null);
   const targets = useRef(new Map<string, THREE.Mesh>());
   const register = useCallback((id: string, mesh: THREE.Mesh | null) => {
     if (mesh) targets.current.set(id, mesh);
@@ -719,6 +728,10 @@ function CardboardGaze({
     if (id !== held.current.id) held.current = { id, t: 0 };
     else if (id) held.current.t += delta;
 
+    // Drives the marker's own highlight. Only on a change, so this is a couple
+    // of renders per look and not one per frame.
+    if (id !== aimedId) setAimedId(id);
+
     const progress = id ? Math.min(1, held.current.t / GAZE_SECONDS) : 0;
     if (fill.current) {
       // The centre grows to fill the ring as the dwell completes — a countdown
@@ -749,6 +762,7 @@ function CardboardGaze({
               : h.label
           }
           register={register}
+          aimed={aimedId === h.id}
         />
       ))}
 
