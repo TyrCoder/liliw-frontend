@@ -1352,6 +1352,23 @@ export default function ImmersiveViewer({
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   }, []);
 
+  /**
+   * Hold the page still while the viewer is filling the screen.
+   *
+   * Real fullscreen takes the page out of the document flow itself; the pinned
+   * fallback does not, so the page carries on scrolling underneath. On a phone
+   * that means a drag across the panorama also drags the page, the address bar
+   * slides in and out, and the viewer stops covering everything — which is the
+   * one thing it was asked to do.
+   */
+  useEffect(() => {
+    if (!fauxFullscreen) return;
+    const body = document.body;
+    const previous = body.style.overflow;
+    body.style.overflow = 'hidden';
+    return () => { body.style.overflow = previous; };
+  }, [fauxFullscreen]);
+
   // Leaving fullscreen by the browser's own gesture — the back swipe, the
   // Escape key — must take cardboard mode with it, or the reader is left in a
   // split-screen page with no obvious way out.
@@ -1543,19 +1560,32 @@ export default function ImmersiveViewer({
         {cardboard && (
           <>
             {[0, 1].map((eye) => (
-              <button
+              <div
                 key={eye}
-                onClick={exitCardboard}
-                aria-label="Leave cardboard mode"
-                className="absolute top-3 z-30 rounded-full p-2 text-white"
-                style={{
-                  left: eye === 0 ? '3%' : '53%',
-                  background: 'rgba(9,26,66,0.75)',
-                  border: '1px solid rgba(245,197,24,0.35)',
-                }}
+                className="absolute top-3 z-30 flex items-center gap-2"
+                style={{ left: eye === 0 ? '3%' : '53%' }}
               >
-                <X className="w-4 h-4" />
-              </button>
+                <button
+                  onClick={exitCardboard}
+                  aria-label="Leave cardboard mode"
+                  className="rounded-full p-2 text-white"
+                  style={{ background: 'rgba(9,26,66,0.75)', border: '1px solid rgba(245,197,24,0.35)' }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                {/* Fullscreen from inside cardboard too. Entry asks for it, but
+                    a browser can refuse, and the back gesture drops out of it —
+                    leaving a split view in a window with no way to fill the
+                    screen again short of leaving and starting over. */}
+                <button
+                  onClick={toggleFullscreen}
+                  aria-label={filling ? 'Leave fullscreen' : 'Fill the screen'}
+                  className="rounded-full p-2 text-white"
+                  style={{ background: 'rgba(9,26,66,0.75)', border: '1px solid rgba(245,197,24,0.35)' }}
+                >
+                  {filling ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                </button>
+              </div>
             ))}
 
             {isPortrait && (
