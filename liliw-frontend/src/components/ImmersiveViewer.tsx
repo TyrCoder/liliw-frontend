@@ -619,7 +619,14 @@ function StereoRenderer() {
  *
  * Gaze rather than a pointer because both hands are holding the viewer.
  */
-const GAZE_SECONDS = 1.1;
+/**
+ * How long the dot has to rest inside a hotspot before it fires.
+ *
+ * Long enough to be a decision rather than an accident — you look around a
+ * panorama constantly, and anything under a second or so triggers on a passing
+ * glance. Short enough that holding still does not become a chore.
+ */
+const GAZE_SECONDS = 2.5;
 const NAV_COLOR = '#1565C0';
 const INFO_COLOR = '#FFB400';
 
@@ -704,6 +711,8 @@ function CardboardGaze({
 
   const group = useRef<THREE.Group>(null);
   const fill = useRef<THREE.Mesh>(null);
+  const arc = useRef<THREE.Mesh>(null);
+  const lastStep = useRef(-1);
   const raycaster = useRef(new THREE.Raycaster());
   const held = useRef<{ id: string | null; t: number }>({ id: null, t: 0 });
   const forward = useRef(new THREE.Vector3());
@@ -733,12 +742,33 @@ function CardboardGaze({
     if (id !== aimedId) setAimedId(id);
 
     const progress = id ? Math.min(1, held.current.t / GAZE_SECONDS) : 0;
+
     if (fill.current) {
-      // The centre grows to fill the ring as the dwell completes — a countdown
-      // you can read without any text.
-      const scale = 0.25 + progress * 0.75;
-      fill.current.scale.setScalar(scale);
-      (fill.current.material as THREE.MeshBasicMaterial).opacity = id ? 1 : 0.75;
+      // The dot swells as the dwell runs, so the centre of vision shows
+      // something is happening even while the eye is on the hotspot.
+      fill.current.scale.setScalar(0.3 + progress * 0.7);
+      (fill.current.material as THREE.MeshBasicMaterial).opacity = id ? 1 : 0.7;
+    }
+
+    /* The countdown proper: a gold arc sweeping round the dot.
+     *
+     * An arc means rebuilding the ring's geometry, so it is quantised to 48
+     * steps and only rebuilt when the step changes — about twenty rebuilds
+     * over two and a half seconds instead of one per frame. Growing the dot
+     * alone was not a countdown: it showed that something was counting,
+     * without showing how much was left. */
+    if (arc.current) {
+      const step = Math.round(progress * 48);
+      if (step !== lastStep.current) {
+        lastStep.current = step;
+        const done = (step / 48) * Math.PI * 2;
+        arc.current.visible = step > 0;
+        arc.current.geometry.dispose();
+        arc.current.geometry = new THREE.RingGeometry(
+          0.044, 0.058, 48, 1,
+          Math.PI / 2 - done, done,
+        );
+      }
     }
 
     if (progress >= 1 && id) {
@@ -766,14 +796,27 @@ function CardboardGaze({
         />
       ))}
 
-      <group ref={group}>
+      {/* The reticle: a dot, a ring around it, and the countdown arc outside
+          both. renderOrder keeps them above the panorama, which they would
+          otherwise be inside — the sphere is only 500 units out. */}
+      <group ref={group} renderOrder={10}>
         <mesh>
           <ringGeometry args={[0.028, 0.036, 32]} />
-          <meshBasicMaterial color="#FFFFFF" transparent opacity={0.75} depthTest={false} />
+          <meshBasicMaterial color="#FFFFFF" transparent opacity={0.7} depthTest={false} />
         </mesh>
         <mesh ref={fill}>
-          <circleGeometry args={[0.024, 24]} />
-          <meshBasicMaterial color="#F5C518" transparent opacity={0.75} depthTest={false} />
+          <circleGeometry args={[0.022, 24]} />
+          <meshBasicMaterial color="#F5C518" transparent opacity={0.7} depthTest={false} />
+        </mesh>
+
+        {/* Track for the arc, so the countdown reads against something. */}
+        <mesh>
+          <ringGeometry args={[0.044, 0.058, 48]} />
+          <meshBasicMaterial color="#000000" transparent opacity={0.28} depthTest={false} />
+        </mesh>
+        <mesh ref={arc} visible={false}>
+          <ringGeometry args={[0.044, 0.058, 48, 1, Math.PI / 2, 0]} />
+          <meshBasicMaterial color="#F5C518" transparent opacity={0.95} depthTest={false} />
         </mesh>
       </group>
     </>
