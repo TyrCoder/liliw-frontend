@@ -644,7 +644,11 @@ function CardboardHotspot({
   const color = hotspot.type === 'navigate' ? NAV_COLOR : INFO_COLOR;
   // The sphere is 490 units out, so a marker has to be sized for that
   // distance — at hand scale it would be a speck.
-  const s = 34 * (hotspot.size ?? 1);
+  const s = 20 * (hotspot.size ?? 1);
+  // The aim tolerance is deliberately not tied to the drawn size. Shrinking
+  // the marker should make it less obtrusive, not harder to hit — that pairing
+  // is what made these impossible to trigger in the first place.
+  const hit = Math.max(s * 4, 96);
 
   return (
     <Billboard position={pos}>
@@ -657,7 +661,7 @@ function CardboardHotspot({
        * why nothing would trigger. Aim tolerance costs nothing here because
        * hotspots are metres apart on the sphere. */}
       <mesh ref={(m) => { register(hotspot.id, m); }} visible={false}>
-        <circleGeometry args={[s * 3, 20]} />
+        <circleGeometry args={[hit, 20]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
@@ -765,7 +769,7 @@ function CardboardGaze({
         arc.current.visible = step > 0;
         arc.current.geometry.dispose();
         arc.current.geometry = new THREE.RingGeometry(
-          0.044, 0.058, 48, 1,
+          0.13, 0.16, 48, 1,
           Math.PI / 2 - done, done,
         );
       }
@@ -797,26 +801,34 @@ function CardboardGaze({
       ))}
 
       {/* The reticle: a dot, a ring around it, and the countdown arc outside
-          both. renderOrder keeps them above the panorama, which they would
-          otherwise be inside — the sphere is only 500 units out. */}
-      <group ref={group} renderOrder={10}>
-        <mesh>
-          <ringGeometry args={[0.028, 0.036, 32]} />
-          <meshBasicMaterial color="#FFFFFF" transparent opacity={0.7} depthTest={false} />
+       *  both, sitting three units in front of the eye.
+       *
+       *  Sized in degrees of view rather than by eye. At the old radii the dot
+       *  subtended 0.84° — two pixels per eye on a 390px phone in a split
+       *  view, which is not a dot anyone can see, let alone aim with. These
+       *  give roughly 2.3° for the dot and 6° across the arc: about six and
+       *  fifteen pixels on that same phone, and still modest on a desktop.
+       *
+       *  renderOrder goes on each mesh. Setting it on the group does nothing —
+       *  three reads it per object, it is not inherited. */}
+      <group ref={group}>
+        <mesh renderOrder={10}>
+          <ringGeometry args={[0.085, 0.105, 32]} />
+          <meshBasicMaterial color="#FFFFFF" transparent opacity={0.8} depthTest={false} depthWrite={false} />
         </mesh>
-        <mesh ref={fill}>
-          <circleGeometry args={[0.022, 24]} />
-          <meshBasicMaterial color="#F5C518" transparent opacity={0.7} depthTest={false} />
+        <mesh ref={fill} renderOrder={11}>
+          <circleGeometry args={[0.06, 24]} />
+          <meshBasicMaterial color="#F5C518" transparent opacity={0.85} depthTest={false} depthWrite={false} />
         </mesh>
 
         {/* Track for the arc, so the countdown reads against something. */}
-        <mesh>
-          <ringGeometry args={[0.044, 0.058, 48]} />
-          <meshBasicMaterial color="#000000" transparent opacity={0.28} depthTest={false} />
+        <mesh renderOrder={10}>
+          <ringGeometry args={[0.13, 0.16, 48]} />
+          <meshBasicMaterial color="#04102B" transparent opacity={0.35} depthTest={false} depthWrite={false} />
         </mesh>
-        <mesh ref={arc} visible={false}>
-          <ringGeometry args={[0.044, 0.058, 48, 1, Math.PI / 2, 0]} />
-          <meshBasicMaterial color="#F5C518" transparent opacity={0.95} depthTest={false} />
+        <mesh ref={arc} visible={false} renderOrder={12}>
+          <ringGeometry args={[0.13, 0.16, 48, 1, Math.PI / 2, 0]} />
+          <meshBasicMaterial color="#F5C518" transparent opacity={0.95} depthTest={false} depthWrite={false} />
         </mesh>
       </group>
     </>
