@@ -167,8 +167,8 @@ function HotspotMarker({
   const displayLabel = targetTitle || hotspot.label;
 
   const size = hotspot.size ?? 1.0;
-  const btnSize = Math.round(88 * size);
-  const iconSize = Math.round(30 * size);
+  const btnSize = Math.round(58 * size);
+  const iconSize = Math.round(22 * size);
 
   const accentColor = isRepositioning ? '#a78bfa' : (isNav ? '#1565C0' : '#FFB400');
   const bgColor = isRepositioning ? 'rgba(167,139,250,0.25)' : (isNav ? 'rgba(0,191,179,0.18)' : 'rgba(255,180,0,0.18)');
@@ -690,7 +690,7 @@ function CardboardHotspot({
 }) {
   const pos = anglesToPosition(hotspot.pitch, hotspot.yaw);
   const color = hotspot.type === 'navigate' ? NAV_COLOR : INFO_COLOR;
-  const s = 20 * (hotspot.size ?? 1);
+  const s = 13 * (hotspot.size ?? 1);
   const grow = aimed ? 1.3 : 1;
 
   return (
@@ -1491,9 +1491,15 @@ export default function ImmersiveViewer({
   if (!scenes.length) return null;
 
   return (
+    // Opacity only, never a transform.
+    //
+    // A transformed element is the containing block for its own fixed
+    // positioning and for every fixed descendant, so a `y` entrance here — or
+    // on any ancestor — quietly turns "fill the viewport" into "fill this
+    // column", which is why fullscreen left the navbar showing.
     <motion.div
-      initial={{ y: 20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
       ref={containerRef}
       className="rounded-2xl overflow-hidden bg-black select-none"

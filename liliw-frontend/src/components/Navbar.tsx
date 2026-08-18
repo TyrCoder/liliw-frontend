@@ -426,17 +426,20 @@ export default function Navbar() {
 
               {/* 3D Tour — the secondary pill, outlined so the pair reads as
                   primary and secondary rather than two competing actions.
-                  Hidden on phones; it is in the menu instead. */}
-              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} className="hidden sm:block">
-                <Link href="/immersive"
-                  className="px-3.5 2xl:px-5 py-2.5 rounded-full font-semibold text-xs sm:text-sm border transition-colors duration-[250ms] inline-flex items-center gap-1.5 hover:bg-blue-50"
+                  Icon-only on a phone, the way Scan already is: it used to be
+                  hidden below sm entirely, so on an iPhone held upright the
+                  tours were reachable only through the menu — and appeared out
+                  of nowhere when the phone was turned sideways. */}
+              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                <Link href="/immersive" aria-label="3D Tours"
+                  className="w-9 h-9 sm:w-auto sm:h-auto sm:px-3.5 2xl:px-5 sm:py-2.5 rounded-full font-semibold text-xs sm:text-sm border transition-colors duration-[250ms] inline-flex items-center justify-center gap-1.5 hover:bg-blue-50"
                   style={{
                     borderColor: 'rgba(15,95,181,0.35)', color: ROYAL, fontFamily: BL,
                     backgroundColor: 'rgba(255,255,255,0.75)',
                     boxShadow: '0 4px 14px -8px rgba(15,23,42,0.35)',
                   }}>
-                  <Sparkles className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
-                  3D Tour
+                  <Sparkles className="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0" strokeWidth={2} />
+                  <span className="hidden sm:inline">3D Tour</span>
                 </Link>
               </motion.div>
 
