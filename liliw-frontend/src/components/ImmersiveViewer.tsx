@@ -627,62 +627,77 @@ function StereoRenderer() {
  * glance. Short enough that holding still does not become a chore.
  */
 const GAZE_SECONDS = 2.5;
+
+/** How far off centre a hotspot can be and still count as aimed at. */
+const AIM_DEGREES = 11;
 const NAV_COLOR = '#1565C0';
 const INFO_COLOR = '#FFB400';
 
-/** A hotspot as geometry: a ring, a filled centre, and its label above. */
+/**
+ * A hotspot, drawn to be found.
+ *
+ * The problem with the earlier version was not its size but its contrast: a
+ * navy-blue ring on a photograph of a farm at dusk is invisible from across
+ * the scene, so there was nowhere obvious to aim. This is a white disc with a
+ * coloured core and a dark halo behind it — legible against sky, foliage or
+ * shadow, which is all a panorama ever offers — with the label always on.
+ */
 function CardboardHotspot({
-  hotspot, label, register, aimed,
+  hotspot, label, aimed,
 }: {
   hotspot: Hotspot;
   label: string;
-  register: (id: string, mesh: THREE.Mesh | null) => void;
   /** True while the reticle is resting on this one. */
   aimed: boolean;
 }) {
   const pos = anglesToPosition(hotspot.pitch, hotspot.yaw);
   const color = hotspot.type === 'navigate' ? NAV_COLOR : INFO_COLOR;
-  // The sphere is 490 units out, so a marker has to be sized for that
-  // distance — at hand scale it would be a speck.
   const s = 20 * (hotspot.size ?? 1);
-  // The aim tolerance is deliberately not tied to the drawn size. Shrinking
-  // the marker should make it less obtrusive, not harder to hit — that pairing
-  // is what made these impossible to trigger in the first place.
-  const hit = Math.max(s * 4, 96);
+  const grow = aimed ? 1.3 : 1;
 
   return (
     <Billboard position={pos}>
-      {/* The hit target, three times the drawn marker and invisible.
-       *
-       * It used to match the ring exactly: 26 units at 490 out is about 6
-       * degrees across, which on a 390px phone split into two eyes is a
-       * fifteen-pixel target that has to be held steady for well over a
-       * second. That is not a hotspot anyone can hit with their head — it is
-       * why nothing would trigger. Aim tolerance costs nothing here because
-       * hotspots are metres apart on the sphere. */}
-      <mesh ref={(m) => { register(hotspot.id, m); }} visible={false}>
-        <circleGeometry args={[hit, 20]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      {/* A dark halo, so the marker holds against a bright sky as well as it
+          does against foliage. */}
+      <mesh scale={grow} renderOrder={2}>
+        <circleGeometry args={[s * 1.35, 32]} />
+        <meshBasicMaterial color="#04102B" transparent opacity={0.38} depthTest={false} depthWrite={false} />
       </mesh>
 
-      <mesh scale={aimed ? 1.25 : 1}>
-        <ringGeometry args={[s * 0.72, s, 48]} />
-        <meshBasicMaterial color={aimed ? '#F5C518' : color} transparent opacity={0.95} side={THREE.DoubleSide} depthTest={false} />
+      <mesh scale={grow} renderOrder={3}>
+        <circleGeometry args={[s, 40]} />
+        <meshBasicMaterial color={aimed ? '#F5C518' : '#FFFFFF'} transparent opacity={0.96} depthTest={false} depthWrite={false} />
       </mesh>
-      <mesh scale={aimed ? 1.25 : 1}>
-        <circleGeometry args={[s * 0.5, 32]} />
-        <meshBasicMaterial color={aimed ? '#F5C518' : color} transparent opacity={aimed ? 0.5 : 0.32} side={THREE.DoubleSide} depthTest={false} />
+      <mesh scale={grow} renderOrder={4}>
+        <circleGeometry args={[s * 0.62, 32]} />
+        <meshBasicMaterial color={aimed ? '#0A1A40' : color} transparent opacity={1} depthTest={false} depthWrite={false} />
       </mesh>
+
+      {/* Which kind it is, at a glance: an arrow leads somewhere, a dot tells
+          you something. Drawn rather than lettered — a glyph at this size is
+          a smudge, and troika would lay out one text mesh per hotspot. */}
+      {hotspot.type === 'navigate' ? (
+        <mesh scale={grow} renderOrder={5} rotation={[0, 0, Math.PI]}>
+          <coneGeometry args={[s * 0.3, s * 0.44, 3]} />
+          <meshBasicMaterial color="#FFFFFF" depthTest={false} depthWrite={false} />
+        </mesh>
+      ) : (
+        <mesh scale={grow} renderOrder={5}>
+          <circleGeometry args={[s * 0.16, 16]} />
+          <meshBasicMaterial color="#FFFFFF" depthTest={false} depthWrite={false} />
+        </mesh>
+      )}
 
       <Text
-        position={[0, s * 1.9, 0]}
-        fontSize={s * 0.62}
-        color="#FFFFFF"
+        position={[0, s * 2.2, 0]}
+        fontSize={s * 0.7}
+        color={aimed ? '#F5C518' : '#FFFFFF'}
         anchorX="center"
         anchorY="middle"
-        outlineWidth={s * 0.055}
+        outlineWidth={s * 0.09}
         outlineColor="#04102B"
         maxWidth={s * 14}
+        renderOrder={6}
       >
         {label}
       </Text>
@@ -707,36 +722,48 @@ function CardboardGaze({
   const { camera } = useThree();
 
   const [aimedId, setAimedId] = useState<string | null>(null);
-  const targets = useRef(new Map<string, THREE.Mesh>());
-  const register = useCallback((id: string, mesh: THREE.Mesh | null) => {
-    if (mesh) targets.current.set(id, mesh);
-    else targets.current.delete(id);
-  }, []);
-
   const group = useRef<THREE.Group>(null);
   const fill = useRef<THREE.Mesh>(null);
   const arc = useRef<THREE.Mesh>(null);
   const lastStep = useRef(-1);
-  const raycaster = useRef(new THREE.Raycaster());
+  const dir = useRef(new THREE.Vector3());
   const held = useRef<{ id: string | null; t: number }>({ id: null, t: 0 });
   const forward = useRef(new THREE.Vector3());
 
   useFrame((_, delta) => {
     if (!active || !group.current) return;
 
-    // Sit the reticle a fixed distance ahead of wherever the head is looking,
-    // facing the viewer. Close enough to focus on, far enough not to swim.
-    camera.getWorldDirection(forward.current);
+    /* Where the head is pointing, taken from the camera's own rotation.
+     *
+     * Not getWorldDirection: that reads matrixWorld, and in cardboard the only
+     * thing updating matrixWorld is the stereo renderer, which runs after this
+     * — so the aim always trailed the view by a frame, and during a turn it
+     * pointed somewhere the reader was no longer looking. The quaternion is
+     * set by CardboardControls in the same frame, so this is current. */
+    forward.current.set(0, 0, -1).applyQuaternion(camera.quaternion);
+
+    // Sit the reticle a fixed distance ahead, facing the viewer. Close enough
+    // to focus on, far enough not to swim.
     group.current.position.copy(camera.position).addScaledVector(forward.current, 3);
     group.current.quaternion.copy(camera.quaternion);
 
-    raycaster.current.set(camera.position, forward.current);
-    const meshes = [...targets.current.values()];
-    const hit = meshes.length ? raycaster.current.intersectObjects(meshes, false)[0] : undefined;
-
-    const id = hit
-      ? [...targets.current.entries()].find(([, m]) => m === hit.object)?.[0] ?? null
-      : null;
+    /* Which hotspot is being looked at, by angle rather than by raycast.
+     *
+     * A hotspot is a known direction from the origin, so this is one dot
+     * product each — no meshes, no billboard matrices, no world-matrix
+     * ordering to get wrong, and nothing that can silently stop working
+     * because something else updated late. It also gives an aim tolerance in
+     * degrees, which is the unit the problem is actually in.
+     *
+     * Nearest wins where two overlap, so a crowded scene still resolves. */
+    let id: string | null = null;
+    let best = Math.cos(AIM_DEGREES * Math.PI / 180);
+    for (const h of hotspots) {
+      const [x, y, z] = anglesToPosition(h.pitch, h.yaw);
+      dir.current.set(x, y, z).normalize();
+      const dot = dir.current.dot(forward.current);
+      if (dot > best) { best = dot; id = h.id; }
+    }
 
     if (id !== held.current.id) held.current = { id, t: 0 };
     else if (id) held.current.t += delta;
@@ -795,7 +822,6 @@ function CardboardGaze({
               ? scenes[h.targetSceneIndex]?.title ?? h.label
               : h.label
           }
-          register={register}
           aimed={aimedId === h.id}
         />
       ))}
