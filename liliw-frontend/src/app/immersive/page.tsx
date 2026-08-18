@@ -532,8 +532,11 @@ export default function ImmersivePage() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
             {/* Viewer */}
             <motion.div
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
+              // No x here. A transform on this column makes it the containing
+              // block for the viewer's fullscreen, which then fills the column
+              // instead of the screen — the navbar stayed visible above it.
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ duration: 0.6 }}
               className="lg:col-span-4"
             >
