@@ -171,9 +171,7 @@ function HotspotMarker({
   const iconSize = Math.round(22 * size);
 
   const accentColor = isRepositioning ? '#a78bfa' : (isNav ? '#1565C0' : '#FFB400');
-  const bgColor = isRepositioning ? 'rgba(167,139,250,0.25)' : (isNav ? 'rgba(0,191,179,0.18)' : 'rgba(255,180,0,0.18)');
   const borderColor = isRepositioning ? 'rgba(167,139,250,0.9)' : (isNav ? 'rgba(0,191,179,0.85)' : 'rgba(255,180,0,0.85)');
-  const glowColor = isRepositioning ? 'rgba(167,139,250,0.5)' : (isNav ? 'rgba(0,191,179,0.5)' : 'rgba(255,180,0,0.5)');
 
   return (
     <group position={pos}>
@@ -228,39 +226,43 @@ function HotspotMarker({
              * clue that it led anywhere. Solid white, a coloured core, and a
              * dark halo: legible over sky, foliage or shadow, which is all a
              * panorama offers. */}
-            <span style={{
-              position: 'absolute',
-              inset: -6,
-              borderRadius: '50%',
-              backgroundColor: 'rgba(4,16,43,0.38)',
-            }} />
+            {/* Clear in the middle, legible at the rim.
+             *
+             * A filled disc covers the very thing it points at, and on a
+             * panorama the view is the content. The ring does the work: white,
+             * with a dark ring behind and a dark shadow outside it, so it
+             * holds against sky, foliage or shadow while the middle stays
+             * open. */}
             <span style={{
               position: 'absolute',
               inset: 0,
               borderRadius: '50%',
-              backgroundColor: hovered ? '#F5C518' : '#FFFFFF',
-              border: isRepositioning ? `3px dashed ${borderColor}` : 'none',
+              backgroundColor: 'transparent',
+              border: isRepositioning
+                ? `3px dashed ${borderColor}`
+                : `3px solid ${hovered ? '#F5C518' : '#FFFFFF'}`,
               boxShadow: hovered
-                ? '0 6px 20px rgba(0,0,0,0.45), 0 0 0 5px rgba(245,197,24,0.28)'
-                : '0 4px 14px rgba(0,0,0,0.4)',
+                ? '0 0 0 2px rgba(4,16,43,0.55), 0 0 18px rgba(245,197,24,0.55)'
+                : '0 0 0 2px rgba(4,16,43,0.5), 0 2px 10px rgba(0,0,0,0.35)',
               transition: 'all 0.2s ease',
-            }} />
-            {/* The coloured core, so the two kinds stay distinguishable. */}
-            <span style={{
-              position: 'absolute',
-              inset: '22%',
-              borderRadius: '50%',
-              backgroundColor: isRepositioning ? '#a78bfa' : hovered ? '#0A1A40' : accentColor,
-              transition: 'background-color 0.2s ease',
             }} />
             {/* Icon */}
             <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {isRepositioning ? (
-                <Move style={{ width: iconSize, height: iconSize, color: '#0A1A40' }} />
+                <Move style={{ width: iconSize, height: iconSize, color: '#a78bfa', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.9))' }} />
               ) : isNav ? (
-                <Navigation style={{ width: iconSize * 0.8, height: iconSize * 0.8, color: '#FFFFFF', fill: '#FFFFFF' }} />
+                <Navigation style={{
+                  width: iconSize * 0.85, height: iconSize * 0.85,
+                  color: hovered ? '#F5C518' : '#FFFFFF',
+                  fill: hovered ? '#F5C518' : '#FFFFFF',
+                  filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.9))',
+                }} />
               ) : (
-                <Info style={{ width: iconSize * 0.8, height: iconSize * 0.8, color: '#FFFFFF' }} />
+                <Info style={{
+                  width: iconSize * 0.85, height: iconSize * 0.85,
+                  color: hovered ? '#F5C518' : '#FFD54F',
+                  filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.9))',
+                }} />
               )}
             </span>
           </motion.button>
@@ -695,20 +697,20 @@ function CardboardHotspot({
 
   return (
     <Billboard position={pos}>
-      {/* A dark halo, so the marker holds against a bright sky as well as it
-          does against foliage. */}
+      {/* Open in the middle, unmistakable at the edge.
+       *
+       * A solid disc reads clearly but puts a coin over the thing it is
+       * pointing at — on a panorama, the view is the content. So the middle
+       * stays clear and the legibility comes from the rim: a dark ring behind
+       * a white one, which holds against sky, foliage and shadow alike without
+       * hiding any of them. */}
       <mesh scale={grow} renderOrder={2}>
-        <circleGeometry args={[s * 1.35, 32]} />
-        <meshBasicMaterial color="#04102B" transparent opacity={0.38} depthTest={false} depthWrite={false} />
+        <ringGeometry args={[s * 0.66, s * 1.24, 40]} />
+        <meshBasicMaterial color="#04102B" transparent opacity={0.55} depthTest={false} depthWrite={false} />
       </mesh>
-
       <mesh scale={grow} renderOrder={3}>
-        <circleGeometry args={[s, 40]} />
-        <meshBasicMaterial color={aimed ? '#F5C518' : '#FFFFFF'} transparent opacity={0.96} depthTest={false} depthWrite={false} />
-      </mesh>
-      <mesh scale={grow} renderOrder={4}>
-        <circleGeometry args={[s * 0.62, 32]} />
-        <meshBasicMaterial color={aimed ? '#0A1A40' : color} transparent opacity={1} depthTest={false} depthWrite={false} />
+        <ringGeometry args={[s * 0.78, s * 1.12, 40]} />
+        <meshBasicMaterial color={aimed ? '#F5C518' : '#FFFFFF'} transparent opacity={0.98} depthTest={false} depthWrite={false} />
       </mesh>
 
       {/* Which kind it is, at a glance: an arrow leads somewhere, a dot tells
@@ -716,13 +718,13 @@ function CardboardHotspot({
           a smudge, and troika would lay out one text mesh per hotspot. */}
       {hotspot.type === 'navigate' ? (
         <mesh scale={grow} renderOrder={5} rotation={[0, 0, Math.PI]}>
-          <coneGeometry args={[s * 0.3, s * 0.44, 3]} />
-          <meshBasicMaterial color="#FFFFFF" depthTest={false} depthWrite={false} />
+          <coneGeometry args={[s * 0.34, s * 0.5, 3]} />
+          <meshBasicMaterial color={aimed ? '#F5C518' : '#FFFFFF'} depthTest={false} depthWrite={false} />
         </mesh>
       ) : (
         <mesh scale={grow} renderOrder={5}>
-          <circleGeometry args={[s * 0.16, 16]} />
-          <meshBasicMaterial color="#FFFFFF" depthTest={false} depthWrite={false} />
+          <circleGeometry args={[s * 0.2, 16]} />
+          <meshBasicMaterial color={aimed ? '#F5C518' : color} depthTest={false} depthWrite={false} />
         </mesh>
       )}
 
