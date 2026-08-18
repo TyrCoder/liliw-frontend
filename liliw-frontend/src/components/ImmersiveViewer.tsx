@@ -220,34 +220,56 @@ function HotspotMarker({
               opacity: 0.3,
               animation: 'ping 2.8s cubic-bezier(0,0,0.2,1) infinite 0.4s',
             }} />
-            {/* Main glass circle */}
+            {/* The disc, matching the cardboard marker.
+             *
+             * It was a translucent tinted circle with a coloured rim, which
+             * over a photograph is a faint ring you can see straight through —
+             * on a phone in daylight it read as an empty outline and gave no
+             * clue that it led anywhere. Solid white, a coloured core, and a
+             * dark halo: legible over sky, foliage or shadow, which is all a
+             * panorama offers. */}
+            <span style={{
+              position: 'absolute',
+              inset: -6,
+              borderRadius: '50%',
+              backgroundColor: 'rgba(4,16,43,0.38)',
+            }} />
             <span style={{
               position: 'absolute',
               inset: 0,
               borderRadius: '50%',
-              backgroundColor: hovered ? bgColor.replace(/[\d.]+\)$/, '0.35)') : bgColor,
-              border: isRepositioning ? `3px dashed ${borderColor}` : `2.5px solid ${borderColor}`,
+              backgroundColor: hovered ? '#F5C518' : '#FFFFFF',
+              border: isRepositioning ? `3px dashed ${borderColor}` : 'none',
               boxShadow: hovered
-                ? `0 0 0 6px rgba(255,255,255,0.12), 0 0 32px ${glowColor}, inset 0 0 16px rgba(255,255,255,0.10)`
-                : `0 0 18px ${glowColor}60, inset 0 0 8px rgba(255,255,255,0.06)`,
-              backdropFilter: 'blur(6px)',
-              transition: 'all 0.25s ease',
+                ? '0 6px 20px rgba(0,0,0,0.45), 0 0 0 5px rgba(245,197,24,0.28)'
+                : '0 4px 14px rgba(0,0,0,0.4)',
+              transition: 'all 0.2s ease',
+            }} />
+            {/* The coloured core, so the two kinds stay distinguishable. */}
+            <span style={{
+              position: 'absolute',
+              inset: '22%',
+              borderRadius: '50%',
+              backgroundColor: isRepositioning ? '#a78bfa' : hovered ? '#0A1A40' : accentColor,
+              transition: 'background-color 0.2s ease',
             }} />
             {/* Icon */}
             <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {isRepositioning ? (
-                <Move style={{ width: iconSize, height: iconSize, color: '#a78bfa', filter: 'drop-shadow(0 0 6px rgba(167,139,250,0.9))' }} />
+                <Move style={{ width: iconSize, height: iconSize, color: '#0A1A40' }} />
               ) : isNav ? (
-                <Navigation style={{ width: iconSize, height: iconSize, color: 'white', filter: 'drop-shadow(0 0 6px rgba(0,191,179,0.9))' }} />
+                <Navigation style={{ width: iconSize * 0.8, height: iconSize * 0.8, color: '#FFFFFF', fill: '#FFFFFF' }} />
               ) : (
-                <Info style={{ width: iconSize, height: iconSize, color: '#FFD54F', filter: 'drop-shadow(0 0 6px rgba(255,180,0,0.9))' }} />
+                <Info style={{ width: iconSize * 0.8, height: iconSize * 0.8, color: '#FFFFFF' }} />
               )}
             </span>
           </motion.button>
 
-          {/* Label */}
+          {/* Label — always, not on hover.
+              A phone has no hover, so on the device where a bare circle is
+              hardest to interpret the name never appeared at all. */}
           <AnimatePresence>
-            {(hovered || editMode) && (
+            {(
               <motion.span
                 initial={{ opacity: 0, y: -6, scale: 0.85 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -511,7 +533,11 @@ async function requestOrientationAccess(): Promise<boolean> {
  * screen-up to looking forward, then corrected for how the screen itself is
  * rotated. three dropped the control from core, not the technique.
  */
-function CardboardControls({ enabled }: { enabled: boolean }) {
+function CardboardControls({ enabled, onSensor }: {
+  enabled: boolean;
+  /** Called once we know whether readings are actually arriving. */
+  onSensor: (working: boolean) => void;
+}) {
   const { camera } = useThree();
   const angles = useRef<{ alpha: number; beta: number; gamma: number } | null>(null);
   const screenAngle = useRef(0);
@@ -522,7 +548,18 @@ function CardboardControls({ enabled }: { enabled: boolean }) {
     const onOrient = (e: DeviceOrientationEvent) => {
       if (e.alpha == null || e.beta == null || e.gamma == null) return;
       angles.current = { alpha: e.alpha, beta: e.beta, gamma: e.gamma };
+      onSensor(true);
     };
+
+    /* Granting permission is not the same as getting readings.
+     *
+     * On iOS the prompt can be answered yes while Motion & Orientation Access
+     * is switched off in Settings, or the grant can be remembered as denied
+     * from a previous visit — in both cases the event simply never fires and
+     * the view sits frozen with no indication why. Two seconds of silence is
+     * taken as "this phone is not going to tell us", and the viewer falls back
+     * to dragging. */
+    const deadline = setTimeout(() => { if (!angles.current) onSensor(false); }, 2000);
     const onScreen = () => {
       screenAngle.current = (screen.orientation?.angle ?? (window as any).orientation ?? 0) as number;
     };
@@ -532,11 +569,12 @@ function CardboardControls({ enabled }: { enabled: boolean }) {
     window.addEventListener('orientationchange', onScreen);
     screen.orientation?.addEventListener?.('change', onScreen);
     return () => {
+      clearTimeout(deadline);
       window.removeEventListener('deviceorientation', onOrient, true);
       window.removeEventListener('orientationchange', onScreen);
       screen.orientation?.removeEventListener?.('change', onScreen);
     };
-  }, [enabled]);
+  }, [enabled, onSensor]);
 
   const euler = useRef(new THREE.Euler());
   const q1 = useRef(new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5)));
@@ -1154,6 +1192,11 @@ export default function ImmersiveViewer({
   const [canCardboard, setCanCardboard] = useState(false);
   const [vrNotice, setVrNotice] = useState('');
   const [isPortrait, setIsPortrait] = useState(false);
+  // null until the phone has had its chance to report; false means it never did.
+  const [sensorOk, setSensorOk] = useState<boolean | null>(null);
+  const handleSensor = useCallback((working: boolean) => {
+    setSensorOk(prev => (prev === working ? prev : working));
+  }, []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -1573,11 +1616,11 @@ export default function ImmersiveViewer({
                 autoRotate={autoRotate}
                 draggingRef={draggingRef}
                 resetSignal={resetSignal}
-                enabled={!cardboard}
+                enabled={!cardboard || sensorOk === false}
               />
               <ScreenshotHelper glRef={glRef} />
 
-              <CardboardControls enabled={cardboard} />
+              <CardboardControls enabled={cardboard} onSensor={handleSensor} />
               {cardboard && <StereoRenderer />}
 
               {/* Only alive in cardboard — see CardboardGaze. */}
@@ -1626,11 +1669,17 @@ export default function ImmersiveViewer({
               </div>
             ))}
 
-            {isPortrait && (
-              <div className="absolute inset-x-0 bottom-6 z-30 flex justify-center pointer-events-none">
-                <span className="px-4 py-2 rounded-full text-xs font-bold text-white"
-                  style={{ background: 'rgba(9,26,66,0.85)', border: '1px solid rgba(245,197,24,0.35)' }}>
-                  Turn your phone sideways, then place it in the viewer
+            {(isPortrait || sensorOk === false) && (
+              <div className="absolute inset-x-0 bottom-6 z-30 flex justify-center px-4 pointer-events-none">
+                <span className="px-4 py-2 rounded-full text-xs font-bold text-white text-center"
+                  style={{ background: 'rgba(9,26,66,0.9)', border: '1px solid rgba(245,197,24,0.35)' }}>
+                  {sensorOk === false
+                    // Silence from the sensors is almost always iOS: either the
+                    // prompt was declined, or Motion & Orientation Access is off
+                    // in Settings. Naming the setting is the difference between
+                    // a fixable problem and a broken feature.
+                    ? 'Motion is off, so the view will not follow your phone — drag to look around. To fix: Settings › Safari › Motion & Orientation Access.'
+                    : 'Turn your phone sideways, then place it in the viewer'}
                 </span>
               </div>
             )}
