@@ -167,8 +167,8 @@ function HotspotMarker({
   const displayLabel = targetTitle || hotspot.label;
 
   const size = hotspot.size ?? 1.0;
-  const btnSize = Math.round(58 * size);
-  const iconSize = Math.round(22 * size);
+  const btnSize = Math.round(92 * size);
+  const iconSize = Math.round(34 * size);
 
   const accentColor = isRepositioning ? '#a78bfa' : (isNav ? '#1565C0' : '#FFB400');
   const borderColor = isRepositioning ? 'rgba(167,139,250,0.9)' : (isNav ? 'rgba(0,191,179,0.85)' : 'rgba(255,180,0,0.85)');
@@ -692,7 +692,7 @@ function CardboardHotspot({
 }) {
   const pos = anglesToPosition(hotspot.pitch, hotspot.yaw);
   const color = hotspot.type === 'navigate' ? NAV_COLOR : INFO_COLOR;
-  const s = 13 * (hotspot.size ?? 1);
+  const s = 24 * (hotspot.size ?? 1);
   const grow = aimed ? 1.3 : 1;
 
   return (
