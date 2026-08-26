@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Headphones, Camera,
   Maximize2, Minimize2, ScanLine, MapPin, X,
-  Info, Navigation, Save, PenLine, Check, Trash2, Upload, Move, Compass, Images,
+  Info, Navigation, Save, PenLine, Check, Trash2, Upload, Move, Compass, Images, Crosshair,
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import type { Hotspot } from '@/lib/types';
@@ -752,12 +752,14 @@ function CardboardHotspot({
  * middle of the screen doing a worse job than the pointer already does.
  */
 function CardboardGaze({
-  hotspots, scenes, onSelect, active,
+  hotspots, scenes, onSelect, active, showMarkers,
 }: {
   hotspots: Hotspot[];
   scenes: Scene[];
   onSelect: (h: Hotspot) => void;
   active: boolean;
+  /** Off in look mode, where the ordinary DOM markers are still on screen. */
+  showMarkers: boolean;
 }) {
   const { camera } = useThree();
 
@@ -853,7 +855,7 @@ function CardboardGaze({
 
   return (
     <>
-      {hotspots.map((h) => (
+      {showMarkers && hotspots.map((h) => (
         <CardboardHotspot
           key={h.id}
           hotspot={h}
@@ -1191,6 +1193,8 @@ export default function ImmersiveViewer({
   const [activeInfo, setActiveInfo] = useState<Hotspot | null>(null);
   const [vrInfo, setVrInfo] = useState<Hotspot | null>(null);
   const [cardboard, setCardboard] = useState(false);
+  // Look mode: one view, not two, with the crosshair doing the choosing.
+  const [lookMode, setLookMode] = useState(false);
   const [canCardboard, setCanCardboard] = useState(false);
   const [vrNotice, setVrNotice] = useState('');
   const [isPortrait, setIsPortrait] = useState(false);
@@ -1240,7 +1244,10 @@ export default function ImmersiveViewer({
     const onKey = (e: KeyboardEvent) => {
       // Escape leaves real fullscreen by itself; the pinned fallback has no
       // browser behaviour behind it, so it needs releasing here.
-      if (e.key === 'Escape') { setRepositioning(null); setPending(null); setFauxFullscreen(false); }
+      if (e.key === 'Escape') {
+        setRepositioning(null); setPending(null);
+        setFauxFullscreen(false); setLookMode(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -1426,6 +1433,39 @@ export default function ImmersiveViewer({
     // asks the reader to turn the phone themselves.
     try { await (screen.orientation as any)?.lock?.('landscape'); } catch { /* not available */ }
   };
+
+  /**
+   * Look mode: full screen, one view, crosshair in the middle.
+   *
+   * Cardboard splits the screen for a plastic viewer. This is the same idea
+   * for a phone held in the hand — turn to look, rest the dot on a hotspot,
+   * and it opens. It is also the mode that still works when iOS refuses the
+   * motion sensors, because dragging keeps steering the view and the dot
+   * stays wherever the middle of the screen is.
+   */
+  const enterLook = async () => {
+    setVrNotice('');
+    setSensorOk(null);
+    await requestOrientationAccess();
+    setAutoRotate(false);
+    setLookMode(true);
+
+    const el = containerRef.current;
+    if (el && typeof el.requestFullscreen === 'function' && !document.fullscreenElement) {
+      try { await el.requestFullscreen(); } catch { setFauxFullscreen(true); }
+    } else {
+      // iPhone: no Fullscreen API outside <video>, so the viewer pins itself
+      // over the viewport instead.
+      setFauxFullscreen(true);
+    }
+  };
+
+  const exitLook = useCallback(() => {
+    setLookMode(false);
+    setVrInfo(null);
+    setFauxFullscreen(false);
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  }, []);
 
   const exitCardboard = useCallback(() => {
     setCardboard(false);
@@ -1624,22 +1664,66 @@ export default function ImmersiveViewer({
                 autoRotate={autoRotate}
                 draggingRef={draggingRef}
                 resetSignal={resetSignal}
-                enabled={!cardboard || sensorOk === false}
+                enabled={(!cardboard && !lookMode) || sensorOk === false}
               />
               <ScreenshotHelper glRef={glRef} />
 
-              <CardboardControls enabled={cardboard} onSensor={handleSensor} />
+              <CardboardControls enabled={cardboard || lookMode} onSensor={handleSensor} />
               {cardboard && <StereoRenderer />}
 
               {/* Only alive in cardboard — see CardboardGaze. */}
               {!editMode && (
                 <>
-                  <CardboardGaze hotspots={sceneHotspots} scenes={scenes} onSelect={handleGazeSelect} active={cardboard} />
+                  {/* The crosshair works in both modes. Cardboard also draws
+                      its own markers; look mode leaves the ordinary ones on
+                      screen, so the same hotspot is not drawn twice. */}
+                  <CardboardGaze
+                    hotspots={sceneHotspots}
+                    scenes={scenes}
+                    onSelect={handleGazeSelect}
+                    active={cardboard || lookMode}
+                    showMarkers={cardboard}
+                  />
                   <CardboardInfoPanel hotspot={vrInfo} active={cardboard} />
                 </>
               )}
           </Canvas>
         </div>
+
+        {/* The way out of a full screen, always drawn, above everything.
+         *
+         * The control cluster sits at the foot of the viewer and can be missed
+         * or scrolled past on a phone, and iOS has no Escape key and no
+         * fullscreen chrome of its own — so filling the screen could leave a
+         * reader with no visible exit at all. This one is never conditional on
+         * anything but being full. */}
+        {/* In look mode, say what the crosshair is waiting for — and if the
+            phone never reported its motion, that dragging still works. */}
+        {lookMode && (
+          <div className="absolute inset-x-0 bottom-20 z-30 flex justify-center px-4 pointer-events-none">
+            <span className="px-4 py-2 rounded-full text-xs font-semibold text-white text-center"
+              style={{ background: 'rgba(9,26,66,0.85)', border: '1px solid rgba(245,197,24,0.3)' }}>
+              {sensorOk === false
+                ? 'Drag to look around, then hold the dot on a circle to go there'
+                : 'Hold the dot on a circle to go there'}
+            </span>
+          </div>
+        )}
+
+        {filling && !cardboard && (
+          <button
+            onClick={() => { if (lookMode) exitLook(); else toggleFullscreen(); }}
+            aria-label="Leave full screen"
+            className="absolute top-3 right-3 z-40 rounded-full p-2.5 text-white pointer-events-auto"
+            style={{
+              background: 'rgba(9,26,66,0.85)',
+              border: '1px solid rgba(245,197,24,0.45)',
+              boxShadow: '0 6px 18px rgba(0,0,0,0.45)',
+            }}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
 
         {/* ── Cardboard chrome ──
             Everything else on the glass is hidden while the screen is split:
@@ -1927,6 +2011,25 @@ export default function ImmersiveViewer({
                     ↻
                   </motion.button>
                 )}
+                {/* Look mode. Only where the screen is touched — on a desktop
+                    the pointer already does this job better. */}
+                {canCardboard && (
+                  <motion.button
+                    onClick={lookMode ? exitLook : enterLook}
+                    whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+                    title={lookMode ? 'Leave look mode' : 'Full screen, and look to move'}
+                    aria-pressed={lookMode}
+                    className="p-2 sm:p-3 rounded-xl transition"
+                    style={{
+                      ...CTRL,
+                      background: lookMode ? 'rgba(245,197,24,0.92)' : CTRL.background,
+                      color: lookMode ? '#0A1A40' : 'white',
+                      borderColor: lookMode ? '#F5C518' : CTRL.borderColor,
+                    }}>
+                    <Crosshair className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </motion.button>
+                )}
+
                 {/* Show or hide the scene strip. Gold while the strip is up,
                     so the button reads as a state and not just an action. With
                     it down, the scene count moves onto the button — otherwise
