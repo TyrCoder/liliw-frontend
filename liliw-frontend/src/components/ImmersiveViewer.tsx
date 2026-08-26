@@ -1994,7 +1994,11 @@ export default function ImmersiveViewer({
               <motion.div
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.4 }}
-                className="pointer-events-auto flex gap-1.5 sm:gap-2 shrink-0"
+                // Wraps rather than overflowing. Seven controls at 40px each
+                // is wider than a phone held upright, and shrink-0 on a row
+                // that cannot wrap pushes the last ones off the screen —
+                // which on iOS meant the crosshair was simply not there.
+                className="pointer-events-auto flex flex-wrap justify-end gap-1.5 sm:gap-2 shrink-0 max-w-[70%] sm:max-w-none"
               >
                 {!editMode && (
                   <motion.button
@@ -2011,25 +2015,6 @@ export default function ImmersiveViewer({
                     ↻
                   </motion.button>
                 )}
-                {/* Look mode. Only where the screen is touched — on a desktop
-                    the pointer already does this job better. */}
-                {canCardboard && (
-                  <motion.button
-                    onClick={lookMode ? exitLook : enterLook}
-                    whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
-                    title={lookMode ? 'Leave look mode' : 'Full screen, and look to move'}
-                    aria-pressed={lookMode}
-                    className="p-2 sm:p-3 rounded-xl transition"
-                    style={{
-                      ...CTRL,
-                      background: lookMode ? 'rgba(245,197,24,0.92)' : CTRL.background,
-                      color: lookMode ? '#0A1A40' : 'white',
-                      borderColor: lookMode ? '#F5C518' : CTRL.borderColor,
-                    }}>
-                    <Crosshair className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </motion.button>
-                )}
-
                 {/* Show or hide the scene strip. Gold while the strip is up,
                     so the button reads as a state and not just an action. With
                     it down, the scene count moves onto the button — otherwise
@@ -2078,6 +2063,25 @@ export default function ImmersiveViewer({
                   style={CTRL}>
                   {filling ? <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize2 className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </motion.button>
+                {/* Look mode. Only where the screen is touched — on a desktop
+                    the pointer already does this job better. */}
+                {canCardboard && (
+                  <motion.button
+                    onClick={lookMode ? exitLook : enterLook}
+                    whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+                    title={lookMode ? 'Leave look mode' : 'Full screen, and look to move'}
+                    aria-pressed={lookMode}
+                    className="p-2 sm:p-3 rounded-xl transition"
+                    style={{
+                      ...CTRL,
+                      background: lookMode ? 'rgba(245,197,24,0.92)' : CTRL.background,
+                      color: lookMode ? '#0A1A40' : 'white',
+                      borderColor: lookMode ? '#F5C518' : CTRL.borderColor,
+                    }}>
+                    <Crosshair className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </motion.button>
+                )}
+
                 {!editMode && canCardboard && (
                   <motion.button
                     onClick={enterCardboard}
