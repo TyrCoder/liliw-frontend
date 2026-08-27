@@ -39,6 +39,36 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ trip: data }, { status: 201 });
 }
 
+/**
+ * Toggle a saved trip's public-share flag. Owner only — the WHERE clause is
+ * scoped to auth.userId so one user can never flip another user's trip public.
+ */
+export async function PATCH(req: NextRequest) {
+  const auth = await verifyToken(req);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const id = req.nextUrl.searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+  const body = await req.json().catch(() => ({}));
+  const isPublic = !!body.isPublic;
+
+  const { data, error } = await supabaseServer
+    .from('saved_itineraries')
+    .update({ is_public: isPublic })
+    .eq('id', id)
+    .eq('user_id', auth.userId)
+    .select('id, is_public')
+    .single();
+
+  if (error) {
+    console.error('[itineraries PATCH]', error.code, error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.json({ id: data.id, isPublic: data.is_public });
+}
+
 export async function DELETE(req: NextRequest) {
   const auth = await verifyToken(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
