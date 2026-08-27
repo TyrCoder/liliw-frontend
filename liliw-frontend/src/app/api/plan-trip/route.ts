@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Groq from 'groq-sdk';
 import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/content';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { logger } from '@/lib/logger';
-
-const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
+import { groq, GROQ_MODEL } from '@/lib/groq';
 
 let knowledgeCache: { text: string; at: number } | null = null;
 
@@ -154,7 +152,7 @@ Return only the JSON object.`;
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
       ],
-      model: 'llama-3.3-70b-versatile',
+      model: GROQ_MODEL,
       temperature: 0.7,
       max_tokens: 2000,
       response_format: { type: 'json_object' },
