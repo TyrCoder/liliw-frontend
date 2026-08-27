@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { requireAuth } from '@/lib/auth';
-import { profileOtpStore, generateOtp } from '@/lib/profileOtpStore';
+import { generateOtp } from '@/lib/otp';
+import { storeOtp } from '@/lib/otpDb';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { supabaseServer } from '@/lib/supabase-server';
 
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   const key = `${user.id}-${purpose}`;
   const otp = generateOtp();
-  profileOtpStore.set(key, { otp, expiry: Date.now() + 10 * 60 * 1000 });
+  await storeOtp('profile', key, otp, 10 * 60 * 1000);
 
   const subjectMap: Record<string, string> = {
     password:  'Liliw Tourism — Verify your password change',

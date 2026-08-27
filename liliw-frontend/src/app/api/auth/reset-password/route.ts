@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { otpStore } from '../forgot-password/route';
 import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabase-server';
 import { checkRateLimit } from '@/lib/ratelimit';
-import { consumeOtp } from '@/lib/otp';
+import { consumeOtpDb } from '@/lib/otpDb';
 
 export async function POST(req: NextRequest) {
   // This endpoint takes over an account on success, so it needs both an IP
@@ -20,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (newPassword.length < 6) return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
 
     const key    = email.toLowerCase();
-    const result = consumeOtp(otpStore, key, otp);
+    const result = await consumeOtpDb('reset', key, otp);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
     // Look up Supabase user by email via the profiles table
