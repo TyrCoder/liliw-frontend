@@ -147,16 +147,30 @@ Budget level: ${budget}${groupSizeLine}
 Interests: ${interests.join(', ')}${favoritesLine}
 Return only the JSON object.`;
 
-    const completion = await groq!.chat.completions.create({
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
-      model: GROQ_MODEL,
-      temperature: 0.7,
-      max_tokens: 2000,
-      response_format: { type: 'json_object' },
-    });
+    const messages = [
+      { role: 'system' as const, content: systemPrompt },
+      { role: 'user' as const, content: userMessage },
+    ];
+
+    let completion;
+    try {
+      // Strict JSON mode — best for models that support it (e.g. gpt-oss).
+      completion = await groq!.chat.completions.create({
+        messages, model: GROQ_MODEL, temperature: 0.7, max_tokens: 2000,
+        response_format: { type: 'json_object' },
+      });
+    } catch (err) {
+      // Reasoning models (e.g. Qwen) can't satisfy Groq's json_object
+      // validation: their <think> preamble makes the raw output invalid JSON,
+      // so Groq rejects it 400 json_validate_failed before returning anything.
+      // Retry without the constraint — with more room for the reasoning tokens —
+      // and pull the JSON out of the reply ourselves.
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!/json_validate_failed|response_format|json_object/i.test(msg)) throw err;
+      completion = await groq!.chat.completions.create({
+        messages, model: GROQ_MODEL, temperature: 0.7, max_tokens: 6000,
+      });
+    }
 
     const content = completion.choices[0]?.message?.content || '{}';
     // Reasoning models can wrap the JSON in <think> blocks or a code fence,
