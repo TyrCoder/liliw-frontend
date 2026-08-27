@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { regOtpStore } from '@/lib/regOtpStore';
-import { consumeOtp } from '@/lib/otp';
+import { consumeOtpDb } from '@/lib/otpDb';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { supabaseServer } from '@/lib/supabase-server';
 
@@ -23,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const key    = email.toLowerCase();
-    const result = consumeOtp(regOtpStore, key, otp);
+    const result = await consumeOtpDb('register', key, otp);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
     // Create Supabase auth user (email_confirm: true bypasses confirmation email since we already verified via OTP)
