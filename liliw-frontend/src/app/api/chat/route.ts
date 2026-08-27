@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/content';
 import { checkRateLimit } from '@/lib/ratelimit';
-import { groq, GROQ_MODEL } from '@/lib/groq';
+import { groq, GROQ_MODEL, stripReasoning } from '@/lib/groq';
 
 // Cache the knowledge base for 5 minutes
 let knowledgeCache: { text: string; at: number; attractionMap: Map<string, any> } | null = null;
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
       top_p: 0.9,
     });
 
-    const reply = completion.choices[0]?.message?.content
+    const reply = stripReasoning(completion.choices[0]?.message?.content || '')
       || 'Ay, may problema sa connection ko. Ulit mo nga? 😅';
 
     // Extract attraction IDs mentioned in the reply via markdown links
