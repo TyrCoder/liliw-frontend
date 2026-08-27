@@ -953,7 +953,8 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
                   <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold" style={{ fontFamily: BL }}>Starting from your location</span>
                 )}
               </div>
-              <div ref={mapContainer} className="rounded-2xl overflow-hidden shadow-md" style={{ height: 480 }} />
+              <div ref={mapContainer} className="rounded-2xl overflow-hidden shadow-md lg:sticky lg:top-20"
+                style={{ height: 'clamp(480px, 72vh, 780px)' }} />
               <p className="text-xs text-gray-400 mt-2 text-center" style={{ fontFamily: BL }}>Numbered pins = stops, colored by day (hover for details) · Blue line = driving route</p>
             </motion.div>
           )}
