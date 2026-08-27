@@ -3,9 +3,8 @@ import nodemailer from 'nodemailer';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabase-server';
-import { generateOtp, OtpEntry } from '@/lib/otp';
-
-export const otpStore = new Map<string, OtpEntry>();
+import { generateOtp } from '@/lib/otp';
+import { storeOtp } from '@/lib/otpDb';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -35,7 +34,7 @@ export async function POST(req: NextRequest) {
     if (!profile) return NextResponse.json({ success: true }); // silent — don't reveal
 
     const otp = generateOtp();
-    otpStore.set(email.toLowerCase(), { otp, expiry: Date.now() + 10 * 60 * 1000 });
+    await storeOtp('reset', email.toLowerCase(), otp, 10 * 60 * 1000);
 
     await transporter.sendMail({
       from: `"Liliw Tourism" <${process.env.EMAIL_USER}>`,

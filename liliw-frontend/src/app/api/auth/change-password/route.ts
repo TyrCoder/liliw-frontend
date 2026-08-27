@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { profileOtpStore } from '@/lib/profileOtpStore';
-import { consumeOtp } from '@/lib/otp';
+import { consumeOtpDb } from '@/lib/otpDb';
 import { supabaseServer } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
@@ -17,7 +16,7 @@ export async function POST(req: NextRequest) {
   if (newPassword !== confirmPassword)          return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 });
   if (newPassword.length < 6)                  return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
 
-  const result = consumeOtp(profileOtpStore, `${user.id}-password`, otp);
+  const result = await consumeOtpDb('profile', `${user.id}-password`, otp);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
   const { error } = await supabaseServer.auth.admin.updateUserById(user.id, { password: newPassword });

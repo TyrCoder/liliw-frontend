@@ -70,3 +70,28 @@ export async function consumeOtpDb(purpose: string, key: string, submitted: unkn
   await del();
   return { ok: true };
 }
+
+/**
+ * Existence check that does NOT consume. Used for the email-change "old email
+ * verified" flag that gates the second phase — it is a time-boxed marker, not a
+ * code the user re-enters. Returns false (and cleans up) once expired.
+ */
+export async function peekOtp(purpose: string, key: string): Promise<boolean> {
+  const { data: entry } = await supabaseServer
+    .from(TABLE)
+    .select('expiry')
+    .eq('purpose', purpose)
+    .eq('key', key)
+    .maybeSingle();
+  if (!entry) return false;
+  if (Date.now() > Number(entry.expiry)) {
+    await clearOtp(purpose, key);
+    return false;
+  }
+  return true;
+}
+
+/** Delete a stored code/flag without validating it. */
+export async function clearOtp(purpose: string, key: string): Promise<void> {
+  await supabaseServer.from(TABLE).delete().eq('purpose', purpose).eq('key', key);
+}

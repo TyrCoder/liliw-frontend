@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { profileOtpStore, emailChangeVerified } from '@/lib/profileOtpStore';
-import { consumeOtp } from '@/lib/otp';
+import { consumeOtpDb, storeOtp, peekOtp, clearOtp } from '@/lib/otpDb';
 import { supabaseServer } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
@@ -15,22 +14,23 @@ export async function POST(req: NextRequest) {
   const { phase, otp, newEmail } = await req.json();
 
   if (phase === 'verify_old') {
-    const result = consumeOtp(profileOtpStore, `${user.id}-email_old`, otp);
+    const result = await consumeOtpDb('profile', `${user.id}-email_old`, otp);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
-    emailChangeVerified.set(user.id, { expiry: Date.now() + 15 * 60 * 1000 });
+    // Mark the old email as verified for 15 min, in the shared store so the
+    // verify_new phase sees it even on a different serverless instance.
+    await storeOtp('email-change-verified', user.id, 'ok', 15 * 60 * 1000);
     return NextResponse.json({ success: true, verified: true });
   }
 
   if (phase === 'verify_new') {
-    const verified = emailChangeVerified.get(user.id);
-    if (!verified || Date.now() > verified.expiry) {
-      emailChangeVerified.delete(user.id);
+    const verified = await peekOtp('email-change-verified', user.id);
+    if (!verified) {
       return NextResponse.json({ error: 'Session expired. Please start the email change again.' }, { status: 400 });
     }
 
-    const result = consumeOtp(profileOtpStore, `${user.id}-email_new`, otp);
+    const result = await consumeOtpDb('profile', `${user.id}-email_new`, otp);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
-    emailChangeVerified.delete(user.id);
+    await clearOtp('email-change-verified', user.id);
 
     // Update email in Supabase Auth
     const { error } = await supabaseServer.auth.admin.updateUserById(user.id, { email: newEmail });
