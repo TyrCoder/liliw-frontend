@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Groq from 'groq-sdk';
 import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/content';
 import { checkRateLimit } from '@/lib/ratelimit';
-
-const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
+import { groq, GROQ_MODEL } from '@/lib/groq';
 
 // Cache the knowledge base for 5 minutes
 let knowledgeCache: { text: string; at: number; attractionMap: Map<string, any> } | null = null;
@@ -209,7 +207,7 @@ export async function POST(request: NextRequest) {
         { role: 'system', content: langReminder },
         { role: 'user', content: message },
       ],
-      model: 'llama-3.3-70b-versatile',
+      model: GROQ_MODEL,
       temperature: 0.75,
       // An in-depth answer does not fit in 250 tokens — asking for depth and
       // then cutting it off mid-sentence is worse than the short reply was.
