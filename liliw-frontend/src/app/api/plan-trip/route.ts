@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/content';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { logger } from '@/lib/logger';
-import { groq, GROQ_MODEL } from '@/lib/groq';
+import { groq, GROQ_MODEL, extractJson } from '@/lib/groq';
 
 let knowledgeCache: { text: string; at: number } | null = null;
 
@@ -159,7 +159,9 @@ Return only the JSON object.`;
     });
 
     const content = completion.choices[0]?.message?.content || '{}';
-    const itinerary = JSON.parse(content);
+    // Reasoning models can wrap the JSON in <think> blocks or a code fence,
+    // which broke a bare JSON.parse — extractJson unwraps it first.
+    const itinerary = JSON.parse(extractJson(content));
 
     return NextResponse.json({ success: true, itinerary });
   } catch (err) {
