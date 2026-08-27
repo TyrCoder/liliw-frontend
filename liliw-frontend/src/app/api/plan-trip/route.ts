@@ -79,6 +79,48 @@ async function buildKnowledge(): Promise<string> {
   return text;
 }
 
+/**
+ * Repairs the two fields models most often mangle before the UI renders them.
+ *
+ * A weaker model (seen with Qwen) can flatten the tips array into one string
+ * with its own `","` separators still inside, and spill the estimatedCostPerDay
+ * key/value in as extra "tips" — which is why the Travel Tips list showed raw
+ * JSON fragments like `estimatedCostPerDay`, `:`, `₱2`, `200`. This pulls the
+ * real tips back out and recovers the cost, so imperfect output still renders
+ * cleanly whatever GROQ_MODEL points at.
+ */
+function sanitizeItinerary(it: any): any {
+  if (!it || typeof it !== 'object') return it;
+
+  let tips: string[] = Array.isArray(it.tips)
+    ? it.tips.map((t: any) => String(t))
+    : typeof it.tips === 'string' ? [it.tips] : [];
+
+  // Undo an array that was flattened into quote-comma-joined strings.
+  tips = tips.flatMap(s => s.split('","'));
+
+  // Everything from a leaked estimatedCostPerDay key onward is not a tip.
+  const leak = tips.findIndex(s => /estimatedcostperday/i.test(s));
+  let recoveredCost = '';
+  if (leak !== -1) {
+    recoveredCost = tips.slice(leak).join(' ')
+      .replace(/estimatedcostperday/i, '')
+      .replace(/["'\]:]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    tips = tips.slice(0, leak);
+  }
+
+  it.tips = tips
+    .map(s => s.replace(/^[\s"'[\]]+|[\s"'[\]]+$/g, '').trim())
+    .filter(s => s.length > 1 && s !== ':');
+
+  if (typeof it.estimatedCostPerDay !== 'string' || !it.estimatedCostPerDay.trim()) {
+    if (recoveredCost) it.estimatedCostPerDay = recoveredCost;
+  }
+  return it;
+}
+
 export async function POST(request: NextRequest) {
   if (!groq) return NextResponse.json({ error: 'Trip planner is temporarily unavailable.' }, { status: 503 });
 
@@ -175,7 +217,7 @@ Return only the JSON object.`;
     const content = completion.choices[0]?.message?.content || '{}';
     // Reasoning models can wrap the JSON in <think> blocks or a code fence,
     // which broke a bare JSON.parse — extractJson unwraps it first.
-    const itinerary = JSON.parse(extractJson(content));
+    const itinerary = sanitizeItinerary(JSON.parse(extractJson(content)));
 
     return NextResponse.json({ success: true, itinerary });
   } catch (err) {
