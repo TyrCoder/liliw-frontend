@@ -177,8 +177,8 @@ function HotspotMarker({
     <group position={pos}>
       <Html center distanceFactor={220} zIndexRange={[1, 50]}>
         <motion.div
-          className="flex flex-col items-center gap-1.5 select-none"
-          style={{ pointerEvents: 'all' }}
+          className="flex flex-col items-center select-none"
+          style={{ pointerEvents: 'all', position: 'relative' }}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
@@ -267,6 +267,20 @@ function HotspotMarker({
             </span>
           </motion.button>
 
+          {/* Label and edit controls hang BELOW the disc, taken out of the
+              flex flow (position: absolute) so they never shift the disc.
+              <Html center> centres whatever is in flow on the 3D point; when
+              the label and controls were in the column, their height pushed the
+              disc above the spot the user actually clicked — the misalignment.
+              Now only the disc is in flow, so it stays exactly on the point. */}
+          <div style={{
+            position: 'absolute',
+            top: '100%', left: '50%',
+            transform: 'translateX(-50%)',
+            marginTop: 6,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+            pointerEvents: 'none',
+          }}>
           {/* Label — always, not on hover.
               A phone has no hover, so on the device where a bare circle is
               hardest to interpret the name never appeared at all. */}
@@ -301,7 +315,7 @@ function HotspotMarker({
 
           {/* Edit controls — move, resize, delete */}
           {editMode && (
-            <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 5, alignItems: 'center', pointerEvents: 'all' }}>
               {/* Move button */}
               <motion.button
                 onClick={(e) => { e.stopPropagation(); onMove?.(hotspot.id); }}
@@ -383,6 +397,7 @@ function HotspotMarker({
               </motion.button>
             </div>
           )}
+          </div>
         </motion.div>
       </Html>
     </group>
