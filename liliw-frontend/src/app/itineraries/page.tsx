@@ -8,6 +8,7 @@ import {
   CheckCircle, XCircle, Navigation, ArrowRight, Calendar,
   Lightbulb, Sparkles, RotateCcw, Wallet, Heart, Sun, BookmarkCheck,
   Trash2, ChevronDown, LogIn, Pencil, Plus, ExternalLink, Check, GripVertical,
+  Share2, Link2,
 } from 'lucide-react';
 import AuthModal from '@/components/AuthModal';
 import { useFavorites } from '@/context/FavoritesContext';
@@ -106,7 +107,7 @@ const INTERESTS = [
 interface Stop { time: string; place: string; activity: string; duration: string; tip: string; }
 interface Day  { day: number; theme: string; stops: Stop[]; }
 interface GeneratedPlan { title: string; summary: string; days: Day[]; tips: string[]; estimatedCostPerDay: string; }
-interface SavedTrip { id: string; savedAt: string; title: string; plan: GeneratedPlan; duration: string; budget: string; }
+interface SavedTrip { id: string; savedAt: string; title: string; plan: GeneratedPlan; duration: string; budget: string; isPublic: boolean; }
 
 const INTEREST_TO_TYPES: Record<string, ('heritage' | 'spot' | 'dining')[]> = {
   'Heritage & History':   ['heritage'],
@@ -1963,6 +1964,8 @@ function SavedTripsSection() {
   const [trips, setTrips]       = useState<SavedTrip[]>([]);
   const [open, setOpen]         = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sharingId, setSharingId]   = useState<string | null>(null);
+  const [copiedId, setCopiedId]     = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!token) return;
@@ -1972,6 +1975,7 @@ function SavedTripsSection() {
         const data = await res.json();
         setTrips((data.trips || []).map((row: any) => ({
           id: row.id, savedAt: row.saved_at, title: row.title, plan: row.plan, duration: row.duration, budget: row.budget,
+          isPublic: !!row.is_public,
         })));
       }
     } catch {}
@@ -2002,6 +2006,42 @@ function SavedTripsSection() {
       if (!res.ok) setTrips(previous);
     } catch {
       setTrips(previous);
+    }
+  };
+
+  /**
+   * Make a trip public (if it isn't already) and copy its share link. The trip
+   * stays public after the first share so the link keeps working — a second
+   * click just re-copies. Owner-only; the PATCH is scoped to the signed-in user.
+   */
+  const shareTrip = async (trip: SavedTrip) => {
+    setSharingId(trip.id);
+    try {
+      let isPublic = trip.isPublic;
+      if (!isPublic) {
+        const res = await fetch(`/api/itineraries?id=${encodeURIComponent(trip.id)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ isPublic: true }),
+        });
+        if (!res.ok) return;
+        isPublic = true;
+        setTrips(prev => prev.map(t => t.id === trip.id ? { ...t, isPublic: true } : t));
+      }
+
+      const url = `${window.location.origin}/trips/${trip.id}`;
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        // Clipboard blocked (older browser / insecure context) — fall back to
+        // the native share sheet or a prompt so the link is never lost.
+        if (navigator.share) { try { await navigator.share({ title: trip.title, url }); } catch {} }
+        else window.prompt('Copy this link to share your itinerary:', url);
+      }
+      setCopiedId(trip.id);
+      setTimeout(() => setCopiedId(c => (c === trip.id ? null : c)), 2200);
+    } finally {
+      setSharingId(null);
     }
   };
 
@@ -2068,6 +2108,27 @@ function SavedTripsSection() {
                               </div>
                             </div>
                           ))}
+
+                          <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-3">
+                            <p className="text-xs text-gray-400" style={{ fontFamily: BL }}>
+                              {trip.isPublic
+                                ? 'Anyone with the link can view this trip.'
+                                : 'Only you can see this trip until you share it.'}
+                            </p>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); shareTrip(trip); }}
+                              disabled={sharingId === trip.id}
+                              className="shrink-0 inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition disabled:opacity-60"
+                              style={copiedId === trip.id
+                                ? { backgroundColor: 'rgba(34,197,94,0.12)', color: '#15803d', fontFamily: HL }
+                                : { backgroundColor: '#1565C0', color: '#F5C518', fontFamily: HL }}>
+                              {copiedId === trip.id
+                                ? <><Check className="w-3.5 h-3.5" />Link copied!</>
+                                : trip.isPublic
+                                  ? <><Link2 className="w-3.5 h-3.5" />Copy share link</>
+                                  : <><Share2 className="w-3.5 h-3.5" />Share trip</>}
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     )}
