@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
-import { regOtpStore } from '@/lib/regOtpStore';
+import { storeOtp } from '@/lib/otpDb';
 import { generateOtp } from '@/lib/otp';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { supabaseServer } from '@/lib/supabase-server';
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     const otp = generateOtp();
-    regOtpStore.set(email.toLowerCase(), { otp, expiry: Date.now() + 10 * 60 * 1000 });
+    await storeOtp('register', email.toLowerCase(), otp, 10 * 60 * 1000);
 
     await transporter.sendMail({
       from: `"Liliw Tourism" <${process.env.EMAIL_USER}>`,
