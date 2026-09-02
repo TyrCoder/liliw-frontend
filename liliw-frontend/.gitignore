@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# account snapshot — holds real email addresses
+/docs/accounts.md
+
+# LBO password reset output — holds live credentials in plaintext
+/docs/lbo-credentials.md
