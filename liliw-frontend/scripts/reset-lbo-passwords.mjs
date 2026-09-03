@@ -56,18 +56,21 @@ if (CHOSEN && UNIQUE) {
 const db = createClient(url, key, { auth: { persistSession: false } });
 
 /**
- * Readable rather than maximally random: these get read aloud, written on
- * paper and typed on a phone by business owners. Ambiguous characters are out
- * — no O/0, l/1, I — and the shape stays constant so a mistyped one is easy to
- * spot.
+ * Six characters — the shortest Supabase will accept.
+ *
+ * Two letters then four digits, read aloud and typed on a phone by whoever is
+ * operating the account. Ambiguous characters are out — no O/0, I/l/1 — so a
+ * password dictated over the counter is not mistyped as a different one.
+ *
+ * Short because it was asked for, and defensible only because these are
+ * placeholder accounts operated by the research team rather than logins
+ * belonging to 34 separate businesses. Real owner accounts want more.
  */
-const WORDS = ['liliw', 'tsinelas', 'gubat', 'bundok', 'sampaguita', 'ilog', 'bulaklak', 'dagat'];
 function makePassword() {
-  const word = WORDS[crypto.randomInt(WORDS.length)];
-  const digits = String(crypto.randomInt(1000, 10000));
   const letters = 'ABCDEFGHJKMNPQRSTUVWXYZ';
-  const tag = letters[crypto.randomInt(letters.length)] + letters[crypto.randomInt(letters.length)];
-  return `${word}-${digits}-${tag}`;
+  return letters[crypto.randomInt(letters.length)]
+    + letters[crypto.randomInt(letters.length)]
+    + String(crypto.randomInt(1000, 10000));
 }
 
 const { data: apps, error: appErr } = await db
