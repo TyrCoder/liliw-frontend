@@ -72,8 +72,10 @@ async function buildIndex(): Promise<Indexed> {
 
   const itineraryList =
     itineraries.status === 'fulfilled'
-      ? itineraries.value.slice(0, 10).map((it) => {
-          const a = (it as any).attributes || it;
+      // Annotated because getItineraries is untyped: mapping over an `any`
+      // leaves the parameter implicitly `any`, which the build rejects.
+      ? itineraries.value.slice(0, 10).map((it: any) => {
+          const a = it.attributes || it;
           return `- ${a.name || a.title || 'Tour'}${a.duration ? ` (${a.duration})` : ''}${
             a.description ? `: ${stripTags(a.description).slice(0, 100)}` : ''
           }`;
@@ -82,8 +84,8 @@ async function buildIndex(): Promise<Indexed> {
 
   const eventList =
     events.status === 'fulfilled'
-      ? events.value.slice(0, 8).map((ev) => {
-          const a = (ev as any).attributes || ev;
+      ? events.value.slice(0, 8).map((ev: any) => {
+          const a = ev.attributes || ev;
           return `- ${a.name || a.title || 'Event'}${a.date ? ` on ${a.date}` : ''}${
             a.description ? `: ${stripTags(a.description).slice(0, 100)}` : ''
           }`;
