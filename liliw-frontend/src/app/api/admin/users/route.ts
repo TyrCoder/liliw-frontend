@@ -55,6 +55,83 @@ export async function GET(req: NextRequest) {
  * directly. This is the backstop that screening design assumes: a moderator
  * can always take a picture down.
  */
+
+/** The roles an admin may hand out, matching /api/admin/assign-role. */
+const ASSIGNABLE = ['authenticated', 'chatoeditor', 'chatoofficer', 'admin'] as const;
+
+/**
+ * Creates a staff account outright.
+ *
+ * Adding an editor previously meant asking the person to register on the public
+ * site, waiting for the emailed code to arrive, and only then promoting them —
+ * three steps across two people, and impossible for anyone whose address cannot
+ * receive the code. Same shape as the LBO approval route, which has created
+ * accounts this way all along.
+ *
+ * The password is returned once so the admin can hand it over; it is never
+ * stored in readable form and cannot be looked up afterwards.
+ */
+export async function POST(req: NextRequest) {
+  const isAdmin = await requireAdminAuth(req);
+  if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { username, email, password, role } = await req.json().catch(() => ({}));
+
+  if (!username || !email || !password) {
+    return NextResponse.json({ error: 'Username, email and password are required.' }, { status: 400 });
+  }
+  if (String(password).length < 6) {
+    return NextResponse.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
+  }
+  // The column is plain TEXT with no constraint, so a typo here would create an
+  // account that signs in normally and is then bounced off /admin with nothing
+  // explaining why. Checked rather than trusted.
+  if (!ASSIGNABLE.includes(role)) {
+    return NextResponse.json(
+      { error: `Role must be one of: ${ASSIGNABLE.join(', ')}` },
+      { status: 400 },
+    );
+  }
+
+  const address = String(email).trim().toLowerCase();
+
+  const { data: created, error } = await supabaseServer.auth.admin.createUser({
+    email: address,
+    password,
+    // No confirmation mail: the admin is vouching for this person in person,
+    // and half the reason for this route is addresses that cannot receive one.
+    email_confirm: true,
+    user_metadata: { username, role },
+  });
+
+  if (error || !created.user) {
+    const taken = /already|registered|exists/i.test(error?.message ?? '');
+    return NextResponse.json(
+      { error: taken ? 'An account with that email already exists.' : (error?.message || 'Could not create the account.') },
+      { status: taken ? 409 : 400 },
+    );
+  }
+
+  // The signup trigger writes a profile row with the default role, so this has
+  // to run after it to set the real one. Without it the account exists with no
+  // staff access and the admin is left wondering why.
+  const { error: profErr } = await supabaseServer
+    .from('profiles')
+    .upsert({ id: created.user.id, email: address, username, role }, { onConflict: 'id' });
+
+  if (profErr) {
+    return NextResponse.json(
+      { error: `Account created, but its role could not be set: ${profErr.message}` },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({
+    success: true,
+    user: { id: created.user.id, username, email: address, role },
+  }, { status: 201 });
+}
+
 export async function DELETE(req: NextRequest) {
   const isAdmin = await requireAdminAuth(req);
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
