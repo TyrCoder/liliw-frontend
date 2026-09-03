@@ -341,6 +341,29 @@ function AdminDashboard() {
       .finally(() => setLoadingInbox(false));
   }, [token]);
 
+  /**
+   * A panel load, with one retry when the answer is 401.
+   *
+   * Opening this page fires nineteen authenticated requests at once, and each
+   * one asks Supabase to verify the same bearer token. A single one coming
+   * back 401 — a slow verification, a burst limit, a token that expired
+   * between two of them — was enough to put "a panel could not load, your
+   * session may have expired" across the top of a dashboard whose other
+   * eighteen panels had loaded perfectly. It was reported as constant.
+   *
+   * The retry goes through /api/auth/me first, which re-issues the signed
+   * session cookie that every staff route falls back on when a token is
+   * rejected. If that fails too the session really has gone, and the banner is
+   * then telling the truth.
+   */
+  const panelFetch = useCallback(async (url: string, h: Record<string, string>): Promise<Response> => {
+    const res = await fetch(url, { headers: h });
+    if (res.status !== 401) return res;
+
+    await panelFetch('/api/auth/me', h).catch(() => {});
+    return fetch(url, { headers: h });
+  }, []);
+
   useEffect(() => {
     if (!isStaff || !token) return;
     const h = { Authorization: `Bearer ${token}` };
@@ -352,18 +375,18 @@ function AdminDashboard() {
     // Admin — analytics, users, audit, reports
     if (isAdmin) {
       setLoadingUsers(true);
-      fetch('/api/admin/users',           { headers: h }).then(readList).then(d => setUsers(d.data || [])).catch(noteFailure).finally(() => setLoadingUsers(false));
-      fetch('/api/analytics/track', { headers: h }).then(readList).then(d => setAnalytics(d)).catch(noteFailure).finally(() => setLoadingStats(false));
-      fetch('/api/admin/audit-logs',      { headers: h }).then(readList).then(d => setAuditLogs(d.data || [])).catch(noteFailure).finally(() => setLoadingAudit(false));
-      fetch('/api/admin/strapi-activity', { headers: h }).then(readList).then(d => setStrapiActivity(d.data || [])).catch(noteFailure).finally(() => setLoadingActivity(false));
-      fetch('/api/admin/assign-role', { headers: h }).then(readList).then(d => {
+      panelFetch('/api/admin/users', h).then(readList).then(d => setUsers(d.data || [])).catch(noteFailure).finally(() => setLoadingUsers(false));
+      panelFetch('/api/analytics/track', h).then(readList).then(d => setAnalytics(d)).catch(noteFailure).finally(() => setLoadingStats(false));
+      panelFetch('/api/admin/audit-logs', h).then(readList).then(d => setAuditLogs(d.data || [])).catch(noteFailure).finally(() => setLoadingAudit(false));
+      panelFetch('/api/admin/strapi-activity', h).then(readList).then(d => setStrapiActivity(d.data || [])).catch(noteFailure).finally(() => setLoadingActivity(false));
+      panelFetch('/api/admin/assign-role', h).then(readList).then(d => {
         setRoleUsers(d.users || []);
         setAvailRoles(d.roles || []);
       }).catch(noteFailure).finally(() => setLoadingRoles(false));
       setLoadingAch(true);
-      fetch('/api/admin/achievements', { headers: h }).then(readList).then(d => setAchievements(d.data || [])).catch(noteFailure).finally(() => setLoadingAch(false));
+      panelFetch('/api/admin/achievements', h).then(readList).then(d => setAchievements(d.data || [])).catch(noteFailure).finally(() => setLoadingAch(false));
       setLoadingRewards(true);
-      fetch('/api/admin/rewards', { headers: h }).then(readList).then(d => setRewards(d.data || [])).catch(noteFailure).finally(() => setLoadingRewards(false));
+      panelFetch('/api/admin/rewards', h).then(readList).then(d => setRewards(d.data || [])).catch(noteFailure).finally(() => setLoadingRewards(false));
     }
 
     // Officer — requests & submissions.
@@ -373,26 +396,26 @@ function AdminDashboard() {
       refreshInbox();
       // Still fetched for the reports tab, which counts contact messages and
       // participation requests separately — the inbox merges them.
-      fetch('/api/admin/submissions',    { headers: h }).then(readList).then(d => setSubmissions(d.data || [])).catch(noteFailure).finally(() => setLoadingSubs(false));
-      fetch('/api/admin/participation',  { headers: h }).then(readList).then(d => setParticipation(d.data || [])).catch(noteFailure).finally(() => setLoadingPart(false));
-      fetch('/api/event-signup',         { headers: h }).then(readList).then(d => setSignups(d.data || [])).catch(noteFailure).finally(() => setLoadingSignups(false));
+      panelFetch('/api/admin/submissions', h).then(readList).then(d => setSubmissions(d.data || [])).catch(noteFailure).finally(() => setLoadingSubs(false));
+      panelFetch('/api/admin/participation', h).then(readList).then(d => setParticipation(d.data || [])).catch(noteFailure).finally(() => setLoadingPart(false));
+      panelFetch('/api/event-signup', h).then(readList).then(d => setSignups(d.data || [])).catch(noteFailure).finally(() => setLoadingSignups(false));
       setLoadingVR(true);
-      fetch('/api/admin/visitor-records', { headers: h }).then(readList).then(d => setVisitorRecords(d.data || [])).catch(noteFailure).finally(() => setLoadingVR(false));
+      panelFetch('/api/admin/visitor-records', h).then(readList).then(d => setVisitorRecords(d.data || [])).catch(noteFailure).finally(() => setLoadingVR(false));
       setLoadingExternal(true);
-      fetch('/api/admin/external-reviews', { headers: h }).then(readList).then(d => setExternalReviews(d.data || [])).catch(noteFailure).finally(() => setLoadingExternal(false));
+      panelFetch('/api/admin/external-reviews', h).then(readList).then(d => setExternalReviews(d.data || [])).catch(noteFailure).finally(() => setLoadingExternal(false));
     }
 
     // Officer + Editor — LBO applications & change requests
     if (isChatoOfficer || isChatoEditor || isAdmin) {
       setLoadingLbo(true);
-      fetch('/api/admin/lbo-applications',{ headers: h }).then(readList).then(d => { if (d._error) console.error('[LBO] Strapi error:', d._error, 'status:', d._status); setLboApps(d.data || []); }).catch(noteFailure).finally(() => setLoadingLbo(false));
+      panelFetch('/api/admin/lbo-applications', h).then(readList).then(d => { if (d._error) console.error('[LBO] Strapi error:', d._error, 'status:', d._status); setLboApps(d.data || []); }).catch(noteFailure).finally(() => setLoadingLbo(false));
       setLoadingCR(true);
-      fetch('/api/admin/change-requests', { headers: h }).then(readList).then(d => setChangeRequests(d.data || [])).catch(noteFailure).finally(() => setLoadingCR(false));
+      panelFetch('/api/admin/change-requests', h).then(readList).then(d => setChangeRequests(d.data || [])).catch(noteFailure).finally(() => setLoadingCR(false));
     }
 
     // Officer + Editor — attraction requests
     setLoadingAR(true);
-    fetch('/api/admin/attraction-requests', { headers: h }).then(readList).then(d => {
+    panelFetch('/api/admin/attraction-requests', h).then(readList).then(d => {
       if (d.error) console.error('[AttractionReqs]', d.error);
       setAttractionReqs(d.data || []);
     }).catch(noteFailure).finally(() => setLoadingAR(false));
@@ -401,14 +424,14 @@ function AdminDashboard() {
     if (isChatoEditor || isAdmin) {
       setLoadingEF(true);
       setLoadingJE(true);
-      fetch('/api/admin/event-forms', { headers: h }).then(readList).then(d => setEventForms(d.data || [])).catch(noteFailure).finally(() => setLoadingEF(false));
+      panelFetch('/api/admin/event-forms', h).then(readList).then(d => setEventForms(d.data || [])).catch(noteFailure).finally(() => setLoadingEF(false));
       fetch('/api/content/events').then(readList).then(d => setJoinableEvents((d.data || []).filter((e: any) => e.attributes?.is_joinable || e.is_joinable).map((e: any) => ({ id: e.id, slug: e.attributes?.slug || e.slug, title: e.attributes?.title || e.title, date_start: e.attributes?.date_start || e.date_start })))).catch(noteFailure).finally(() => setLoadingJE(false));
     }
 
     // Officer — event form list for responses viewer
     if (isChatoOfficer || isAdmin) {
       setLoadingEF(true);
-      fetch('/api/admin/event-forms', { headers: h }).then(readList).then(d => setEventForms(d.data || [])).catch(noteFailure).finally(() => setLoadingEF(false));
+      panelFetch('/api/admin/event-forms', h).then(readList).then(d => setEventForms(d.data || [])).catch(noteFailure).finally(() => setLoadingEF(false));
     }
   }, [isAdmin, isChatoOfficer, isChatoEditor, isStaff, token]);
 
@@ -417,7 +440,7 @@ function AdminDashboard() {
     if ((!isAdmin && !isChatoOfficer) || !token) return;
     const h = { Authorization: `Bearer ${token}` };
     const poll = () => {
-      fetch('/api/admin/live-visitors', { headers: h })
+      panelFetch('/api/admin/live-visitors', h)
         .then(readList)
         .then(d => setLiveVisitors(d.data || []))
         .catch(noteFailure);
@@ -475,7 +498,7 @@ function AdminDashboard() {
       setNewStaff({ username: '', email: '', password: '', role: 'chatoeditor' });
 
       const h = { Authorization: `Bearer ${token}` };
-      fetch('/api/admin/assign-role', { headers: h }).then(readList).then(d => {
+      panelFetch('/api/admin/assign-role', h).then(readList).then(d => {
         setRoleUsers(d.users || []);
         setAvailRoles(d.roles || []);
       }).catch(() => {});
