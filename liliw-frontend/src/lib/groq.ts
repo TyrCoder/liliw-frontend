@@ -13,7 +13,17 @@ import Groq from 'groq-sdk';
  * It now lives here, once, and reads GROQ_MODEL from the environment so the
  * next rotation is a Vercel env change + redeploy rather than a code edit.
  */
-export const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+/**
+ * Trimmed, because the value is typed into a dashboard by hand.
+ *
+ * Pasting a model id into Vercel drags a trailing newline in more often than
+ * not, and the result is invisible: the variable looks right in the dashboard,
+ * the health endpoint prints it with the break, and Groq is asked for
+ * "openai/gpt-oss-20b\n" — a model that does not exist. Both AI features then
+ * fail with model_not_found while every piece of configuration appears
+ * correct. A stray keystroke should not be able to take the guide down.
+ */
+export const GROQ_MODEL = (process.env.GROQ_MODEL || 'openai/gpt-oss-120b').trim();
 
 export const groq = process.env.GROQ_API_KEY
   ? new Groq({ apiKey: process.env.GROQ_API_KEY })
