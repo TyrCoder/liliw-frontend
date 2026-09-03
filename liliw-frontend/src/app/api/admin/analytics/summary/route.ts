@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireStaffAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
+import { cmsAttractionId } from '@/lib/content';
 
 const RANGES: Record<string, number> = { '7': 7, '30': 30, '90': 90, '365': 365 };
 
@@ -111,6 +112,32 @@ export async function GET(req: NextRequest) {
   current.forEach(r => { if (r.device && r.device in deviceCounts) deviceCounts[r.device]++; });
   const deviceTotal = Object.values(deviceCounts).reduce((a, b) => a + b, 0) || 1;
 
+  /**
+   * Names for the ranked list, resolved here rather than in the browser.
+   *
+   * The dashboard used to look them up against /api/content/attractions, which
+   * returns approved content only — so an archived attraction appeared in
+   * "Most Visited" as a raw 'spot-<uuid>', linking to a page that 404s. Two of
+   * the top three were in that state, including the most-viewed page on the
+   * site. Read straight from the table, which still has the row, and flagged
+   * so the dashboard can label it instead of offering a dead link.
+   */
+  const topAttractionIds = tally(
+    current.filter(r => r.entity_type === 'attraction'), r => r.entity_id,
+  ).slice(0, 5).map(([id, views]) => ({ id: String(id), views }));
+
+  const attractionMeta = new Map<string, { name: string; archived: boolean }>();
+  if (topAttractionIds.length) {
+    const { data: rows } = await supabaseServer
+      .from('cms_attractions')
+      .select('id, name, status')
+      .in('id', topAttractionIds.map(t => cmsAttractionId(t.id)));
+
+    for (const row of rows ?? []) {
+      attractionMeta.set(row.id, { name: row.name, archived: row.status !== 'approved' });
+    }
+  }
+
   return NextResponse.json({
     range: days,
     // Enough traffic to draw conclusions from? The dashboard uses this to show
@@ -132,9 +159,10 @@ export async function GET(req: NextRequest) {
     })),
     topPages: tally(publicViews, r => r.path).slice(0, 8)
       .map(([path, views]) => ({ path, views })),
-    topAttractions: tally(
-      current.filter(r => r.entity_type === 'attraction'), r => r.entity_id,
-    ).slice(0, 5).map(([id, views]) => ({ id: String(id), views })),
+    topAttractions: topAttractionIds.map(({ id, views }) => {
+      const meta = attractionMeta.get(cmsAttractionId(id));
+      return { id, views, name: meta?.name ?? null, archived: meta?.archived ?? true };
+    }),
     devices: Object.fromEntries(
       Object.entries(deviceCounts).map(([k, n]) => [k, { count: n, pct: Math.round((n / deviceTotal) * 100) }]),
     ),
