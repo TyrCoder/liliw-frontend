@@ -159,6 +159,21 @@ function renderBotText(text: string, onLinkClick: () => void): React.ReactNode {
     const bullet = line.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/);
     if (bullet) { bullets.push(bullet[1]); return; }
 
+    // Markdown headings, rendered as a small label rather than printed with
+    // their hashes. The prompt asks the guide not to use them, but it reaches
+    // for one anyway when a question invites a longer answer, and "### What the
+    // page shows at a glance" appearing verbatim in a chat bubble looks broken.
+    const heading = line.match(/^#{1,6}\s+(.*)$/);
+    if (heading) {
+      flushBullets();
+      blocks.push(
+        <p key={`h${i}`} className="font-semibold text-gray-900 pt-1">
+          {renderInline(heading[1], onLinkClick, `h${i}`)}
+        </p>
+      );
+      return;
+    }
+
     flushBullets();
     blocks.push(
       <p key={`p${i}`} className="leading-relaxed">
