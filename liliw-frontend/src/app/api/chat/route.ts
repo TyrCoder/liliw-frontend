@@ -352,7 +352,30 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, reply, attractions: mentionedAttractions });
-  } catch {
+  } catch (err) {
+    // The cause used to be discarded here, and it cost an afternoon.
+    //
+    // Both AI routes began returning 500 "Failed to respond" while the health
+    // endpoint reported the model and key as fine. Nothing in the response or
+    // the server logs said whether Groq had refused the key, retired the model,
+    // or simply run the account out of quota — three problems with three
+    // different fixes, all presenting identically.
+    const status = (err as { status?: number })?.status;
+    const detail = String((err as { message?: string })?.message ?? err);
+    console.error(`[chat] ${GROQ_MODEL} failed${status ? ` (${status})` : ''}: ${detail}`);
+
+    // A quota or rate-limit refusal is temporary and the visitor should be told
+    // to try again, not left thinking the guide is broken.
+    if (status === 429) {
+      return NextResponse.json(
+        { error: 'The guide is busy right now. Please try again in a moment.' },
+        { status: 429 },
+      );
+    }
+
+    // A retired model or a rejected key is a deployment problem, not something
+    // the visitor can act on — but it must be loud on the server, which it now
+    // is, rather than looking like an ordinary failure.
     return NextResponse.json({ error: 'Failed to respond' }, { status: 500 });
   }
 }
