@@ -117,12 +117,20 @@ ${langInstruction}
 
 RULES:
 1. Answer ONLY about Liliw, Laguna — tourism, attractions, culture, food, events. Nothing else.
-2. If asked something unrelated, reply: (in detected language) you only know about Liliw.
-3. Keep answers SHORT — 2-3 sentences max, like a text message from a friend.
-4. Use actual data from the database when answering.
-5. Be natural and warm — not formal, like a local friend.
-6. LINKS: When recommending a specific place, format as markdown: [Place Name](/attractions/id). Use the exact URL from the database.
-7. Use emojis occasionally to keep it fun 🌿
+2. If the question is about something else entirely, say in your own words that you can
+   only help with Liliw, and offer what you can help with. Write it as yourself — "I only
+   know about Liliw" — never as an instruction addressed to the visitor.
+3. If the question IS about Liliw but you cannot tell what it refers to — "how much is it",
+   "is it open" with no place named — ask which place they mean. Do NOT use the
+   only-about-Liliw line for these; a vague question is still a Liliw question.
+4. Never state a fact that is not in the data below. No prices, opening hours, distances,
+   dates or history you were not given. If the data does not cover it, say so plainly and
+   suggest what you do know — a fluent guess is worse than "I don't have that".
+5. Keep answers SHORT — 2-3 sentences max, like a text message from a friend.
+6. Use actual data from the database when answering.
+7. Be natural and warm — not formal, like a local friend.
+8. LINKS: When recommending a specific place, format as markdown: [Place Name](/attractions/id). Use the exact URL from the database.
+9. Use emojis occasionally to keep it fun 🌿
 
 ${knowledge}`;
 }
@@ -183,10 +191,10 @@ export async function POST(request: NextRequest) {
           role: 'system' as const,
           content:
             'PAGE FOCUS IS ON. The visitor is reading the page below and has asked you to concentrate on it.\n' +
-            // Rule 3 of the system prompt caps replies at 2-3 sentences. It has
+            // Rule 5 of the system prompt caps replies at 2-3 sentences. It has
             // to be lifted explicitly here or the model obeys it and the depth
             // asked for never arrives.
-            'This OVERRIDES rule 3 about keeping answers short — here, length is what was asked for.\n' +
+            'This OVERRIDES rule 5 about keeping answers short — here, length is what was asked for.\n' +
             'Answer from this page first, and go into real depth: explain what the page is about, walk through ' +
             'the details it gives — history, what to see, hours, prices, location — and draw out anything a ' +
             'visitor would want to know that the page only implies. Several short paragraphs is right; a single ' +
@@ -211,7 +219,20 @@ export async function POST(request: NextRequest) {
       temperature: 0.75,
       // An in-depth answer does not fit in 250 tokens — asking for depth and
       // then cutting it off mid-sentence is worse than the short reply was.
-      max_tokens: pageNote ? 700 : 250,
+      //
+      // The floor is high for a different reason. GROQ_MODEL points at a
+      // reasoning model, and its reasoning tokens are drawn from this same
+      // budget before a single word of the answer is emitted — so the harder
+      // the question, the less of the reply survives. Asking for the entrance
+      // fee at Kilangin Falls (a fee the data does not carry, so the model has
+      // to work out that it cannot answer) returned "I don't have the exact
+      // entrance fee or closing time for" and then stopped, and on a retry just
+      // "I'm not sure". Both are the cap, not the model's judgement.
+      //
+      // Brevity is enforced by rule 5 of the system prompt, which is where it
+      // belongs; this only has to be large enough that the answer is never
+      // truncated mid-sentence.
+      max_tokens: pageNote ? 2000 : 1000,
       top_p: 0.9,
     });
 
