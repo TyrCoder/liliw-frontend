@@ -18,7 +18,8 @@ interface AuthState {
 }
 
 interface AuthCtx extends AuthState {
-  login: (identifier: string, password: string) => Promise<void>;
+  /** Resolves to the path this account should land on, or null to stay put. */
+  login: (identifier: string, password: string) => Promise<string | null>;
   register: (username: string, email: string, password: string) => Promise<void>;
   loginWithJwt: (jwt: string, user: StrapiUser) => void;
   logout: () => void;
@@ -109,7 +110,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user, token, loading: false });
   };
 
-  const login = useCallback(async (identifier: string, password: string) => {
+  /**
+   * Returns where this account should land — '/admin' for staff, '/lbo' for an
+   * approved business owner, null for a visitor, who stays on the page they
+   * were reading. The server decides it; see the login route for why.
+   */
+  const login = useCallback(async (identifier: string, password: string): Promise<string | null> => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -119,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!res.ok) throw new Error(data?.error?.message || 'Login failed');
     persist(data.jwt, data.user as StrapiUser);
     toast.success(`Welcome back, ${(data.user as StrapiUser).username}!`);
+    return typeof data.landing === 'string' ? data.landing : null;
   }, []);
 
   const register = useCallback(async (username: string, email: string, password: string) => {

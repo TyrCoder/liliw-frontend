@@ -74,8 +74,50 @@ export async function POST(request: NextRequest) {
       role: { id: 0, name: role, type: role },
     };
 
-    const sessionToken = createSession(user.email, computeRole(user));
-    const response = NextResponse.json({ jwt: data.session?.access_token, user });
+    const sessionRole = computeRole(user);
+
+    /**
+     * Where this account belongs after signing in.
+     *
+     * Staff and business owners were being dropped on the public homepage and
+     * left to find their own way to a dashboard they may not know exists — the
+     * business owners least of all, since nothing in the visitor navigation
+     * points at /lbo.
+     *
+     * Decided here rather than in the browser because this route already knows
+     * the role, and because an owner's dashboard is not implied by their role
+     * at all: every LBO carries plain 'authenticated' and is identified by
+     * holding an approved application. Working that out client-side would mean
+     * a second round trip on every single login, including the tourists it
+     * never applies to.
+     */
+    let landing: string | null = null;
+
+    if (sessionRole === 'admin' || sessionRole === 'chatoofficer' || sessionRole === 'chatoeditor') {
+      landing = '/admin';
+    } else {
+      // Failure here is not worth blocking a sign-in over: a tourist has no
+      // landing page anyway, and an owner sent to the homepage can still
+      // navigate to /lbo. Timed out like the profile lookup above.
+      try {
+        const { data: lbo } = await withTimeout(
+          supabaseServer
+            .from('lbo_applications')
+            .select('id')
+            .eq('email', user.email)
+            .eq('status', 'approved')
+            .limit(1)
+            .maybeSingle(),
+          PROFILE_TIMEOUT_MS,
+        );
+        if (lbo) landing = '/lbo';
+      } catch {
+        landing = null;
+      }
+    }
+
+    const sessionToken = createSession(user.email, sessionRole);
+    const response = NextResponse.json({ jwt: data.session?.access_token, user, landing });
     if (sessionToken) response.headers.set('Set-Cookie', sessionCookieHeader(sessionToken));
     return response;
   } catch {

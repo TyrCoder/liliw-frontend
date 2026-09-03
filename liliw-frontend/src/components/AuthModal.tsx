@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Eye, EyeOff, Loader2, ArrowLeft, Mail, CheckCircle,
@@ -99,6 +100,7 @@ function InputIcon({ icon: Icon }: { icon: (p: { className: string }) => React.R
 
 export default function AuthModal({ defaultTab = 'login', onClose, message }: Props) {
   const { login, loginWithJwt } = useAuth();
+  const router = useRouter();
 
   const [view, setView]       = useState<View>(defaultTab);
   const [showPw, setShowPw]   = useState(false);
@@ -168,7 +170,14 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true);
-    try { await login(identifier, password); onClose(); }
+    try {
+      const landing = await login(identifier, password);
+      onClose();
+      // Staff and business owners go straight to their dashboard; a visitor
+      // gets null and stays on whatever page they were reading, which is
+      // usually the thing they signed in to interact with.
+      if (landing) router.push(landing);
+    }
     catch (err: any) { setError(err.message || 'Login failed'); }
     finally { setLoading(false); }
   };
