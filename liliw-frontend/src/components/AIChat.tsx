@@ -91,26 +91,84 @@ const getRandomGreeting = () => {
   return greetings[Math.floor(Math.random() * greetings.length)];
 };
 
-function renderBotText(text: string, onLinkClick: () => void): React.ReactNode {
-  const linkRe = /\[([^\]]+)\]\((\/[^)]+)\)/g;
+/** Inline pieces of one line: [label](/path) links and **bold** runs. */
+function renderInline(text: string, onLinkClick: () => void, keyBase: string): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
+  // Links and bold in one pass, so a bold label inside a link cannot be split
+  // across two patterns and rendered as literal asterisks.
+  const re = /\[([^\]]+)\]\((\/[^)]+)\)|\*\*([^*]+)\*\*/g;
   let last = 0;
   let m: RegExpExecArray | null;
-  while ((m = linkRe.exec(text)) !== null) {
+
+  while ((m = re.exec(text)) !== null) {
     if (m.index > last) nodes.push(text.slice(last, m.index));
-    const href = m[2];
-    const label = m[1];
-    nodes.push(
-      <a key={m.index} href={href}
-        onClick={(e) => { e.preventDefault(); onLinkClick(); window.location.href = href; }}
-        className="underline font-semibold" style={{ color: '#F5C518' }}>
-        {label} →
-      </a>
-    );
+
+    if (m[2] !== undefined) {
+      const href = m[2];
+      nodes.push(
+        <a key={`${keyBase}-l${m.index}`} href={href}
+          onClick={(e) => { e.preventDefault(); onLinkClick(); window.location.href = href; }}
+          className="underline font-semibold" style={{ color: '#B8860B' }}>
+          {m[1]} →
+        </a>
+      );
+    } else {
+      nodes.push(<strong key={`${keyBase}-b${m.index}`} className="font-semibold text-gray-900">{m[3]}</strong>);
+    }
     last = m.index + m[0].length;
   }
+
   if (last < text.length) nodes.push(text.slice(last));
-  return <>{nodes}</>;
+  return nodes;
+}
+
+/**
+ * The reply as blocks rather than one run of text.
+ *
+ * Everything the guide sends used to land in a single paragraph: newlines
+ * collapsed, bullets showed their leading hyphen, and "**Arabela**" was
+ * rendered with the asterisks visible. A three-place recommendation arrived as
+ * one dense sentence-blob that nobody reads on a phone.
+ */
+function renderBotText(text: string, onLinkClick: () => void): React.ReactNode {
+  const lines = text.split(/\n/).map((l) => l.trim());
+  const blocks: React.ReactNode[] = [];
+  let bullets: string[] = [];
+
+  const flushBullets = () => {
+    if (!bullets.length) return;
+    const items = bullets;
+    bullets = [];
+    blocks.push(
+      <ul key={`u${blocks.length}`} className="space-y-1.5 my-1.5">
+        {items.map((item, i) => (
+          <li key={i} className="flex gap-2">
+            {/* The marker sits in its own column so a wrapped second line lines
+                up with the first rather than under the bullet. */}
+            <span aria-hidden className="select-none text-blue-400 leading-relaxed">•</span>
+            <span className="flex-1">{renderInline(item, onLinkClick, `u${blocks.length}-${i}`)}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
+  lines.forEach((line, i) => {
+    if (!line) { flushBullets(); return; }
+
+    const bullet = line.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/);
+    if (bullet) { bullets.push(bullet[1]); return; }
+
+    flushBullets();
+    blocks.push(
+      <p key={`p${i}`} className="leading-relaxed">
+        {renderInline(line, onLinkClick, `p${i}`)}
+      </p>
+    );
+  });
+
+  flushBullets();
+  return <div className="space-y-2">{blocks}</div>;
 }
 
 function AttractionCards({ cards, onClose }: { cards: AttractionCard[]; onClose: () => void }) {
@@ -497,11 +555,19 @@ export default function AIChat() {
                           : 'text-gray-800 rounded-bl-sm border border-blue-100 bg-white'
                       }`}
                       style={msg.sender === 'user' ? { background: 'linear-gradient(135deg, #0B3D91, #1565C0)' } : {}}>
-                      <p className="text-sm leading-relaxed" style={{ fontFamily: BL }}>
-                        {msg.sender === 'bot'
-                          ? renderBotText(msg.text, () => setIsOpen(false))
-                          : msg.text}
-                      </p>
+                      {/* A div for the guide, because its reply is now
+                          paragraphs and lists — block elements, which are not
+                          valid inside a <p>. The visitor's own message is
+                          plain text and stays one. */}
+                      {msg.sender === 'bot' ? (
+                        <div className="text-sm" style={{ fontFamily: BL }}>
+                          {renderBotText(msg.text, () => setIsOpen(false))}
+                        </div>
+                      ) : (
+                        <p className="text-sm leading-relaxed" style={{ fontFamily: BL }}>
+                          {msg.text}
+                        </p>
+                      )}
                       <span className={`text-xs opacity-60 block mt-1 ${msg.sender === 'user' ? 'text-right text-white' : 'text-gray-400'}`}
                         style={{ fontFamily: BL }}>
                         {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
