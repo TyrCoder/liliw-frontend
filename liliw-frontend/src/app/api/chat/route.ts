@@ -254,13 +254,13 @@ export async function POST(request: NextRequest) {
         }
       : null;
 
-    const completion = await groq.chat.completions.create({
+    const params = {
       messages: [
-        { role: 'system', content: systemPrompt },
+        { role: 'system' as const, content: systemPrompt },
         ...recentHistory,
         ...(pageNote ? [pageNote] : []),
-        { role: 'system', content: langReminder },
-        { role: 'user', content: message },
+        { role: 'system' as const, content: langReminder },
+        { role: 'user' as const, content: message },
       ],
       model: GROQ_MODEL,
       temperature: 0.75,
@@ -281,7 +281,41 @@ export async function POST(request: NextRequest) {
       // truncated mid-sentence.
       max_tokens: pageNote ? 2000 : 1000,
       top_p: 0.9,
-    });
+    };
+
+    /**
+     * How long the model deliberates before answering.
+     *
+     * A reasoning model generates its reasoning at full cost before the first
+     * word of the reply reaches the visitor, and that is where the wait comes
+     * from: measured against production, the questions needing the most
+     * deliberation — an ambiguous price question, a fee the data does not carry
+     * — took 20 to 26 seconds, while a plain lookup took under two. Input size
+     * is not the culprit; the whole knowledge base is only a few thousand
+     * tokens and prefill is fast.
+     *
+     * 'low' is a deliberate trade. The cases that lean hardest on deliberation
+     * are exactly the ones this route was just fixed for — recognising that a
+     * fact is absent (AI-07), spotting an ambiguous question (AI-06), holding
+     * scope (AI-05) — so scripts/test-ai-prompts.mjs should be re-run after any
+     * change here rather than trusting that it still behaves.
+     */
+    const completion = await groq.chat.completions
+      .create({ ...params, reasoning_effort: 'low' })
+      .catch((err: unknown) => {
+        // GROQ_MODEL is deliberately swappable, and reasoning_effort is only
+        // accepted by models that reason. Rejecting the parameter must not take
+        // the guide offline — the same reason plan-trip retries without strict
+        // JSON mode. Anything that is not the parameter being refused is a real
+        // failure and is left to the caller.
+        const status = (err as { status?: number })?.status;
+        const message = String((err as { message?: string })?.message ?? '');
+        if (status === 400 && /reasoning_effort/i.test(message)) {
+          console.warn(`[chat] ${GROQ_MODEL} rejected reasoning_effort — retrying without it.`);
+          return groq!.chat.completions.create(params);
+        }
+        throw err;
+      });
 
     const reply = stripReasoning(completion.choices[0]?.message?.content || '')
       || 'Ay, may problema sa connection ko. Ulit mo nga? 😅';
