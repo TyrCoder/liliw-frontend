@@ -6,10 +6,34 @@ import { groq, GROQ_MODEL, REASONING_EFFORT, stripReasoning } from '@/lib/groq';
 // Cache the knowledge base for 5 minutes
 let knowledgeCache: { text: string; at: number; attractionMap: Map<string, any> } | null = null;
 
-async function buildKnowledge(): Promise<{ text: string; attractionMap: Map<string, any> }> {
-  if (knowledgeCache && Date.now() - knowledgeCache.at < 5 * 60 * 1000) {
-    return { text: knowledgeCache.text, attractionMap: knowledgeCache.attractionMap };
-  }
+/**
+ * The knowledge base, kept as data rather than one prepared string.
+ *
+ * Every message used to carry all of it — roughly 3,457 input tokens of
+ * attractions, FAQs, itineraries and events, whatever was asked. Against the
+ * account's 8,000 tokens per minute and 200,000 per day that worked out to
+ * about 2.3 messages a minute and 58 a day, shared across every visitor, and
+ * the throttling that followed was mistaken for slow inference for most of an
+ * afternoon: identical prompts answered in 1.6 seconds when the bucket was full
+ * and 33 seconds when it was not, on two different models, with reasoning off.
+ *
+ * So the index is cached whole and the prompt is assembled per question.
+ */
+interface Indexed {
+  attractions: any[];
+  faqs: { question: string; answer: string }[];
+  itineraries: string[];
+  events: string[];
+  attractionMap: Map<string, any>;
+}
+
+let indexCache: { data: Indexed; at: number } | null = null;
+
+const stripTags = (s: unknown) =>
+  String(s ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+async function buildIndex(): Promise<Indexed> {
+  if (indexCache && Date.now() - indexCache.at < 5 * 60 * 1000) return indexCache.data;
 
   const [attractions, faqs, itineraries, events] = await Promise.allSettled([
     getAllAttractions(),
@@ -18,21 +42,130 @@ async function buildKnowledge(): Promise<{ text: string; attractionMap: Map<stri
     getEvents(),
   ]);
 
-  const lines: string[] = ['=== LILIW REAL DATA (from live database) ===\n'];
   const attractionMap = new Map<string, any>();
+  const attractionList: any[] = [];
 
-  if (attractions.status === 'fulfilled' && attractions.value.length) {
+  if (attractions.status === 'fulfilled') {
+    for (const a of attractions.value) {
+      attractionMap.set(a.id, a);
+      attractionList.push(a);
+    }
+  }
+
+  // Deduplicated by question. The table holds 29 approved FAQs and 15 distinct
+  // questions — each stored twice — and under the old fixed slice the model
+  // received 8 questions, twice each, with everything past position 15 never
+  // sent. Asked who Gat Tayaw was, the guide had no source: his FAQ sits at 23.
+  const seen = new Set<string>();
+  const faqList: { question: string; answer: string }[] = [];
+
+  if (faqs.status === 'fulfilled') {
+    for (const f of faqs.value) {
+      const a = (f as any).attributes || f;
+      if (!a.question || !a.answer) continue;
+      const key = String(a.question).trim().toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      faqList.push({ question: String(a.question).trim(), answer: stripTags(a.answer) });
+    }
+  }
+
+  const itineraryList =
+    itineraries.status === 'fulfilled'
+      ? itineraries.value.slice(0, 10).map((it) => {
+          const a = (it as any).attributes || it;
+          return `- ${a.name || a.title || 'Tour'}${a.duration ? ` (${a.duration})` : ''}${
+            a.description ? `: ${stripTags(a.description).slice(0, 100)}` : ''
+          }`;
+        })
+      : [];
+
+  const eventList =
+    events.status === 'fulfilled'
+      ? events.value.slice(0, 8).map((ev) => {
+          const a = (ev as any).attributes || ev;
+          return `- ${a.name || a.title || 'Event'}${a.date ? ` on ${a.date}` : ''}${
+            a.description ? `: ${stripTags(a.description).slice(0, 100)}` : ''
+          }`;
+        })
+      : [];
+
+  const data: Indexed = {
+    attractions: attractionList,
+    faqs: faqList,
+    itineraries: itineraryList,
+    events: eventList,
+    attractionMap,
+  };
+
+  indexCache = { data, at: Date.now() };
+  return data;
+}
+
+/**
+ * Words worth matching on. The stop list is mostly function words in both
+ * languages the guide speaks, so a Tagalog question does not score every record
+ * equally on "ang" and "sa".
+ */
+const STOPWORDS = new Set([
+  'the', 'a', 'an', 'is', 'are', 'was', 'were', 'in', 'on', 'at', 'to', 'of', 'for', 'and',
+  'or', 'but', 'with', 'about', 'what', 'where', 'when', 'who', 'how', 'why', 'can', 'do',
+  'does', 'did', 'i', 'you', 'me', 'my', 'we', 'it', 'this', 'that', 'there', 'here', 'any',
+  'some', 'get', 'go', 'be', 'have', 'has', 'liliw', 'laguna',
+  'ang', 'mga', 'ng', 'sa', 'na', 'ay', 'ako', 'ko', 'mo', 'po', 'ba', 'may', 'ito', 'yung',
+  'ano', 'saan', 'paano', 'kailan', 'sino', 'bakit', 'lang', 'din', 'rin', 'naman', 'para',
+]);
+
+const terms = (text: string): string[] =>
+  text.toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !STOPWORDS.has(w));
+
+/** How well a record answers this question: how many of its words appear. */
+const score = (haystack: string, words: string[]): number => {
+  const hay = haystack.toLowerCase();
+  return words.reduce((n, w) => (hay.includes(w) ? n + 1 : n), 0);
+};
+
+/**
+ * The prompt for one question.
+ *
+ * Two layers, for a reason learned the hard way. Every attraction appears in a
+ * short index — name and category only — so the guide always knows the full
+ * list of places that exist and can never claim a real one is unknown. Only the
+ * places and FAQs the question actually reaches get their full entry, with the
+ * URL, fee, hours and description.
+ *
+ * `context` carries the last couple of turns as well as the message, because a
+ * follow-up like "how much is it?" contains none of the words that would find
+ * the place being discussed.
+ */
+function selectKnowledge(index: Indexed, context: string): string {
+  const words = terms(context);
+  const lines: string[] = ['=== LILIW REAL DATA (from live database) ===\n'];
+
+  const label = (a: any) =>
+    a.type === 'heritage' ? 'Heritage' : a.type === 'spot' ? 'Tourist Spot' : 'Dining';
+
+  if (index.attractions.length) {
+    const ranked = index.attractions
+      .map((a) => {
+        const attr = a.attributes;
+        const hay = `${attr.name} ${attr.location ?? ''} ${label(a)} ${stripTags(attr.description)}`;
+        return { a, s: score(hay, words) };
+      })
+      .sort((x, y) => y.s - x.s);
+
+    // A floor rather than only matches: an opening "what can I see here?" scores
+    // nothing anywhere, and the guide still has to be able to answer it.
+    const detailed = ranked.filter((r) => r.s > 0).slice(0, 8);
+    const chosen = detailed.length >= 3 ? detailed : ranked.slice(0, 6);
+    const chosenIds = new Set(chosen.map((r) => r.a.id));
+
     lines.push('ATTRACTIONS & PLACES (include the URL when recommending):');
-    for (const a of attractions.value.slice(0, 30)) {
+    for (const { a } of chosen) {
       const attr = a.attributes;
-      const typeLabel = a.type === 'heritage' ? 'Heritage' : a.type === 'spot' ? 'Tourist Spot' : 'Dining';
-      // Fee, hours and phone are the three things visitors ask about most, and
-      // the guide could not answer any of them: the columns have existed since
-      // phase15, the attraction page renders them, and this prompt simply never
-      // carried them. Asked the entrance fee at Kilangin Falls the guide had
-      // nothing to work from, which is a prompt gap rather than a model
-      // failure. Only non-empty values are sent, so a blank field stays absent
-      // rather than arriving as an empty string the model might read as free.
       const facts = [
         attr.location && `Location: ${attr.location}`,
         attr.entrance_fee && `Entrance fee: ${attr.entrance_fee}`,
@@ -43,70 +176,47 @@ async function buildKnowledge(): Promise<{ text: string; attractionMap: Map<stri
         attr.rating && `Rating: ${attr.rating}/5`,
       ].filter(Boolean).join(' | ');
 
-      lines.push(`- [${typeLabel}] ${attr.name} | URL: /attractions/${a.id}${facts ? ` | ${facts}` : ''}${attr.description ? ` | ${attr.description.slice(0, 100)}` : ''}`);
-      attractionMap.set(a.id, a);
+      lines.push(
+        `- [${label(a)}] ${attr.name} | URL: /attractions/${a.id}` +
+        `${facts ? ` | ${facts}` : ''}` +
+        `${attr.description ? ` | ${stripTags(attr.description).slice(0, 160)}` : ''}`,
+      );
+    }
+
+    const rest = index.attractions.filter((a) => !chosenIds.has(a.id));
+    if (rest.length) {
+      // Names only. Enough for the guide to know the place exists and to say so;
+      // if the visitor then asks about one, that question scores against it and
+      // the next turn carries its full entry.
+      lines.push('\nOTHER PLACES IN LILIW (ask for details before describing these):');
+      lines.push(rest.map((a) => `${a.attributes.name} (${label(a)})`).join(', '));
     }
     lines.push('');
   }
 
-  if (itineraries.status === 'fulfilled' && itineraries.value.length) {
-    lines.push('TOURS & ITINERARIES:');
-    for (const it of itineraries.value.slice(0, 10)) {
-      const a = (it as any).attributes || it;
-      lines.push(`- ${a.name || a.title || 'Tour'}${a.duration ? ` (${a.duration})` : ''}${a.description ? `: ${String(a.description).slice(0, 100)}` : ''}`);
-    }
-    lines.push('');
+  if (index.itineraries.length) {
+    lines.push('TOURS & ITINERARIES:', ...index.itineraries, '');
   }
 
-  if (events.status === 'fulfilled' && events.value.length) {
-    lines.push('UPCOMING EVENTS:');
-    for (const ev of events.value.slice(0, 8)) {
-      const a = (ev as any).attributes || ev;
-      lines.push(`- ${a.name || a.title || 'Event'}${a.date ? ` on ${a.date}` : ''}${a.description ? `: ${String(a.description).slice(0, 100)}` : ''}`);
-    }
-    lines.push('');
+  if (index.events.length) {
+    lines.push('UPCOMING EVENTS:', ...index.events, '');
   }
 
-  if (faqs.status === 'fulfilled' && faqs.value.length) {
+  if (index.faqs.length) {
+    const ranked = index.faqs
+      .map((f) => ({ f, s: score(`${f.question} ${f.answer}`, words) }))
+      .sort((x, y) => y.s - x.s);
+
+    // The FAQ block was over half the payload — 6,251 of 12,227 characters —
+    // and a question about restaurants needs none of it.
+    const chosen = ranked.filter((r) => r.s > 0).slice(0, 5);
+    const use = chosen.length ? chosen : ranked.slice(0, 3);
+
     lines.push('FREQUENTLY ASKED QUESTIONS:');
-
-    // Deduplicated before the cap, not after.
-    //
-    // The table holds 29 approved FAQs but only 15 distinct questions — every
-    // one is stored twice. Under the old `slice(0, 15)` that meant the model
-    // received 8 questions, each of them twice, and everything from position 16
-    // on was never sent at all. Asked who Gat Tayaw was, the guide had no
-    // source: his FAQ sits at 23. It answered from the model's own memory
-    // instead and said he was celebrated for championing the town's flip-flops,
-    // which appears nowhere in the approved answer.
-    //
-    // Deduping here keeps the guide working while the duplicate rows are still
-    // in the database; it is not a substitute for cleaning them up.
-    const seen = new Set<string>();
-    let sent = 0;
-
-    for (const faq of faqs.value) {
-      if (sent >= 40) break;
-      const a = (faq as any).attributes || faq;
-      if (!a.question || !a.answer) continue;
-
-      const key = String(a.question).trim().toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      // Answers are stored as rich text. The tags cost tokens and tell the
-      // model nothing, and at the old 150-character cap they were eating into
-      // the answer itself — Gat Tayaw's would have been cut off before the
-      // sentence naming his festival and monument.
-      const answer = String(a.answer).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-      lines.push(`Q: ${String(a.question).trim()}\nA: ${answer.slice(0, 400)}`);
-      sent++;
-    }
+    for (const { f } of use) lines.push(`Q: ${f.question}\nA: ${f.answer.slice(0, 400)}`);
   }
 
-  const text = lines.join('\n');
-  knowledgeCache = { text, at: Date.now(), attractionMap };
-  return { text, attractionMap };
+  return lines.join('\n');
 }
 
 // Detect language from user message
@@ -213,12 +323,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Empty message' }, { status: 400 });
     }
 
-    const { text: knowledge, attractionMap } = await buildKnowledge();
-    const language = detectLanguage(message);
-    const systemPrompt = buildSystemPrompt(knowledge, language);
-
     // Keep last 8 messages for context
     const recentHistory = history.slice(-8);
+
+    const index = await buildIndex();
+    const attractionMap = index.attractionMap;
+
+    // The last couple of turns steer retrieval alongside the message itself: a
+    // follow-up like "how much is it?" contains none of the words that would
+    // find the place being discussed, and without them the guide would be
+    // handed a prompt about nothing in particular.
+    const context = [
+      ...recentHistory.slice(-2).map((m) => m.content),
+      pageContext?.title ?? '',
+      message,
+    ].join(' ');
+
+    const knowledge = selectKnowledge(index, context);
+    const language = detectLanguage(message);
+    const systemPrompt = buildSystemPrompt(knowledge, language);
 
     // Hard language reminder injected just before the user message
     const langReminder = {
