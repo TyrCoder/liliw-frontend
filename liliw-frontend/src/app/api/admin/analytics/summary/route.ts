@@ -122,21 +122,30 @@ export async function GET(req: NextRequest) {
    * site. Read straight from the table, which still has the row, and flagged
    * so the dashboard can label it instead of offering a dead link.
    */
-  const topAttractionIds = tally(
+  // Ranked wider than the five that get shown, because archived and deleted
+  // entries are dropped below and the list should still arrive full.
+  const attractionCandidates = tally(
     current.filter(r => r.entity_type === 'attraction'), r => r.entity_id,
-  ).slice(0, 5).map(([id, views]) => ({ id: String(id), views }));
+  ).slice(0, 20).map(([id, views]) => ({ id: String(id), views }));
 
   const attractionMeta = new Map<string, { name: string; archived: boolean }>();
-  if (topAttractionIds.length) {
+  if (attractionCandidates.length) {
     const { data: rows } = await supabaseServer
       .from('cms_attractions')
       .select('id, name, status')
-      .in('id', topAttractionIds.map(t => cmsAttractionId(t.id)));
+      .in('id', attractionCandidates.map(t => cmsAttractionId(t.id)));
 
     for (const row of rows ?? []) {
       attractionMeta.set(row.id, { name: row.name, archived: row.status !== 'approved' });
     }
   }
+
+  // Archived content is not shown anywhere, this dashboard included. Its views
+  // still count towards the totals above — they were real visits — but an entry
+  // nobody can open has no place in a ranking of what to promote.
+  const topAttractionIds = attractionCandidates
+    .filter(t => attractionMeta.get(cmsAttractionId(t.id))?.archived === false)
+    .slice(0, 5);
 
   return NextResponse.json({
     range: days,
@@ -159,10 +168,9 @@ export async function GET(req: NextRequest) {
     })),
     topPages: tally(publicViews, r => r.path).slice(0, 8)
       .map(([path, views]) => ({ path, views })),
-    topAttractions: topAttractionIds.map(({ id, views }) => {
-      const meta = attractionMeta.get(cmsAttractionId(id));
-      return { id, views, name: meta?.name ?? null, archived: meta?.archived ?? true };
-    }),
+    topAttractions: topAttractionIds.map(({ id, views }) => ({
+      id, views, name: attractionMeta.get(cmsAttractionId(id))?.name ?? null,
+    })),
     devices: Object.fromEntries(
       Object.entries(deviceCounts).map(([k, n]) => [k, { count: n, pct: Math.round((n / deviceTotal) * 100) }]),
     ),

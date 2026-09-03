@@ -132,26 +132,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No approved content found to index', count: 0 }, { status: 400 });
     }
 
+    /**
+     * One entry per thing, whatever the table holds.
+     *
+     * cms_faqs currently has 29 approved rows and 15 distinct questions —
+     * every one stored twice — so half the FAQ results in search were the same
+     * answer listed again under a different id. Deduplicated on type and title
+     * rather than on id, because the rows are genuinely separate records; the
+     * first is kept and the rest dropped.
+     *
+     * This is a guard, not a repair. The duplicate rows are still in the CMS,
+     * still shown to editors, and still sent anywhere else that reads them.
+     */
+    const seen = new Set<string>();
+    const unique = objects.filter(o => {
+      const key = `${o.type}:${String(o.name ?? '').trim().toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    const duplicatesDropped = objects.length - unique.length;
+
     // Replace rather than merge. saveObjects only adds and updates, so
     // anything archived or deleted since the last run stayed searchable
     // forever — four archived attractions are still in this index, and finding
     // one leads to a page that no longer exists. replaceAllObjects swaps the
     // whole index atomically, so search reflects what is approved right now.
-    await index.replaceAllObjects(objects, { safe: true });
+    await index.replaceAllObjects(unique, { safe: true });
 
     return NextResponse.json({
       success: true,
-      message: `Successfully indexed ${objects.length} items to Algolia`,
-      count: objects.length,
+      message: `Successfully indexed ${unique.length} items to Algolia${duplicatesDropped ? ` (${duplicatesDropped} duplicate${duplicatesDropped === 1 ? '' : 's'} skipped)` : ''}`,
+      count: unique.length,
+      duplicatesDropped,
       breakdown: {
-        attractions: objects.filter(o => o.type === 'attraction').length,
-        events:      objects.filter(o => o.type === 'event').length,
-        faqs:        objects.filter(o => o.type === 'faq').length,
-        itineraries: objects.filter(o => o.type === 'itinerary').length,
-        art_forms:   objects.filter(o => o.type === 'art_form').length,
-        artisans:    objects.filter(o => o.type === 'artisan').length,
-        stories:     objects.filter(o => o.type === 'story').length,
-        news:        objects.filter(o => o.type === 'news').length,
+        attractions: unique.filter(o => o.type === 'attraction').length,
+        events:      unique.filter(o => o.type === 'event').length,
+        faqs:        unique.filter(o => o.type === 'faq').length,
+        itineraries: unique.filter(o => o.type === 'itinerary').length,
+        art_forms:   unique.filter(o => o.type === 'art_form').length,
+        artisans:    unique.filter(o => o.type === 'artisan').length,
+        stories:     unique.filter(o => o.type === 'story').length,
+        news:        unique.filter(o => o.type === 'news').length,
       },
     });
   } catch (error) {
