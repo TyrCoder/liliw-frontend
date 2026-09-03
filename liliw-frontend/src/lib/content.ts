@@ -9,6 +9,17 @@ import { fetchApprovedWithMedia, mediaToPhotos } from './supabase-cms';
 export const cmsAttractionId = (publicId: string) =>
   publicId.replace(/^(heritage|spot|dining)-/, '');
 
+/**
+ * The other direction: a cms_attractions row to the id its public page uses.
+ *
+ * Anything building a link to an attraction from raw database rows — rather
+ * than from getAllAttractions, which composes the id already — needs this. The
+ * search index built its URLs from the bare uuid and every result led to
+ * "attraction not found", because the page looks up '<type>-<uuid>'.
+ */
+export const publicAttractionId = (category: string, uuid: string) =>
+  `${CAT_MAP[category] ?? 'spot'}-${uuid}`;
+
 const CAT_MAP: Record<string, 'heritage' | 'spot' | 'dining'> = {
   heritage:     'heritage',
   tourist_spot: 'spot',

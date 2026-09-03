@@ -177,11 +177,16 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
       <div className="grid gap-5 lg:grid-cols-2">
         {/* ── Most visited ── */}
         <Panel title="Most Visited Attractions" subtitle={`Based on real page views · last ${range} days`}>
+          {/* The name comes from the API now, which reads cms_attractions
+              directly and so still knows archived entries. An archived one is
+              labelled and left unlinked rather than pointing at a page that
+              404s; the id fallback is only for a row whose attraction has been
+              deleted outright. */}
           {an?.topAttractions?.length ? (
             <RankedList items={an.topAttractions.map((t: any) => ({
-              label: attractions[t.id] ?? t.id,
+              label: (t.name ?? attractions[t.id] ?? t.id) + (t.archived ? ' (archived)' : ''),
               value: t.views,
-              href: `/attractions/${t.id}`,
+              href: t.archived ? undefined : `/attractions/${t.id}`,
             }))} />
           ) : (
             <EmptyState icon={<MapPin className="w-6 h-6" />} title="Nothing to rank yet"

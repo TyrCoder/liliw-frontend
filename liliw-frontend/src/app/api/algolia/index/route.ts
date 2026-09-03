@@ -4,6 +4,7 @@ import algoliasearch from 'algoliasearch';
 import { requireAdminAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
 import { stripHtml } from '@/lib/text';
+import { publicAttractionId } from '@/lib/content';
 
 const client = algoliasearch(
   process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || '',
@@ -40,7 +41,12 @@ export async function POST(req: NextRequest) {
         category:    item.category,
         location:    item.location,
         rating:      item.rating ?? 0,
-        url:         `/attractions/${item.id}`,
+        // The public id is '<type>-<uuid>', not the bare uuid this table is
+        // keyed on — see publicAttractionId. Indexed with the raw uuid, every
+        // attraction found through search led to a page that does not exist:
+        // the route looks up '<type>-<uuid>' and a bare uuid matches nothing,
+        // so every single search result answered "attraction not found".
+        url:         `/attractions/${publicAttractionId(item.category, item.id)}`,
       });
     });
 
@@ -126,7 +132,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No approved content found to index', count: 0 }, { status: 400 });
     }
 
-    await index.saveObjects(objects);
+    // Replace rather than merge. saveObjects only adds and updates, so
+    // anything archived or deleted since the last run stayed searchable
+    // forever — four archived attractions are still in this index, and finding
+    // one leads to a page that no longer exists. replaceAllObjects swaps the
+    // whole index atomically, so search reflects what is approved right now.
+    await index.replaceAllObjects(objects, { safe: true });
 
     return NextResponse.json({
       success: true,
