@@ -20,6 +20,31 @@ export const groq = process.env.GROQ_API_KEY
   : null;
 
 /**
+ * The lightest amount of deliberation the current model will accept.
+ *
+ * A reasoning model generates its reasoning at full cost before the first word
+ * of the answer reaches the visitor, and on this workload that is the whole
+ * wait: a plain lookup came back in under two seconds while questions needing
+ * real thought took twenty to twenty-six.
+ *
+ * The value cannot be hardcoded, because the two families Groq recommends
+ * accept disjoint sets and reject each other's:
+ *
+ *   gpt-oss     'low' | 'medium' | 'high'   — no 'none'
+ *   qwen 3.6    'none' | 'default'          — no 'low'
+ *
+ * Hardcoding 'low' and then pointing GROQ_MODEL at qwen would fail the
+ * parameter, fall back to a call without it, and leave qwen in full thinking
+ * mode — slower than before, with nothing on screen to say why. Derived from
+ * the model name instead, and null for anything unrecognised so a model that
+ * does not reason is simply sent no such parameter.
+ */
+export const REASONING_EFFORT: 'none' | 'low' | null =
+  /qwen/i.test(GROQ_MODEL)   ? 'none'
+  : /gpt-oss/i.test(GROQ_MODEL) ? 'low'
+  : null;
+
+/**
  * Removes reasoning-model scaffolding from a completion's text.
  *
  * "Thinking" models (Qwen 3.x, DeepSeek-R1, etc., any of which GROQ_MODEL may

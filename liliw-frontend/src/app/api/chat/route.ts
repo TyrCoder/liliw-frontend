@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/content';
 import { checkRateLimit } from '@/lib/ratelimit';
-import { groq, GROQ_MODEL, stripReasoning } from '@/lib/groq';
+import { groq, GROQ_MODEL, REASONING_EFFORT, stripReasoning } from '@/lib/groq';
 
 // Cache the knowledge base for 5 minutes
 let knowledgeCache: { text: string; at: number; attractionMap: Map<string, any> } | null = null;
@@ -294,14 +294,17 @@ export async function POST(request: NextRequest) {
      * is not the culprit; the whole knowledge base is only a few thousand
      * tokens and prefill is fast.
      *
-     * 'low' is a deliberate trade. The cases that lean hardest on deliberation
-     * are exactly the ones this route was just fixed for — recognising that a
-     * fact is absent (AI-07), spotting an ambiguous question (AI-06), holding
-     * scope (AI-05) — so scripts/test-ai-prompts.mjs should be re-run after any
-     * change here rather than trusting that it still behaves.
+     * The value itself is per-model — see REASONING_EFFORT — because gpt-oss
+     * and qwen accept disjoint settings and reject each other's.
+     *
+     * It is a deliberate trade either way. The cases that lean hardest on
+     * deliberation are exactly the ones this route was just fixed for —
+     * recognising that a fact is absent (AI-07), spotting an ambiguous question
+     * (AI-06), holding scope (AI-05) — so scripts/test-ai-prompts.mjs should be
+     * re-run after any change here rather than trusting that it still behaves.
      */
     const completion = await groq.chat.completions
-      .create({ ...params, reasoning_effort: 'low' })
+      .create(REASONING_EFFORT ? { ...params, reasoning_effort: REASONING_EFFORT } : params)
       .catch((err: unknown) => {
         // GROQ_MODEL is deliberately swappable, and reasoning_effort is only
         // accepted by models that reason. Rejecting the parameter must not take
