@@ -357,6 +357,24 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * What the guide is currently running on.
+ *
+ * GROQ_MODEL is an environment variable, so the model can change without a
+ * commit — and when it does, the guide's wording, speed and behavior all change
+ * with it. During testing that was unknowable from outside: a run could not say
+ * which model produced it, and two runs days apart were not necessarily
+ * comparable. The testing plan asks for the environment to be recorded with the
+ * results, and this is the part of it that was impossible to capture.
+ *
+ * Configuration only — no key material, nothing about who is asking.
+ */
 export async function GET() {
-  return NextResponse.json({ status: 'ok', guide: 'Lilio — Liliw Tour Guide' });
+  return NextResponse.json({
+    status: 'ok',
+    guide: 'Lilio — Liliw Tour Guide',
+    model: GROQ_MODEL,
+    reasoningEffort: REASONING_EFFORT ?? 'not sent',
+    available: !!groq,
+  });
 }
