@@ -207,6 +207,11 @@ function AdminDashboard() {
   const [loadingRoles,  setLoadingRoles]  = useState(true);
   const [savingRole,    setSavingRole]    = useState<number | null>(null);
   const [roleMsg,       setRoleMsg]       = useState<{ id: number; ok: boolean; text: string } | null>(null);
+  // New staff account, created from the Role Management tab.
+  const [newStaff, setNewStaff] = useState({ username: '', email: '', password: '', role: 'chatoeditor' });
+  const [creatingStaff, setCreatingStaff] = useState(false);
+  const [staffMsg, setStaffMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
   const [pwdModal,      setPwdModal]      = useState<{ id: number; email: string } | null>(null);
   const [pwdInput,      setPwdInput]      = useState('');
   const [savingPwd,     setSavingPwd]     = useState(false);
@@ -420,6 +425,39 @@ function AdminDashboard() {
     const id = setInterval(poll, 10_000);
     return () => clearInterval(id);
   }, [isAdmin, isChatoOfficer, token]);
+
+  const handleCreateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingStaff(true);
+    setStaffMsg(null);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(newStaff),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Could not create the account.');
+
+      // The password is shown once, here, because nothing stores it in readable
+      // form — the admin has to pass it on before leaving this screen.
+      setStaffMsg({
+        ok: true,
+        text: `${newStaff.email} created. Password: ${newStaff.password} — give it to them now, it cannot be shown again.`,
+      });
+      setNewStaff({ username: '', email: '', password: '', role: 'chatoeditor' });
+
+      const h = { Authorization: `Bearer ${token}` };
+      fetch('/api/admin/assign-role', { headers: h }).then(readList).then(d => {
+        setRoleUsers(d.users || []);
+        setAvailRoles(d.roles || []);
+      }).catch(() => {});
+    } catch (err: any) {
+      setStaffMsg({ ok: false, text: err.message });
+    } finally {
+      setCreatingStaff(false);
+    }
+  };
 
   const handleAssignRole = async (userId: number, roleId: number) => {
     setSavingRole(userId);
@@ -1215,6 +1253,57 @@ function AdminDashboard() {
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
               <h2 className="font-bold text-gray-900 mb-1">Assign User Roles</h2>
               <p className="text-xs text-gray-400">Changes are saved immediately.</p>
+            </div>
+
+            {/* Creating the account here, rather than asking the person to
+                register on the public site and then promoting them, which took
+                three steps across two people and did not work at all for an
+                address that cannot receive the verification code. */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+              <h2 className="font-bold text-gray-900 mb-1">Create a Staff Account</h2>
+              <p className="text-xs text-gray-400 mb-4">
+                The account works immediately — no email verification. Give the person their
+                password before you leave this page; it is not stored anywhere readable.
+              </p>
+
+              <form onSubmit={handleCreateStaff} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <input
+                  required value={newStaff.username}
+                  onChange={e => setNewStaff(s => ({ ...s, username: e.target.value }))}
+                  placeholder="Name"
+                  className="px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#1565C0]" />
+                <input
+                  required type="email" value={newStaff.email}
+                  onChange={e => setNewStaff(s => ({ ...s, email: e.target.value }))}
+                  placeholder="Email"
+                  className="px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#1565C0]" />
+                <input
+                  required minLength={6} value={newStaff.password}
+                  onChange={e => setNewStaff(s => ({ ...s, password: e.target.value }))}
+                  placeholder="Password (min 6)"
+                  className="px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#1565C0]" />
+                <select
+                  value={newStaff.role}
+                  onChange={e => setNewStaff(s => ({ ...s, role: e.target.value }))}
+                  className="px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-[#1565C0]">
+                  <option value="chatoeditor">CHATO Editor</option>
+                  <option value="chatoofficer">CHATO Officer</option>
+                  <option value="admin">Admin</option>
+                  <option value="authenticated">Tourist / Visitor</option>
+                </select>
+                <button
+                  type="submit" disabled={creatingStaff}
+                  className="px-4 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-60 transition"
+                  style={{ backgroundColor: '#1565C0' }}>
+                  {creatingStaff ? 'Creating…' : 'Create account'}
+                </button>
+              </form>
+
+              {staffMsg && (
+                <p className={`mt-3 text-sm ${staffMsg.ok ? 'text-teal-700' : 'text-red-600'}`}>
+                  {staffMsg.text}
+                </p>
+              )}
             </div>
 
             {loadingRoles ? (
