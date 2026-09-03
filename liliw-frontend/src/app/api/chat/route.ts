@@ -26,7 +26,24 @@ async function buildKnowledge(): Promise<{ text: string; attractionMap: Map<stri
     for (const a of attractions.value.slice(0, 30)) {
       const attr = a.attributes;
       const typeLabel = a.type === 'heritage' ? 'Heritage' : a.type === 'spot' ? 'Tourist Spot' : 'Dining';
-      lines.push(`- [${typeLabel}] ${attr.name} | URL: /attractions/${a.id}${attr.location ? ` | ${attr.location}` : ''}${attr.description ? ` | ${attr.description.slice(0, 100)}` : ''}${attr.rating ? ` | Rating: ${attr.rating}/5` : ''}`);
+      // Fee, hours and phone are the three things visitors ask about most, and
+      // the guide could not answer any of them: the columns have existed since
+      // phase15, the attraction page renders them, and this prompt simply never
+      // carried them. Asked the entrance fee at Kilangin Falls the guide had
+      // nothing to work from, which is a prompt gap rather than a model
+      // failure. Only non-empty values are sent, so a blank field stays absent
+      // rather than arriving as an empty string the model might read as free.
+      const facts = [
+        attr.location && `Location: ${attr.location}`,
+        attr.entrance_fee && `Entrance fee: ${attr.entrance_fee}`,
+        attr.hours && `Open: ${attr.hours}`,
+        attr.best_time && `Best time: ${attr.best_time}`,
+        attr.best_for && `Best for: ${attr.best_for}`,
+        attr.phone && `Contact: ${attr.phone}`,
+        attr.rating && `Rating: ${attr.rating}/5`,
+      ].filter(Boolean).join(' | ');
+
+      lines.push(`- [${typeLabel}] ${attr.name} | URL: /attractions/${a.id}${facts ? ` | ${facts}` : ''}${attr.description ? ` | ${attr.description.slice(0, 100)}` : ''}`);
       attractionMap.set(a.id, a);
     }
     lines.push('');
@@ -52,11 +69,38 @@ async function buildKnowledge(): Promise<{ text: string; attractionMap: Map<stri
 
   if (faqs.status === 'fulfilled' && faqs.value.length) {
     lines.push('FREQUENTLY ASKED QUESTIONS:');
-    for (const faq of faqs.value.slice(0, 15)) {
+
+    // Deduplicated before the cap, not after.
+    //
+    // The table holds 29 approved FAQs but only 15 distinct questions — every
+    // one is stored twice. Under the old `slice(0, 15)` that meant the model
+    // received 8 questions, each of them twice, and everything from position 16
+    // on was never sent at all. Asked who Gat Tayaw was, the guide had no
+    // source: his FAQ sits at 23. It answered from the model's own memory
+    // instead and said he was celebrated for championing the town's flip-flops,
+    // which appears nowhere in the approved answer.
+    //
+    // Deduping here keeps the guide working while the duplicate rows are still
+    // in the database; it is not a substitute for cleaning them up.
+    const seen = new Set<string>();
+    let sent = 0;
+
+    for (const faq of faqs.value) {
+      if (sent >= 40) break;
       const a = (faq as any).attributes || faq;
-      if (a.question && a.answer) {
-        lines.push(`Q: ${a.question}\nA: ${String(a.answer).slice(0, 150)}`);
-      }
+      if (!a.question || !a.answer) continue;
+
+      const key = String(a.question).trim().toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      // Answers are stored as rich text. The tags cost tokens and tell the
+      // model nothing, and at the old 150-character cap they were eating into
+      // the answer itself — Gat Tayaw's would have been cut off before the
+      // sentence naming his festival and monument.
+      const answer = String(a.answer).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      lines.push(`Q: ${String(a.question).trim()}\nA: ${answer.slice(0, 400)}`);
+      sent++;
     }
   }
 
@@ -124,8 +168,11 @@ RULES:
    "is it open" with no place named — ask which place they mean. Do NOT use the
    only-about-Liliw line for these; a vague question is still a Liliw question.
 4. Never state a fact that is not in the data below. No prices, opening hours, distances,
-   dates or history you were not given. If the data does not cover it, say so plainly and
-   suggest what you do know — a fluent guess is worse than "I don't have that".
+   dates or history you were not given — not from memory, not from anywhere else. If the
+   data does not cover it, say so plainly, then point them somewhere real: the place's own
+   page, its contact number if listed, or the tourism office. A fluent guess is worse than
+   "I don't have that" — this is the town's official guide, and a wrong price or closing
+   time sends someone on a wasted trip.
 5. Keep answers SHORT — 2-3 sentences max, like a text message from a friend.
 6. Use actual data from the database when answering.
 7. Be natural and warm — not formal, like a local friend.
