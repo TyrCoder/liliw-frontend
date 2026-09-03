@@ -132,6 +132,61 @@ export async function POST(req: NextRequest) {
   }, { status: 201 });
 }
 
+/**
+ * Deactivates or restores an account.
+ *
+ * Deliberately not a delete. A visitor's rows are scattered across points,
+ * check-ins, reviews, favorites, trips, achievements and redemptions; removing
+ * the account would orphan some of them and silently pull that person's
+ * published reviews off the attraction pages, changing what the public sees and
+ * the ratings those pages average. Deactivation keeps every record intact and
+ * is reversible, which is what a tourism office actually needs — the usual case
+ * is a misbehaving account or a test account, not a right-to-erasure request.
+ *
+ * Enforced by Supabase itself rather than by a flag this codebase checks, so
+ * there is no path — our login route, a direct client call, a stale token
+ * refresh — that lets a deactivated account back in.
+ */
+const BAN_FOREVER = '876000h'; // 100 years; GoTrue has no permanent value
+
+export async function PATCH(req: NextRequest) {
+  const isAdmin = await requireAdminAuth(req);
+  if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { email, active } = await req.json().catch(() => ({}));
+  if (!email || typeof active !== 'boolean') {
+    return NextResponse.json({ error: 'email and active are required' }, { status: 400 });
+  }
+
+  const key = String(email).trim().toLowerCase();
+
+  const { data: profile } = await supabaseServer
+    .from('profiles').select('id, role').eq('email', key).maybeSingle();
+
+  if (!profile?.id) return NextResponse.json({ error: 'No account with that email.' }, { status: 404 });
+
+  // Deactivating the last admin would leave nobody able to reverse it, and
+  // Role Management is the only interface for roles — recovery would mean SQL.
+  if (!active && profile.role === 'admin') {
+    const { count } = await supabaseServer
+      .from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'admin');
+    if ((count ?? 0) <= 1) {
+      return NextResponse.json(
+        { error: 'This is the only admin account. Promote another admin before deactivating this one.' },
+        { status: 409 },
+      );
+    }
+  }
+
+  const { error } = await supabaseServer.auth.admin.updateUserById(profile.id, {
+    ban_duration: active ? 'none' : BAN_FOREVER,
+  });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ success: true, email: key, active });
+}
+
 export async function DELETE(req: NextRequest) {
   const isAdmin = await requireAdminAuth(req);
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
