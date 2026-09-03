@@ -210,6 +210,7 @@ function AdminDashboard() {
   // New staff account, created from the Role Management tab.
   const [newStaff, setNewStaff] = useState({ username: '', email: '', password: '', role: 'chatoeditor' });
   const [creatingStaff, setCreatingStaff] = useState(false);
+  const [togglingUser, setTogglingUser] = useState<string | null>(null);
   const [staffMsg, setStaffMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const [pwdModal,      setPwdModal]      = useState<{ id: number; email: string } | null>(null);
@@ -425,6 +426,32 @@ function AdminDashboard() {
     const id = setInterval(poll, 10_000);
     return () => clearInterval(id);
   }, [isAdmin, isChatoOfficer, token]);
+
+  /**
+   * Deactivation rather than deletion — the account stops being able to sign
+   * in, and every point, review, check-in and trip it owns stays where it is.
+   */
+  const handleToggleActive = async (email: string, makeActive: boolean) => {
+    if (!makeActive && !confirm(`Deactivate ${email}?\n\nThey will not be able to sign in. Nothing they have created is deleted, and you can reactivate them here at any time.`)) return;
+
+    setTogglingUser(email);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ email, active: makeActive }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Could not update the account.');
+
+      setRoleUsers(prev => prev.map(u => u.email === email ? { ...u, active: makeActive } : u));
+      toast.success(makeActive ? `${email} reactivated` : `${email} deactivated`);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setTogglingUser(null);
+    }
+  };
 
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1335,9 +1362,16 @@ function AdminDashboard() {
                           </td>
                           <td className="px-5 py-4 text-gray-600">{u.email}</td>
                           <td className="px-5 py-4">
-                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                              {u.role || 'Authenticated'}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                                {u.role || 'Authenticated'}
+                              </span>
+                              {u.active === false && (
+                                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">
+                                  Deactivated
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-5 py-4">
                             <select
@@ -1362,11 +1396,25 @@ function AdminDashboard() {
                             ) : null}
                           </td>
                           <td className="px-5 py-4">
-                            <button
-                              onClick={() => { setPwdModal({ id: u.id, email: u.email }); setPwdInput(''); setPwdMsg(null); }}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-600 transition">
-                              Reset Password
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => { setPwdModal({ id: u.id, email: u.email }); setPwdInput(''); setPwdMsg(null); }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-600 transition">
+                                Reset Password
+                              </button>
+                              <button
+                                onClick={() => handleToggleActive(u.email, u.active === false)}
+                                disabled={togglingUser === u.email}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition disabled:opacity-50 ${
+                                  u.active === false
+                                    ? 'border-teal-200 text-teal-700 hover:border-teal-400'
+                                    : 'border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-600'
+                                }`}>
+                                {togglingUser === u.email
+                                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  : u.active === false ? 'Reactivate' : 'Deactivate'}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
