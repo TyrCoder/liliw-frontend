@@ -17,6 +17,7 @@ import { stripHtml } from '@/lib/text';
 import SafeHtml from '@/components/SafeHtml';
 import PageBanner from '@/components/liliw/PageBanner';
 import { distanceMeters } from '@/lib/geo';
+import ItineraryMap, { useMappedStops } from '@/components/ItineraryMap';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -1691,6 +1692,22 @@ const DIFF: Record<string, { label: string; badge: string }> = {
   difficult: { label: 'Difficult', badge: 'bg-red-100 text-red-700' },
 };
 
+/**
+ * A curated tour's stops, read from the highlights field.
+ *
+ * cms_itineraries has no per-stop table, so a stop is one highlight line in
+ * the form `TIME | PLACE | NOTE`. Staff edit it as ordinary rich text in the
+ * CMS, and the place has to match an approved attraction by name for the map
+ * to pin it. A line in any other shape is still shown as a plain highlight,
+ * which is what every older itinerary is made of.
+ */
+function parseStopLines(highlights: string[]): { time: string; place: string; note: string }[] {
+  return highlights
+    .map(line => line.split('|').map(part => part.trim()))
+    .filter(parts => parts.length >= 2 && parts[1])
+    .map(parts => ({ time: parts[0] ?? '', place: parts[1], note: parts.slice(2).join(' | ') }));
+}
+
 interface Itinerary {
   id: string; title: string; duration: string; difficulty: string;
   description: string; stopsBlocks: any; highlights: string[];
@@ -1795,6 +1812,12 @@ function PhotoGallery({ photos, title }: { photos: string[]; title: string }) {
 }
 
 function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }) {
+  // Stops parsed out of highlights, matched to approved attractions so each
+  // one can be pinned. Fetched here rather than passed down: the modal is the
+  // only place that needs coordinates, and it opens one tour at a time.
+  const parsedStops = useMemo(() => parseStopLines(itin.highlights), [itin.highlights]);
+  const mapped = useMappedStops(parsedStops);
+
   const diff = DIFF[itin.difficulty] || { label: itin.difficulty, badge: 'bg-gray-100 text-gray-600' };
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -1875,7 +1898,50 @@ function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }
                 </div>
               </div>
             )}
-            {itin.highlights.length > 0 && (
+            {parsedStops.length > 0 && (
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2" style={{ fontFamily: HL }}>
+                  <Navigation className="w-4 h-4" style={{ color: '#1565C0' }} /> The route
+                </p>
+
+                {mapped.length > 0 && (
+                  <div className="mb-4">
+                    <ItineraryMap stops={mapped} />
+                    {mapped.length < parsedStops.length && (
+                      <p className="text-xs text-gray-400 mt-1.5" style={{ fontFamily: BL }}>
+                        {parsedStops.length - mapped.length} stop
+                        {parsedStops.length - mapped.length === 1 ? '' : 's'} could not be placed on the map.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <ol className="space-y-3">
+                  {parsedStops.map((st, i) => (
+                    <li key={i} className="flex gap-3">
+                      <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white mt-0.5"
+                        style={{ backgroundColor: '#0B3D91' }}>{i + 1}</span>
+                      <div className="min-w-0">
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          {st.time && (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                              style={{ backgroundColor: 'rgba(245,197,24,0.15)', color: '#1565C0', fontFamily: HL }}>
+                              {st.time}
+                            </span>
+                          )}
+                          <span className="font-bold text-gray-900 text-sm" style={{ fontFamily: HL }}>{st.place}</span>
+                        </div>
+                        {st.note && (
+                          <p className="text-sm text-gray-600 mt-0.5 leading-relaxed" style={{ fontFamily: BL }}>{st.note}</p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {parsedStops.length === 0 && itin.highlights.length > 0 && (
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3" style={{ fontFamily: HL }}>Highlights</p>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -2088,11 +2154,86 @@ function DatabaseItineraries() {
    MAIN PAGE
    ══════════════════════════════════════════════════════════ */
 
+/**
+ * A saved trip in full, with its route on a map.
+ *
+ * Saved trips could only be read in the accordion on this page, a day at a
+ * time with no sense of where any of it is. This is the same view a curated
+ * tour opens into, so the two read alike whichever one a visitor saved.
+ */
+function SavedTripModal({ trip, onClose }: { trip: SavedTrip; onClose: () => void }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  const allStops = useMemo(
+    () => (trip.plan.days ?? []).flatMap(d =>
+      (d.stops ?? []).map(st => ({ place: st.place, time: st.time, note: st.activity })),
+    ),
+    [trip],
+  );
+  const mapped = useMappedStops(allStops);
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ scale: 0.94, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, y: 8 }}
+        className="relative bg-white rounded-3xl w-full max-w-2xl max-h-[88vh] overflow-y-auto shadow-2xl">
+        <div className="sticky top-0 z-10 px-6 py-4 flex items-start justify-between gap-3 border-b border-gray-100 bg-white">
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold text-gray-900 truncate" style={{ fontFamily: HL }}>{trip.title}</h2>
+            <p className="text-xs text-gray-400" style={{ fontFamily: BL }}>
+              {trip.duration}{trip.budget ? ` · ${trip.budget}` : ''} · saved {new Date(trip.savedAt).toLocaleDateString()}
+            </p>
+          </div>
+          <button onClick={onClose} className="shrink-0 p-2 rounded-full hover:bg-gray-100 transition">
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {mapped.length > 0 && <ItineraryMap stops={mapped} height={280} />}
+
+          {(trip.plan.days ?? []).map((day, di) => (
+            <div key={di}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#1565C0', fontFamily: HL }}>
+                Day {day.day}{day.theme ? ` · ${day.theme}` : ''}
+              </p>
+              <ol className="space-y-3">
+                {(day.stops ?? []).map((st, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white mt-0.5"
+                      style={{ backgroundColor: '#0B3D91' }}>{i + 1}</span>
+                    <div className="min-w-0">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        {st.time && (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                            style={{ backgroundColor: 'rgba(245,197,24,0.15)', color: '#1565C0', fontFamily: HL }}>{st.time}</span>
+                        )}
+                        <span className="font-bold text-gray-900 text-sm" style={{ fontFamily: HL }}>{st.place}</span>
+                      </div>
+                      {st.activity && <p className="text-sm text-gray-600 mt-0.5 leading-relaxed" style={{ fontFamily: BL }}>{st.activity}</p>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function SavedTripsSection() {
   const { user, token } = useAuth();
   const [trips, setTrips]       = useState<SavedTrip[]>([]);
   const [open, setOpen]         = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [mapTrip, setMapTrip] = useState<SavedTrip | null>(null);
   const [sharingId, setSharingId]   = useState<string | null>(null);
   const [copiedId, setCopiedId]     = useState<string | null>(null);
 
@@ -2245,6 +2386,12 @@ function SavedTripsSection() {
                                 : 'Only you can see this trip until you share it.'}
                             </p>
                             <button
+                              onClick={(e) => { e.stopPropagation(); setMapTrip(trip); }}
+                              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition hover:bg-blue-50"
+                              style={{ borderColor: 'rgba(11,61,145,0.2)', color: '#1565C0', fontFamily: BL }}>
+                              <MapPin className="w-3.5 h-3.5" /> View full itinerary
+                            </button>
+                            <button
                               onClick={(e) => { e.stopPropagation(); shareTrip(trip); }}
                               disabled={sharingId === trip.id}
                               className="shrink-0 inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition disabled:opacity-60"
@@ -2267,6 +2414,10 @@ function SavedTripsSection() {
             </div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {mapTrip && <SavedTripModal trip={mapTrip} onClose={() => setMapTrip(null)} />}
       </AnimatePresence>
     </section>
   );

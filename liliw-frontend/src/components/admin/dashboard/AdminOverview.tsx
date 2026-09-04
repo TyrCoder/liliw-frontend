@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import {
   Eye, Users, MapPin, Palette, CalendarDays, Inbox, FileEdit, UserPlus,
   Activity, ShieldCheck, Trophy, QrCode, Star, Gift, Building2, Layers,
-  BarChart3, Clock, ArrowRight, Plus, Newspaper,
+  BarChart3, Clock, ArrowRight, Plus, Newspaper, RefreshCw,
 } from 'lucide-react';
 import {
   DashboardHeader, Metric, MetricGrid, Panel, EmptyState, TrendChart, ChartLegend,
@@ -54,6 +55,7 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
   const [an, setAn]         = useState<any>(null);
   const [anError, setAnError] = useState<string | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [attractions, setAttractions] = useState<Record<string, string>>({});
 
@@ -103,6 +105,28 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
       )))
       .catch(() => {});
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * Rebuild the search index from here, because this is where an admin lands.
+   *
+   * The control existed on the Attractions tab and went unfound — which
+   * matters, since search shows whatever the last rebuild contained until
+   * somebody presses it, and that is how archived attractions stayed findable.
+   */
+  const rebuildSearch = async () => {
+    if (!token || syncing) return;
+    setSyncing(true);
+    try {
+      const res = await fetch('/api/algolia/index', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) toast.success(`Search index rebuilt — ${d.count} items.`);
+      else toast.error(d?.error || `Rebuild failed (${res.status}).`);
+    } catch {
+      toast.error('Could not reach the server.');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const loadAnalytics = useCallback(() => {
     if (!token) return;
@@ -352,6 +376,8 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
           <QuickAction icon={<Inbox className="w-4 h-4" />}       label="Review Queue"   href="/cms" accent="#B45309" />
           <QuickAction icon={<Users className="w-4 h-4" />}       label="Manage Roles"   onClick={() => onGoToTab('roles')} accent="#0B3D91" />
           <QuickAction icon={<Clock className="w-4 h-4" />}       label="Audit Log"      onClick={() => onGoToTab('audit')} accent="#64748B" />
+          <QuickAction icon={<RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />}
+            label={syncing ? 'Rebuilding…' : 'Rebuild Search'} onClick={rebuildSearch} accent="#0D9488" />
         </div>
       </Panel>
     </div>
