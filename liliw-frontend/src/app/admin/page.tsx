@@ -26,6 +26,7 @@ import ContactInbox, { type InboxMessage } from '@/components/admin/Inbox';
 import CommunityEventsManager from '@/components/admin/CommunityEventsManager';
 import * as XLSX from 'xlsx-js-style';
 import DesktopOnly from '@/components/DesktopOnly';
+import { Pagination, usePaged } from '@/components/Pagination';
 
 /* ─── types ──────────────────────────────────────────────── */
 interface Submission { id: any; attributes: { name: string; email: string; phone: string; message: string; type: string; status: string; createdAt: string; handledBy?: string | null; handledAt?: string | null; replies?: { id: string; body: string; sentBy: string; sentAt: string; delivered: boolean; error: string | null }[] }; }
@@ -211,6 +212,13 @@ function AdminDashboard() {
   const [newStaff, setNewStaff] = useState({ username: '', email: '', password: '', role: 'chatoeditor' });
   const [creatingStaff, setCreatingStaff] = useState(false);
   const [togglingUser, setTogglingUser] = useState<string | null>(null);
+
+  // Paging for the long tables. The Users tab keeps only its page number here,
+  // because its list is filtered inside the tab's own block and a hook cannot
+  // be called from there.
+  const pagedRoles = usePaged(roleUsers, 10);
+  const pagedAudit = usePaged(auditLogs, 15);
+  const [usersPage, setUsersPage] = useState(1);
   const [staffMsg, setStaffMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const [pwdModal,      setPwdModal]      = useState<{ id: number; email: string } | null>(null);
@@ -1184,6 +1192,7 @@ function AdminDashboard() {
             { key: 'admin',     label: 'Admin' },
           ];
 
+          const USERS_PER_PAGE = 12;
           const filteredUsers = users.filter((u: any) => {
             if (userRoleFilter === 'all') return true;
             const rn = (u.role?.name || '').toLowerCase().replace(/[\s_-]/g, '');
@@ -1194,6 +1203,15 @@ function AdminDashboard() {
             if (userRoleFilter === 'admin')   return rn.includes('admin');
             return true;
           });
+
+          // Sliced here rather than through usePaged: this list is built inside
+          // the tab's own block, and a hook cannot be called from it. The page
+          // number lives with the other state above.
+          const usersTotalPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PER_PAGE));
+          const usersPageSafe = Math.min(usersPage, usersTotalPages);
+          const pagedUsers = filteredUsers.slice(
+            (usersPageSafe - 1) * USERS_PER_PAGE, usersPageSafe * USERS_PER_PAGE,
+          );
 
           return (
           <div className="space-y-4">
@@ -1235,7 +1253,7 @@ function AdminDashboard() {
                 <th className="px-5 py-3 text-left">Joined</th>
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
-                {filteredUsers.map((u: any) => {
+                {pagedUsers.map((u: any) => {
                   const roleName  = u.role?.name || 'Authenticated';
                   const rn        = roleName.toLowerCase();
                   const userIsLbo = isLbo(u);
@@ -1312,6 +1330,9 @@ function AdminDashboard() {
                 })}
               </tbody>
             </table>
+            <Pagination page={usersPageSafe} totalPages={usersTotalPages}
+              count={filteredUsers.length} pageSize={USERS_PER_PAGE}
+              onChange={setUsersPage} label="accounts" />
           </TableWrap>
           </div>
           );
@@ -1393,7 +1414,7 @@ function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {roleUsers.map((u: any) => (
+                      {pagedRoles.slice.map((u: any) => (
                         <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3">
@@ -1464,6 +1485,9 @@ function AdminDashboard() {
                     </tbody>
                   </table>
                 </div>
+                <Pagination page={pagedRoles.page} totalPages={pagedRoles.totalPages}
+                  count={pagedRoles.count} pageSize={pagedRoles.pageSize}
+                  onChange={pagedRoles.setPage} label="accounts" />
               </div>
             )}
           </div>
@@ -2911,7 +2935,7 @@ function AdminDashboard() {
                       <th className="px-5 py-3 text-left">When</th>
                     </tr></thead>
                     <tbody className="divide-y divide-gray-50">
-                      {auditLogs.map(log => (
+                      {pagedAudit.slice.map(log => (
                         <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-5 py-4">
                             <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${EVENT_COLOR[log.event] || 'bg-gray-100 text-gray-600'}`}>
@@ -2939,6 +2963,9 @@ function AdminDashboard() {
                       ))}
                     </tbody>
                   </table>
+                  <Pagination page={pagedAudit.page} totalPages={pagedAudit.totalPages}
+                    count={pagedAudit.count} pageSize={pagedAudit.pageSize}
+                    onChange={pagedAudit.setPage} label="entries" />
                 </TableWrap>
               )}
             </div>
