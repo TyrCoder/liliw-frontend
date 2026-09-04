@@ -3,6 +3,7 @@ import { supabaseServer, explainDbError } from '@/lib/supabase-server';
 import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES, slugify, labelFieldFor } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
 import { invalidateContentCache } from '@/lib/content';
+import { contentProblem } from '@/lib/cms-validate';
 
 type Params = { params: Promise<{ type: string }> };
 
@@ -55,6 +56,13 @@ export async function POST(req: NextRequest, { params }: Params) {
   const nameField = labelFieldFor(type);
   const label = body[nameField] || body.name || body.title || body.question;
   if (!label) return NextResponse.json({ error: `${nameField} is required` }, { status: 400 });
+
+  // Checked here, not only in the form. Everything that reaches this route
+  // lands in the approval queue, and a reviewer's time is the scarce thing —
+  // an entry called "asdad" with a letter in its latitude should not get that
+  // far. It cannot judge whether a place is real; that is the reviewer's job.
+  const problem = contentProblem(label, body);
+  if (problem) return NextResponse.json({ error: problem }, { status: 400 });
 
   // `media` is not a column — photos live in cms_media and are attached below.
   // It was being passed straight into the insert, so creating anything with a
