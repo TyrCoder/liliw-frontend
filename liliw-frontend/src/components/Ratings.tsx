@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Star, User, Calendar, LogIn } from 'lucide-react';
+import { Star, User, Calendar, LogIn, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
@@ -27,6 +27,7 @@ interface RatingsProps {
 
 export default function Ratings({ itemId, itemName }: RatingsProps) {
   const { user, token } = useAuth();
+  const [hasVisited, setHasVisited] = useState<boolean | null>(null);
   const [userRating, setUserRating]       = useState(0);
   const [hoverRating, setHoverRating]     = useState(0);
   const [userComment, setUserComment]     = useState('');
@@ -60,6 +61,24 @@ export default function Ratings({ itemId, itemName }: RatingsProps) {
   };
 
   useEffect(() => { fetchReviews(); }, [itemId]);
+
+  /**
+   * Whether this account has actually been here, which is what the review
+   * endpoint requires. Asked up front so the form is not offered to someone
+   * who would only be refused after writing one — and asked of the endpoint
+   * that applies the same rule the ratings route does.
+   */
+  useEffect(() => {
+    if (!token) { setHasVisited(null); return; }
+    let cancelled = false;
+    fetch(`/api/user/has-visited?attractionId=${encodeURIComponent(itemId)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => (r.ok ? r.json() : { visited: false }))
+      .then(d => { if (!cancelled) setHasVisited(!!d.visited); })
+      .catch(() => { if (!cancelled) setHasVisited(null); });
+    return () => { cancelled = true; };
+  }, [itemId, token]);
 
   const avgRating = dbRatings.length > 0
     ? (dbRatings.reduce((sum, r) => sum + r.rating, 0) / dbRatings.length).toFixed(1)
@@ -146,6 +165,15 @@ export default function Ratings({ itemId, itemName }: RatingsProps) {
             Log In
           </button>
           {showAuth && <AuthModal defaultTab="login" onClose={() => setShowAuth(false)} />}
+        </div>
+      ) : hasVisited === false ? (
+        <div className="p-5 rounded-2xl border border-dashed border-amber-200 bg-amber-50/50 text-center">
+          <MapPin className="w-6 h-6 mx-auto mb-2" style={{ color: '#B45309' }} />
+          <p className="text-sm font-semibold text-gray-700 mb-1" style={{ fontFamily: HL }}>Visit first, then review</p>
+          <p className="text-xs text-gray-500" style={{ fontFamily: BL }}>
+            Reviews come from people who have been here. Scan the QR code at the entrance, or open
+            this page while you are at the place, and the form appears.
+          </p>
         </div>
       ) : !submitted ? (
         <form onSubmit={handleSubmit} className="p-5 bg-gray-50 rounded-2xl space-y-4 border border-gray-100">
