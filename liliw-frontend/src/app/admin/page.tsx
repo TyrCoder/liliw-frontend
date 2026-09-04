@@ -297,6 +297,7 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
   const [syncCount, setSyncCount] = useState<number | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   const [externalReviews,    setExternalReviews]    = useState<any[]>([]);
   const [loadingExternal,    setLoadingExternal]    = useState(false);
@@ -739,14 +740,33 @@ function AdminDashboard() {
     setConfirmingRedeem(false);
   };
 
+  /**
+   * Rebuilds the search index from what is approved right now.
+   *
+   * Needed after publishing, archiving or renaming content: the index is a
+   * separate copy, so until this runs, search reflects whatever was true at the
+   * last rebuild — including entries whose pages have since been archived.
+   */
   const handleSyncSearch = async () => {
     setSyncStatus('syncing');
+    setSyncError(null);
     try {
       const res = await fetch('/api/algolia/index', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      res.ok ? (setSyncCount(data.count), setSyncStatus('done')) : setSyncStatus('error');
-    } catch { setSyncStatus('error'); }
-    setTimeout(() => setSyncStatus('idle'), 4000);
+      if (res.ok) {
+        setSyncCount(data.count);
+        setSyncStatus('done');
+      } else {
+        // A missing Algolia key and an empty content table fail identically
+        // from the outside, and "error" alone sent nobody anywhere useful.
+        setSyncError(data?.error || `Request failed (${res.status})`);
+        setSyncStatus('error');
+      }
+    } catch (err: any) {
+      setSyncError(err?.message || 'Could not reach the server.');
+      setSyncStatus('error');
+    }
+    setTimeout(() => setSyncStatus('idle'), 6000);
   };
 
   const handleLboApprove = (app: any) => {
@@ -2069,6 +2089,38 @@ function AdminDashboard() {
         {/* ── ATTRACTIONS ────────────────────────────────────── */}
         {activeTab === 'attractions' && (
           <div className="space-y-4">
+            {/* Search index — the one thing that does not update itself.
+                Publishing, archiving or renaming content changes the site
+                immediately but leaves search showing the previous rebuild, so
+                the action needs to be reachable rather than living in a
+                handler nothing called. */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p className="font-bold text-gray-900">Search Index</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Rebuild after publishing, archiving or renaming content — search will not
+                  reflect the change until you do.
+                </p>
+                {syncStatus === 'done' && syncCount !== null && (
+                  <p className="text-xs font-semibold text-teal-700 mt-1.5">
+                    Indexed {syncCount} item{syncCount === 1 ? '' : 's'}.
+                  </p>
+                )}
+                {syncStatus === 'error' && (
+                  <p className="text-xs font-semibold text-red-600 mt-1.5">{syncError}</p>
+                )}
+              </div>
+              <button
+                onClick={handleSyncSearch}
+                disabled={syncStatus === 'syncing'}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 disabled:opacity-60"
+                style={{ backgroundColor: '#0B3D91' }}>
+                {syncStatus === 'syncing'
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Rebuilding…</>
+                  : <><RefreshCw className="w-4 h-4" /> Rebuild search index</>}
+              </button>
+            </div>
+
             {/* CHATO Editor — Content Management link */}
             {isChatoEditor && (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex items-center justify-between gap-4 flex-wrap">
