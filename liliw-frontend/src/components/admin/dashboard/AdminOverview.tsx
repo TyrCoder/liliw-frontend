@@ -263,7 +263,7 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
         </Panel>
 
         {/* ── People ── */}
-        <Panel title="People" subtitle="Who has access to the system"
+        <Panel title="Users" subtitle="Who has access to the system"
           action={<button onClick={() => onGoToTab('users')}
             className="text-xs font-semibold inline-flex items-center gap-1" style={{ color: ROYAL }}>
             Manage <ArrowRight className="w-3 h-3" />
@@ -273,6 +273,7 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
               { label: 'Administrators', n: stats?.users?.byRole?.admin ?? 0,   accent: '#DC2626' },
               { label: 'Tourism officers', n: stats?.users?.byRole?.officer ?? 0, accent: '#0B3D91' },
               { label: 'Content editors', n: stats?.users?.byRole?.editor ?? 0,  accent: '#8B5CF6' },
+              { label: 'Business owners', n: stats?.users?.byRole?.lbo ?? 0,    accent: '#F59E0B' },
               { label: 'Visitor accounts', n: stats?.users?.byRole?.member ?? 0, accent: '#16A34A' },
             ].map(row => {
               const total = Math.max(1, stats?.users?.total ?? 1);

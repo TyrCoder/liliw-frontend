@@ -182,7 +182,7 @@ export async function GET(req: NextRequest) {
 
   /* Officers review; admins do that and run the system. */
   const [lboApps, changeReqs, participation, submissions] = await Promise.all([
-    supabaseServer.from('lbo_applications').select('status'),
+    supabaseServer.from('lbo_applications').select('status, email'),
     supabaseServer.from('lbo_change_requests').select('status'),
     supabaseServer.from('participation_requests').select('id'),
     supabaseServer.from('submissions').select('id'),
@@ -209,7 +209,7 @@ export async function GET(req: NextRequest) {
 
   /* Admin only: people, engagement and system counts. */
   const [profiles, tourists, points, redemptions, checkins, reviewsCount, toursCount] = await Promise.all([
-    supabaseServer.from('profiles').select('role, created_at'),
+    supabaseServer.from('profiles').select('role, email, created_at'),
     countOf('tourist_profiles'),
     supabaseServer.from('user_points').select('points, created_at'),
     countOf('reward_redemptions'),
@@ -222,6 +222,12 @@ export async function GET(req: NextRequest) {
   const monthAgo = Date.now() - 30 * 86_400_000;
   const roleCount = (name: string) => people.filter(p => p.role === name).length;
 
+  const approvedLboEmails = new Set(
+    apps.filter((a: any) => a.status === 'approved')
+      .map((a: any) => String(a.email ?? '').toLowerCase())
+      .filter(Boolean),
+  );
+
   return NextResponse.json({
     ...base,
     users: {
@@ -232,7 +238,17 @@ export async function GET(req: NextRequest) {
         admin:   roleCount('admin'),
         officer: roleCount('chatoofficer'),
         editor:  roleCount('chatoeditor'),
-        member:  people.filter(p => !['admin', 'chatoofficer', 'chatoeditor'].includes(p.role)).length,
+        // Business owners hold no role of their own — every one is
+        // 'authenticated', identified by an approved application against their
+        // address. Counted separately because lumping all 34 in with tourists
+        // said "38 visitor accounts" on a site with four, and showed no
+        // business owners at all on a dashboard whose whole left column is
+        // their applications and requests.
+        lbo:     people.filter(p => approvedLboEmails.has(String(p.email ?? '').toLowerCase())).length,
+        member:  people.filter(p =>
+          !['admin', 'chatoofficer', 'chatoeditor'].includes(p.role) &&
+          !approvedLboEmails.has(String(p.email ?? '').toLowerCase()),
+        ).length,
       },
     },
     engagement: {

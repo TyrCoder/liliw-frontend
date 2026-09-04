@@ -21,6 +21,19 @@ function base(title: string, body: string) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!--
+    Dark mode. Without these two, Gmail on a dark phone rewrites the palette
+    itself: it darkened the white card but left the body text at its declared
+    slate grey, and flipped the white heading to near-black — on the blue
+    header, which it left alone because a gradient is a background image and is
+    not inverted. The result was a mail nobody could read.
+
+    Declaring both schemes tells the client the palette is deliberate, so it
+    stops guessing. The header also carries a solid background-color behind the
+    gradient for the clients that drop it.
+  -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>${title}</title>
 </head>
 <body style="margin:0;padding:0;background:#EFF6FF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif">
@@ -30,7 +43,7 @@ function base(title: string, body: string) {
     <div style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(11,61,145,.14)">
 
       <!-- Header -->
-      <div style="background:linear-gradient(145deg,#0B3D91 0%,#1565C0 55%,#1976D2 100%);padding:36px 40px 32px">
+      <div style="background-color:#0B3D91;background:linear-gradient(145deg,#0B3D91 0%,#1565C0 55%,#1976D2 100%);padding:36px 40px 32px">
 
         <!-- Logo row -->
         <table cellpadding="0" cellspacing="0" style="margin-bottom:24px">
@@ -131,7 +144,7 @@ export async function sendNewApplicationNotification(app: {
     subject: `New LBO Application — ${app.business_name}`,
     html: base(
       'New Business Application',
-      `<p style="color:#475569;font-size:15px;margin:0 0 6px">A new <strong>Local Business Owner</strong> application has been submitted and is awaiting your review.</p>
+      `<p style="color:#1E293B;font-size:15px;margin:0 0 6px">A new <strong>Local Business Owner</strong> application has been submitted and is awaiting your review.</p>
       <p style="color:#94A3B8;font-size:13px;margin:0 0 24px">Please log in to the admin dashboard to review and take action.</p>
       <div style="background:#F8FAFC;border-radius:14px;padding:20px 24px;margin-bottom:8px">
         ${field('Business Name', app.business_name)}
@@ -158,11 +171,11 @@ export async function sendApprovalEmail(app: {
     subject: `Your LBO Application is Approved — ${app.business_name}`,
     html: base(
       'Application Approved!',
-      `<p style="color:#475569;font-size:15px;margin:0 0 20px">
+      `<p style="color:#1E293B;font-size:15px;margin:0 0 20px">
         Congratulations, <strong>${app.owner_name}</strong>! Your Local Business Owner application for
         <strong>${app.business_name}</strong> has been <strong style="color:#16A34A">approved</strong>.
       </p>
-      <p style="color:#475569;font-size:15px;margin:0 0 4px">Here are your account credentials to access the LBO Dashboard:</p>
+      <p style="color:#1E293B;font-size:15px;margin:0 0 4px">Here are your account credentials to access the LBO Dashboard:</p>
       ${infoBox(`
         ${field('Username', app.username)}
         ${field('Temporary Password', app.password)}
@@ -185,8 +198,8 @@ export async function sendRejectionEmail(app: {
     subject: `Update on Your LBO Application — ${app.business_name}`,
     html: base(
       'Application Update',
-      `<p style="color:#475569;font-size:15px;margin:0 0 20px">Dear <strong>${app.owner_name}</strong>,</p>
-      <p style="color:#475569;font-size:15px;margin:0 0 20px">
+      `<p style="color:#1E293B;font-size:15px;margin:0 0 20px">Dear <strong>${app.owner_name}</strong>,</p>
+      <p style="color:#1E293B;font-size:15px;margin:0 0 20px">
         Thank you for your interest in joining Liliw Tourism as a Local Business Owner. After reviewing your application for
         <strong>${app.business_name}</strong>, we are unable to approve it at this time.
       </p>
@@ -194,8 +207,13 @@ export async function sendRejectionEmail(app: {
         <p style="margin:0;font-size:10px;font-weight:700;color:#92400E;text-transform:uppercase;letter-spacing:.08em">Reason</p>
         <p style="margin:6px 0 0;color:#78350F;font-size:15px">${app.notes}</p>
       `, 'amber') : ''}
-      <p style="color:#475569;font-size:15px;margin:0 0 4px">
-        You are welcome to reapply after addressing the concerns above.
+      <p style="color:#1E293B;font-size:15px;margin:0 0 4px">
+        ${app.notes
+          ? 'You are welcome to reapply after addressing the concerns above.'
+          // Without a reason there is nothing "above" to address, and the
+          // sentence pointed at a box that was never rendered — the applicant
+          // was told to fix concerns the mail never stated.
+          : 'You are welcome to reapply at any time.'}
         If you have questions, please contact us through the website.
       </p>
       ${btn('Visit Liliw Tourism', SITE, '#64748B')}`,
@@ -215,8 +233,8 @@ export async function sendChangeRequestUpdate(data: {
     subject: `Change Request ${isDone ? 'Approved' : 'Update'} — ${data.attraction_name}`,
     html: base(
       isDone ? 'Change Request Approved' : 'Change Request Update',
-      `<p style="color:#475569;font-size:15px;margin:0 0 20px">Dear <strong>${data.lbo_name}</strong>,</p>
-      <p style="color:#475569;font-size:15px;margin:0 0 4px">
+      `<p style="color:#1E293B;font-size:15px;margin:0 0 20px">Dear <strong>${data.lbo_name}</strong>,</p>
+      <p style="color:#1E293B;font-size:15px;margin:0 0 4px">
         Your change request for <strong>${data.attraction_name}</strong> has been
         <strong style="color:${isDone ? '#16A34A' : '#DC2626'}">${isDone ? 'approved' : 'reviewed'}</strong>.
       </p>
@@ -231,8 +249,8 @@ export async function sendChangeRequestUpdate(data: {
         <p style="margin:6px 0 0;font-size:15px;color:${isDone ? '#14532D' : '#78350F'}">${data.editor_notes}</p>
       `, isDone ? 'green' : 'amber') : ''}
       ${isDone
-        ? `<p style="color:#475569;font-size:14px;margin:0">The change will be reflected on the website shortly.</p>${btn('View Your Dashboard', `${SITE}/lbo`, '#10B981')}`
-        : `<p style="color:#475569;font-size:14px;margin:0">If you have questions, please contact us or submit a new request.</p>${btn('Visit Liliw Tourism', SITE, '#64748B')}`
+        ? `<p style="color:#1E293B;font-size:14px;margin:0">The change will be reflected on the website shortly.</p>${btn('View Your Dashboard', `${SITE}/lbo`, '#10B981')}`
+        : `<p style="color:#1E293B;font-size:14px;margin:0">If you have questions, please contact us or submit a new request.</p>${btn('Visit Liliw Tourism', SITE, '#64748B')}`
       }`,
     ),
   });
@@ -248,7 +266,7 @@ export async function sendAttractionRequestNotification(data: {
     subject: `New Attraction Request — ${data.attraction_name}`,
     html: base(
       'New Attraction Listing Request',
-      `<p style="color:#475569;font-size:15px;margin:0 0 6px">An LBO has submitted a request to add a new attraction to the tourism directory.</p>
+      `<p style="color:#1E293B;font-size:15px;margin:0 0 6px">An LBO has submitted a request to add a new attraction to the tourism directory.</p>
       <p style="color:#94A3B8;font-size:13px;margin:0 0 24px">Please review and take action in the admin dashboard.</p>
       <div style="background:#F8FAFC;border-radius:14px;padding:20px 24px;margin-bottom:8px">
         ${field('LBO / Owner', data.lbo_name)}
@@ -274,8 +292,8 @@ export async function sendAttractionRequestUpdate(data: {
     subject: `Attraction Request ${isApproved ? 'Approved' : 'Update'} — ${data.attraction_name}`,
     html: base(
       isApproved ? 'Attraction Request Approved' : 'Attraction Request Update',
-      `<p style="color:#475569;font-size:15px;margin:0 0 20px">Dear <strong>${data.lbo_name}</strong>,</p>
-      <p style="color:#475569;font-size:15px;margin:0 0 4px">
+      `<p style="color:#1E293B;font-size:15px;margin:0 0 20px">Dear <strong>${data.lbo_name}</strong>,</p>
+      <p style="color:#1E293B;font-size:15px;margin:0 0 4px">
         Your request to add <strong>${data.attraction_name}</strong> to the Liliw Tourism directory has been
         <strong style="color:${isApproved ? '#16A34A' : '#DC2626'}">${isApproved ? 'approved' : 'reviewed'}</strong>.
       </p>
@@ -284,8 +302,8 @@ export async function sendAttractionRequestUpdate(data: {
         <p style="margin:6px 0 0;font-size:15px;color:${isApproved ? '#14532D' : '#78350F'}">${data.notes}</p>
       `, isApproved ? 'green' : 'amber') : ''}
       ${isApproved
-        ? `<p style="color:#475569;font-size:14px;margin:0">Our team will create the listing shortly. You will receive your attraction credentials soon.</p>${btn('View Your Dashboard', `${SITE}/lbo`, '#10B981')}`
-        : `<p style="color:#475569;font-size:14px;margin:0">If you have questions or would like to resubmit, please contact us or use your dashboard.</p>${btn('Visit Liliw Tourism', SITE, '#64748B')}`
+        ? `<p style="color:#1E293B;font-size:14px;margin:0">Our team will create the listing shortly. You will receive your attraction credentials soon.</p>${btn('View Your Dashboard', `${SITE}/lbo`, '#10B981')}`
+        : `<p style="color:#1E293B;font-size:14px;margin:0">If you have questions or would like to resubmit, please contact us or use your dashboard.</p>${btn('Visit Liliw Tourism', SITE, '#64748B')}`
       }`,
     ),
   });
@@ -303,7 +321,7 @@ export async function sendContactNotification(data: {
     subject: `New ${data.type} submission — ${data.name}`,
     html: base(
       `New ${data.type.charAt(0).toUpperCase() + data.type.slice(1)} Submission`,
-      `<p style="color:#475569;font-size:15px;margin:0 0 24px">A new message has been submitted through the Liliw Tourism website.</p>
+      `<p style="color:#1E293B;font-size:15px;margin:0 0 24px">A new message has been submitted through the Liliw Tourism website.</p>
       <div style="background:#F8FAFC;border-radius:14px;padding:20px 24px;margin-bottom:8px">
         ${field('Name', data.name)}
         ${field('Email', data.email)}
@@ -344,7 +362,7 @@ export async function sendSubmissionReply(data: {
     subject: data.subject,
     html: base(
       'A reply from the Tourism Office',
-      `<p style="color:#475569;font-size:15px;margin:0 0 24px">Hello ${escapeHtml(data.name)}, thank you for writing to us.</p>
+      `<p style="color:#1E293B;font-size:15px;margin:0 0 24px">Hello ${escapeHtml(data.name)}, thank you for writing to us.</p>
       ${paragraphs}
       <div style="margin-top:28px;padding:16px 20px;background:#F8FAFC;border-left:3px solid #CBD5E1;border-radius:0 12px 12px 0">
         <p style="margin:0 0 8px;font-size:10px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.08em">Your original message</p>
