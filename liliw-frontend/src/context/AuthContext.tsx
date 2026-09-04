@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export interface StrapiUser {
@@ -57,6 +58,7 @@ function staffCookieRole(user: StrapiUser): string {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, token: null, loading: true });
+  const router = useRouter();
 
   // On mount: always re-fetch the user's current role from Strapi so role
   // changes (e.g. Admin → CHATO Officer) are reflected without re-logging in.
@@ -149,9 +151,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     clearSessionCookie();
+
+    // The signed cookie is HttpOnly, so only the server can remove it. Without
+    // this the browser kept being admitted to /admin, /cms and /lbo after
+    // signing out, for the seven days the cookie had left.
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+
     setState({ user: null, token: null, loading: false });
     toast('You\'ve been signed out.');
-  }, []);
+
+    // Home, rather than wherever they happened to be. Staff signing out of a
+    // dashboard were left staring at a page they no longer had the session to
+    // load, and business owners at a dashboard with nothing in it.
+    router.push('/');
+  }, [router]);
 
   const userRole       = state.user?.role?.type ?? 'public';
   // Normalize: lowercase + strip spaces/hyphens/underscores for flexible matching

@@ -11,6 +11,7 @@ import {
   DashboardHeader, Metric, MetricGrid, Panel, EmptyState, TrendChart, ChartLegend,
   RankedList, ActivityFeed, PendingRow, QuickAction, relativeTime, ROYAL,
 } from './DashboardKit';
+import type { Tab } from '@/app/admin/page';
 
 const RANGES = [
   { key: '7',   label: '7 Days' },
@@ -38,7 +39,13 @@ const MODEL_LABEL: Record<string, string> = {
 interface Props {
   token: string | null;
   username: string;
-  onGoToTab: (tab: string) => void;
+  /**
+   * Typed to the panel's actual tabs, not to string. As `(tab: string)` it
+   * accepted names no tab answers to: 'cms' and 'participation' were both
+   * wired up here and both did nothing, so the admin clicked "content
+   * awaiting review" and got a blank screen.
+   */
+  onGoToTab: (tab: Tab) => void;
 }
 
 export default function AdminOverview({ token, username, onGoToTab }: Props) {
@@ -203,14 +210,19 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
               message="No content is awaiting review, and there are no open applications or change requests." />
           ) : (
             <div className="divide-y divide-gray-50">
+              {/* Approvals live on /cms, which is a page rather than a tab in
+                  this panel. This asked for a tab called 'cms', which does not
+                  exist — so an admin saw "1 content awaiting review", clicked
+                  it, and landed on a blank screen. An editor's submitted
+                  attraction was reachable only by knowing the URL. */}
               <PendingRow label="Content awaiting review" count={pendingTotal}
-                accent="#B45309" onClick={() => onGoToTab('cms')} />
+                accent="#B45309" href="/cms" />
               <PendingRow label="Business applications" count={q.lboApplications ?? 0}
                 accent="#F7941D" onClick={() => onGoToTab('lbo')} />
               <PendingRow label="Listing change requests" count={q.changeRequests ?? 0}
                 accent="#2EC4D6" onClick={() => onGoToTab('changerequests')} />
               <PendingRow label="Participation requests" count={q.participation ?? 0}
-                accent="#8B5CF6" onClick={() => onGoToTab('participation')} />
+                accent="#8B5CF6" onClick={() => onGoToTab('submissions')} />
             </div>
           )}
         </Panel>
@@ -301,7 +313,7 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
           <QuickAction icon={<Palette className="w-4 h-4" />}     label="Add Artisan"    href="/cms"  accent="#D43D8D" />
           <QuickAction icon={<CalendarDays className="w-4 h-4" />}label="Create Event"   href="/cms"  accent="#8B5CF6" />
           <QuickAction icon={<Newspaper className="w-4 h-4" />}   label="Post News"      href="/cms"  accent="#2EC4D6" />
-          <QuickAction icon={<Inbox className="w-4 h-4" />}       label="Review Queue"   onClick={() => onGoToTab('cms')} accent="#B45309" />
+          <QuickAction icon={<Inbox className="w-4 h-4" />}       label="Review Queue"   href="/cms" accent="#B45309" />
           <QuickAction icon={<Users className="w-4 h-4" />}       label="Manage Roles"   onClick={() => onGoToTab('roles')} accent="#0B3D91" />
           <QuickAction icon={<Clock className="w-4 h-4" />}       label="Audit Log"      onClick={() => onGoToTab('audit')} accent="#64748B" />
         </div>

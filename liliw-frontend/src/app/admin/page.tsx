@@ -36,7 +36,7 @@ interface StrapiActivity { id: string; contentType: string; entryName: string; a
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
-type Tab = 'overview' | 'users' | 'roles' | 'achievements' | 'rewards' | 'redeemcodes' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'communityevents' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms';
+export type Tab = 'overview' | 'users' | 'roles' | 'achievements' | 'rewards' | 'redeemcodes' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'communityevents' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms';
 
 const TRIGGER_TYPE_LABELS: Record<string, string> = {
   event_count: 'Event sign-ups',
@@ -1160,7 +1160,7 @@ function AdminDashboard() {
           <AdminOverview
             token={token}
             username={user?.username ?? 'Admin'}
-            onGoToTab={(t) => setActiveTab(t as Tab)}
+            onGoToTab={setActiveTab}
           />
         )}
 
