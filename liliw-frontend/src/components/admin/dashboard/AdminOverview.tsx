@@ -53,6 +53,7 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
   const [stats, setStats]   = useState<any>(null);
   const [an, setAn]         = useState<any>(null);
   const [anError, setAnError] = useState<string | null>(null);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [attractions, setAttractions] = useState<Record<string, string>>({});
 
@@ -60,11 +61,39 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
 
   useEffect(() => {
     if (!token) return;
-    fetch('/api/dashboard', { headers: h })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => setStats(d))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+
+    /**
+     * Every headline number on this screen comes from /api/dashboard, and a
+     * failed call used to set stats to null — which renders as `?? 0` in each
+     * metric. So a single 401 turned a working dashboard into a site with no
+     * users, no attractions and no page views, with nothing on screen saying
+     * the request had failed. Opening an attraction and coming back was enough
+     * to hit it, because the token is re-read on the way back in.
+     *
+     * A 401 is retried once through /api/auth/me, which reissues the signed
+     * session cookie. If it still fails, the previous figures stay on screen —
+     * stale numbers with a warning beat confident zeroes — and only the very
+     * first load, which has nothing to keep, shows the empty state.
+     */
+    const loadStats = async () => {
+      let res = await fetch('/api/dashboard', { headers: h }).catch(() => null);
+
+      if (res?.status === 401) {
+        await fetch('/api/auth/me', { headers: h }).catch(() => {});
+        res = await fetch('/api/dashboard', { headers: h }).catch(() => null);
+      }
+
+      if (res?.ok) {
+        setStats(await res.json().catch(() => null));
+        setStatsError(null);
+      } else {
+        setStatsError(res?.status === 401
+          ? 'Your session expired — sign in again to refresh these figures.'
+          : 'These figures could not be refreshed just now.');
+      }
+    };
+
+    loadStats().finally(() => setLoading(false));
 
     // Names for the "most visited" list — analytics stores ids, not titles.
     fetch('/api/content/attractions')
@@ -102,6 +131,13 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
 
   return (
     <div className="space-y-5">
+      {statsError && (
+        <div className="rounded-2xl border px-4 py-3 text-sm"
+          style={{ borderColor: '#FDE68A', backgroundColor: '#FFFBEB', color: '#92400E' }}>
+          {statsError} {stats ? 'The figures below are from the last successful load.' : ''}
+        </div>
+      )}
+
       <DashboardHeader
         title="Admin Dashboard"
         subtitle={`Welcome back, ${username}. Here's what's happening across Liliw Tourism.`}
