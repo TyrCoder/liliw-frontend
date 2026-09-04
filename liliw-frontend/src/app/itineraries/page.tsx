@@ -352,12 +352,65 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
    * Returns null when either stop has no coordinates, and nothing is shown
    * rather than a guess.
    */
+  /**
+   * Road distances per day, keyed by day index, filled in once Directions has
+   * answered. Straight-line is what shows until then and if it never does, so
+   * a number is always present rather than a gap that fills in late.
+   */
+  const [roadLegs, setRoadLegs] = useState<Record<number, { legs: number[]; source: string }>>({});
+
   const legKm = useCallback((from: string, to: string): number | null => {
     const a = findCoord(from);
     const b = findCoord(to);
     if (!a || !b) return null;
     return distanceMeters(a[0], a[1], b[0], b[1]) / 1000;
   }, [findCoord]);
+
+  /**
+   * Ask Mapbox for the real driving distance of each day's route.
+   *
+   * One request per day rather than per leg — Directions returns a leg for
+   * every consecutive pair — and only when the sequence of places actually
+   * changes, which stopsSignature already tracks for the reordering below.
+   *
+   * Driving, because that is the profile that obeys one-way streets and turn
+   * restrictions; walking deliberately ignores both, which is correct for
+   * someone on foot but wrong as a stated distance for a trip.
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const next: Record<number, { legs: number[]; source: string }> = {};
+
+      await Promise.all(localPlan.days.map(async (day: any, dayIdx: number) => {
+        const coords = (day.stops ?? [])
+          .map((st: Stop) => findCoord(st.place))
+          .filter(Boolean) as [number, number][];
+
+        // Only when every stop is placed: a gap would silently shift the legs
+        // so that a distance is shown against the wrong pair.
+        if (coords.length < 2 || coords.length !== (day.stops?.length ?? 0)) return;
+
+        try {
+          const res = await fetch('/api/route-distance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // findCoord returns [lat, lng]; Mapbox wants [lng, lat].
+            body: JSON.stringify({ coords: coords.map(([lat, lng]) => [lng, lat]), profile: 'driving' }),
+          });
+          const d = await res.json();
+          if (Array.isArray(d?.legs)) next[dayIdx] = { legs: d.legs, source: d.source };
+        } catch {
+          // Straight-line stays on screen.
+        }
+      }));
+
+      if (!cancelled) setRoadLegs(next);
+    })();
+
+    return () => { cancelled = true; };
+  }, [stopsSignature, findCoord]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reorder each day's stops by geographic proximity (greedy nearest-neighbour,
   // starting from the day's first stop) so the route doubles back as little as
@@ -794,8 +847,15 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
           <div className="divide-y divide-gray-50">
             {day.stops?.map((stop, stopIdx) => {
               // Distance to the next stop, shown on the connector between them.
+              // Road distance where Directions has answered, straight-line
+              // until then and if it never does.
               const next = day.stops[stopIdx + 1];
-              const km = next ? legKm(stop.place, next.place) : null;
+              const road = roadLegs[dayIdx];
+              const roadKm = road && typeof road.legs[stopIdx] === 'number'
+                ? road.legs[stopIdx] / 1000
+                : null;
+              const km = next ? (roadKm ?? legKm(stop.place, next.place)) : null;
+              const byRoad = roadKm !== null && road?.source === 'road';
               return (
               <div key={stopIdx}
                 draggable={dragRow === `${dayIdx}-${stopIdx}`}
@@ -849,7 +909,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
                   )}
                   {km !== null && (
                     <span className="text-[9px] font-bold leading-none whitespace-nowrap px-1 py-0.5 rounded"
-                      title={`Straight-line distance to ${next?.place ?? 'the next stop'}`}
+                      title={`${byRoad ? 'Driving distance' : 'Straight-line distance'} to ${next?.place ?? 'the next stop'}`}
                       style={{ color: '#64748B', backgroundColor: 'rgba(11,61,145,0.06)', fontFamily: BL }}>
                       {km < 1 ? `${Math.round(km * 100) * 10} m` : `${km.toFixed(1)} km`}
                     </span>
