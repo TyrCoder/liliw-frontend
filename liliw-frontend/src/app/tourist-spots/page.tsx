@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { MapPin, Mountain, Star } from 'lucide-react';
 import FavoriteButton from '@/components/FavoriteButton';
 import PageBanner from '@/components/liliw/PageBanner';
+import { Pagination, usePaged } from '@/components/Pagination';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -17,6 +18,7 @@ function Bunting({ flip = false }: { flip?: boolean }) {
   const r = 14, panels = 8, arc = Math.PI * 2 / panels, spacing = 30;
   const W = r + (PENNANT.length - 1) * spacing + r;
   const cy = r;
+
   return (
     <svg width={W} height={r * 2} viewBox={`0 0 ${W} ${r * 2}`} className="hidden sm:inline-block" style={{ transform: flip ? 'scaleX(-1)' : undefined, verticalAlign:'middle' }}>
       <line x1="0" y1={cy} x2={W} y2={cy} stroke="#9CA3AF" strokeWidth="1.2" />
@@ -64,6 +66,7 @@ const CAT_COLORS: Record<string, string> = {
 
 export default function TouristSpotsPage() {
   const [spots, setSpots] = useState<Attraction[]>([]);
+  const paged = usePaged(spots, 9);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -102,7 +105,7 @@ export default function TouristSpotsPage() {
           <motion.div initial="hidden" animate="visible"
             variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.07 } } }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {spots.map((spot, idx) => {
+            {paged.slice.map((spot, idx) => {
               const photos = spot.attributes?.photos ?? [];
               const rawUrl = photos[0]?.formats?.medium?.url || photos[0]?.formats?.small?.url || photos[0]?.url;
               const imgUrl = rawUrl ? (rawUrl.startsWith('http') ? rawUrl : `${STRAPI_BASE}${rawUrl}`) : null;
@@ -146,6 +149,12 @@ export default function TouristSpotsPage() {
               );
             })}
           </motion.div>
+        )}
+
+        {!loading && !error && (
+          <Pagination page={paged.page} totalPages={paged.totalPages}
+            count={paged.count} pageSize={paged.pageSize}
+            onChange={paged.setPage} label="spots" />
         )}
 
         {!loading && !error && spots.length === 0 && (
