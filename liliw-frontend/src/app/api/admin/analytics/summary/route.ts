@@ -128,12 +128,26 @@ export async function GET(req: NextRequest) {
     current.filter(r => r.entity_type === 'attraction'), r => r.entity_id,
   ).slice(0, 20).map(([id, views]) => ({ id: String(id), views }));
 
+  /**
+   * Only well-formed uuids reach the lookup.
+   *
+   * page_views still holds ids from the Strapi era — 'spot-79', 'dining-105' —
+   * and cms_attractions.id is a uuid column. One of those in the .in() list
+   * makes Postgres reject the entire query as invalid uuid syntax, so nothing
+   * resolved, every entry looked archived, and the panel went from a ranking to
+   * "nothing to rank yet" while the site was being visited normally.
+   */
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const lookupIds = [...new Set(
+    attractionCandidates.map(t => cmsAttractionId(t.id)).filter(id => UUID.test(id)),
+  )];
+
   const attractionMeta = new Map<string, { name: string; archived: boolean }>();
-  if (attractionCandidates.length) {
+  if (lookupIds.length) {
     const { data: rows } = await supabaseServer
       .from('cms_attractions')
       .select('id, name, status')
-      .in('id', attractionCandidates.map(t => cmsAttractionId(t.id)));
+      .in('id', lookupIds);
 
     for (const row of rows ?? []) {
       attractionMeta.set(row.id, { name: row.name, archived: row.status !== 'approved' });
