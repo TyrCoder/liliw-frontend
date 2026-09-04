@@ -3,6 +3,7 @@ import { logger } from '@/lib/logger';
 import { supabaseServer } from '@/lib/supabase-server';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { consumeOtpDb } from '@/lib/otpDb';
+import { passwordProblem } from '@/lib/credentials';
 
 export async function POST(req: NextRequest) {
   // This endpoint takes over an account on success, so it needs both an IP
@@ -17,6 +18,12 @@ export async function POST(req: NextRequest) {
     const { email, otp, newPassword } = await req.json();
     if (!email || !otp || !newPassword) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     if (newPassword.length < 6) return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+
+    // Checked before the code is spent. Failing afterwards would burn a
+    // single-use code on a password the visitor then has to fix, sending them
+    // back to request another one.
+    const pwProblem = passwordProblem(newPassword);
+    if (pwProblem) return NextResponse.json({ error: pwProblem }, { status: 400 });
 
     const key    = email.toLowerCase();
     const result = await consumeOtpDb('reset', key, otp);

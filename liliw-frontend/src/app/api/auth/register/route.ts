@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { supabaseServer } from '@/lib/supabase-server';
+import { passwordProblem, usernameProblem } from '@/lib/credentials';
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
@@ -15,6 +16,23 @@ export async function POST(request: NextRequest) {
     const { username, email, password } = await request.json();
     if (!email || !password) {
       return NextResponse.json({ error: { message: 'Email and password are required.' } }, { status: 400 });
+    }
+
+    // Enforced here, not only in the form. The strength meter in AuthModal is
+    // display, and posting to this route directly met no rules at all beyond
+    // Supabase's own six-character floor.
+    const pwProblem = passwordProblem(password);
+    if (pwProblem) {
+      return NextResponse.json({ error: { message: pwProblem } }, { status: 400 });
+    }
+
+    // An absent username still falls back to the address, as before; a supplied
+    // one has to be valid rather than silently stored however it arrived.
+    if (username) {
+      const nameProblem = usernameProblem(username);
+      if (nameProblem) {
+        return NextResponse.json({ error: { message: nameProblem } }, { status: 400 });
+      }
     }
 
     const { data, error } = await supabaseServer.auth.admin.createUser({

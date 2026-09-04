@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import MarqueeHeader from '@/components/auth/MarqueeHeader';
+import { passwordProblem, usernameProblem, USERNAME_ALLOWED, PASSWORD_MIN } from '@/lib/credentials';
 
 interface Props {
   defaultTab?: 'login' | 'register';
@@ -81,14 +82,21 @@ function CaptchaCanvas({ code }: { code: string }) {
 }
 
 /* ── Password strength ── */
+/**
+ * Scored against the rule the server enforces, so a bar reading "strong" can
+ * no longer sit above a password the route will reject. Length first, then one
+ * step per character class present.
+ */
 function pwStrength(pw: string) {
-  if (pw.length >= 10 && /[A-Z]/.test(pw) && /[0-9]/.test(pw)) return 3;
-  if (pw.length >= 8) return 2;
-  if (pw.length >= 6) return 1;
-  return 0;
+  if (!pw) return 0;
+  const classes = [/[a-z]/, /[A-Z]/, /[0-9]/, /[^A-Za-z0-9]/].filter(r => r.test(pw)).length;
+  if (pw.length < PASSWORD_MIN) return 1;
+  if (classes < 3) return 1;
+  if (classes < 4) return 2;
+  return 3;
 }
 const STRENGTH_COLOR = ['#EF4444', '#EF4444', '#F59E0B', '#10B981'];
-const STRENGTH_LABEL = ['', 'Weak', 'Medium — add numbers & uppercase', 'Strong password'];
+const STRENGTH_LABEL = ['', 'Too weak', 'Almost — add a special character', 'Strong password'];
 
 /* ── Shared styles ── */
 const INPUT_CLS = 'w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:border-[#1565C0] focus:ring-2 focus:ring-[#1565C0]/10 transition';
@@ -114,6 +122,7 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
   const [username,  setUsername]  = useState('');
   const [email,     setEmail]     = useState('');
   const [regPw,     setRegPw]     = useState('');
+  const [regPw2,    setRegPw2]    = useState('');
 
   const [captchaCode,  setCaptchaCode]  = useState(generateCode);
   const [captchaInput, setCaptchaInput] = useState('');
@@ -184,9 +193,20 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault(); setError('');
-    if (!captchaOk)        { setError('Please complete the security check'); return; }
-    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) { setError('Username must be 3–20 characters: letters, numbers, underscores only'); return; }
-    if (regPw.length < 6)  { setError('Password must be at least 6 characters'); return; }
+    if (!captchaOk) { setError('Please complete the security check'); return; }
+
+    // Same rules the register route applies, from the same module, so the form
+    // cannot promise something the server then refuses.
+    const nameProblem = usernameProblem(username);
+    if (nameProblem) { setError(nameProblem); return; }
+
+    const pwProblem = passwordProblem(regPw);
+    if (pwProblem) { setError(pwProblem); return; }
+
+    // Checked before the code is sent, not after: the visitor would otherwise
+    // wait for an email, type the code, and only then be told the two
+    // passwords never matched.
+    if (regPw !== regPw2) { setError('The two passwords do not match.'); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/send-reg-otp', {
@@ -418,7 +438,7 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                   <label className={LABEL_CLS}>Username</label>
                   <div className="relative">
                     <InputIcon icon={AtSign} />
-                    <input required value={username} onChange={e => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20))}
+                    <input required value={username} onChange={e => setUsername(e.target.value.replace(USERNAME_ALLOWED, '').slice(0, 20))}
                       className={INPUT_CLS} placeholder="juandelacruz123" autoComplete="username"
                       minLength={3} maxLength={20} />
                   </div>
@@ -438,7 +458,7 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                     <InputIcon icon={Lock} />
                     <input required value={regPw} onChange={e => setRegPw(e.target.value)}
                       type={showPw ? 'text' : 'password'}
-                      className={`${INPUT_CLS} pr-12`} placeholder="Min. 6 characters" autoComplete="new-password" />
+                      className={`${INPUT_CLS} pr-12`} placeholder="Min. 8, with a number and a symbol" autoComplete="new-password" />
                     <button type="button" onClick={() => setShowPw(p => !p)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
                       {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -456,6 +476,24 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                         {STRENGTH_LABEL[strength]}
                       </p>
                     </div>
+                  )}
+                </div>
+
+                {/* Confirm password. A mistyped one here is unrecoverable for
+                    an address that cannot receive the reset code. */}
+                <div>
+                  <label className={LABEL_CLS}>Confirm Password</label>
+                  <div className="relative">
+                    <InputIcon icon={Lock} />
+                    <input required value={regPw2} onChange={e => setRegPw2(e.target.value)}
+                      type={showPw ? 'text' : 'password'}
+                      className={`${INPUT_CLS} pr-12`} placeholder="Type it again" autoComplete="new-password" />
+                  </div>
+                  {regPw2.length > 0 && regPw !== regPw2 && (
+                    <p className="text-xs mt-1.5 font-medium text-red-500">The two passwords do not match.</p>
+                  )}
+                  {regPw2.length > 0 && regPw === regPw2 && (
+                    <p className="text-xs mt-1.5 font-medium text-emerald-600">Passwords match.</p>
                   )}
                 </div>
                 {/* CAPTCHA */}
