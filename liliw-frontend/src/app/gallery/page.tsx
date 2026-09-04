@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import PageBanner from '@/components/liliw/PageBanner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ZoomIn, Images } from 'lucide-react';
+import { Pagination, usePaged } from '@/components/Pagination';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -37,6 +38,7 @@ function Bunting({ flip = false }: { flip?: boolean }) {
   const r = 14, panels = 8, arc = Math.PI * 2 / panels, spacing = 30;
   const W = r + (PENNANT.length - 1) * spacing + r;
   const cy = r;
+
   return (
     <svg width={W} height={r * 2} viewBox={`0 0 ${W} ${r * 2}`} className="hidden sm:inline-block" style={{ transform: flip ? 'scaleX(-1)' : undefined, verticalAlign:'middle' }}>
       <line x1="0" y1={cy} x2={W} y2={cy} stroke="#9CA3AF" strokeWidth="1.2" />
@@ -104,6 +106,8 @@ export default function GalleryPage() {
 
   const filtered = activeCategory === 'all' ? items : items.filter(i => i.category === activeCategory);
 
+  const paged = usePaged(filtered, 12);
+
   return (
     <div className="min-h-screen page-ground" suppressHydrationWarning>
 
@@ -148,7 +152,7 @@ export default function GalleryPage() {
         {!loading && filtered.length > 0 && (
           <motion.div key={activeCategory} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
-            {filtered.map((item, idx) => (
+            {paged.slice.map((item, idx) => (
               <motion.div key={item.id}
                 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
                 className="break-inside-avoid rounded-2xl overflow-hidden cursor-pointer group relative"
@@ -171,6 +175,10 @@ export default function GalleryPage() {
             ))}
           </motion.div>
         )}
+
+        <Pagination page={paged.page} totalPages={paged.totalPages}
+          count={paged.count} pageSize={paged.pageSize}
+          onChange={paged.setPage} label="items" />
       </div>
 
       {/* Lightbox */}
