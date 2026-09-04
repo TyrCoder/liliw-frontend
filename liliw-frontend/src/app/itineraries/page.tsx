@@ -260,7 +260,11 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
   userLocation: [number, number] | null; locationStatus: 'idle' | 'pending' | 'granted' | 'denied';
 }) {
   const [localPlan, setLocalPlan] = useState<GeneratedPlan>(() => JSON.parse(JSON.stringify(plan)));
-  const [isEditing, setIsEditing] = useState(false);
+  // An empty plan is one the visitor is about to fill in, so it opens in edit
+  // mode rather than showing them an empty day and an Edit button.
+  const [isEditing, setIsEditing] = useState(
+    () => (plan.days ?? []).every(d => !(d.stops ?? []).length),
+  );
   const [sortMode, setSortMode]   = useState<'ai' | 'location'>('ai');
   const [preSortPlan, setPreSortPlan] = useState<GeneratedPlan | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
@@ -1212,6 +1216,28 @@ function ItineraryWizard() {
       );
     });
 
+  /**
+   * Start from nothing and add places yourself.
+   *
+   * The planner has only ever begun with a generated day, which someone then
+   * edits down — fine when the AI guesses well, and the long way round when a
+   * visitor already knows the three places they want. The editor below already
+   * does everything this needs: add a stop, reorder, set times, save. It only
+   * ever lacked an empty plan to open with.
+   */
+  const startBlank = () => {
+    setError('');
+    setTripSaved(false);
+    setPlan({
+      title: 'My Liliw Itinerary',
+      summary: 'Add the places you want to visit, in the order you want to see them.',
+      days: [{ day: 1, theme: 'Day 1', stops: [] }],
+      tips: [],
+      estimatedCostPerDay: '',
+    });
+    setStep('result');
+  };
+
   const generate = async () => {
     setStep('generating');
     setError('');
@@ -1384,6 +1410,14 @@ function ItineraryWizard() {
                 }}>
                 Next <ChevronRight className="w-4 h-4" />
               </motion.button>
+
+              {/* For the visitor who already knows where they are going and
+                  does not need to be asked four questions first. */}
+              <button onClick={startBlank}
+                className="mt-3 w-full text-center text-xs font-semibold transition hover:opacity-70"
+                style={{ color: '#1565C0', fontFamily: BL }}>
+                Or build your own itinerary from scratch
+              </button>
             </motion.div>
           )}
 
