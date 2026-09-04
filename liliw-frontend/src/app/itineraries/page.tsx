@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { stripHtml } from '@/lib/text';
 import SafeHtml from '@/components/SafeHtml';
 import PageBanner from '@/components/liliw/PageBanner';
+import { distanceMeters } from '@/lib/geo';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -338,6 +339,25 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
     }
     return undefined;
   }, [attractionCoords]);
+
+  /**
+   * How far apart two consecutive stops are, in kilometres.
+   *
+   * Straight-line, using the same haversine the QR check-in uses, and the same
+   * coordinate lookup the proximity reordering below already relies on. It is
+   * honest about being a straight line — a road distance would need a
+   * Directions call per leg, billed per request, for a number that is only ever
+   * read as "these two are close" or "these two are not".
+   *
+   * Returns null when either stop has no coordinates, and nothing is shown
+   * rather than a guess.
+   */
+  const legKm = useCallback((from: string, to: string): number | null => {
+    const a = findCoord(from);
+    const b = findCoord(to);
+    if (!a || !b) return null;
+    return distanceMeters(a[0], a[1], b[0], b[1]) / 1000;
+  }, [findCoord]);
 
   // Reorder each day's stops by geographic proximity (greedy nearest-neighbour,
   // starting from the day's first stop) so the route doubles back as little as
@@ -698,8 +718,9 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
             <h2 className="text-2xl font-bold leading-tight mb-2" style={{ fontFamily: DL }}>{localPlan.title}</h2>
             <p className="text-blue-100 text-sm leading-relaxed" style={{ fontFamily: BL }}>{localPlan.summary}</p>
           </div>
+          {/* Edit sits in the corner itself, not under the icon — it is the
+              control people look for and it was the lower of the two. */}
           <div className="flex flex-col items-end gap-2 shrink-0">
-            <Sparkles className="w-8 h-8" style={{ color: '#F5C518' }} />
             <motion.button
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               onClick={() => setIsEditing(v => !v)}
@@ -710,6 +731,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
               {isEditing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
               {isEditing ? 'Done' : 'Edit'}
             </motion.button>
+            <Sparkles className="w-8 h-8" style={{ color: '#F5C518' }} />
           </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -770,7 +792,11 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
             </div>
           </div>
           <div className="divide-y divide-gray-50">
-            {day.stops?.map((stop, stopIdx) => (
+            {day.stops?.map((stop, stopIdx) => {
+              // Distance to the next stop, shown on the connector between them.
+              const next = day.stops[stopIdx + 1];
+              const km = next ? legKm(stop.place, next.place) : null;
+              return (
               <div key={stopIdx}
                 draggable={dragRow === `${dayIdx}-${stopIdx}`}
                 onDragStart={() => setDragFrom({ dayIdx, stopIdx })}
@@ -820,6 +846,13 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
                     style={{ backgroundColor: dayColor(day.day) }}>{stopGlobalIndex(dayIdx, stopIdx) + 1}</div>
                   {stopIdx < (day.stops.length - 1) && (
                     <div className="w-px flex-1 min-h-6" style={{ backgroundColor: 'rgba(11,61,145,0.12)' }} />
+                  )}
+                  {km !== null && (
+                    <span className="text-[9px] font-bold leading-none whitespace-nowrap px-1 py-0.5 rounded"
+                      title={`Straight-line distance to ${next?.place ?? 'the next stop'}`}
+                      style={{ color: '#64748B', backgroundColor: 'rgba(11,61,145,0.06)', fontFamily: BL }}>
+                      {km < 1 ? `${Math.round(km * 100) * 10} m` : `${km.toFixed(1)} km`}
+                    </span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0 pb-2">
@@ -910,7 +943,8 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
                   </button>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
           {isEditing && (
             <div className="px-5 py-3 border-t border-dashed border-gray-200 flex items-center justify-between gap-3 flex-wrap">
