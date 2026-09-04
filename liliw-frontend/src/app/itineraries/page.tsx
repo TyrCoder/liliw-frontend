@@ -1683,9 +1683,12 @@ function toLines(value: unknown): string[] {
 const FILTER_TABS = [
   { key: 'all', label: 'All' }, { key: 'half-day', label: 'Half-Day' },
   { key: 'one-day', label: 'Full Day' }, { key: 'two-day', label: '2 Days' },
-  { key: 'heritage', label: 'Heritage' }, { key: 'foodie', label: 'Foodie' },
-  { key: 'family', label: 'Family' },
+  { key: 'heritage', label: 'Heritage' }, { key: 'nature', label: 'Nature' },
+  { key: 'foodie', label: 'Foodie' }, { key: 'family', label: 'Family' },
 ];
+
+/** Which tabs are a theme rather than a length, so the filter knows what to compare. */
+const THEME_KEYS = new Set(['heritage', 'nature', 'foodie', 'family']);
 const DIFF: Record<string, { label: string; badge: string }> = {
   easy:      { label: 'Easy',      badge: 'bg-green-100 text-green-700' },
   moderate:  { label: 'Moderate',  badge: 'bg-yellow-100 text-yellow-700' },
@@ -1710,7 +1713,7 @@ function parseStopLines(highlights: string[]): { time: string; place: string; no
 
 interface Itinerary {
   id: string; title: string; duration: string; difficulty: string;
-  description: string; stopsBlocks: any; highlights: string[];
+  description: string; category: string; stopsBlocks: any; highlights: string[];
   included: string[]; not_included: string[]; meeting_point?: string;
   price?: number; max_participants?: number;
   cover_photo?: string | null; photos: string[];
@@ -2023,6 +2026,9 @@ function DatabaseItineraries() {
           // 'half-day' and the filter tabs sorted them all into one pile.
           duration:         a.duration || durationBand(a.duration_days),
           difficulty:       a.difficulty  || 'easy',
+          // Without this the theme tabs had nothing to match on, so Heritage,
+          // Foodie and Family were tabs that always came back empty.
+          category:         String(a.category ?? '').toLowerCase(),
           description:      blocksToText(a.description),
           stopsBlocks:      Array.isArray(a.stops) ? a.stops : [],
           // The CMS writes highlights as rich text, one per line, while this
@@ -2042,7 +2048,12 @@ function DatabaseItineraries() {
   }, []);
 
   const onClose = useCallback(() => setDetail(null), []);
-  const filtered = filter === 'all' ? itineraries : itineraries.filter(i => i.duration === filter);
+  // Length tabs compare the duration band; theme tabs compare the category.
+  // One list compared against `duration` for both, which is why every theme tab
+  // showed nothing however many tours matched it.
+  const filtered = filter === 'all'
+    ? itineraries
+    : itineraries.filter(i => THEME_KEYS.has(filter) ? i.category === filter : i.duration === filter);
 
   return (
     <div>
