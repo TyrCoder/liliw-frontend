@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Building2, ChevronLeft, Loader2, CheckCircle, AlertCircle,
   Clock, FileText, ArrowRight, RefreshCw, Users, Plus, X,
-  Edit, TrendingUp, MapPin, Star, Send, Layers, QrCode, LayoutDashboard,
+  Edit, TrendingUp, MapPin, Star, Send, Layers, QrCode, LayoutDashboard, Pencil,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import AuthModal from '@/components/AuthModal';
@@ -186,6 +186,22 @@ function LboDashboard() {
   const [loadingReqs,   setLoadingReqs] = useState(true);
   const [showCrForm,    setShowCrForm]  = useState(false);
   const [crForm,        setCrForm]      = useState({ field_to_change: '', current_value: '', requested_value: '', reason: '' });
+
+  /**
+   * Ask for one field to be changed, from the field itself.
+   *
+   * Editing a listing goes through review — the adviser's decision — so this
+   * is not an inline edit. It is the same change request, opened with the
+   * field and its current value already filled in, because choosing "Location
+   * / Address" from a dropdown and retyping what it already says is the part
+   * owners were skipping.
+   */
+  const requestEdit = (field: string, currentValue: string) => {
+    setCrForm({ field_to_change: field, current_value: currentValue, requested_value: '', reason: '' });
+    setCrMsg(null);
+    setActiveTab('requests');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const [submittingCr,  setSubmittingCr]= useState(false);
   const [crMsg,         setCrMsg]       = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -698,7 +714,14 @@ function LboDashboard() {
                       <Layers className="w-5 h-5" style={{ color: TYPE_COLORS[attrData.type!] || '#64748b' }} />
                     </div>
                     <div>
-                      <h2 className="font-bold text-gray-900">{attrData.attraction.name}</h2>
+                      <div className="flex items-center gap-2">
+                        <h2 className="font-bold text-gray-900">{attrData.attraction.name}</h2>
+                        <button onClick={() => requestEdit('Name / Listing Title', attrData.attraction!.name ?? '')}
+                          title="Request a change to the name"
+                          className="p-1 rounded-lg text-gray-300 hover:text-blue-600 hover:bg-blue-50 transition">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white"
                           style={{ backgroundColor: TYPE_COLORS[attrData.type!] || '#64748b' }}>
@@ -738,7 +761,14 @@ function LboDashboard() {
                 <div className="px-6 py-5 space-y-4">
                   {attrData.attraction.description && (
                     <div>
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Description</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Description</p>
+                        <button onClick={() => requestEdit('Description', stripHtml(attrData.attraction!.description ?? ''))}
+                          title="Request a change to the description"
+                          className="p-0.5 rounded text-gray-300 hover:text-blue-600 transition">
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                      </div>
                       <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
                         {stripHtml(attrData.attraction.description)}
                       </p>
