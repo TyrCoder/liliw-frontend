@@ -153,6 +153,8 @@ function LboDashboard() {
   const [checking, setChecking] = useState(true);
   const [appInfo,  setAppInfo]  = useState<AppInfo | null>(null);
   const [notLbo,     setNotLbo]     = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [loadError,      setLoadError]      = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -215,14 +217,41 @@ function LboDashboard() {
   useEffect(() => {
     if (authLoading) return;
     if (!user || !token) { setChecking(false); return; }
-    fetch('/api/lbo/me', { headers: { Authorization: `Bearer ${token}` } })
-      .then(readList)
-      .then(d => {
-        if (d.isLbo) setAppInfo(d.application);
-        else setNotLbo(true);
-      })
-      .catch(() => setNotLbo(true))
-      .finally(() => setChecking(false));
+
+    /**
+     * 401 and 403 mean different things here and used to be treated alike.
+     *
+     * /api/lbo/me answers 403 for "no approved application" and 401 for a
+     * token the server would not accept — and every failure landed in the same
+     * catch. So an approved owner whose token had expired was told their
+     * account has no approved application and invited to apply again, which is
+     * what "the business dashboard is malfunctioning" looks like from the
+     * owner's side.
+     *
+     * A 401 is retried once through /api/auth/me, which reissues the signed
+     * session cookie the API also accepts.
+     */
+    const check = async (): Promise<void> => {
+      const h = { Authorization: `Bearer ${token}` };
+
+      let res = await fetch('/api/lbo/me', { headers: h }).catch(() => null);
+
+      if (res?.status === 401) {
+        await fetch('/api/auth/me', { headers: h }).catch(() => {});
+        res = await fetch('/api/lbo/me', { headers: h }).catch(() => null);
+      }
+
+      if (!res) { setLoadError('Could not reach the server. Check your connection and try again.'); return; }
+      if (res.status === 401) { setSessionExpired(true); return; }
+
+      const d = await res.json().catch(() => ({} as { isLbo?: boolean; application?: unknown }));
+
+      if (res.ok && d.isLbo) setAppInfo(d.application as typeof appInfo);
+      else if (res.status === 403) setNotLbo(true);
+      else setLoadError('Could not load your business dashboard. Please try again.');
+    };
+
+    check().finally(() => setChecking(false));
   }, [authLoading, user, token]);
 
   useEffect(() => {
@@ -497,6 +526,32 @@ function LboDashboard() {
         </div>
         {showAuthModal && <AuthModal defaultTab="login" onClose={() => setShowAuthModal(false)} />}
       </>
+    );
+  }
+
+  if (sessionExpired || loadError) {
+    const expired = sessionExpired;
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--warm-white)' }}>
+        <div className="text-center max-w-sm">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 bg-blue-50">
+            <AlertCircle className="w-8 h-8" style={{ color: '#1565C0' }} />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            {expired ? 'Your session has expired' : 'Something went wrong'}
+          </h1>
+          <p className="text-gray-500 mb-6">
+            {expired
+              ? 'Sign in again to get back to your business dashboard. Nothing has changed on your account.'
+              : loadError}
+          </p>
+          <button onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90"
+            style={{ backgroundColor: '#1565C0' }}>
+            Reload <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     );
   }
 
