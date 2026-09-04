@@ -7,7 +7,7 @@ import type { MapRef } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { MapPin, Navigation, X, Layers, ChevronLeft, Eye, Star, ChevronDown, Plus, Search } from 'lucide-react';
+import { MapPin, Navigation, X, Layers, ChevronLeft, Eye, Star, ChevronDown, Plus, Search, Check } from 'lucide-react';
 import { stripHtml } from '@/lib/text';
 
 const LILIW_CENTER = { longitude: 121.43605859033404, latitude: 14.130301377593792 };
@@ -739,6 +739,29 @@ export default function MapPage() {
                           : <><Navigation className="w-3.5 h-3.5" /> Directions</>}
                       </button>
                     </div>
+                    {/* Adding a place from the marker itself. A route could
+                        only gain stops through the search picker in the
+                        directions panel, so the obvious gesture — tap the pin
+                        you want, add it — did nothing, and building a route of
+                        three places meant typing all three names. */}
+                    {(() => {
+                      const alreadyAdded = stops.some(st => st.id === selected.id);
+                      const isDestination = routeDestination?.id === selected.id;
+                      if (isDestination) return null;
+                      return (
+                        <button
+                          onClick={() => { if (!alreadyAdded) handleAddStop(selected); }}
+                          disabled={alreadyAdded}
+                          className="w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-60"
+                          style={alreadyAdded
+                            ? { backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)' }
+                            : { backgroundColor: 'rgba(245,197,24,0.15)', color: '#F5C518', border: '1px solid rgba(245,197,24,0.35)' }}>
+                          {alreadyAdded
+                            ? <><Check className="w-3.5 h-3.5" /> In your route</>
+                            : <><Plus className="w-3.5 h-3.5" /> Add to my route</>}
+                        </button>
+                      );
+                    })()}
                     {selected.has_virtual_tour && (
                       <Link href="/immersive"
                         className="w-full py-2 rounded-xl text-xs font-bold text-center transition hover:opacity-90 flex items-center justify-center gap-1"
