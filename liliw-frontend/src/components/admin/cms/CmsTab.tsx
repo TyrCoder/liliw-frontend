@@ -295,7 +295,13 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
         return <textarea rows={f.rows ?? 3} value={(val(f.name) as string) || ''} placeholder={f.placeholder}
           onChange={e => setField(f.name, e.target.value)} className={`${inputCls} resize-none`} />;
       case 'number':
-        return <input type="number" value={(val(f.name) as number) ?? ''} placeholder={f.placeholder}
+        // type="number" still admits 'e', '+' and a second '.', and hands back
+        // an empty string for them — so a latitude typed with a stray letter
+        // silently became null rather than being refused. Blocked at the key,
+        // and the server checks the range as well.
+        return <input type="number" inputMode="decimal" step="any"
+          value={(val(f.name) as number) ?? ''} placeholder={f.placeholder}
+          onKeyDown={e => { if (['e', 'E', '+'].includes(e.key)) e.preventDefault(); }}
           onChange={e => setField(f.name, e.target.value === '' ? null : Number(e.target.value))} className={inputCls} />;
       case 'select':
         // Fall back to the first option so a record with an empty value still

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { sendAttractionRequestNotification } from '@/lib/email';
 import { lboEmail } from '@/lib/lbo-auth';
+import { contentProblem } from '@/lib/cms-validate';
 
 
 async function getVerifiedLbo(req: NextRequest) {
@@ -43,6 +44,11 @@ export async function POST(request: NextRequest) {
   if (!attraction_name?.trim()) {
     return NextResponse.json({ error: 'attraction_name is required' }, { status: 400 });
   }
+
+  // Same rules the CMS applies, so a request arriving this way cannot carry a
+  // name or a coordinate the CMS would have refused.
+  const problem = contentProblem(attraction_name, body);
+  if (problem) return NextResponse.json({ error: problem }, { status: 400 });
 
   const { error } = await supabaseServer
     .from('lbo_attraction_requests')

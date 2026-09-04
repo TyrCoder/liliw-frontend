@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer, explainDbError } from '@/lib/supabase-server';
-import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES, slugify } from '@/lib/cms-auth';
+import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES, slugify, labelFieldFor } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
+import { contentProblem } from '@/lib/cms-validate';
 import { invalidateContentCache } from '@/lib/content';
 
 type Params = { params: Promise<{ type: string; id: string }> };
@@ -43,6 +44,16 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
 
   const body = await req.json();
+
+  // The same rules the create route applies. Without them an entry could be
+  // created with a real name and then renamed to anything on the next save,
+  // which is the same defect one step later.
+  const label = body[labelFieldFor(type)] || body.name || body.title || body.question;
+  if (label !== undefined) {
+    const problem = contentProblem(label, body);
+    if (problem) return NextResponse.json({ error: problem }, { status: 400 });
+  }
+
   const { media, created_by, status, published_at, reviewed_by, reject_remarks, ...fields } = body;
 
   // Entries created before slugs were generated still carry '', and slug is
