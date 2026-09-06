@@ -17,18 +17,37 @@ export async function GET(req: NextRequest) {
   const auth = await verifyToken(req);
   if (!auth) return NextResponse.json({ visited: false }, { status: 401 });
 
-  const attractionId = new URL(req.url).searchParams.get('attractionId');
-  if (!attractionId) {
-    return NextResponse.json({ error: 'attractionId is required' }, { status: 400 });
+  const url = new URL(req.url);
+  const one = url.searchParams.get('attractionId');
+  // A checklist asks about a whole itinerary at once; asking per stop would be
+  // six requests for a six-stop day, each re-reading the same table.
+  const many = (url.searchParams.get('attractionIds') ?? '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+
+  const ids = many.length ? many : one ? [one] : [];
+  if (!ids.length) {
+    return NextResponse.json({ error: 'attractionId or attractionIds is required' }, { status: 400 });
   }
 
   const { data } = await supabaseServer
     .from('user_points')
-    .select('created_at')
+    .select('reference_id, created_at')
     .eq('user_id', auth.userId)
     .eq('action', 'attraction_visit')
-    .eq('reference_id', attractionId)
-    .maybeSingle();
+    .in('reference_id', ids);
 
-  return NextResponse.json({ visited: !!data, visitedAt: data?.created_at ?? null });
+  const visited: Record<string, string> = {};
+  for (const row of data ?? []) visited[String(row.reference_id)] = row.created_at;
+
+  // The single-id form keeps its original shape, so the review form is
+  // unaffected by the checklist being added.
+  if (!many.length) {
+    const at = visited[ids[0]] ?? null;
+    return NextResponse.json({ visited: !!at, visitedAt: at });
+  }
+
+  return NextResponse.json({
+    visited: Object.fromEntries(ids.map(id => [id, !!visited[id]])),
+    visitedAt: visited,
+  });
 }

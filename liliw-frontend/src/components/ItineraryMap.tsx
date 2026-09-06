@@ -7,6 +7,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 export interface MappedStop {
+  /** The public attraction id, so a stop can be tied to a visit record. */
+  id?: string;
   time?: string;
   place: string;
   note?: string;
@@ -150,7 +152,7 @@ export function useMappedStops(stops: { place: string; time?: string; note?: str
       .then(d => {
         if (cancelled) return;
 
-        const places: { name: string; lat: number; lng: number }[] = [];
+        const places: { id: string; name: string; lat: number; lng: number }[] = [];
         for (const a of d.data ?? []) {
           const at = a.attributes ?? {};
           // The public API nests these under `coordinates`; map_lat and map_lng
@@ -161,7 +163,7 @@ export function useMappedStops(stops: { place: string; time?: string; note?: str
           const lat = Number(at.coordinates?.latitude  ?? at.map_lat ?? at.latitude);
           const lng = Number(at.coordinates?.longitude ?? at.map_lng ?? at.longitude);
           if (at.name && Number.isFinite(lat) && Number.isFinite(lng)) {
-            places.push({ name: String(at.name).trim().toLowerCase(), lat, lng });
+            places.push({ id: a.id, name: String(at.name).trim().toLowerCase(), lat, lng });
           }
         }
 
@@ -173,7 +175,7 @@ export function useMappedStops(stops: { place: string; time?: string; note?: str
 
         setMapped(stops.flatMap(st => {
           const hit = find(st.place);
-          return hit ? [{ ...st, lat: hit.lat, lng: hit.lng }] : [];
+          return hit ? [{ ...st, id: hit.id, lat: hit.lat, lng: hit.lng }] : [];
         }));
       })
       .catch(() => { if (!cancelled) setMapped([]); });

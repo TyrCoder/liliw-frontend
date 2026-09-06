@@ -18,6 +18,7 @@ import SafeHtml from '@/components/SafeHtml';
 import PageBanner from '@/components/liliw/PageBanner';
 import { distanceMeters } from '@/lib/geo';
 import ItineraryMap, { useMappedStops } from '@/components/ItineraryMap';
+import ItineraryChecklist from '@/components/ItineraryChecklist';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -1925,6 +1926,16 @@ function DetailModal({ itin, onClose }: { itin: Itinerary; onClose: () => void }
                   </div>
                 )}
 
+                {/* The same stops as a checklist, ticked by the visit record
+                    rather than by hand. Above the read-only schedule, so
+                    someone partway through a tour sees where they are before
+                    they see the times. */}
+                {mapped.length > 0 && (
+                  <div className="mb-4">
+                    <ItineraryChecklist stops={mapped} />
+                  </div>
+                )}
+
                 <ol className="space-y-3">
                   {parsedStops.map((st, i) => (
                     <li key={i} className="flex gap-3">
@@ -2213,6 +2224,8 @@ function SavedTripModal({ trip, onClose }: { trip: SavedTrip; onClose: () => voi
 
         <div className="p-6 space-y-5">
           {mapped.length > 0 && <ItineraryMap stops={mapped} height={280} />}
+          {mapped.length > 0 && <ItineraryChecklist stops={mapped} />}
+          {mapped.length > 0 && <ItineraryChecklist stops={mapped} />}
 
           {(trip.plan.days ?? []).map((day, di) => (
             <div key={di}>
