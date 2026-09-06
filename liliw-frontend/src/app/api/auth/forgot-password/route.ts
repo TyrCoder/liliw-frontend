@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { siteUrl } from '@/lib/siteUrl';
 import nodemailer from 'nodemailer';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { logger } from '@/lib/logger';
@@ -11,7 +12,7 @@ const transporter = nodemailer.createTransport({
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
 });
 
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
+const SITE = siteUrl();
 const LOGO = `${SITE}/icon-192x192.png`;
 
 export async function POST(req: NextRequest) {

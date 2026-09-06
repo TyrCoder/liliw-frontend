@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { siteUrl } from '@/lib/siteUrl';
 import nodemailer from 'nodemailer';
 import { storeOtp } from '@/lib/otpDb';
 import { generateOtp } from '@/lib/otp';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { supabaseServer } from '@/lib/supabase-server';
 
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
+const SITE = siteUrl();
 const LOGO = `${SITE}/icon-192x192.png`;
 
 const transporter = nodemailer.createTransport({

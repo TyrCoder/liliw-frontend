@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { siteUrl } from '@/lib/siteUrl';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -10,7 +11,7 @@ const transporter = nodemailer.createTransport({
 
 const FROM   = `"Liliw Tourism" <${process.env.EMAIL_USER}>`;
 const ADMIN  = process.env.ADMIN_EMAIL || process.env.BOOKING_NOTIFY_EMAIL || process.env.EMAIL_USER || '';
-const SITE   = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
+const SITE   = siteUrl();
 const LOGO   = `${SITE}/icon-192x192.png`;
 
 // ── helpers ────────────────────────────────────────────────────────────────

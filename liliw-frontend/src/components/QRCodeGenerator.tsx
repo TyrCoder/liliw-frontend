@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { browserSiteUrl } from '@/lib/siteUrl';
 import { Download, Copy, QrCode } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -21,7 +22,7 @@ export default function QRCodeGenerator({
   // Build the URL to encode. ?src=qr marks the visit as coming from a physical
   // QR scan so the check-in route can tell it apart from ordinary browsing —
   // see /api/attractions/visit/checkin.
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
+  const baseUrl = browserSiteUrl();
   const itemUrl = `${baseUrl}/attractions/${itemId}?src=qr`;
 
   // QR Code API endpoint (using qr-server.com free service)

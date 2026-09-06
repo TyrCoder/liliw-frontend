@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { browserSiteUrl } from '@/lib/siteUrl';
 import { Download, FileDown, Loader2, QrCode, RefreshCw } from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -138,7 +139,7 @@ export default function QRPoster({ attractionId, attractionName }: Props) {
   const [regen, setRegen] = useState(0);
   const regenerated = regen > 0;
 
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://liliw-frontend-prod.vercel.app').replace(/\/$/, '');
+  const baseUrl = browserSiteUrl();
   // Same ?src=qr contract the check-in route reads — a scan of this poster is
   // what gets distance-verified against the attraction's coordinates.
   const scanUrl = `${baseUrl}/attractions/${attractionId}?src=qr`;
