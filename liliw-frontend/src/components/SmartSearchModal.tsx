@@ -30,6 +30,24 @@ const TYPE_META: Record<string, { label: string; bg: string; text: string }> = {
   itinerary:{ label: 'Itinerary',  bg: '#DCFCE7', text: '#15803D' },
 };
 
+/**
+ * The three kinds of place, and everything else.
+ *
+ * The split was written as spot-or-heritage, which quietly made dining
+ * something else — and dining is 27 of the 37 listings, so searching for a
+ * restaurant put it under "Other Results" in the cramped style while a farm
+ * got the full card. Naming the set means a fourth kind of place cannot fall
+ * through the same gap.
+ */
+const PLACE_TYPES = new Set(['spot', 'heritage', 'dining']);
+
+/** The icon and tile each kind of place gets on its card. */
+const PLACE_LOOK: Record<string, { icon: typeof MapPin; gradient: string }> = {
+  spot:     { icon: MapPin,   gradient: 'linear-gradient(135deg,#0B3D91,#1565C0)' },
+  heritage: { icon: Landmark, gradient: 'linear-gradient(135deg,#6D28D9,#8B5CF6)' },
+  dining:   { icon: Utensils, gradient: 'linear-gradient(135deg,#C2410C,#F97316)' },
+};
+
 function StarRow({ rating }: { rating: number }) {
   return (
     <div className="flex gap-0.5 items-center">
@@ -91,8 +109,8 @@ export default function SmartSearchModal({ onClose }: Props) {
 
   const handleClose = () => { setIsOpen(false); onClose?.(); };
 
-  const attractions = results.filter(r => r.type === 'spot' || r.type === 'heritage');
-  const others      = results.filter(r => r.type !== 'spot' && r.type !== 'heritage');
+  const attractions = results.filter(r => PLACE_TYPES.has(r.type));
+  const others      = results.filter(r => !PLACE_TYPES.has(r.type));
   const hasResults  = results.length > 0;
   const searched    = query.trim().length >= MIN_QUERY;
 
@@ -163,13 +181,16 @@ export default function SmartSearchModal({ onClose }: Props) {
                         </span>
                       </div>
                       <div className="px-3 space-y-1.5">
-                        {attractions.map((r, idx) => (
+                        {attractions.map((r, idx) => {
+                          const look = PLACE_LOOK[r.type] ?? PLACE_LOOK.spot;
+                          const PlaceIcon = look.icon;
+                          return (
                           <motion.div key={r.objectID} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.04 }}>
                             <Link href={r.url || '/attractions'} onClick={handleClose}>
                               <div className="flex items-center gap-3 px-3 py-3 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all duration-200 group">
                                 <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                                  style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }}>
-                                  <MapPin className="w-4 h-4 text-white" />
+                                  style={{ background: look.gradient }}>
+                                  <PlaceIcon className="w-4 h-4 text-white" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="font-bold text-gray-900 truncate" style={{ fontFamily: HL }}>{r.name}</p>
@@ -187,7 +208,8 @@ export default function SmartSearchModal({ onClose }: Props) {
                               </div>
                             </Link>
                           </motion.div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -198,7 +220,7 @@ export default function SmartSearchModal({ onClose }: Props) {
                       <div className="flex items-center gap-2 px-4 pt-2 pb-2">
                         <Search className="w-3.5 h-3.5" style={{ color: '#6B7280' }} />
                         <span className="text-xs font-bold uppercase tracking-widest text-gray-400" style={{ fontFamily: HL }}>
-                          Other Results
+                          Guides &amp; Answers
                         </span>
                         <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500" style={{ fontFamily: HL }}>
                           {others.length}
