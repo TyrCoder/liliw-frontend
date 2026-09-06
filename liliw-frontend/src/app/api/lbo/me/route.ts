@@ -59,6 +59,9 @@ export async function GET(request: NextRequest) {
       address:                data.address,
       attraction_name:        data.attraction_name,
       business_type:          data.business_type,
+      // Never returned before, so the "Permit / DTI no." row on the profile
+      // page was filtered out as empty on every account that has one.
+      permit_number:          data.permit_number ?? null,
       category:               data.category ?? null,
       latitude:               data.latitude ?? null,
       longitude:              data.longitude ?? null,

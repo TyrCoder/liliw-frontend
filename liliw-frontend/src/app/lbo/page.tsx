@@ -80,6 +80,7 @@ type AppInfo = {
   address: string;
   attraction_name: string;
   business_type: string;
+  permit_number?: string | null;
   category?: string | null;
   strapi_attraction_id?: string | null;
   strapi_attraction_type?: string | null;
@@ -699,6 +700,74 @@ function LboDashboard() {
 
         {activeTab === 'overview' && (
           <>
+            {/* ── The business itself, above the listing it owns ──
+                An owner lives on this page, but the record CHATO holds for
+                their business — owner, contact, address, permit — was only
+                readable from /profile/edit, a page they have no reason to
+                open. The listing below is what the public sees; this is who
+                the office thinks they are, which is the half that matters
+                when a phone number or an address is wrong. Read-only for the
+                same reason the listing is: corrections go through review. */}
+            {appInfo && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+                <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: '#EFF6FF' }}>
+                      <Building2 className="w-5 h-5" style={{ color: '#1565C0' }} />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-gray-900">Business Details</h2>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        What CHATO holds on file for {appInfo.business_name}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-xs font-bold"
+                    style={{ backgroundColor: '#DCFCE7', color: '#16A34A' }}>
+                    Approved
+                  </span>
+                </div>
+
+                <dl className="px-6 py-2 divide-y divide-gray-100">
+                  {([
+                    { label: 'Business name',    value: appInfo.business_name,   requestAs: 'Name / Listing Title' },
+                    { label: 'Listing name',     value: appInfo.attraction_name, requestAs: 'Name / Listing Title' },
+                    { label: 'Owner',            value: appInfo.owner_name },
+                    { label: 'Email',            value: appInfo.email },
+                    { label: 'Contact number',   value: appInfo.phone,           requestAs: 'Contact Number' },
+                    { label: 'Address',          value: appInfo.address,         requestAs: 'Location / Address' },
+                    { label: 'Business type',    value: appInfo.business_type },
+                    { label: 'Permit / DTI no.', value: appInfo.permit_number },
+                  ] as { label: string; value?: string | null; requestAs?: string }[])
+                    .filter(f => f.value)
+                    .map(f => (
+                      <div key={f.label} className="py-3 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <dt className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{f.label}</dt>
+                          <dd className="text-sm text-gray-800 mt-0.5 break-words">{f.value}</dd>
+                        </div>
+                        {f.requestAs && (
+                          <button onClick={() => requestEdit(f.requestAs!, f.value ?? '')}
+                            title={`Request a change to ${f.label.toLowerCase()}`}
+                            className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition hover:bg-blue-50"
+                            style={{ borderColor: 'rgba(11,61,145,0.2)', color: '#1565C0' }}>
+                            <Pencil className="w-3 h-3" /> Request change
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                </dl>
+
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                  <p className="text-xs text-gray-400">
+                    These details came from your business application. Corrections are reviewed by the
+                    tourism office before they reach your public listing.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {loadingAttr ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1565C0' }} />
