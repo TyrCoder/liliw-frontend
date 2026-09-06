@@ -23,6 +23,13 @@ export interface SearchResult {
 const ALGOLIA_CONFIGURED = !!process.env.NEXT_PUBLIC_ALGOLIA_APP_ID
   && !!process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY;
 
+/**
+ * Whether Algolia gets asked first. Off unless someone deliberately turns it
+ * on, because being configured is not the same as being correct — see
+ * searchAlgolia below.
+ */
+const ALGOLIA_PRIMARY = process.env.NEXT_PUBLIC_ALGOLIA_PRIMARY === 'true';
+
 /** The database search, which needs no keys and no index to rebuild. */
 async function searchDatabase(query: string): Promise<SearchResult[]> {
   try {
@@ -37,18 +44,33 @@ async function searchDatabase(query: string): Promise<SearchResult[]> {
 }
 
 /**
- * Search, from Algolia where it is set up and from the database otherwise.
+ * Search. The database answers it.
  *
- * Algolia was never configured in production, so every query went to a client
- * built with an empty app id, threw, and came back as an empty result — a
- * search box that answered "nothing found" for everything, indistinguishable
- * from a genuine miss. The fallback is not a degraded mode; it reads the same
- * content and needs nothing kept in step.
+ * Algolia is configured in production and was being asked every query, which
+ * is why searching for a specific attraction returned nothing: the index is a
+ * stale snapshot. It holds 36 records of heritage and FAQ content and none of
+ * the attractions people actually search for — "Kilangin" and "Bubble Chix"
+ * both return zero, and "Casita" returns "The Slipper Capital of the
+ * Philippines", which is not what was asked for.
+ *
+ * It is stale because it is filled by hand: /api/algolia/index rebuilds it,
+ * an admin has to press the button, and nothing re-runs it when content
+ * changes. A search box that is only correct until the next CMS edit is not a
+ * search box, so it is no longer what answers.
+ *
+ * The database search reads the approved content directly — no keys, no index,
+ * nothing to keep in step, and correct the moment something is published. It
+ * finds every one of the names above.
+ *
+ * Algolia is not deleted, and the sync route still works. Setting
+ * NEXT_PUBLIC_ALGOLIA_PRIMARY=true puts it back in front, and even then a
+ * query it cannot answer falls through to the database rather than reporting
+ * an empty site.
  */
 export async function searchAlgolia(query: string): Promise<SearchResult[]> {
   if (!query.trim()) return [];
 
-  if (!ALGOLIA_CONFIGURED) return searchDatabase(query);
+  if (!ALGOLIA_PRIMARY || !ALGOLIA_CONFIGURED) return searchDatabase(query);
 
   try {
     const { hits } = await index.search<SearchResult>(query, {
@@ -61,7 +83,10 @@ export async function searchAlgolia(query: string): Promise<SearchResult[]> {
       ignorePlurals: true,
       removeStopWords: true,
     });
-    
+
+    // An empty answer from a stale index is indistinguishable from a genuine
+    // miss, and the database can tell the difference.
+    if (!hits.length) return searchDatabase(query);
     return hits;
   } catch (error) {
     // A configured Algolia that fails is still a search box someone is using.

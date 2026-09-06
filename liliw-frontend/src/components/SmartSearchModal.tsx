@@ -62,9 +62,13 @@ export default function SmartSearchModal({ onClose }: Props) {
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
+  // Two characters, matching what /api/search accepts. Three meant a short
+  // name typed in full still sat there doing nothing.
+  const MIN_QUERY = 2;
+
   useEffect(() => {
     const t = setTimeout(async () => {
-      if (query.trim().length > 2) {
+      if (query.trim().length >= MIN_QUERY) {
         const requestId = ++requestIdRef.current;
         setLoading(true);
         const hits = await searchAlgolia(query);
@@ -90,7 +94,7 @@ export default function SmartSearchModal({ onClose }: Props) {
   const attractions = results.filter(r => r.type === 'spot' || r.type === 'heritage');
   const others      = results.filter(r => r.type !== 'spot' && r.type !== 'heritage');
   const hasResults  = results.length > 0;
-  const searched    = query.trim().length > 2;
+  const searched    = query.trim().length >= MIN_QUERY;
 
   return (
     <AnimatePresence>
