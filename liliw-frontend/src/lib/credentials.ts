@@ -41,25 +41,31 @@ export function passwordProblem(password: string): string | null {
 }
 
 /**
- * Usernames: letters, numbers and hyphens, 3–20 characters.
+ * Usernames: letters and numbers, 5–12 characters.
  *
- * Hyphen rather than underscore, and not at either end — a name like '-liliw-'
- * reads as a typo and looks wrong everywhere it is printed.
+ * Letters and numbers only. Separators were allowed before — hyphens in, and
+ * underscores rejected with a message about it — which made two names that
+ * read identically aloud into two different accounts, and gave the sign-up
+ * form a rule it had to explain before anyone could get past it. There is
+ * nothing to explain now.
+ *
+ * Only registration checks this. Sign-in matches on the stored name, so
+ * accounts created under the older rule keep working.
  */
-export const USERNAME_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{1,18}[A-Za-z0-9])?$/;
+export const USERNAME_MIN = 5;
+export const USERNAME_MAX = 12;
+
+export const USERNAME_PATTERN = /^[A-Za-z0-9]{5,12}$/;
 
 export function usernameProblem(username: string): string | null {
-  if (!username || username.length < 3 || username.length > 20) {
-    return 'Username must be 3–20 characters.';
-  }
-  if (/_/.test(username)) {
-    return 'Usernames use hyphens rather than underscores.';
+  if (!username || username.length < USERNAME_MIN || username.length > USERNAME_MAX) {
+    return `Username must be ${USERNAME_MIN}–${USERNAME_MAX} characters.`;
   }
   if (!USERNAME_PATTERN.test(username)) {
-    return 'Username can use letters, numbers and hyphens, starting and ending with a letter or number.';
+    return 'Username can use letters and numbers only.';
   }
   return null;
 }
 
 /** What the form strips as the visitor types, so the field cannot hold anything invalid. */
-export const USERNAME_ALLOWED = /[^A-Za-z0-9-]/g;
+export const USERNAME_ALLOWED = /[^A-Za-z0-9]/g;

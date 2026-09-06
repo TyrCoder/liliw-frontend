@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import MarqueeHeader from '@/components/auth/MarqueeHeader';
-import { passwordProblem, usernameProblem, USERNAME_ALLOWED, PASSWORD_MIN } from '@/lib/credentials';
+import { passwordProblem, usernameProblem, USERNAME_ALLOWED, USERNAME_MIN, USERNAME_MAX, PASSWORD_MIN } from '@/lib/credentials';
 
 interface Props {
   defaultTab?: 'login' | 'register';
@@ -448,17 +448,17 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                     <input required value={username}
                       onChange={e => {
                         const raw = e.target.value;
-                        const clean = raw.replace(USERNAME_ALLOWED, '').slice(0, 20);
-                        setUnameStripped(clean !== raw.slice(0, 20));
+                        const clean = raw.replace(USERNAME_ALLOWED, '').slice(0, USERNAME_MAX);
+                        setUnameStripped(clean !== raw.slice(0, USERNAME_MAX));
                         setUsername(clean);
                       }}
-                      className={INPUT_CLS} placeholder="juan-delacruz" autoComplete="username"
-                      minLength={3} maxLength={20} />
+                      className={INPUT_CLS} placeholder="juandelacruz" autoComplete="username"
+                      minLength={USERNAME_MIN} maxLength={USERNAME_MAX} />
                   </div>
                   <p className={`text-[11px] mt-1 ${unameStripped ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
                     {unameStripped
-                      ? 'Only letters, numbers and hyphens — use “-” instead of “_”.'
-                      : '3–20 characters · letters, numbers and hyphens'}
+                      ? 'Letters and numbers only.'
+                      : `${USERNAME_MIN}–${USERNAME_MAX} characters · letters and numbers`}
                   </p>
                 </div>
                 <div>
