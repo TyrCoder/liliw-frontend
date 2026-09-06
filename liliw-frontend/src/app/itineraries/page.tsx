@@ -368,7 +368,11 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
     const a = findCoord(from);
     const b = findCoord(to);
     if (!a || !b) return null;
-    return distanceMeters(a[0], a[1], b[0], b[1]) / 1000;
+    // findCoord returns [lng, lat] — the order Mapbox uses and the order the
+    // proximity sort below expects. distanceMeters takes latitude first, so
+    // reading them in array order measured a point 121° north of the equator
+    // against another, which is not anywhere.
+    return distanceMeters(a[1], a[0], b[1], b[0]) / 1000;
   }, [findCoord]);
 
   /**
@@ -401,8 +405,10 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
           const res = await fetch('/api/route-distance', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // findCoord returns [lat, lng]; Mapbox wants [lng, lat].
-            body: JSON.stringify({ coords: coords.map(([lat, lng]) => [lng, lat]), profile: 'driving' }),
+            // findCoord already returns [lng, lat], which is what Directions
+            // takes. Swapping here sent latitude 121, which is not a latitude,
+            // and every leg fell back to the straight-line figure.
+            body: JSON.stringify({ coords, profile: 'driving' }),
           });
           const d = await res.json();
           if (Array.isArray(d?.legs)) next[dayIdx] = { legs: d.legs, source: d.source };

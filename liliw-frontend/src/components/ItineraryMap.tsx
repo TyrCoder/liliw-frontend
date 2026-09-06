@@ -108,8 +108,13 @@ export function useMappedStops(stops: { place: string; time?: string; note?: str
         const places: { name: string; lat: number; lng: number }[] = [];
         for (const a of d.data ?? []) {
           const at = a.attributes ?? {};
-          const lat = Number(at.map_lat ?? at.latitude);
-          const lng = Number(at.map_lng ?? at.longitude);
+          // The public API nests these under `coordinates`; map_lat and map_lng
+          // are the column names, which only the server sees. Reading the
+          // column names here found nothing on every attraction, so no stop
+          // was ever placed and the map never rendered — the schedule appeared
+          // on its own and looked like the map had been left out.
+          const lat = Number(at.coordinates?.latitude  ?? at.map_lat ?? at.latitude);
+          const lng = Number(at.coordinates?.longitude ?? at.map_lng ?? at.longitude);
           if (at.name && Number.isFinite(lat) && Number.isFinite(lng)) {
             places.push({ name: String(at.name).trim().toLowerCase(), lat, lng });
           }
