@@ -426,7 +426,10 @@ export default function CommunityPage() {
                       </div>
                       <h3 className="font-bold text-gray-900 mb-4 leading-snug flex-1" style={{ fontFamily: HL }}>{event.title}</h3>
                       <div className="flex gap-2 mt-auto">
-                        <Link href={`/events/${event.slug}`}
+                        {/* /events/<slug> is not a route — the page lives at
+                            /community/events/<slug>, so every View button on this
+                            page led to a 404. */}
+                        <Link href={`/community/events/${event.slug}`}
                           className="flex-1 py-2.5 rounded-xl text-sm font-bold border transition hover:bg-gray-50 flex items-center justify-center gap-1.5"
                           style={{ borderColor: '#0B3D91', color: '#0B3D91', fontFamily: BL }}>
                           <Eye className="w-3.5 h-3.5" /> View

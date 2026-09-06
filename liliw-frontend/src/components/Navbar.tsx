@@ -13,6 +13,7 @@ import SmartSearchModal from '@/components/SmartSearchModal';
 import { openPassport } from '@/components/PassportHost';
 import { PASSPORT_TRIPS_PAGE } from '@/components/Passport';
 import Avatar from '@/components/Avatar';
+import { safeLocal } from '@/lib/safeStorage';
 
 type NotifItem = {
   id: string;
@@ -182,7 +183,7 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!user || !token) return;
-    const stored = typeof window !== 'undefined' ? localStorage.getItem('liliw-notif-lastseen') : null;
+    const stored = typeof window !== 'undefined' ? safeLocal.get('liliw-notif-lastseen') : null;
     const lastSeen = stored ? Number(stored) : 0;
     const endpoint = isStaff ? '/api/admin/notifications' : '/api/notifications';
     fetch(endpoint, { headers: { Authorization: `Bearer ${token}` } })
@@ -202,7 +203,7 @@ export default function Navbar() {
   const openNotif = () => {
     setNotifOpen(true);
     const now = Date.now();
-    if (typeof window !== 'undefined') localStorage.setItem('liliw-notif-lastseen', String(now));
+    if (typeof window !== 'undefined') safeLocal.set('liliw-notif-lastseen', String(now));
     setNewCount(0);
   };
 

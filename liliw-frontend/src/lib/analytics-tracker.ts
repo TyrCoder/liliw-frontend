@@ -1,3 +1,4 @@
+import { safeSession } from '@/lib/safeStorage';
 function getDeviceType(): 'desktop' | 'mobile' | 'tablet' {
   if (typeof navigator === 'undefined') return 'desktop';
   const ua = navigator.userAgent;
@@ -8,10 +9,10 @@ function getDeviceType(): 'desktop' | 'mobile' | 'tablet' {
 
 function getOrCreateSessionId(): string {
   if (typeof window === 'undefined') return 'ssr';
-  let id = sessionStorage.getItem('liliw_sid');
+  let id = safeSession.get('liliw_sid');
   if (!id) {
     id = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-    sessionStorage.setItem('liliw_sid', id);
+    safeSession.set('liliw_sid', id);
   }
   return id;
 }

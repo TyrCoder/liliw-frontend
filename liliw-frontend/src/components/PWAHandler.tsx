@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { safeLocal } from '@/lib/safeStorage';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -89,7 +90,7 @@ export default function PWAHandler() {
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e as BeforeInstallPromptEvent);
-      if (!localStorage.getItem('pwa-install-dismissed')) {
+      if (!safeLocal.get('pwa-install-dismissed')) {
         setTimeout(() => setShowBanner(true), 4000);
       }
     };
@@ -99,12 +100,12 @@ export default function PWAHandler() {
     window.addEventListener('appinstalled', () => {
       setShowBanner(false);
       setInstallPrompt(null);
-      localStorage.setItem('pwa-install-dismissed', '1');
+      safeLocal.set('pwa-install-dismissed', '1');
       toast.success('App installed! Open it from your home screen.');
     });
 
     // ── iOS: show "Add to Home Screen" hint ───────────────────────────────
-    if (ios && !standalone && !localStorage.getItem('pwa-ios-dismissed')) {
+    if (ios && !standalone && !safeLocal.get('pwa-ios-dismissed')) {
       setTimeout(() => setShowBanner(true), 5000);
     }
 
@@ -127,7 +128,7 @@ export default function PWAHandler() {
 
   const dismiss = () => {
     setShowBanner(false);
-    localStorage.setItem(isIos ? 'pwa-ios-dismissed' : 'pwa-install-dismissed', '1');
+    safeLocal.set(isIos ? 'pwa-ios-dismissed' : 'pwa-install-dismissed', '1');
   };
 
   // Already installed or banner hidden — render nothing
