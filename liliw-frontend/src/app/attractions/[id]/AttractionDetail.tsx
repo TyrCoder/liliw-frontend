@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, MapPin, Phone, Clock, Globe, Users, Star, Layers, Utensils, Lightbulb, Wallet } from 'lucide-react';
+import { ChevronLeft, MapPin, Phone, Clock, Globe, Users, Star, Layers, Lightbulb, Wallet } from 'lucide-react';
 import SocialShare from '@/components/SocialShare';
 import AuthModal from '@/components/AuthModal';
 import FavoriteButton from '@/components/FavoriteButton';
@@ -16,10 +16,10 @@ import { useAuth } from '@/context/AuthContext';
 import { showAchievementToasts } from '@/lib/achievementToast';
 import { stripHtml } from '@/lib/text';
 import SafeHtml from '@/components/SafeHtml';
+import { LiliwScene, GOLD } from '@/components/liliw/festive';
 import { VISIT_DWELL_MS } from '@/lib/visitDwell';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
-const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food' };
@@ -262,49 +262,54 @@ export default function AttractionDetail({ id }: { id: string }) {
     );
   }
 
-  const typeIcon = attraction.type === 'dining' ? <Utensils className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />;
 
   return (
     <div className="min-h-screen page-ground" suppressHydrationWarning>
 
-      {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }}>
-        <div className="max-w-4xl mx-auto px-4 py-14">
-          <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-            <Link href="/attractions" className="inline-flex items-center font-semibold mb-6 group text-sm" style={{ color: '#F5C518', fontFamily: BL }}>
-              <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to Attractions
-            </Link>
-            <div className="flex items-start gap-3 mb-3">
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mb-3"
-                  style={{ backgroundColor: '#22C55E', color: '#fff', fontFamily: HL }}>
-                  {typeIcon} {TYPE_LABELS[attraction.type] || attraction.type}
-                  {attraction.attributes.category && ` · ${attraction.attributes.category}`}
-                </div>
-                <h1 className="text-3xl sm:text-5xl font-bold text-white" style={{ fontFamily: DL }}>{attraction.attributes.name}</h1>
-              </div>
-              <FavoriteButton attractionId={String(attraction.id)} attractionName={attraction.attributes.name}
-                attractionType={attraction.type} attractionCategory={attraction.attributes.category}
-                size="md" className="mt-1 shrink-0 ml-auto" />
-            </div>
+      {/* Hero — the banner every other page uses.
+       *
+       * This page had built its own: a flat blue gradient, a left-aligned
+       * serif name and a green pill, against the heritage banner with its
+       * church, slippers, gold rule and wave that /itineraries and the rest
+       * carry. One page looking like a different site is the kind of thing
+       * nobody reports and everybody notices, so it uses the shared scene now
+       * and supplies only what is particular to one place: what kind of place
+       * it is, where it is, and how it has been rated. */}
+      <LiliwScene
+        title={attraction.attributes.name}
+        eyebrow={`${TYPE_LABELS[attraction.type] || attraction.type}${attraction.attributes.category ? ` · ${attraction.attributes.category}` : ''}`}
+        footer={
+          <div className="flex flex-col items-center gap-2.5">
             {attraction.attributes.location && (
-              <div className="flex items-center gap-2 text-white/70 mt-3" style={{ fontFamily: BL }}>
-                <MapPin className="w-4 h-4 shrink-0" style={{ color: '#F5C518' }} />
-                <span className="text-sm">{attraction.attributes.location}</span>
+              <div className="flex items-center gap-2" style={{ fontFamily: BL }}>
+                <MapPin className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
+                <span className="text-sm text-white/85">{attraction.attributes.location}</span>
               </div>
             )}
             {frontendCount > 0 && (
-              <div className="flex items-center gap-1.5 mt-3">
+              <div className="flex items-center gap-1.5">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4" fill={i < Math.round(frontendAvg) ? '#F5C518' : 'none'} stroke={i < Math.round(frontendAvg) ? '#F5C518' : 'rgba(255,255,255,0.3)'} />
+                  <Star key={i} className="w-4 h-4" fill={i < Math.round(frontendAvg) ? GOLD : 'none'} stroke={i < Math.round(frontendAvg) ? GOLD : 'rgba(255,255,255,0.35)'} />
                 ))}
-                <span className="text-sm font-semibold text-white/80 ml-1" style={{ fontFamily: BL }}>{frontendAvg.toFixed(1)}/5</span>
-                <span className="text-xs text-white/50 ml-1">({frontendCount} review{frontendCount !== 1 ? 's' : ''})</span>
+                <span className="text-sm font-semibold text-white/85 ml-1" style={{ fontFamily: BL }}>{frontendAvg.toFixed(1)}/5</span>
+                <span className="text-xs text-white/60 ml-1">({frontendCount} review{frontendCount !== 1 ? 's' : ''})</span>
               </div>
             )}
-          </motion.div>
+          </div>
+        }
+      >
+        {/* Back on the left, favourite on the right, on the line above the
+            name — the two things you do to the page rather than read on it. */}
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <Link href="/attractions" className="inline-flex items-center gap-1 text-sm font-bold transition-opacity hover:opacity-75 group"
+            style={{ color: GOLD, fontFamily: HL }}>
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition" /> Back to Attractions
+          </Link>
+          <FavoriteButton attractionId={String(attraction.id)} attractionName={attraction.attributes.name}
+            attractionType={attraction.type} attractionCategory={attraction.attributes.category}
+            size="md" className="shrink-0" />
         </div>
-      </div>
+      </LiliwScene>
 
       <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
 

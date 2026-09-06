@@ -197,6 +197,7 @@ export function LiliwScene({
   eyebrow,
   size = 'page',
   children,
+  footer,
 }: {
   title: string;
   subtitle?: string;
@@ -206,6 +207,14 @@ export function LiliwScene({
   size?: 'modal' | 'page';
   /** Anything that sits above the title, such as a back link. */
   children?: React.ReactNode;
+  /**
+   * Anything that sits below the title, such as a location line or a rating.
+   * A detail page has facts about one place that a section header does not;
+   * without somewhere to put them the page has to build its own banner, which
+   * is how /attractions/[id] ended up with a flat gradient of its own while
+   * every other page carried the heritage one.
+   */
+  footer?: React.ReactNode;
 }) {
   const lines = marqueeLines(title);
   const modal = size === 'modal';
@@ -294,6 +303,8 @@ export function LiliwScene({
               {subtitle}
             </p>
           )}
+
+          {footer && <div className="mt-4">{footer}</div>}
         </div>
       </div>
 
