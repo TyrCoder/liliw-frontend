@@ -6,6 +6,18 @@ import { Mail, MapPin, Download, CheckCircle, X, Smartphone } from 'lucide-react
 import { motion, AnimatePresence } from 'framer-motion';
 import Wave from '@/components/liliw/Wave';
 
+// PLACEHOLDER — not the office's real address, and deliberately inert.
+//
+// The footer published liliwturismo@gmail.com to every visitor and every
+// scraper that reads the page, which is how a working inbox turns into a spam
+// target. This stands in until CHATO decides what address it wants shown.
+//
+// It is display text only: no mailto, nothing sends from it, nothing receives
+// at it, and no code path reads it. Mail the site actually sends is configured
+// through EMAIL_USER on the server and is untouched by this. The contact form
+// remains the route that reaches the office.
+const OFFICE_EMAIL = 'chato@liliw.gov.ph';
+
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -199,9 +211,11 @@ export default function Footer() {
                 Tourism Office
               </p>
               <div className="space-y-2.5 text-sm text-white/75" style={{ fontFamily: BL }}>
-                <a href="mailto:liliwturismo@gmail.com" className="flex items-center gap-2.5 justify-center sm:justify-start hover:text-white transition-colors">
-                  <Mail size={13} className="shrink-0 text-white/40" /> liliwturismo@gmail.com
-                </a>
+                {/* Text, not a mailto. Nothing routes here and nothing reads
+                    it — a link would invite mail that no inbox receives. */}
+                <p className="flex items-center gap-2.5 justify-center sm:justify-start">
+                  <Mail size={13} className="shrink-0 text-white/40" /> {OFFICE_EMAIL}
+                </p>
                 <p className="flex items-start gap-2.5 justify-center sm:justify-start">
                   <MapPin size={13} className="shrink-0 mt-1 text-white/40" /> Municipal Hall, Liliw, Laguna 4002
                 </p>
@@ -246,7 +260,13 @@ export default function Footer() {
               so the small print reads as a footer line and not as more content. */}
           <div className="mt-10 pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/40"
             style={{ borderTop: '1px solid rgba(255,255,255,0.14)', fontFamily: BL }}>
-            <span>&copy; {year} Municipality of Liliw, Laguna. All rights reserved.</span>
+            {/* EW04 is the group behind the build; the municipality holds the
+                content. Both belong on the line, in that order. */}
+            <span className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+              <span className="font-bold tracking-[0.18em] text-white/70">EW04</span>
+              <span className="text-white/25">|</span>
+              <span>&copy; {year} Municipality of Liliw, Laguna. All rights reserved.</span>
+            </span>
             <div className="flex items-center gap-5">
               <Link href="/faq" className="hover:text-white transition-colors">Help &amp; FAQ</Link>
               <Link href="/terms" className="hover:text-white transition-colors">Terms &amp; Privacy</Link>
