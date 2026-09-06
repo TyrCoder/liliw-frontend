@@ -41,31 +41,31 @@ export function passwordProblem(password: string): string | null {
 }
 
 /**
- * Usernames: letters and numbers, 5–12 characters.
+ * Usernames: letters and numbers, optionally underscores, 5–12 characters.
  *
- * Letters and numbers only. Separators were allowed before — hyphens in, and
- * underscores rejected with a message about it — which made two names that
- * read identically aloud into two different accounts, and gave the sign-up
- * form a rule it had to explain before anyone could get past it. There is
- * nothing to explain now.
+ * The underscore is the one separator, and it is optional — nothing requires
+ * it and nothing rejects it. Allowing hyphens as well was the old problem:
+ * two names that read identically aloud became two different accounts, and
+ * the form had to teach the difference before anyone could get past it.
  *
  * Only registration checks this. Sign-in matches on the stored name, so
- * accounts created under the older rule keep working.
+ * accounts created under an older rule — hyphens, or shorter than five —
+ * keep working.
  */
 export const USERNAME_MIN = 5;
 export const USERNAME_MAX = 12;
 
-export const USERNAME_PATTERN = /^[A-Za-z0-9]{5,12}$/;
+export const USERNAME_PATTERN = /^[A-Za-z0-9_]{5,12}$/;
 
 export function usernameProblem(username: string): string | null {
   if (!username || username.length < USERNAME_MIN || username.length > USERNAME_MAX) {
     return `Username must be ${USERNAME_MIN}–${USERNAME_MAX} characters.`;
   }
   if (!USERNAME_PATTERN.test(username)) {
-    return 'Username can use letters and numbers only.';
+    return 'Username can use letters, numbers and underscores.';
   }
   return null;
 }
 
 /** What the form strips as the visitor types, so the field cannot hold anything invalid. */
-export const USERNAME_ALLOWED = /[^A-Za-z0-9]/g;
+export const USERNAME_ALLOWED = /[^A-Za-z0-9_]/g;

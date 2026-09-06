@@ -452,13 +452,13 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                         setUnameStripped(clean !== raw.slice(0, USERNAME_MAX));
                         setUsername(clean);
                       }}
-                      className={INPUT_CLS} placeholder="juandelacruz" autoComplete="username"
+                      className={INPUT_CLS} placeholder="juan_delacruz" autoComplete="username"
                       minLength={USERNAME_MIN} maxLength={USERNAME_MAX} />
                   </div>
                   <p className={`text-[11px] mt-1 ${unameStripped ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
                     {unameStripped
-                      ? 'Letters and numbers only.'
-                      : `${USERNAME_MIN}–${USERNAME_MAX} characters · letters and numbers`}
+                      ? 'Letters, numbers and underscores only.'
+                      : `${USERNAME_MIN}–${USERNAME_MAX} characters · letters, numbers and underscores`}
                   </p>
                 </div>
                 <div>

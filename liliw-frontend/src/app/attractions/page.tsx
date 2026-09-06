@@ -142,22 +142,34 @@ export default function AttractionsPage() {
       try {
         const hits = await searchAlgolia(query);
         if (cancelled) return;
-        if (hits.length > 0) {
-          const hitIds = new Set(hits.map(h => String(h.objectID)));
-          const matched = all.filter(a => hitIds.has(String(a.id)));
-          const local = matched.length > 0 ? matched : all.filter(a =>
-            a.attributes.name.toLowerCase().includes(query.toLowerCase()) ||
-            (a.attributes.description ?? '').toLowerCase().includes(query.toLowerCase())
-          );
-          setResults(applyFilters(local, selectedType));
-        } else {
-          const fallback = all.filter(a =>
-            a.attributes.name.toLowerCase().includes(query.toLowerCase()) ||
-            (a.attributes.description ?? '').toLowerCase().includes(query.toLowerCase()) ||
-            (a.attributes.location ?? '').toLowerCase().includes(query.toLowerCase())
-          );
-          setResults(applyFilters(fallback, selectedType));
-        }
+
+        /*
+         * A hit's objectID is '<kind>-<id>' — 'attraction-spot-1234' for a
+         * spot whose own id is 'spot-1234'. This compared the whole objectID
+         * against the bare id, so the two sets never intersected and `matched`
+         * was empty on every search ever run. The page has been answering from
+         * the substring fallback below, which is why searching a location
+         * found nothing and the ranking was ignored: results came back in
+         * whatever order the CMS listed them.
+         *
+         * Mapping through the ids in hit order keeps search's ranking, which
+         * is the thing being searched for in the first place.
+         */
+        const byId = new Map(all.map(a => [String(a.id), a]));
+        const matched = hits
+          .filter(h => String(h.objectID).startsWith('attraction-'))
+          .map(h => byId.get(String(h.objectID).slice('attraction-'.length)))
+          .filter((a): a is Attraction => Boolean(a));
+
+        // Still a fallback, for a query the index cannot answer at all.
+        const q = query.toLowerCase();
+        const substring = all.filter(a =>
+          a.attributes.name.toLowerCase().includes(q) ||
+          (a.attributes.description ?? '').toLowerCase().includes(q) ||
+          (a.attributes.location ?? '').toLowerCase().includes(q)
+        );
+
+        setResults(applyFilters(matched.length > 0 ? matched : substring, selectedType));
       } catch {
         setResults(applyFilters(all.filter(a => a.attributes.name.toLowerCase().includes(query.toLowerCase())), selectedType));
       } finally { if (!cancelled) setSearching(false); }

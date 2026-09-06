@@ -697,7 +697,8 @@ function EmailTab({ token, email, logout }: { token: string; email: string; logo
  * the tourism office decided against.
  */
 function BusinessInfoPanel({ token }: { token: string }) {
-  const [app, setApp] = useState<Record<string, string> | null>(null);
+  // Nullable: /api/lbo/me returns null for fields the application left blank.
+  const [app, setApp] = useState<Record<string, string | null> | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'none' | 'error'>('loading');
 
   useEffect(() => {
