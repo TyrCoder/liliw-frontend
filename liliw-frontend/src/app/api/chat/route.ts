@@ -214,6 +214,35 @@ function selectKnowledge(index: Indexed, context: string): string {
     const chosen = ranked.filter((r) => r.s > 0).slice(0, 5);
     const use = chosen.length ? chosen : ranked.slice(0, 3);
 
+  /**
+   * How the site itself works.
+   *
+   * Everything else here is tourism content out of the CMS, so the guide could
+   * describe every restaurant in Liliw and not answer "how do I earn points?"
+   * — it replied "I only know about Liliw" and suggested a tech support forum.
+   * A visitor asking how to use the thing they are standing in is not off
+   * topic.
+   *
+   * Written here rather than pulled from a table because these are facts about
+   * the code, and they belong next to the code that would change them. Every
+   * figure below is the one the system actually applies.
+   */
+  lines.push('HOW THIS SITE WORKS (answer these too — they are not off-topic):');
+  lines.push([
+    '- Points: visiting an attraction earns 5, writing a review 20, joining a community event 15, sharing a place 5. Each place only counts once.',
+    '- A visit counts when you are signed in and stay on that attraction\'s page for about two and a half minutes. Scanning the QR poster at the place records it as an on-site visit.',
+    '- Reviews: you can only review a place you have actually visited. The form appears once the visit is credited.',
+    '- Rewards: spend points in the Rewards page. Redeeming gives a code to show to staff at the counter.',
+    '- Passport and badges: achievements unlock as visits, reviews and points add up.',
+    '- Favorites and saved trips are kept to your account; a saved trip has a share link anyone can open.',
+    '- Itineraries: the planner builds a day from your answers, or you can start empty and add places yourself. Curated tours are ready-made routes from the tourism office.',
+    '- The map shows every attraction, and you can add places from it to build a route with distances between stops.',
+    '- Business owners: register as a visitor, then apply at /business/apply. Once CHATO approves, the account gains a business dashboard with visitor records, ratings, a QR poster, and a form to request changes to the listing.',
+    '- Accounts: register with the code sent to your email. A forgotten password is reset the same way.',
+    '- Offline: pages you have already opened stay readable without a connection. The map needs one.',
+  ].join('\n'));
+  lines.push('');
+
     lines.push('FREQUENTLY ASKED QUESTIONS:');
     for (const { f } of use) lines.push(`Q: ${f.question}\nA: ${f.answer.slice(0, 400)}`);
   }
@@ -272,7 +301,8 @@ Example style: "Ay grabe, [place] is so worth it talaga! Malapit lang from the t
 ${langInstruction}
 
 RULES:
-1. Answer ONLY about Liliw, Laguna — tourism, attractions, culture, food, events. Nothing else.
+1. Answer about Liliw, Laguna — tourism, attractions, culture, food, events — and about how this
+   website works, using the HOW THIS SITE WORKS section below. Nothing outside those two.
 2. If the question is about something else entirely, say in your own words that you can
    only help with Liliw, and offer what you can help with. Write it as yourself — "I only
    know about Liliw" — never as an instruction addressed to the visitor.
