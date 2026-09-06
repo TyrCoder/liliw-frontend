@@ -30,6 +30,11 @@ const FIELDS_TO_CHANGE = [
   'Operating Hours',
   'Entrance Fee / Price',
   'Photos / Images',
+  // Both are optional at application and so are blank on most accounts.
+  // Without somewhere to file them, an owner who wanted to supply one later
+  // had no route to — the only option that fitted was "Other".
+  'Business Permit / DTI Number',
+  'Business Type',
   'Other',
 ];
 
@@ -729,6 +734,11 @@ function LboDashboard() {
                   </span>
                 </div>
 
+                {/* Every field shows, filled or not.
+                    Hiding the empty ones meant a permit number that had never
+                    been submitted looked identical to one the office had lost:
+                    the row simply was not there. An owner cannot supply what
+                    the page never says is missing. */}
                 <dl className="px-6 py-2 divide-y divide-gray-100">
                   {([
                     { label: 'Business name',    value: appInfo.business_name,   requestAs: 'Name / Listing Title' },
@@ -737,26 +747,43 @@ function LboDashboard() {
                     { label: 'Email',            value: appInfo.email },
                     { label: 'Contact number',   value: appInfo.phone,           requestAs: 'Contact Number' },
                     { label: 'Address',          value: appInfo.address,         requestAs: 'Location / Address' },
-                    { label: 'Business type',    value: appInfo.business_type },
-                    { label: 'Permit / DTI no.', value: appInfo.permit_number },
-                  ] as { label: string; value?: string | null; requestAs?: string }[])
-                    .filter(f => f.value)
-                    .map(f => (
-                      <div key={f.label} className="py-3 flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <dt className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{f.label}</dt>
-                          <dd className="text-sm text-gray-800 mt-0.5 break-words">{f.value}</dd>
+                    { label: 'Business type',    value: appInfo.business_type,   requestAs: 'Business Type' },
+                    { label: 'Permit / DTI no.', value: appInfo.permit_number,   requestAs: 'Business Permit / DTI Number',
+                      hint: 'Optional at sign-up. Submit it and CHATO will add it to your record.' },
+                  ] as { label: string; value?: string | null; requestAs?: string; hint?: string }[])
+                    .map(f => {
+                      const missing = !f.value || !String(f.value).trim();
+                      return (
+                        <div key={f.label} className="py-3 flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <dt className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{f.label}</dt>
+                            {missing ? (
+                              <>
+                                <dd className="text-sm mt-0.5 flex items-center gap-1.5" style={{ color: '#B45309' }}>
+                                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="italic">Not submitted yet</span>
+                                </dd>
+                                {f.hint && <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{f.hint}</p>}
+                              </>
+                            ) : (
+                              <dd className="text-sm text-gray-800 mt-0.5 break-words">{f.value}</dd>
+                            )}
+                          </div>
+                          {f.requestAs && (
+                            <button onClick={() => requestEdit(f.requestAs!, f.value ?? '')}
+                              title={missing
+                                ? `Submit your ${f.label.toLowerCase()}`
+                                : `Request a change to ${f.label.toLowerCase()}`}
+                              className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition hover:bg-blue-50"
+                              style={missing
+                                ? { borderColor: 'rgba(180,83,9,0.3)', color: '#B45309' }
+                                : { borderColor: 'rgba(11,61,145,0.2)', color: '#1565C0' }}>
+                              <Pencil className="w-3 h-3" /> {missing ? 'Submit' : 'Request change'}
+                            </button>
+                          )}
                         </div>
-                        {f.requestAs && (
-                          <button onClick={() => requestEdit(f.requestAs!, f.value ?? '')}
-                            title={`Request a change to ${f.label.toLowerCase()}`}
-                            className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition hover:bg-blue-50"
-                            style={{ borderColor: 'rgba(11,61,145,0.2)', color: '#1565C0' }}>
-                            <Pencil className="w-3 h-3" /> Request change
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                 </dl>
 
                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">

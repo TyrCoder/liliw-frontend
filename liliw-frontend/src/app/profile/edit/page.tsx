@@ -742,15 +742,21 @@ function BusinessInfoPanel({ token }: { token: string }) {
     return <p className="text-sm text-red-500 py-8 text-center">Your business details could not be loaded. Please try again.</p>;
   }
 
-  const FIELDS: { label: string; value: string; requestAs?: string }[] = [
+  // Every field is listed, filled or not. Empty rows used to be dropped, so a
+  // permit number that had never been submitted looked exactly like one the
+  // office had lost — and an owner cannot supply what the page never says is
+  // missing. It was also hiding a bug: /api/lbo/me did not return
+  // permit_number at all, so this row was blank on every account.
+  const FIELDS: { label: string; value?: string | null; requestAs?: string; hint?: string }[] = [
     { label: 'Business name',     value: app.business_name,   requestAs: 'Name / Listing Title' },
     { label: 'Listing name',      value: app.attraction_name, requestAs: 'Name / Listing Title' },
     { label: 'Owner',             value: app.owner_name },
     { label: 'Email',             value: app.email },
     { label: 'Contact number',    value: app.phone,           requestAs: 'Contact Number' },
     { label: 'Address',           value: app.address,         requestAs: 'Location / Address' },
-    { label: 'Business type',     value: app.business_type },
-    { label: "Permit / DTI no.",  value: app.permit_number },
+    { label: 'Business type',     value: app.business_type,   requestAs: 'Business Type' },
+    { label: "Permit / DTI no.",  value: app.permit_number,   requestAs: 'Business Permit / DTI Number',
+      hint: 'Optional at sign-up. Submit it and CHATO will add it to your record.' },
   ];
 
   return (
@@ -763,22 +769,34 @@ function BusinessInfoPanel({ token }: { token: string }) {
       </div>
 
       <dl className="divide-y divide-gray-100">
-        {FIELDS.filter(f => f.value).map(f => (
-          <div key={f.label} className="py-3 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <dt className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{f.label}</dt>
-              <dd className="text-sm text-gray-800 mt-0.5 break-words">{f.value}</dd>
+        {FIELDS.map(f => {
+          const missing = !f.value || !String(f.value).trim();
+          return (
+            <div key={f.label} className="py-3 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <dt className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{f.label}</dt>
+                {missing ? (
+                  <>
+                    <dd className="text-sm mt-0.5 italic" style={{ color: '#B45309' }}>Not submitted yet</dd>
+                    {f.hint && <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{f.hint}</p>}
+                  </>
+                ) : (
+                  <dd className="text-sm text-gray-800 mt-0.5 break-words">{f.value}</dd>
+                )}
+              </div>
+              {f.requestAs && (
+                <Link href="/lbo"
+                  title={missing ? `Submit your ${f.label.toLowerCase()}` : `Request a change to ${f.label.toLowerCase()}`}
+                  className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border transition hover:bg-blue-50"
+                  style={missing
+                    ? { borderColor: 'rgba(180,83,9,0.3)', color: '#B45309' }
+                    : { borderColor: 'rgba(11,61,145,0.2)', color: '#1565C0' }}>
+                  {missing ? 'Submit' : 'Request change'}
+                </Link>
+              )}
             </div>
-            {f.requestAs && (
-              <Link href="/lbo"
-                title={`Request a change to ${f.label.toLowerCase()}`}
-                className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border transition hover:bg-blue-50"
-                style={{ borderColor: 'rgba(11,61,145,0.2)', color: '#1565C0' }}>
-                Request change
-              </Link>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </dl>
 
       <Link href="/lbo"
