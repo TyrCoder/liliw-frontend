@@ -37,6 +37,31 @@ export const supabaseServer = createClient(
 );
 
 /**
+ * A throwaway client for signing somebody in.
+ *
+ * signInWithPassword stores the resulting session on the client it is called
+ * on, and every later query from that client then carries the visitor's token
+ * instead of the service role key — so it runs under row-level security as
+ * that person. supabaseServer is a module-level singleton, so calling it there
+ * did two things: the rest of the request lost its elevated access, and the
+ * next request handled by the same warm instance inherited the session.
+ *
+ * It cost a real bug. After sign-in the login route asked whether the account
+ * had an approved LBO application; profiles has a read-your-own-row policy so
+ * the role lookup still worked, lbo_applications has none, so the answer came
+ * back empty and every business owner was told they had nowhere to land.
+ *
+ * Authentication gets its own client, thrown away with the request.
+ */
+export function supabaseAuthClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? key!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+}
+
+/**
  * What the key actually is, rather than which variable it arrived in.
  *
  * Supabase issues two shapes: legacy JWTs carrying a `role` claim, and the

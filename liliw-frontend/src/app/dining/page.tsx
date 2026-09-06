@@ -66,7 +66,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function DiningPage() {
   const [places, setPlaces] = useState<DiningAttraction[]>([]);
-  const paged = usePaged(places, 9);
+  const paged = usePaged(places, 16);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -89,7 +89,7 @@ export default function DiningPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-20">
         {loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[1,2,3,4,5,6].map(i => <div key={i} className="rounded-2xl bg-gray-100 animate-pulse" style={{ aspectRatio:'3/4' }} />)}
           </div>
         )}
@@ -104,7 +104,7 @@ export default function DiningPage() {
         {!loading && !error && places.length > 0 && (
           <motion.div initial="hidden" animate="visible"
             variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.07 } } }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {paged.slice.map((place, idx) => {
               const photos = place.attributes?.photos ?? [];
               const rawUrl = photos[0]?.formats?.medium?.url || photos[0]?.formats?.small?.url || photos[0]?.url;

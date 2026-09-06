@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { createSession, computeRole, sessionCookieHeader } from '@/lib/session';
-import { supabaseServer } from '@/lib/supabase-server';
+import { supabaseServer, supabaseAuthClient } from '@/lib/supabase-server';
 
 // Supabase calls have no built-in cancellation here, so a hung request used to
 // block the login route indefinitely. These races make the route fail fast
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     let signIn: SignInResult;
     try {
       signIn = await withTimeout(
-        supabaseServer.auth.signInWithPassword({ email, password }),
+        supabaseAuthClient().auth.signInWithPassword({ email, password }),
         SIGN_IN_TIMEOUT_MS,
       );
     } catch {

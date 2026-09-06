@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/ratelimit';
-import { supabaseServer } from '@/lib/supabase-server';
+import { supabaseServer, supabaseAuthClient } from '@/lib/supabase-server';
 import { passwordProblem, usernameProblem } from '@/lib/credentials';
 
 export async function POST(request: NextRequest) {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Sign in to get JWT
-    const { data: session, error: signInErr } = await supabaseServer.auth.signInWithPassword({ email, password });
+    const { data: session, error: signInErr } = await supabaseAuthClient().auth.signInWithPassword({ email, password });
     if (signInErr || !session) {
       return NextResponse.json({ error: { message: 'Account created but could not log in automatically.' } }, { status: 201 });
     }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { consumeOtpDb } from '@/lib/otpDb';
 import { checkRateLimit } from '@/lib/ratelimit';
-import { supabaseServer } from '@/lib/supabase-server';
+import { supabaseServer, supabaseAuthClient } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Sign in to get JWT
-    const { data: session } = await supabaseServer.auth.signInWithPassword({ email, password });
+    const { data: session } = await supabaseAuthClient().auth.signInWithPassword({ email, password });
     const user = {
       id: created.user.id,
       username,

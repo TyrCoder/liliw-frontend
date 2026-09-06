@@ -52,7 +52,7 @@ interface Attraction {
 
 export default function HeritagePage() {
   const [heritage, setHeritage] = useState<Attraction[]>([]);
-  const paged = usePaged(heritage, 9);
+  const paged = usePaged(heritage, 16);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 

@@ -106,7 +106,7 @@ export default function GalleryPage() {
 
   const filtered = activeCategory === 'all' ? items : items.filter(i => i.category === activeCategory);
 
-  const paged = usePaged(filtered, 12);
+  const paged = usePaged(filtered, 16);
 
   return (
     <div className="min-h-screen page-ground" suppressHydrationWarning>
