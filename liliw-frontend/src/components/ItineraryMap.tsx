@@ -27,6 +27,45 @@ export interface MappedStop {
  * missing key leaves the itinerary intact rather than an empty grey box.
  */
 export default function ItineraryMap({ stops, height = 260 }: { stops: MappedStop[]; height?: number }) {
+  /**
+   * The roads the route actually follows.
+   *
+   * A line drawn straight between pins cuts through the blocks between them,
+   * which on a town map reads as a route nobody could take — Liliw's centre is
+   * a grid and the straight line crossed four streets at an angle. Directions
+   * returns the real geometry, so what is drawn is what a driver would drive,
+   * one-ways and turns included.
+   *
+   * Falls back to the straight line while the request is in flight and if it
+   * fails, so the map always shows the order of the stops.
+   */
+  const [road, setRoad] = useState<GeoJSON.LineString | null>(null);
+
+  const stopKey = stops.map(s => `${s.lng.toFixed(5)},${s.lat.toFixed(5)}`).join(';');
+
+  useEffect(() => {
+    if (stops.length < 2) { setRoad(null); return; }
+    let cancelled = false;
+
+    fetch('/api/route-distance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        coords: stops.map(s => [s.lng, s.lat]),
+        profile: 'driving',
+        geometry: true,
+      }),
+    })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (cancelled) return;
+        setRoad(d?.source === 'road' && d?.geometry?.type === 'LineString' ? d.geometry : null);
+      })
+      .catch(() => { if (!cancelled) setRoad(null); });
+
+    return () => { cancelled = true; };
+  }, [stopKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const bounds = useMemo(() => {
     if (!stops.length) return null;
     const lats = stops.map(s => s.lat);
@@ -45,8 +84,8 @@ export default function ItineraryMap({ stops, height = 260 }: { stops: MappedSto
   const line = useMemo(() => ({
     type: 'Feature' as const,
     properties: {},
-    geometry: { type: 'LineString' as const, coordinates: stops.map(s => [s.lng, s.lat]) },
-  }), [stops]);
+    geometry: road ?? { type: 'LineString' as const, coordinates: stops.map(s => [s.lng, s.lat]) },
+  }), [stops, road]);
 
   if (!TOKEN || !bounds) return null;
 
@@ -63,7 +102,13 @@ export default function ItineraryMap({ stops, height = 260 }: { stops: MappedSto
         {stops.length > 1 && (
           <Source id="itinerary-line" type="geojson" data={line}>
             <Layer id="itinerary-line-layer" type="line"
-              paint={{ 'line-color': '#1565C0', 'line-width': 3, 'line-opacity': 0.5, 'line-dasharray': [2, 1.5] }} />
+              layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+              paint={road
+                // The real route: solid, so it reads as a road and not a hint.
+                ? { 'line-color': '#1565C0', 'line-width': 4, 'line-opacity': 0.85 }
+                // Still the straight guess: dashed, so it does not claim to be
+                // a road anyone can drive.
+                : { 'line-color': '#1565C0', 'line-width': 3, 'line-opacity': 0.45, 'line-dasharray': [2, 1.5] }} />
           </Source>
         )}
 

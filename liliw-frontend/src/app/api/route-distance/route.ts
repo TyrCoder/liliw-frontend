@@ -27,7 +27,7 @@ const MAX_WAYPOINTS = 25;
 type Coord = [number, number]; // [lng, lat], the order Mapbox uses
 
 /** Cached per coordinate list — a plan is re-rendered far more often than it changes. */
-const cache = new Map<string, { legs: number[]; source: string; at: number }>();
+const cache = new Map<string, { legs: number[]; source: string; geometry?: unknown; at: number }>();
 const CACHE_MS = 30 * 60 * 1000;
 
 const isCoord = (c: unknown): c is Coord =>
@@ -39,6 +39,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const coords: unknown = body?.coords;
   const profile = body?.profile === 'walking' ? 'walking' : 'driving';
+  // The drawn route, when the caller wants to show the roads rather than just
+  // measure them. Costs a fuller response from Directions, so it is asked for
+  // rather than always returned.
+  const wantGeometry = body?.geometry === true;
 
   if (!Array.isArray(coords) || coords.length < 2 || !coords.every(isCoord)) {
     return NextResponse.json({ error: 'coords must be two or more [lng, lat] pairs' }, { status: 400 });
@@ -58,10 +62,10 @@ export async function POST(req: NextRequest) {
       distanceMeters(c[1], c[0], list[i + 1][1], list[i + 1][0]),
     );
 
-  const key = `${profile}:${list.map(c => c.map(n => n.toFixed(5)).join(',')).join(';')}`;
+  const key = `${profile}:${wantGeometry ? 'geo:' : ''}${list.map(c => c.map(n => n.toFixed(5)).join(',')).join(';')}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) {
-    return NextResponse.json({ legs: hit.legs, source: hit.source, cached: true });
+    return NextResponse.json({ legs: hit.legs, source: hit.source, geometry: hit.geometry, cached: true });
   }
 
   if (!MAPBOX_TOKEN) {
@@ -72,7 +76,8 @@ export async function POST(req: NextRequest) {
     const path = list.map(c => `${c[0]},${c[1]}`).join(';');
     const url =
       `https://api.mapbox.com/directions/v5/mapbox/${profile}/${path}` +
-      `?overview=false&steps=false&access_token=${MAPBOX_TOKEN}`;
+      `?steps=false&access_token=${MAPBOX_TOKEN}` +
+      (wantGeometry ? '&overview=full&geometries=geojson' : '&overview=false');
 
     // Directions is a third party on the path of a page render; a slow answer
     // should cost a straight-line number, not a hung itinerary.
@@ -99,8 +104,12 @@ export async function POST(req: NextRequest) {
       typeof l.distance === 'number' ? l.distance : straightLegs()[i],
     );
 
-    cache.set(key, { legs: meters, source: 'road', at: Date.now() });
-    return NextResponse.json({ legs: meters, source: 'road', profile });
+    // The road geometry, so a map can draw the streets actually taken rather
+    // than a line through the blocks between them.
+    const geometry = wantGeometry ? data?.routes?.[0]?.geometry ?? null : undefined;
+
+    cache.set(key, { legs: meters, source: 'road', geometry, at: Date.now() });
+    return NextResponse.json({ legs: meters, source: 'road', profile, geometry });
   } catch (err) {
     return NextResponse.json({
       legs: straightLegs(),

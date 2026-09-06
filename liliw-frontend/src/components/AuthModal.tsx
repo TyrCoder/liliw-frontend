@@ -123,6 +123,9 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
   const [email,     setEmail]     = useState('');
   const [regPw,     setRegPw]     = useState('');
   const [regPw2,    setRegPw2]    = useState('');
+  // Set when the username field had to drop something the visitor typed, so it
+  // can say so instead of characters vanishing as they arrive.
+  const [unameStripped, setUnameStripped] = useState(false);
 
   const [captchaCode,  setCaptchaCode]  = useState(generateCode);
   const [captchaInput, setCaptchaInput] = useState('');
@@ -263,7 +266,11 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault(); setError('');
-    if (newPw.length < 6) { setError('Password must be at least 6 characters'); return; }
+    // The same check the reset route runs. It said six characters while the
+    // server required eight with a number and a symbol, so a password typed
+    // here passed the form and was refused after the code had been spent.
+    const newPwProblem = passwordProblem(newPw);
+    if (newPwProblem) { setError(newPwProblem); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: fpEmail, otp, newPassword: newPw }) });
@@ -438,11 +445,21 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                   <label className={LABEL_CLS}>Username</label>
                   <div className="relative">
                     <InputIcon icon={AtSign} />
-                    <input required value={username} onChange={e => setUsername(e.target.value.replace(USERNAME_ALLOWED, '').slice(0, 20))}
+                    <input required value={username}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const clean = raw.replace(USERNAME_ALLOWED, '').slice(0, 20);
+                        setUnameStripped(clean !== raw.slice(0, 20));
+                        setUsername(clean);
+                      }}
                       className={INPUT_CLS} placeholder="juan-delacruz" autoComplete="username"
                       minLength={3} maxLength={20} />
                   </div>
-                  <p className="text-[11px] text-gray-400 mt-1">3–20 characters · letters, numbers and hyphens</p>
+                  <p className={`text-[11px] mt-1 ${unameStripped ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
+                    {unameStripped
+                      ? 'Only letters, numbers and hyphens — use “-” instead of “_”.'
+                      : '3–20 characters · letters, numbers and hyphens'}
+                  </p>
                 </div>
                 <div>
                   <label className={LABEL_CLS}>Email</label>
@@ -678,7 +695,7 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                     <InputIcon icon={Lock} />
                     <input required value={newPw} onChange={e => setNewPw(e.target.value)}
                       type={showNewPw ? 'text' : 'password'}
-                      className={`${INPUT_CLS} pr-12`} placeholder="Min. 6 characters" />
+                      className={`${INPUT_CLS} pr-12`} placeholder="Min. 8, with a number and a symbol" />
                     <button type="button" onClick={() => setShowNewPw(p => !p)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
                       {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

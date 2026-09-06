@@ -487,7 +487,7 @@ function PasswordTab({ token, email }: { token: string; email: string }) {
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
               className={inputCls}
-              placeholder="At least 6 characters"
+              placeholder="Min. 8, with a number and a symbol"
             />
           </div>
 
