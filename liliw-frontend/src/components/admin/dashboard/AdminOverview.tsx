@@ -59,6 +59,19 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
   const [loading, setLoading] = useState(true);
   const [attractions, setAttractions] = useState<Record<string, string>>({});
 
+  /**
+   * Who is on the site right now.
+   *
+   * /api/admin/live-visitors has existed and been polled every ten seconds
+   * since the panel was written, from admin/page.tsx — and nothing ever
+   * rendered the answer. An admin dashboard that already knows this and does
+   * not say it is worse than one that never asked.
+   *
+   * A session counts as live for five minutes after its last heartbeat, which
+   * the endpoint decides; this only reads it.
+   */
+  const [live, setLive] = useState<{ session_id: string; page: string; device: string; last_seen: string }[] | null>(null);
+
   const h = token ? { Authorization: `Bearer ${token}` } : undefined;
 
   useEffect(() => {
@@ -148,10 +161,38 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
 
   useEffect(() => { loadAnalytics(); }, [loadAnalytics]);
 
+  useEffect(() => {
+    if (!token) return;
+    let stopped = false;
+
+    const poll = () => {
+      fetch('/api/admin/live-visitors', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => (r.ok ? r.json() : null))
+        .then(d => { if (!stopped) setLive(d?.data ?? []); })
+        // A failed poll keeps the last known list rather than blanking the
+        // panel — this refreshes six times a minute and one miss is noise.
+        .catch(() => {});
+    };
+
+    poll();
+    const id = setInterval(poll, 10_000);
+    return () => { stopped = true; clearInterval(id); };
+  }, [token]);
+
   const c = stats?.content ?? {};
   const q = stats?.queues ?? {};
   const pendingTotal = Object.values(stats?.pending ?? {}).reduce((s: number, n) => s + Number(n), 0);
   const actionsTotal = pendingTotal + (q.lboApplications ?? 0) + (q.changeRequests ?? 0);
+
+  // Sessions grouped by the page they are on, busiest first — a count alone
+  // says how many, which is the less useful half of the question.
+  const livePages = Object.entries(
+    (live ?? []).reduce<Record<string, number>>((acc, v) => {
+      const path = v.page || '/';
+      acc[path] = (acc[path] ?? 0) + 1;
+      return acc;
+    }, {}),
+  ).sort((a, b) => b[1] - a[1]);
 
   return (
     <div className="space-y-5">
@@ -166,6 +207,46 @@ export default function AdminOverview({ token, username, onGoToTab }: Props) {
         title="Admin Dashboard"
         subtitle={`Welcome back, ${username}. Here's what's happening across Liliw Tourism.`}
       />
+
+      {/* ── On the site right now ── */}
+      <Panel
+        title="Live Right Now"
+        subtitle={live === null
+          ? 'Checking…'
+          : live.length === 0
+            ? 'Nobody is browsing at the moment'
+            : `${live.length} active session${live.length === 1 ? '' : 's'} in the last five minutes`}
+        action={
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-1 rounded-full"
+            style={{
+              backgroundColor: live && live.length > 0 ? 'rgba(22,163,74,0.1)' : 'rgba(100,116,139,0.1)',
+              color: live && live.length > 0 ? '#16A34A' : '#64748B',
+            }}>
+            <span className="w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: live && live.length > 0 ? '#16A34A' : '#94A3B8' }} />
+            {live === null ? '—' : live.length}
+          </span>
+        }>
+        {live === null ? (
+          <div className="px-5 py-6 space-y-2">
+            {[0, 1].map(i => <div key={i} className="h-4 rounded bg-gray-100 animate-pulse" style={{ width: i ? '40%' : '65%' }} />)}
+          </div>
+        ) : livePages.length === 0 ? (
+          <EmptyState icon={<Activity className="w-5 h-5" />} title="No one on the site"
+            message="Sessions appear here within seconds of someone opening a page." />
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {livePages.slice(0, 6).map(([path, count]) => (
+              <li key={path} className="px-5 py-2.5 flex items-center justify-between gap-3">
+                <span className="text-sm text-gray-700 truncate font-mono text-[13px]">{path}</span>
+                <span className="text-xs font-bold text-gray-500 shrink-0 tabular-nums">
+                  {count} {count === 1 ? 'viewer' : 'viewers'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
 
       {/* ── Headline numbers ── */}
       <MetricGrid>

@@ -33,8 +33,6 @@ export async function GET(request: NextRequest) {
 
   if (!email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  if (!email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
   // Look up approved LBO application in Supabase
   const { data, error } = await supabaseServer
     .from('lbo_applications')

@@ -191,7 +191,6 @@ function AdminDashboard() {
   const [attractions,   setAttractions]   = useState<Attraction[]>([]);
   const [auditLogs,       setAuditLogs]       = useState<AuditLog[]>([]);
   const [strapiActivity,  setStrapiActivity]  = useState<StrapiActivity[]>([]);
-  const [liveVisitors,    setLiveVisitors]    = useState<{ session_id: string; page: string; device: string; last_seen: string }[]>([]);
 
   const [loadingSubs,      setLoadingSubs]      = useState(true);
   const [loadingPart,      setLoadingPart]      = useState(true);
@@ -429,35 +428,27 @@ function AdminDashboard() {
       setAttractionReqs(d.data || []);
     }).catch(noteFailure).finally(() => setLoadingAR(false));
 
-    // Editor — event forms + joinable events
-    if (isChatoEditor || isAdmin) {
+    /* Event forms — one fetch, not one per role.
+       An admin satisfies both conditions below, so the editor branch and the
+       officer branch each fired the same request and each cleared the same
+       loading flag: two identical calls on every admin load, and whichever
+       landed first turned the spinner off while the other was still in
+       flight. The list is the same list whoever is asking for it. */
+    if (isChatoEditor || isChatoOfficer || isAdmin) {
       setLoadingEF(true);
-      setLoadingJE(true);
       panelFetch('/api/admin/event-forms', h).then(readList).then(d => setEventForms(d.data || [])).catch(noteFailure).finally(() => setLoadingEF(false));
-      fetch('/api/content/events').then(readList).then(d => setJoinableEvents((d.data || []).filter((e: any) => e.attributes?.is_joinable || e.is_joinable).map((e: any) => ({ id: e.id, slug: e.attributes?.slug || e.slug, title: e.attributes?.title || e.title, date_start: e.attributes?.date_start || e.date_start })))).catch(noteFailure).finally(() => setLoadingJE(false));
     }
 
-    // Officer — event form list for responses viewer
-    if (isChatoOfficer || isAdmin) {
-      setLoadingEF(true);
-      panelFetch('/api/admin/event-forms', h).then(readList).then(d => setEventForms(d.data || [])).catch(noteFailure).finally(() => setLoadingEF(false));
+    // Editor — joinable events, for building a form against one
+    if (isChatoEditor || isAdmin) {
+      setLoadingJE(true);
+      fetch('/api/content/events').then(readList).then(d => setJoinableEvents((d.data || []).filter((e: any) => e.attributes?.is_joinable || e.is_joinable).map((e: any) => ({ id: e.id, slug: e.attributes?.slug || e.slug, title: e.attributes?.title || e.title, date_start: e.attributes?.date_start || e.date_start })))).catch(noteFailure).finally(() => setLoadingJE(false));
     }
   }, [isAdmin, isChatoOfficer, isChatoEditor, isStaff, token]);
 
-  // Live visitors polling — every 10 seconds (admin + officer both see the overview tab)
-  useEffect(() => {
-    if ((!isAdmin && !isChatoOfficer) || !token) return;
-    const h = { Authorization: `Bearer ${token}` };
-    const poll = () => {
-      panelFetch('/api/admin/live-visitors', h)
-        .then(readList)
-        .then(d => setLiveVisitors(d.data || []))
-        .catch(noteFailure);
-    };
-    poll();
-    const id = setInterval(poll, 10_000);
-    return () => clearInterval(id);
-  }, [isAdmin, isChatoOfficer, token]);
+  /* Live visitors used to be polled here, every ten seconds, for as long as
+     the panel stayed open — and the result was never rendered anywhere. The
+     poll now lives in AdminOverview, which is the screen that shows it. */
 
   /**
    * Deactivation rather than deletion — the account stops being able to sign
@@ -3123,15 +3114,19 @@ function AdminDashboard() {
 
               {/* ── Stat overview ── */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <ReportCard title="Page Views"      sub="Total tracked views"    value={(analytics?.pageViews ?? 0).toLocaleString()} color="#1565C0" />
-                <ReportCard title="Unique Visitors" sub="Distinct sessions"      value={(analytics?.uniqueVisitors ?? 0).toLocaleString()} color="#0B3D91" />
+                {/* An em dash while the request is in flight. `?? 0` printed a
+                    confident zero on a screen an officer reads as fact, and a
+                    site with no page views looks like a site nobody visits
+                    rather than a number that has not arrived. */}
+                <ReportCard title="Page Views"      sub="Total tracked views"    value={loadingStats ? '—' : (analytics?.pageViews ?? 0).toLocaleString()} color="#1565C0" />
+                <ReportCard title="Unique Visitors" sub="Distinct sessions"      value={loadingStats ? '—' : (analytics?.uniqueVisitors ?? 0).toLocaleString()} color="#0B3D91" />
                 <ReportCard title="Total Reviews"   sub="Attraction ratings"     value={reviews.length} color="#F59E0B" />
                 <ReportCard title="Avg Rating"      sub="Across all attractions" value={avgRating} color="#10B981" />
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <ReportCard title="Total Visitors"   sub="From LBO visitor logs" value={totalVisitors.toLocaleString()} color="#8B5CF6" />
-                <ReportCard title="Submissions"      sub="Inquiries & feedback"  value={submissions.length} color="#EC4899" />
-                <ReportCard title="Participations"   sub="Community engagements" value={participation.length} color="#1565C0" />
+                <ReportCard title="Submissions"      sub="Inquiries & feedback"  value={loadingSubs ? '—' : submissions.length} color="#EC4899" />
+                <ReportCard title="Participations"   sub="Community engagements" value={loadingPart ? '—' : participation.length} color="#1565C0" />
                 <ReportCard title="Event Sign-ups"   sub="Event registrations"   value={signups.length} color="#F97316" />
               </div>
 
@@ -3189,7 +3184,11 @@ function AdminDashboard() {
                   filename={`submissions-report-${Date.now()}.csv`}
                   headers={['Type', 'Count', 'Percentage']}
                   rows={Object.entries(subByType).map(([t, c]) => [t, c, `${((c/submissions.length)*100).toFixed(1)}%`])} />
-                {submissions.length === 0 ? (
+                {loadingSubs ? (
+                  <p className="text-sm text-gray-400 text-center py-8">Loading submissions…</p>
+                ) : submissions.length === 0 ? (
+                  /* This said "No submissions yet" while the request was still
+                     running, which is a different claim from "not loaded". */
                   <p className="text-sm text-gray-400 text-center py-8">No submissions yet</p>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -3539,7 +3538,11 @@ function AdminDashboard() {
               <p className="text-sm text-gray-400 mt-0.5">Build sign-up forms for joinable events.</p>
             </div>
 
-            {loadingJE ? (
+            {/* Both lists, not just the events. Each row asks eventForms whether
+                a form exists, so rendering before that list lands labelled
+                every event "No form yet" — including the ones that already
+                have an active form. */}
+            {loadingJE || loadingEF ? (
               <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
             ) : joinableEvents.length === 0 ? (
               <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
