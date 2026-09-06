@@ -439,10 +439,10 @@ export default function AuthModal({ defaultTab = 'login', onClose, message }: Pr
                   <div className="relative">
                     <InputIcon icon={AtSign} />
                     <input required value={username} onChange={e => setUsername(e.target.value.replace(USERNAME_ALLOWED, '').slice(0, 20))}
-                      className={INPUT_CLS} placeholder="juandelacruz123" autoComplete="username"
+                      className={INPUT_CLS} placeholder="juan-delacruz" autoComplete="username"
                       minLength={3} maxLength={20} />
                   </div>
-                  <p className="text-[11px] text-gray-400 mt-1">3–20 chars · letters, numbers, underscores</p>
+                  <p className="text-[11px] text-gray-400 mt-1">3–20 characters · letters, numbers and hyphens</p>
                 </div>
                 <div>
                   <label className={LABEL_CLS}>Email</label>

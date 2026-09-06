@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChevronLeft, User, Lock, Mail, Check, Loader2, Upload } from 'lucide-react';
+import { ChevronLeft, User, Lock, Mail, Check, Loader2, Upload, Building2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Avatar from '@/components/Avatar';
 import { DEFAULT_AVATARS, spriteStyle, isCustomAvatar } from '@/lib/avatars';
@@ -12,7 +12,7 @@ import { DEFAULT_AVATARS, spriteStyle, isCustomAvatar } from '@/lib/avatars';
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
-type Tab = 'profile' | 'password' | 'email';
+type Tab = 'profile' | 'password' | 'email' | 'business';
 
 // Must stay in sync with the whitelist in /api/auth/update-profile.
 const USER_TYPE_OPTIONS = [
@@ -684,10 +684,128 @@ function EmailTab({ token, email, logout }: { token: string; email: string; logo
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
+/**
+ * The listing behind a business account, on the profile page.
+ *
+ * An owner's details lived only on /lbo, which is a desktop-only dashboard, so
+ * on a phone there was nowhere to read what the site says about your own
+ * business — let alone ask for a correction.
+ *
+ * Read here, changed through review: every field carries a button that opens
+ * the owner's dashboard with a change request already filled in. Editing
+ * straight into the listing would put unreviewed text on a public page, which
+ * the tourism office decided against.
+ */
+function BusinessInfoPanel({ token }: { token: string }) {
+  const [app, setApp] = useState<Record<string, string> | null>(null);
+  const [state, setState] = useState<'loading' | 'ready' | 'none' | 'error'>('loading');
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+
+    fetch('/api/lbo/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(async r => {
+        if (cancelled) return;
+        if (r.status === 403) { setState('none'); return; }
+        if (!r.ok) { setState('error'); return; }
+        const d = await r.json();
+        if (d.isLbo) { setApp(d.application); setState('ready'); }
+        else setState('none');
+      })
+      .catch(() => { if (!cancelled) setState('error'); });
+
+    return () => { cancelled = true; };
+  }, [token]);
+
+  if (state === 'loading') {
+    return <p className="text-sm text-gray-400 py-8 text-center">Loading your business details…</p>;
+  }
+
+  if (state === 'none') {
+    return (
+      <div className="text-center py-8">
+        <p className="text-sm text-gray-600 mb-1">No business is linked to this account.</p>
+        <p className="text-xs text-gray-400 mb-4">
+          If you run a business in Liliw, you can apply to have it listed.
+        </p>
+        <Link href="/business/apply"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-sm"
+          style={{ backgroundColor: '#1565C0' }}>
+          Apply as a business owner
+        </Link>
+      </div>
+    );
+  }
+
+  if (state === 'error' || !app) {
+    return <p className="text-sm text-red-500 py-8 text-center">Your business details could not be loaded. Please try again.</p>;
+  }
+
+  const FIELDS: { label: string; value: string; requestAs?: string }[] = [
+    { label: 'Business name',     value: app.business_name,   requestAs: 'Name / Listing Title' },
+    { label: 'Listing name',      value: app.attraction_name, requestAs: 'Name / Listing Title' },
+    { label: 'Owner',             value: app.owner_name },
+    { label: 'Email',             value: app.email },
+    { label: 'Contact number',    value: app.phone,           requestAs: 'Contact Number' },
+    { label: 'Address',           value: app.address,         requestAs: 'Location / Address' },
+    { label: 'Business type',     value: app.business_type },
+    { label: "Permit / DTI no.",  value: app.permit_number },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3">
+        <p className="text-xs text-gray-600 leading-relaxed">
+          These are the details CHATO holds for your business. Changes go to the tourism office
+          for review before they appear on your public listing.
+        </p>
+      </div>
+
+      <dl className="divide-y divide-gray-100">
+        {FIELDS.filter(f => f.value).map(f => (
+          <div key={f.label} className="py-3 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <dt className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{f.label}</dt>
+              <dd className="text-sm text-gray-800 mt-0.5 break-words">{f.value}</dd>
+            </div>
+            {f.requestAs && (
+              <Link href="/lbo"
+                title={`Request a change to ${f.label.toLowerCase()}`}
+                className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border transition hover:bg-blue-50"
+                style={{ borderColor: 'rgba(11,61,145,0.2)', color: '#1565C0' }}>
+                Request change
+              </Link>
+            )}
+          </div>
+        ))}
+      </dl>
+
+      <Link href="/lbo"
+        className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90"
+        style={{ backgroundColor: '#1565C0' }}>
+        Open business dashboard
+      </Link>
+    </div>
+  );
+}
+
 export default function EditProfilePage() {
   const router = useRouter();
   const { user, token, loading, logout } = useAuth();
   const [tab, setTab] = useState<Tab>('profile');
+  // Asked once, so the tab is not offered to the visitors it does not apply to.
+  const [isLbo, setIsLbo] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    fetch('/api/lbo/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : { isLbo: false }))
+      .then(d => { if (!cancelled) setIsLbo(!!d.isLbo); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [token]);
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -702,6 +820,7 @@ export default function EditProfilePage() {
     { key: 'profile',  label: 'Profile Info',     icon: <User  className="w-3.5 h-3.5" /> },
     { key: 'password', label: 'Change Password',  icon: <Lock  className="w-3.5 h-3.5" /> },
     { key: 'email',    label: 'Change Email',      icon: <Mail  className="w-3.5 h-3.5" /> },
+    ...(isLbo ? [{ key: 'business' as Tab, label: 'My Business', icon: <Building2 className="w-3.5 h-3.5" /> }] : []),
   ];
 
   return (
@@ -773,6 +892,7 @@ export default function EditProfilePage() {
           {tab === 'password' && (
             <PasswordTab token={safeToken} email={user.email} />
           )}
+          {tab === 'business' && <BusinessInfoPanel token={safeToken} />}
           {tab === 'email' && (
             <EmailTab token={safeToken} email={user.email} logout={logout} />
           )}
