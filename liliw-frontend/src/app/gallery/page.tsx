@@ -5,6 +5,7 @@ import PageBanner from '@/components/liliw/PageBanner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ZoomIn, Images } from 'lucide-react';
 import { Pagination, usePaged } from '@/components/Pagination';
+import Link from 'next/link';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -72,9 +73,25 @@ function WaveDown({ from, to }: { from: string; to: string }) {
   );
 }
 
+/**
+ * A tile links when the photo has somewhere to go, and is a button when it
+ * does not — rather than an anchor with no href, which is focusable, looks
+ * like a link and does nothing.
+ */
+function TileWrapper({ item, onZoom, children }: {
+  item: GalleryItem; onZoom: () => void; children: React.ReactNode;
+}) {
+  const cls = 'block relative cursor-pointer';
+  return item.source?.href
+    ? <Link href={item.source.href} className={cls}>{children}</Link>
+    : <div className={cls} onClick={onZoom}>{children}</div>;
+}
+
 interface GalleryItem {
   id: number; title: string; description: string;
   imageUrl: string; category: Exclude<Category, 'all'>;
+  /** The entry this photo was uploaded against, and its page. */
+  source?: { type: string; name: string; kind: string; href: string | null };
 }
 
 export default function GalleryPage() {
@@ -97,6 +114,7 @@ export default function GalleryPage() {
             description: a?.description ?? '',
             imageUrl: mediaUrl(img?.url ?? img?.formats?.large?.url ?? img?.formats?.medium?.url),
             category: a?.category ?? 'heritage',
+            source: a?.source ?? undefined,
           };
         }).filter(i => i.imageUrl));
       })
@@ -155,22 +173,41 @@ export default function GalleryPage() {
             {paged.slice.map((item, idx) => (
               <motion.div key={item.id}
                 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
-                className="break-inside-avoid rounded-2xl overflow-hidden cursor-pointer group relative"
-                onClick={() => setLightbox(item)}>
-                <img src={item.imageUrl} alt={item.title}
-                  className="w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex items-end p-3">
-                  <div className="translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 w-full">
-                    <div className="flex items-center justify-between">
-                      <span className="text-white text-xs font-semibold truncate pr-2">{item.title}</span>
-                      <ZoomIn className="w-4 h-4 text-white shrink-0" />
+                className="break-inside-avoid rounded-2xl overflow-hidden group relative">
+                {/* The photo itself leads to the entry it was taken for — an
+                    artisan, an attraction, a story. The gallery was 147 dead
+                    ends: you could find the picture you wanted and had no way
+                    to reach the thing in it. Enlarging is still one tap away,
+                    on the corner button, for anyone who only wants a closer
+                    look. Photos whose parent has no page of its own open the
+                    lightbox as before. */}
+                <TileWrapper item={item} onZoom={() => setLightbox(item)}>
+                  <img src={item.imageUrl} alt={item.title}
+                    className="w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex items-end p-3">
+                    <div className="translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 w-full">
+                      <span className="text-white text-xs font-semibold block truncate">{item.title}</span>
+                      {item.source?.href && (
+                        <span className="text-white/70 text-[11px] block truncate mt-0.5">
+                          View this {item.source.kind} →
+                        </span>
+                      )}
+                      <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-bold text-white"
+                        style={{ backgroundColor: CATEGORY_COLORS[item.category] }}>
+                        {CATEGORY_LABELS[item.category]}
+                      </span>
                     </div>
-                    <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-bold text-white"
-                      style={{ backgroundColor: CATEGORY_COLORS[item.category] }}>
-                      {CATEGORY_LABELS[item.category]}
-                    </span>
                   </div>
-                </div>
+                </TileWrapper>
+
+                <button
+                  onClick={e => { e.preventDefault(); e.stopPropagation(); setLightbox(item); }}
+                  title="View larger"
+                  aria-label="View larger"
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/75 text-white
+                             grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ZoomIn className="w-4 h-4" />
+                </button>
               </motion.div>
             ))}
           </motion.div>
@@ -203,6 +240,14 @@ export default function GalleryPage() {
                     </span>
                   </div>
                   {lightbox.description && <p className="text-gray-400 text-sm">{lightbox.description}</p>}
+                  {lightbox.source?.href && (
+                    <Link href={lightbox.source.href} onClick={() => setLightbox(null)}
+                      className="inline-flex items-center gap-1.5 mt-2 text-sm font-bold hover:underline"
+                      style={{ color: '#F5C518' }}>
+                      View this {lightbox.source.kind}
+                      {lightbox.source.name ? `: ${lightbox.source.name}` : ''} →
+                    </Link>
+                  )}
                 </div>
               )}
               <button onClick={() => setLightbox(null)}

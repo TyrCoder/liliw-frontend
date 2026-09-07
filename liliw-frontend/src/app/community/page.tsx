@@ -8,6 +8,7 @@ import ParticipationModal from '@/components/ParticipationModal';
 import CommunityEventsList from '@/components/CommunityEventsList';
 import { stripHtml } from '@/lib/text';
 import PageBanner from '@/components/liliw/PageBanner';
+import ThumbPlaceholder from '@/components/liliw/ThumbPlaceholder';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
@@ -407,10 +408,15 @@ export default function CommunityPage() {
                     initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: idx * 0.08 }}
                     className="group flex flex-col rounded-2xl overflow-hidden bg-white shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                     <div className="h-1" style={{ backgroundColor: '#0B3D91' }} />
-                    {event.coverUrl && (
+                    {/* Same reasoning as the news list: an event without a
+                        cover kept its card 144px shorter than the ones beside
+                        it, and these sit in a row where that is obvious. */}
+                    {event.coverUrl ? (
                       <div className="h-36 overflow-hidden">
                         <img src={event.coverUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       </div>
+                    ) : (
+                      <ThumbPlaceholder seed={event.slug || event.title} className="h-36" label="Event" />
                     )}
                     <div className="flex flex-col flex-1 p-5">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">

@@ -9,6 +9,7 @@ import PhotoLightbox from '@/components/PhotoLightbox';
 import FacebookVideo from '@/components/FacebookVideo';
 import { extractFacebookVideos } from '@/lib/facebook';
 import { stripHtml } from '@/lib/text';
+import ThumbPlaceholder from '@/components/liliw/ThumbPlaceholder';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
@@ -582,12 +583,18 @@ export default function NewsPage() {
                            what the coloured chips were already promising. */
                         className="bg-white rounded-2xl overflow-hidden border border-gray-200/70 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
                         style={{ borderLeft: `4px solid ${catStyle.text}` }}>
-                        {/* Cover photo strip */}
-                        {item.photos.length > 0 && (
+                        {/* Cover photo strip — every card gets one. Dropping it
+                            on entries without a photo left some cards 160px
+                            shorter than their neighbours, which read as a
+                            broken grid rather than as missing artwork. */}
+                        {item.photos.length > 0 ? (
                           <div className="h-40 overflow-hidden">
                             <img src={item.photos[0]} alt={item.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           </div>
+                        ) : (
+                          <ThumbPlaceholder seed={item.title} tint={catStyle.text}
+                            label={item.isEvent ? 'Event' : item.category.replace(/[-_]/g, ' ')} />
                         )}
                         <div className="p-5 sm:p-6">
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">

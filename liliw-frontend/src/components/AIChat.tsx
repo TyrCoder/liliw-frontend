@@ -329,7 +329,23 @@ export default function AIChat() {
    * while the chat is open, and the X stops it for good — on this page and on
    * every later visit.
    */
-  const INVITE_KEY = 'liliw-lilio-invite-seen';
+  /*
+   * A new key, and a mute that expires.
+   *
+   * The old greeting wrote 'liliw-lilio-invite-seen' and read it as "never
+   * again". Reusing it here meant anyone who had ever dismissed that bubble —
+   * or simply clicked it to open the chat, which dismissed it too — had the
+   * flag set already, and the reminders were silenced before they ever ran.
+   * Nothing on screen could have explained that.
+   *
+   * So: a key of its own, holding the time the mute runs out rather than a
+   * bare yes. Dismissing quiets Lilio for a day, not for good, which is the
+   * right weight for a reminder that is meant to recur — and it means a stray
+   * tap on the X does not permanently remove the feature from someone's
+   * browser.
+   */
+  const MUTED_UNTIL_KEY = 'liliw-lilio-reminders-muted-until';
+  const MUTE_MS    = 24 * 60 * 60 * 1000;
   const FIRST_MS   = 4000;   // the greeting, once the page has settled
   const EVERY_MS   = 30000;  // and a reminder on the half minute after that
   const VISIBLE_MS = 9000;
@@ -337,11 +353,12 @@ export default function AIChat() {
   const dismissInvite = () => {
     setShowInvite(false);
     stopReminders.current?.();
-    safeLocal.set(INVITE_KEY, '1');
+    safeLocal.set(MUTED_UNTIL_KEY, String(Date.now() + MUTE_MS));
   };
 
   useEffect(() => {
-    if (safeLocal.get(INVITE_KEY) === '1') return;
+    const until = Number(safeLocal.get(MUTED_UNTIL_KEY) ?? 0);
+    if (until > Date.now()) return;
 
     // -1 is the greeting; from 0 on it is the rotating prompts, in order, so
     // nobody sees the same line twice in a row.
