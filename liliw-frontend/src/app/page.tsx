@@ -441,21 +441,29 @@ export default function Home() {
           The gradient only appears if no video is configured, so the top of
           the page is never the empty navy block it used to be. */}
       <section className="relative overflow-hidden w-full hero-full" style={{ background: '#0B3D91' }}>
-        <div className="absolute inset-0">
-          {process.env.NEXT_PUBLIC_HERO_VIDEO_URL ? (
-            <video autoPlay muted loop playsInline className="w-full h-full object-cover">
+        {/* The gradient is always underneath, not an either/or with the video.
+            A 7MB file that is still downloading, refused autoplay on a data
+            saver, or blocked outright used to leave a flat navy rectangle at
+            the top of the site with nothing in it. Now it leaves this. */}
+        <div className="absolute inset-0" style={{
+          background:
+            'radial-gradient(90% 70% at 15% 20%, rgba(212,61,141,0.34) 0%, transparent 60%),' +
+            'radial-gradient(80% 70% at 85% 25%, rgba(46,196,214,0.30) 0%, transparent 60%),' +
+            'radial-gradient(90% 80% at 60% 100%, rgba(247,148,29,0.32) 0%, transparent 65%),' +
+            'linear-gradient(160deg, #0B3D91 0%, #0F5FB5 55%, #0A3172 100%)',
+        }} />
+
+        {process.env.NEXT_PUBLIC_HERO_VIDEO_URL && (
+          <div className="absolute inset-0">
+            <video
+              autoPlay muted loop playsInline
+              preload="auto"
+              className="w-full h-full object-cover"
+            >
               <source src={process.env.NEXT_PUBLIC_HERO_VIDEO_URL} type="video/mp4" />
             </video>
-          ) : (
-            <div className="absolute inset-0" style={{
-              background:
-                'radial-gradient(90% 70% at 15% 20%, rgba(212,61,141,0.34) 0%, transparent 60%),' +
-                'radial-gradient(80% 70% at 85% 25%, rgba(46,196,214,0.30) 0%, transparent 60%),' +
-                'radial-gradient(90% 80% at 60% 100%, rgba(247,148,29,0.32) 0%, transparent 65%),' +
-                'linear-gradient(160deg, #0B3D91 0%, #0F5FB5 55%, #0A3172 100%)',
-            }} />
-          )}
-        </div>
+          </div>
+        )}
 
         {/* The hero ends on a hard horizontal line against the navy below it —
             two blues meeting edge to edge, which reads as a seam rather than a

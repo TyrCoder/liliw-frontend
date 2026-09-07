@@ -49,6 +49,10 @@ const CSP = [
     "https://nominatim.openstreetmap.org",     // address lookup
     "https://api.apify.com",                   // external review scraping
   ].join(' '),
+  // The hero video, served from Cloudinary. Without this it falls to
+  // default-src 'self' and the home page loses its hero the moment this
+  // policy stops being report-only.
+  "media-src 'self' blob: https://res.cloudinary.com",
   // Story pages embed YouTube.
   "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
   "frame-ancestors 'self'",

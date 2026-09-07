@@ -238,15 +238,24 @@ canvas {
 }
 
 /* ── Hero full-viewport height with mobile fallbacks ── */
+/*
+ * The hero holds nothing but absolutely-positioned layers, so its height comes
+ * entirely from here — and under 640px this said `height: auto; min-height: 0`,
+ * which gave it no height at all. The section collapsed to nothing and the
+ * video simply was not on the page for anyone on a phone.
+ *
+ * The ratio does the work instead. The footage is 1920x1080, so a 16/9 box
+ * fills edge to edge with nothing cropped, at every width — and the titling is
+ * burnt into the video, so a crop would cut the words off.
+ *
+ * max-height keeps a tall window from pushing the rest of the page below the
+ * fold; when it bites, the box is wider than 16/9 and object-cover trims a
+ * little off the top and bottom rather than off the sides where the titling is.
+ */
 .hero-full {
-  height: calc(var(--vh, 1vh) * 100 - 56px);
-  min-height: 300px;
-}
-@media (max-width: 639px) {
-  .hero-full {
-    height: auto;
-    min-height: 0;
-  }
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: calc(var(--vh, 1vh) * 100 - 56px);
 }
 
 /* ── Editorial card hover ───────────────────── */
