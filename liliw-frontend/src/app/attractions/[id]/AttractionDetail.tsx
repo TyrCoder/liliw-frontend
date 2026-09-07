@@ -236,7 +236,7 @@ export default function AttractionDetail({ id }: { id: string }) {
   if (loading) {
     return (
       <div className="min-h-screen page-ground" suppressHydrationWarning>
-        <div className="max-w-4xl mx-auto px-4 py-12 animate-pulse">
+        <div className="page-wrap px-4 py-12 animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-32 mb-8" />
           <div className="h-64 bg-gray-200 rounded-2xl mb-8" />
           <div className="h-8 bg-gray-200 rounded mb-4 w-3/4" />
@@ -250,7 +250,7 @@ export default function AttractionDetail({ id }: { id: string }) {
   if (error || !attraction) {
     return (
       <div className="min-h-screen page-ground" suppressHydrationWarning>
-        <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="page-wrap px-4 py-12">
           <Link href="/attractions" className="inline-flex items-center font-semibold text-sm" style={{ color: '#1565C0', fontFamily: BL }}>
             <ChevronLeft className="w-4 h-4 mr-2" /> Back to Attractions
           </Link>
@@ -311,7 +311,7 @@ export default function AttractionDetail({ id }: { id: string }) {
         </div>
       </LiliwScene>
 
-      <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      <div className="read-wrap px-4 py-8 sm:py-12">
 
         {/* QR scan feedback. Only appears when the visitor arrived by scanning
             the on-site code, so they know whether the check-in counted rather

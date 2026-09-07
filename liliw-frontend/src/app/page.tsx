@@ -300,7 +300,7 @@ function FeaturedVideos() {
     // cut a blank block out of the cream ground. The player is already a black
     // rectangle; it needs no sheet behind it.
     <section className="py-14">
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="page-wrap px-4">
         <FestiveHeading title="Featured Videos" sub="Watch and experience the beauty of Liliw" />
         <div className="flex flex-col lg:flex-row gap-5">
           {/* Main player */}
@@ -503,7 +503,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════
           FEATURED ATTRACTIONS
           ══════════════════════════════════════════════════════ */}
-      <section className="pt-10 pb-16 max-w-7xl mx-auto px-4">
+      <section className="pt-10 pb-16 page-wrap px-4">
           {/* The five ways in, as one strip. The coloured squares above answer
               "what is here"; this answers "take me there" at the point where
               the reader is already looking at attractions. */}
@@ -581,7 +581,7 @@ export default function Home() {
           THINGS TO DO — dark navy scroll section
           ══════════════════════════════════════════════════════ */}
       <section style={{ backgroundColor: '#0B3D91', paddingTop: 40, paddingBottom: 60 }}>
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="page-wrap px-4">
           <FestiveHeading title="Things to Do" sub="Activities and experiences across Liliw" light />
 
           <div className="flex items-center justify-end gap-2 mb-5 -mt-4">
@@ -637,7 +637,7 @@ export default function Home() {
           LATEST NEWS & EVENTS
           ══════════════════════════════════════════════════════ */}
       {announcements.length > 0 && (
-        <section className="py-14 max-w-7xl mx-auto px-4">
+        <section className="py-14 page-wrap px-4">
           <FestiveHeading
             title="Latest from Liliw"
             sub="News, announcements and upcoming events" />
@@ -669,7 +669,7 @@ export default function Home() {
           of the ground, and its three cards are solid navy, blue and teal
           panels that read perfectly well on cream. */}
       <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="page-wrap px-4">
           <FestiveHeading
             title="Discover the Soul of Liliw"
             sub="Dive deeper into what makes this town extraordinary" />
@@ -721,7 +721,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════
           HOW IT WORKS — quick guide to using the app
           ══════════════════════════════════════════════════════ */}
-      <section className="py-14 max-w-7xl mx-auto px-4">
+      <section className="py-14 page-wrap px-4">
         <FestiveHeading
           title="How It Works"
           sub="New here? Here's how to get the most out of your Liliw visit in five steps" />
@@ -778,7 +778,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════
           PLAN YOUR VISIT
           ══════════════════════════════════════════════════════ */}
-      <section className="py-14 pb-20 max-w-7xl mx-auto px-4">
+      <section className="py-14 pb-20 page-wrap px-4">
         <FestiveHeading title="Plan Your Visit" sub="Everything you need to make the most of your trip" />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

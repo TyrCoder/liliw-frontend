@@ -94,7 +94,7 @@ export default function TermsPage() {
         subtitle="How the Liliw Virtual Guide may be used, and what it does with your information"
       />
 
-      <div className="max-w-3xl mx-auto px-4 py-12">
+      <div className="read-wrap px-4 py-12">
         <p className="text-sm text-gray-500 mb-10" style={{ fontFamily: BL }}>
           Last updated {UPDATED}. This page covers both the terms of use and the privacy notice for
           the Liliw Virtual Guide, operated by the {OFFICE}. Using the site means accepting what is

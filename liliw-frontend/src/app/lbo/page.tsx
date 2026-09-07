@@ -626,7 +626,7 @@ function LboDashboard() {
           linked attraction moved into the dashboard below, which had been
           repeating both a few hundred pixels further down. */}
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200/80">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+        <div className="page-wrap px-4 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link href="/" className="inline-flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-700 transition shrink-0">
               <ChevronLeft className="w-3.5 h-3.5" /> Site

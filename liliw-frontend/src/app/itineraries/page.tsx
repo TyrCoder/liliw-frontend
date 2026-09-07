@@ -2462,7 +2462,7 @@ export default function ItinerariesPage() {
         subtitle="Plan your own trip with AI or browse our curated tours"
       />
 
-      <div className="max-w-5xl mx-auto px-4 py-10 space-y-14">
+      <div className="page-wrap px-4 py-10 space-y-14">
 
         {/* AI Wizard */}
         <section>

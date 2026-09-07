@@ -196,7 +196,7 @@ export default function CulturePage() {
         backHref={null}
       />
 
-      <div className="max-w-6xl mx-auto px-4 py-8 pb-20">
+      <div className="page-wrap px-4 py-8 pb-20">
 
         {/* Skeleton */}
         {loading && (

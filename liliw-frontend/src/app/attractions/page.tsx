@@ -190,7 +190,7 @@ export default function AttractionsPage() {
       />
 
       {/* Search + Filters */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="page-wrap px-4 py-6">
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.4 }} className="mb-8 space-y-3">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

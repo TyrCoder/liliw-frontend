@@ -182,7 +182,7 @@ export default function ParticipatePage() {
         backLabel="Back to Community"
       />
 
-      <div className="max-w-3xl mx-auto px-4 py-12">
+      <div className="read-wrap px-4 py-12">
         <CommunityEventsList />
 
         <div className="bg-white rounded-2xl p-8 shadow-sm border scroll-mt-6" style={{ borderColor: 'rgba(11,61,145,0.1)' }}>

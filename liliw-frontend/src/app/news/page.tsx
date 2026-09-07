@@ -507,7 +507,7 @@ export default function NewsPage() {
       />
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 py-10 pb-20">
+      <div className="page-wrap px-4 py-10 pb-20">
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin"

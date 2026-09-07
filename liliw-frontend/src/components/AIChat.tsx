@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { safeLocal } from '@/lib/safeStorage';
 import { usePathname } from 'next/navigation';
 import { Send, X, Loader, MapPin, Star, Utensils, Landmark, MessageSquarePlus, Eye } from 'lucide-react';
 import LilioAvatar from '@/components/LilioAvatar';
@@ -10,6 +11,43 @@ import { logger } from '@/lib/logger';
 import type { ChatMessage } from '@/lib/types';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
+
+/**
+ * What Lilio reminds you he can do, one thing at a time.
+ *
+ * Each line names something concrete and answerable rather than inviting a
+ * question in the abstract: "ask me anything" is exactly the prompt that
+ * leaves people with nothing to say. They cycle in order so a visitor who
+ * stays on a page for a few minutes learns several different things he
+ * handles rather than the same one repeatedly.
+ */
+const CHAT_PROMPTS: { title: string; body: string; ask: string }[] = [
+  { title: 'Planning your day? \u2600\ufe0f',
+    body: 'I can build you an itinerary — tell me how long you have.',
+    ask: 'Can you plan a one-day trip around Liliw for me?' },
+  { title: 'Hungry? \ud83c\udf72',
+    body: 'Ask me where to eat and what the place is known for.',
+    ask: 'Where should I eat in Liliw?' },
+  { title: 'Looking for tsinelas? \ud83e\ude74',
+    body: 'I know which street the slipper shops are on.',
+    ask: 'Where do I buy tsinelas in Liliw?' },
+  { title: 'Going to the falls? \ud83d\udca7',
+    body: 'Ask me how to get to Kilangin and what to bring.',
+    ask: 'How do I get to Kilangin Falls?' },
+  { title: 'Curious about the church? \u26ea',
+    body: 'Ask me about St. John the Baptist and the town\u2019s history.',
+    ask: 'Tell me about the church in Liliw.' },
+  { title: 'What\u2019s on this month? \ud83c\udf89',
+    body: 'Ask me about festivals and upcoming events.',
+    ask: 'What events are happening in Liliw?' },
+  { title: 'First time here? \ud83d\uddfa\ufe0f',
+    body: 'Ask me what Liliw is known for and where to start.',
+    ask: 'What is Liliw known for?' },
+  { title: 'Stuck on the site? \ud83e\udded',
+    body: 'I can explain check-ins, points and how to save a trip.',
+    ask: 'How do check-ins and points work?' },
+];
+
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 interface AttractionCard {
@@ -246,6 +284,9 @@ export default function AIChat() {
   ]);
   const [input, setInput] = useState('');
   const [showInvite, setShowInvite] = useState(false);
+  /** -1 while the greeting is showing, then an index into CHAT_PROMPTS. */
+  const [promptIdx, setPromptIdx] = useState(-1);
+  const stopReminders = useRef<(() => void) | null>(null);
   // Page focus: while on, every question is answered against the page.
   const [pageMode, setPageMode] = useState(false);
   // Set while a drag is in progress so the click it ends with does not open
@@ -275,22 +316,53 @@ export default function AIChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // localStorage rather than state: the point is that it stays dismissed on
-  // the next page and the next visit. Wrapped because Safari's private mode
-  // throws on access, and a greeting bubble is not worth breaking the chat for.
+  /**
+   * The nudge, and then the reminders.
+   *
+   * Lilio said hello once, four seconds in, and if you did not take it up you
+   * never heard from him again — so most people never learned the site had a
+   * chatbot at all, let alone what it was good for. Now a different prompt
+   * comes round every thirty seconds, each naming one concrete thing he can
+   * answer, because "ask me anything" tells nobody what to ask.
+   *
+   * It shows for nine seconds and then gets out of the way, it never appears
+   * while the chat is open, and the X stops it for good — on this page and on
+   * every later visit.
+   */
   const INVITE_KEY = 'liliw-lilio-invite-seen';
+  const FIRST_MS   = 4000;   // the greeting, once the page has settled
+  const EVERY_MS   = 30000;  // and a reminder on the half minute after that
+  const VISIBLE_MS = 9000;
+
   const dismissInvite = () => {
     setShowInvite(false);
-    try { localStorage.setItem(INVITE_KEY, '1'); } catch { /* nothing to do */ }
+    stopReminders.current?.();
+    safeLocal.set(INVITE_KEY, '1');
   };
 
   useEffect(() => {
-    let seen = false;
-    try { seen = localStorage.getItem(INVITE_KEY) === '1'; } catch { seen = false; }
-    if (seen) return;
-    const t = setTimeout(() => setShowInvite(true), 4000);
-    return () => clearTimeout(t);
-  }, []);
+    if (safeLocal.get(INVITE_KEY) === '1') return;
+
+    // -1 is the greeting; from 0 on it is the rotating prompts, in order, so
+    // nobody sees the same line twice in a row.
+    let next = -1;
+    let hide: ReturnType<typeof setTimeout> | undefined;
+
+    const show = () => {
+      setPromptIdx(next);
+      setShowInvite(true);
+      clearTimeout(hide);
+      hide = setTimeout(() => setShowInvite(false), VISIBLE_MS);
+      next = next + 1 >= CHAT_PROMPTS.length ? 0 : next + 1;
+    };
+
+    const greeting = setTimeout(show, FIRST_MS);
+    const cycle = setInterval(show, EVERY_MS);
+
+    const stop = () => { clearTimeout(greeting); clearInterval(cycle); clearTimeout(hide); };
+    stopReminders.current = stop;
+    return stop;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * Clears the thread back to a fresh greeting.
@@ -383,16 +455,27 @@ export default function AIChat() {
             transition={{ duration: 0.22 }}
             className={`fixed bottom-24 z-40 max-w-[15rem] ${isMapPage ? 'right-24' : 'right-6'}`}
           >
+            {/* Tapping a reminder asks its question outright. A prompt that
+                names something answerable and then makes you retype it is
+                doing half the job. */}
             <button
-              onClick={() => { setIsOpen(true); dismissInvite(); }}
+              onClick={() => {
+                const prompt = promptIdx >= 0 ? CHAT_PROMPTS[promptIdx] : null;
+                setIsOpen(true);
+                if (prompt) setInput(prompt.ask);
+                dismissInvite();
+              }}
               className="relative block text-left rounded-2xl rounded-br-sm bg-white shadow-xl px-4 py-3 pr-8 border hover:shadow-2xl transition-shadow"
               style={{ borderColor: 'rgba(21,101,192,0.25)' }}
+              aria-live="polite"
             >
               <p className="text-sm font-bold leading-snug" style={{ color: '#0B3D91', fontFamily: HL }}>
-                Kumusta! I&rsquo;m Lilio 👋
+                {promptIdx >= 0 ? CHAT_PROMPTS[promptIdx].title : <>Kumusta! I&rsquo;m Lilio 👋</>}
               </p>
               <p className="text-xs text-gray-500 mt-0.5 leading-snug" style={{ fontFamily: BL }}>
-                Ask me anything about Liliw — where to eat, what to see, how to get around.
+                {promptIdx >= 0
+                  ? CHAT_PROMPTS[promptIdx].body
+                  : 'Ask me anything about Liliw — where to eat, what to see, how to get around.'}
               </p>
             </button>
             <span

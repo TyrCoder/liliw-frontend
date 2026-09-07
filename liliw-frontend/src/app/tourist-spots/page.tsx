@@ -87,7 +87,7 @@ export default function TouristSpotsPage() {
         backHref={null}
       />
 
-      <div className="max-w-6xl mx-auto px-4 py-8 pb-20">
+      <div className="page-wrap px-4 py-8 pb-20">
         {loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[1,2,3,4,5,6].map(i => <div key={i} className="rounded-2xl bg-gray-100 animate-pulse" style={{ aspectRatio:'3/4' }} />)}

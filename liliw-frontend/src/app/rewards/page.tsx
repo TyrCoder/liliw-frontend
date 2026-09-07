@@ -84,7 +84,7 @@ export default function RewardsPage() {
 
   return (
     <div className="min-h-screen bg-[#F9F6F0]">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="page-wrap px-4 py-8">
         <button onClick={() => router.back()} className="inline-flex items-center text-sm font-semibold mb-6 group" style={{ color: '#1565C0' }}>
           <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back
         </button>

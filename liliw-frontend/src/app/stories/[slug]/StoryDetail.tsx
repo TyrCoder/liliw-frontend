@@ -293,7 +293,7 @@ export default function StoryDetail() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-12" style={{ fontFamily: BL }}>
+      <div className="page-wrap px-4 py-12" style={{ fontFamily: BL }}>
         <div className="animate-pulse space-y-6">
           <div className="h-5 bg-gray-200 rounded w-28" />
           <div className="h-80 bg-gray-200 rounded-2xl" />
@@ -352,7 +352,7 @@ export default function StoryDetail() {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12">
+      <div className="page-wrap px-4 py-8 sm:py-12">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
 
           {/* Back link */}

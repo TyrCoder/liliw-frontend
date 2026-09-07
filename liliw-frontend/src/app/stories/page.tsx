@@ -123,7 +123,7 @@ export default function StoriesPage() {
         backHref={null}
       />
 
-      <div className="max-w-7xl mx-auto px-4 py-8 pb-24">
+      <div className="page-wrap px-4 py-8 pb-24">
 
         {/* Three-column layout: GatTayaw | Stories | Dog */}
         <div className="flex gap-6 xl:gap-10 items-start">

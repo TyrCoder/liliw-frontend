@@ -471,7 +471,7 @@ export default function ImmersivePage() {
       >
         <div aria-hidden className="h-1 w-full" style={weaveStyle('#F5C518', 0.3)} />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3">
+        <div className="page-wrap px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3">
           <motion.div whileHover={{ x: -2 }} whileTap={{ x: -4 }} className="shrink-0">
             <Link href="/attractions"
               className="inline-flex items-center gap-1.5 text-sm font-bold transition px-2.5 py-2 rounded-lg hover:bg-white/10"

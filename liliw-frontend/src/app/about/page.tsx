@@ -53,7 +53,7 @@ export default function AboutPage() {
         subtitle="Discover the beauty, history, and heritage of Liliw, Laguna"
       />
 
-      <div className="max-w-4xl mx-auto px-4 py-16">
+      <div className="read-wrap px-4 py-16">
         <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="space-y-16">
 
           <motion.div variants={fade} className="space-y-4">

@@ -72,7 +72,7 @@ export default function HeritagePage() {
         subtitle="Discover the historical treasures and cultural landmarks of Liliw"
       />
 
-      <div className="max-w-6xl mx-auto px-4 py-12 pb-20">
+      <div className="page-wrap px-4 py-12 pb-20">
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1,2,3,4,5,6].map(i => <div key={i} className="rounded-2xl bg-white animate-pulse h-72 border border-gray-100" />)}

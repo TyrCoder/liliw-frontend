@@ -116,7 +116,7 @@ export default function GalleryPage() {
         subtitle="A visual journey through Liliw, Laguna"
       />
       {/* Category filters */}
-      <div className="max-w-6xl mx-auto px-4 pt-6 pb-4">
+      <div className="page-wrap px-4 pt-6 pb-4">
         <div className="flex flex-wrap gap-2 justify-center">
           {CATEGORIES.map(cat => (
             <motion.button key={cat} whileTap={{ scale: 0.95 }}
@@ -131,7 +131,7 @@ export default function GalleryPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 pb-24">
+      <div className="page-wrap px-4 pb-24">
         {loading && (
           <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
             {Array.from({ length: 12 }).map((_, i) => (

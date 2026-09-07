@@ -293,7 +293,7 @@ export default function CommunityPage() {
         subtitle="Be part of Liliw's tourism story — volunteer, partner, or share your feedback."
       />
 
-      <div className="max-w-6xl mx-auto px-4 py-16 space-y-20">
+      <div className="page-wrap px-4 py-16 space-y-20">
 
         {/* Ways to Participate */}
         <section>

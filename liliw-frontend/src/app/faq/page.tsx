@@ -93,7 +93,7 @@ export default function FaqPage() {
         subtitle="Find answers to common questions about visiting Liliw"
       />
 
-      <div className="max-w-4xl mx-auto px-4 py-12">
+      <div className="read-wrap px-4 py-12">
 
         {/* Search */}
         <motion.div initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.4 }} className="mb-8">

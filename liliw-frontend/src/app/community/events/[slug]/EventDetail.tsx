@@ -155,7 +155,7 @@ export default function EventDetail() {
           : <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }} />
         }
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 max-w-3xl mx-auto">
+        <div className="absolute bottom-0 left-0 right-0 p-6 read-wrap">
           <Link href="/community" className="inline-flex items-center text-sm font-semibold mb-3 group"
             style={{ color: '#F5C518', fontFamily: BL }}>
             <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition" /> Back to Community
@@ -170,7 +170,7 @@ export default function EventDetail() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+      <div className="read-wrap px-4 py-8 space-y-8">
 
         {/* Info chips */}
         <div className="flex flex-wrap gap-3">

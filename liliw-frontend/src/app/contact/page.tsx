@@ -82,7 +82,7 @@ export default function ContactPage() {
         subtitle="Have questions? We'd love to hear from you."
       />
 
-      <div className="max-w-6xl mx-auto px-4 py-16">
+      <div className="page-wrap px-4 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
           {/* Contact info */}

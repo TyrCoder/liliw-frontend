@@ -99,6 +99,36 @@ canvas {
   background-color: transparent !important;
 }
 
+/*
+ * ── Page width ──────────────────────────────
+ *
+ * Every page picked its own container — 4xl through 7xl — so the same site
+ * was 896px wide on one page and 1280px on the next, and on a normal desktop
+ * a 6xl page left roughly 380px of empty ground down each side. Two widths
+ * now, named for what they hold rather than for a number.
+ *
+ * `page-wrap` is for grids and dashboards, where more columns is simply more
+ * of what the visitor came for.
+ *
+ * `read-wrap` is for pages that are mostly sentences. It is deliberately
+ * narrower: a line of text that runs the full width of a wide monitor is hard
+ * to read back to the start of, so those pages stay near a comfortable
+ * measure even though the space exists.
+ */
+.page-wrap {
+  width: 100%;
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.read-wrap {
+  width: 100%;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* ── Font utilities ─────────────────────────── */
 .font-display {
   font-family: var(--font-display), 'Cormorant Garamond', Georgia, serif;

@@ -226,7 +226,7 @@ export default function ArtsPage() {
       />
 
       {/* Art Forms */}
-      <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="page-wrap px-4 py-12">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-10 text-center">
           <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
             <Bunting />
@@ -287,7 +287,7 @@ export default function ArtsPage() {
       <div className="h-px mx-auto max-w-6xl" style={{ background: 'linear-gradient(to right, transparent, #e2e8f0, transparent)' }} />
 
       {/* Artisans */}
-      <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="page-wrap px-4 py-12">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8 text-center">
           <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
             <Bunting />
@@ -453,7 +453,7 @@ export default function ArtsPage() {
       </AnimatePresence>
 
       {/* CTA */}
-      <div className="max-w-6xl mx-auto px-4 pb-16">
+      <div className="page-wrap px-4 pb-16">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="relative rounded-3xl overflow-hidden p-10 text-center"
           style={{ background: 'linear-gradient(135deg,#0B3D91 0%,#1565C0 100%)' }}>
