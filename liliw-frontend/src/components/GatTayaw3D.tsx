@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
+import { SkeletonUtils } from 'three-stdlib';
 
 /**
  * Gat Tayaw, as the rigged model rather than the stack of cut-out PNGs.
@@ -44,17 +45,27 @@ const TELLING = [CLIP.talk, CLIP.waiting, CLIP.idle] as const;
 /** Height in world units to normalise every model to, whatever it was authored at. */
 const TARGET_HEIGHT = 1.65;
 
-function Figure({ speaking, greetKey }: { speaking: boolean; greetKey: string }) {
+function Figure({ speaking, greetKey, turn }: { speaking: boolean; greetKey: string; turn: number }) {
   const group = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(MODEL);
   const { actions, mixer } = useAnimations(animations, group);
 
   /*
-   * One copy per mount. useGLTF caches the parsed scene, so two of these on a
-   * page would otherwise animate the same skeleton and fight over it.
+   * One copy per mount, cloned the way a skinned mesh has to be.
+   *
+   * Object3D.clone() copies the bones and copies the mesh, and then leaves the
+   * copied mesh bound to the *original* skeleton. Everything looks right and
+   * nothing moves: the animation drives the new bones while the body follows
+   * the old ones, frozen in its bind pose. That is exactly what this was doing
+   * — a rigged character standing perfectly still with four clips playing.
+   *
+   * SkeletonUtils.clone rebuilds the bindings against the copy. The clone
+   * itself is still needed because useGLTF caches the parsed scene, so the
+   * storyteller on the listing page and the one on a story would otherwise be
+   * driving a single skeleton between them.
    */
   const model = useMemo(() => {
-    const clone = scene.clone(true);
+    const clone = SkeletonUtils.clone(scene) as THREE.Group;
 
     // The export is quantized, so its raw coordinates mean nothing on their
     // own — the box has to be measured after the loader has applied the scale.
@@ -161,25 +172,37 @@ function Figure({ speaking, greetKey }: { speaking: boolean; greetKey: string })
     return () => { next.fadeOut(0.35); };
   }, [wanted, phase, actions, mixer]);
 
-  return <group ref={group}><primitive object={model} /></group>;
+  /* Turning is done here rather than by flipping the canvas in CSS: a mirrored
+     transform would put his staff in the wrong hand and reverse the lighting
+     with it. */
+  return <group ref={group} rotation-y={turn}><primitive object={model} /></group>;
 }
 
 export default function GatTayaw3D({
   speaking = false,
   greetKey = 'default',
-  height = 267,
+  facing = 'front',
+  width = 220,
+  height = 300,
 }: {
   /** True while the narration is playing, which decides idle versus talking. */
   speaking?: boolean;
   /** Changing this makes him bow again — pass the story being read. */
   greetKey?: string;
+  /** Which way he is turned, for when he is being moved across a track. */
+  facing?: 'left' | 'right' | 'front';
+  width?: number;
   height?: number;
 }) {
+  const turn = facing === 'left' ? 0.6 : facing === 'right' ? -0.6 : 0;
   return (
-    <div style={{ width: 178, height }} className="select-none">
+    <div style={{ width, height }} className="select-none">
+      {/* Closer, and a narrower lens. He was framed like a wide establishing
+          shot: a small figure adrift in a box mostly full of nothing, which is
+          a waste of both the model and the column it sits in. */}
       <Canvas
         dpr={[1, 2]}
-        camera={{ position: [0, 1.05, 2.45], fov: 32 }}
+        camera={{ position: [0, 0.95, 1.85], fov: 30 }}
         gl={{ antialias: true, alpha: true }}
         style={{ background: 'transparent' }}
       >
@@ -192,8 +215,8 @@ export default function GatTayaw3D({
         <directionalLight position={[-3, 2, -2]} intensity={0.9} color="#9DC4FF" />
 
         <Suspense fallback={null}>
-          <group position={[0, -0.85, 0]}>
-            <Figure speaking={speaking} greetKey={greetKey} />
+          <group position={[0, -0.78, 0]}>
+            <Figure speaking={speaking} greetKey={greetKey} turn={turn} />
           </group>
         </Suspense>
       </Canvas>
