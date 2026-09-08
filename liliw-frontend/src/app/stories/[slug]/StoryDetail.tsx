@@ -8,6 +8,7 @@ import { ChevronLeft, User, Calendar, BookOpen, Play } from 'lucide-react';
 import GatTayaw from '@/components/GatTayaw';
 import DogMascot from '@/components/DogMascot';
 import SafeHtml from '@/components/SafeHtml';
+import { isNarrationKey } from '@/lib/narrations';
 
 // Add YouTube video IDs per story type — empty strings are hidden until filled
 const STORY_VIDEOS: Record<string, { id: string; title: string }[]> = {
@@ -38,7 +39,22 @@ const STORY_VIDEOS: Record<string, { id: string; title: string }[]> = {
   ],
 };
 
-function getAudioKey(category: string, slug: string, title = ''): string {
+/**
+ * Which narration Gat Tayaw reads.
+ *
+ * The editor's choice wins. Everything below it is the guess that used to be
+ * the only answer: a keyword search of the slug and title, then a fallback by
+ * category. That guess is right for the four stories it was written against
+ * and wrong for anything else — a story about weaving matches none of the
+ * words and gets narrated with the ancestral houses script, silently.
+ *
+ * It stays as the fallback rather than being replaced, because every story
+ * published before the column existed has no choice recorded, and those should
+ * keep behaving exactly as they did.
+ */
+function getAudioKey(category: string, slug: string, title = '', chosen?: string | null): string {
+  if (isNarrationKey(chosen)) return chosen;
+
   // Check slug + title first so specific story topics always win
   const s = (slug + ' ' + title).toLowerCase();
   const c = category.toLowerCase();
@@ -327,7 +343,7 @@ export default function StoryDetail() {
   }
 
   const catColor  = CATEGORY_COLORS[story.category] ?? '#0B3D91';
-  const audioKey  = getAudioKey(story.category, slug, story.title);
+  const audioKey  = getAudioKey(story.category, slug, story.title, story.audio_key);
   const storyVids = (STORY_VIDEOS[audioKey] ?? []).filter(v => v.id.trim());
 
   return (
@@ -395,7 +411,7 @@ export default function StoryDetail() {
 
             {/* ── Left sidebar: GatTayaw (sticky) ── */}
             <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-8">
-              <GatTayaw defaultKey={getAudioKey(story.category, slug, story.title)} />
+              <GatTayaw defaultKey={audioKey} />
             </div>
 
             {/* ── Center: Article body ── */}
