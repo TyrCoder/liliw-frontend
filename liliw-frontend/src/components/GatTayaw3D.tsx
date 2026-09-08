@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
@@ -44,6 +45,54 @@ const TELLING = [CLIP.talk, CLIP.waiting, CLIP.idle] as const;
 
 /** Height in world units to normalise every model to, whatever it was authored at. */
 const TARGET_HEIGHT = 1.65;
+
+/** Roughly how wide he is with his arms out, used so a narrow panel does not clip them. */
+const BODY_WIDTH = 0.95;
+
+/** Air around him, so he is not wedged against the edges of his own panel. */
+const FRAME_MARGIN = 1.18;
+
+/**
+ * Puts the camera where the whole of him fits.
+ *
+ * Framing was two hand-picked numbers — a distance and a field of view — and
+ * hand-picked numbers are wrong the moment anything around them changes. The
+ * last pair cropped him to the knees: 1.85 units away through a 30 degree lens
+ * sees about one unit of height, and he is 1.65 tall.
+ *
+ * The distance is derived instead, from his measured height and the lens, and
+ * from the canvas shape as well — a tall narrow panel like the one on the
+ * slideshow rail sees less across than it does down, so fitting only by height
+ * would trim his shoulders. Whatever size the panel is, all of him is in it.
+ */
+function Frame({ height }: { height: number }) {
+  const { camera, size } = useThree();
+
+  useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    const aspect = size.width / Math.max(size.height, 1);
+
+    const vFov = (cam.fov * Math.PI) / 180;
+    const forHeight = (height / 2) / Math.tan(vFov / 2);
+    // Horizontal room is the vertical room times the aspect, so a narrow panel
+    // needs to pull back further to hold the same width.
+    const forWidth = (BODY_WIDTH / 2) / (Math.tan(vFov / 2) * Math.max(aspect, 0.01));
+
+    const distance = Math.max(forHeight, forWidth) * FRAME_MARGIN;
+    const centre = height / 2;
+
+    cam.position.set(0, centre, distance);
+    cam.lookAt(0, centre, 0);
+    /* A three.js camera is a mutable object, not React state — the rule reads
+       it as the latter. near and far have no setters. */
+    // eslint-disable-next-line react-hooks/immutability
+    cam.near = 0.1;
+    cam.far = distance * 4;
+    cam.updateProjectionMatrix();
+  }, [camera, size.width, size.height, height]);
+
+  return null;
+}
 
 function Figure({ speaking, greetKey, turn }: { speaking: boolean; greetKey: string; turn: number }) {
   const group = useRef<THREE.Group>(null);
@@ -215,9 +264,11 @@ export default function GatTayaw3D({
       {/* Closer, and a narrower lens. He was framed like a wide establishing
           shot: a small figure adrift in a box mostly full of nothing, which is
           a waste of both the model and the column it sits in. */}
+      {/* The position here is a starting value only — Frame replaces it once it
+          knows the panel's shape. */}
       <Canvas
         dpr={[1, 2]}
-        camera={{ position: [0, 0.95, 1.85], fov: 30 }}
+        camera={{ position: [0, 0.9, 3.2], fov: 30 }}
         gl={{ antialias: true, alpha: true }}
         style={{ background: 'transparent' }}
       >
@@ -229,10 +280,14 @@ export default function GatTayaw3D({
         <directionalLight position={[2.5, 4, 3]} intensity={2.2} />
         <directionalLight position={[-3, 2, -2]} intensity={0.9} color="#9DC4FF" />
 
+        <Frame height={TARGET_HEIGHT} />
+
         <Suspense fallback={null}>
-          <group position={[0, -0.78, 0]}>
-            <Figure speaking={speaking} greetKey={greetKey} turn={turn} />
-          </group>
+          {/* No offset group: he stands on y = 0 and the camera looks at his
+              middle, which is what Frame works out. Nudging the model up or
+              down to make a fixed camera work is how the framing drifted in
+              the first place. */}
+          <Figure speaking={speaking} greetKey={greetKey} turn={turn} />
         </Suspense>
       </Canvas>
     </div>
