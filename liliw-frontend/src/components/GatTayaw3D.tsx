@@ -149,9 +149,24 @@ function Figure({ speaking, greetKey, turn }: { speaking: boolean; greetKey: str
     return () => clearTimeout(t);
   }, [phase, speaking]);
 
+  /*
+   * drei hands back `actions` as lazy getters that return undefined until the
+   * mixer has a root object to bind to. That is normally true by the time
+   * effects run, but nothing re-runs this if it is not — the actions object
+   * keeps the same identity forever, so a single unlucky ordering would leave
+   * him standing in his bind pose for the rest of the visit with no error
+   * anywhere. One retry on the next frame costs nothing and removes the whole
+   * class of it.
+   */
+  const [bindAttempt, setBindAttempt] = useState(0);
+
   useEffect(() => {
     const next = actions[wanted];
-    if (!next) return;
+    if (!next) {
+      if (bindAttempt > 30) return; // something else is wrong; stop spinning
+      const f = requestAnimationFrame(() => setBindAttempt(n => n + 1));
+      return () => cancelAnimationFrame(f);
+    }
 
     // Crossfade rather than cut: switching clips on a skeleton mid-pose snaps
     // the limbs, which is far more noticeable than the transition itself.
@@ -170,7 +185,7 @@ function Figure({ speaking, greetKey, turn }: { speaking: boolean; greetKey: str
     }
 
     return () => { next.fadeOut(0.35); };
-  }, [wanted, phase, actions, mixer]);
+  }, [wanted, phase, actions, mixer, bindAttempt]);
 
   /* Turning is done here rather than by flipping the canvas in CSS: a mirrored
      transform would put his staff in the wrong hand and reverse the lighting
