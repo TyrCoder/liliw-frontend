@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight, User, BookOpen, Pause, Play } from 'lucide-r
 
 const GatTayaw3D = dynamic(() => import('@/components/GatTayaw3D'), {
   ssr: false,
-  loading: () => <div style={{ width: 150, height: 200 }} />,
+  loading: () => <div style={{ width: 170, height: 230 }} />,
 });
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -31,6 +31,13 @@ export interface Story {
 }
 
 const AUTOPLAY_MS = 9000;
+
+/* The figure and the strip below it, named because three places have to agree
+   on them: the container's height, where he stands, and how far he is offset
+   to be centred over a slide. */
+const FIGURE_W = 170;
+const FIGURE_H = 230;
+const RAIL_H = 46;
 
 /**
  * The stories, one at a time, with Gat Tayaw walking to the one he introduces.
@@ -193,14 +200,20 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
       {/* ── The rail he walks along ──
           Each story takes an equal share of the width, so his position is the
           index expressed as a percentage and nothing has to be measured. */}
-      <div className="relative mt-2" style={{ height: 210 }}>
+      {/* The rail has to be tall enough to hold him.
+          It was 210px with a 200px figure sitting 64px off the bottom, so he
+          reached 54px above his own container and disappeared behind the slide
+          — which is its own stacking context, being rounded and clipped. All
+          that showed of the storyteller was a pair of feet below the picture.
+          The height is now the figure plus the labels beneath it. */}
+      <div className="relative mt-3" style={{ height: FIGURE_H + RAIL_H }}>
         <motion.div
-          className="absolute bottom-16 pointer-events-none"
-          style={{ width: 150, marginLeft: -75 }}
+          className="absolute pointer-events-none"
+          style={{ width: FIGURE_W, marginLeft: -FIGURE_W / 2, bottom: RAIL_H }}
           animate={{ left: `${((index + 0.5) / count) * 100}%` }}
           transition={{ type: 'spring', stiffness: 90, damping: 18 }}
         >
-          <GatTayaw3D width={150} height={200} facing={facing}
+          <GatTayaw3D width={FIGURE_W} height={FIGURE_H} facing={facing}
             greetKey="stories-slideshow" speaking={false} />
         </motion.div>
 

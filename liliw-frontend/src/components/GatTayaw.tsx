@@ -6,9 +6,15 @@ import dynamic from 'next/dynamic';
 
 /* A Canvas cannot render on the server, and three plus the loader is a large
    bundle that only matters once someone reaches a story. */
+/* One size for the storyteller, so the placeholder that holds his space while
+   three.js loads is the same shape as the figure that replaces it — otherwise
+   the speech bubble beneath him jumps when the canvas arrives. */
+const FIGURE_W = 250;
+const FIGURE_H = 330;
+
 const GatTayaw3D = dynamic(() => import('@/components/GatTayaw3D'), {
   ssr: false,
-  loading: () => <div style={{ width: 178, height: 178 * (1911 / 1274) }} />,
+  loading: () => <div style={{ width: FIGURE_W, height: FIGURE_H }} />,
 });
 
 type Lang = 'en' | 'fil';
@@ -269,7 +275,13 @@ export default function GatTayaw({ defaultKey }: Props) {
                    changed topic, which is a greeting in the middle of a
                    conversation. He bows when the page opens. */
                 greetKey={defaultKey ?? 'welcome'}
-                height={178 * (1911 / 1274)}
+                /* Sized for the model, not for the old cut-outs. This was
+                   passing the 1274x1911 aspect of the PNG art and no width at
+                   all, so he was drawn into a tall narrow box left over from
+                   a different character and came out small inside it. The
+                   sidebar is 288px wide; he can use most of it. */
+                width={FIGURE_W}
+                height={FIGURE_H}
               />
             ) : (
               <div className={playing ? 'gat-talking' : ''}>
