@@ -46,80 +46,55 @@ const TELLING = [CLIP.talk, CLIP.waiting, CLIP.idle] as const;
 /** Height in world units to normalise every model to, whatever it was authored at. */
 const TARGET_HEIGHT = 1.65;
 
-/** Roughly how wide he is with his arms out, used so a narrow panel does not clip them. */
+/** Roughly how wide he is with his arms out, so a narrow panel does not clip them. */
 const BODY_WIDTH = 0.95;
 
-/**
- * Air around him, so he is not wedged against the edges of his own panel.
- *
- * Kept tight. The cropped framing this replaced made him look large by showing
- * a fraction of him, so fitting the whole body reads as a sudden shrink unless
- * he fills most of the frame. Six per cent is enough that an arm swinging out
- * mid-animation does not touch the edge.
- */
-const FRAME_MARGIN = 1.06;
-
-const FOV = 30;
-
-/** His middle. A camera at this height with no rotation looks straight at it. */
-const CAMERA_Y = TARGET_HEIGHT / 2;
-
-/** How far back the whole of him fits, before the panel's shape is known. */
-const BASE_DISTANCE =
-  (TARGET_HEIGHT / 2) / Math.tan((FOV * Math.PI) / 180 / 2) * FRAME_MARGIN;
+/** Air around him, so an arm swinging out mid-animation does not touch the edge. */
+const FRAME_MARGIN = 1.08;
 
 /**
- * Defined once, at module scope, and this matters.
+ * An orthographic camera, and the reason is that the framing kept being wrong.
  *
- * react-three-fiber rebuilds the camera whenever the `camera` prop differs by
- * a shallow compare — and an object literal in JSX carries a brand new
- * `position` array on every single render. So every slide change and every
- * autoplay tick threw away wherever the camera had been put and rebuilt it at
- * the literal's own values, looking at the origin. That camera sees roughly
- * -0.86 to +0.86 in height while he stands from 0 to 1.65, which is why he was
- * cropped to the legs no matter what the framing code did.
+ * With a perspective camera the composition is trigonometry — a distance, a
+ * field of view, an aspect ratio — and every one of those has to be right at
+ * once, with the result only checkable by eye. Three attempts produced a
+ * character cropped at the knees, then at the waist, then reduced to a pair of
+ * hands, each time from arithmetic that read correctly.
  *
- * One frozen object cannot differ from itself. The values are also the correct
- * framing rather than a placeholder, so he is composed properly from the first
- * frame, and Frame below only refines the distance for narrow panels.
+ * Orthographic removes the arithmetic. react-three-fiber sets the frustum in
+ * pixels, so the world size on screen is exactly `pixels / zoom` — one
+ * division, verifiable without rendering anything. Centre him on the origin,
+ * pick the zoom that makes him fill the panel, and he is composed. There is no
+ * distance to get wrong and no perspective to fight.
+ *
+ * The lost foreshortening does not matter at this size; if anything a figure
+ * this small reads more cleanly without it.
  */
-const CAMERA = { position: [0, CAMERA_Y, BASE_DISTANCE] as [number, number, number], fov: FOV };
+const CAMERA = { position: [0, 0, 8] as [number, number, number], zoom: 100, near: 0.1, far: 40 };
 
 /**
- * Puts the camera where the whole of him fits.
+ * Sets the zoom so that the whole of him fills the panel.
  *
- * Framing was two hand-picked numbers — a distance and a field of view — and
- * hand-picked numbers are wrong the moment anything around them changes. The
- * last pair cropped him to the knees: 1.85 units away through a 30 degree lens
- * sees about one unit of height, and he is 1.65 tall.
- *
- * The distance is derived instead, from his measured height and the lens, and
- * from the canvas shape as well — a tall narrow panel like the one on the
- * slideshow rail sees less across than it does down, so fitting only by height
- * would trim his shoulders. Whatever size the panel is, all of him is in it.
+ * `zoom` is pixels per world unit. He is normalised to a known height and
+ * centred on the origin, so the zoom that fits him is the panel's height
+ * divided by his — and the same for width, taking whichever is the tighter of
+ * the two so a narrow panel trims nothing.
  */
-function Frame({ height }: { height: number }) {
-  const { camera, size } = useThree();
+function Frame() {
+  const camera = useThree(s => s.camera);
+  const size = useThree(s => s.size);
 
   useEffect(() => {
-    const cam = camera as THREE.PerspectiveCamera;
-    const aspect = size.width / Math.max(size.height, 1);
+    const cam = camera as THREE.OrthographicCamera;
+    const byHeight = size.height / (TARGET_HEIGHT * FRAME_MARGIN);
+    const byWidth  = size.width  / (BODY_WIDTH   * FRAME_MARGIN);
 
-    const vFov = (cam.fov * Math.PI) / 180;
-    const forHeight = (height / 2) / Math.tan(vFov / 2);
-    // Horizontal room is the vertical room times the aspect, so a narrow panel
-    // needs to pull back further to hold the same width.
-    const forWidth = (BODY_WIDTH / 2) / (Math.tan(vFov / 2) * Math.max(aspect, 0.01));
-
-    const distance = Math.max(forHeight, forWidth) * FRAME_MARGIN;
-
-    /* Position only, and no lookAt. The camera sits level with his middle and
-       an unrotated camera already looks straight down -Z, so there is nothing
-       to aim — and leaving the rotation alone means nothing here can be undone
-       by a camera rebuild except the distance itself. */
-    cam.position.set(0, height / 2, distance);
+    /* A three.js camera is a mutable object, not React state — the rule reads
+       it as the latter, and zoom has no setter. */
+    // eslint-disable-next-line react-hooks/immutability
+    cam.zoom = Math.max(Math.min(byHeight, byWidth), 1);
     cam.updateProjectionMatrix();
-  }, [camera, size.width, size.height, height]);
+  }, [camera, size.width, size.height]);
 
   return null;
 }
@@ -154,9 +129,11 @@ function Figure({ speaking, greetKey, turn }: { speaking: boolean; greetKey: str
     const scale = size.y > 0 ? TARGET_HEIGHT / size.y : 1;
 
     clone.scale.setScalar(scale);
-    // Centred left to right and front to back, standing on y = 0, so the
-    // camera below can be a fixed position rather than a guess per model.
-    clone.position.set(-centre.x * scale, -box.min.y * scale, -centre.z * scale);
+    /* Centred on the origin in all three axes, not standing on y = 0. The
+       camera looks at the origin and never moves, so putting his middle there
+       is what makes him land in the middle of the panel — no offset group, no
+       camera height to keep in step with him. */
+    clone.position.set(-centre.x * scale, -centre.y * scale, -centre.z * scale);
 
     clone.traverse(o => {
       if ((o as THREE.Mesh).isMesh) {
@@ -295,6 +272,7 @@ export default function GatTayaw3D({
           shot: a small figure adrift in a box mostly full of nothing, which is
           a waste of both the model and the column it sits in. */}
       <Canvas
+        orthographic
         dpr={[1, 2]}
         camera={CAMERA}
         gl={{ antialias: true, alpha: true }}
@@ -308,7 +286,7 @@ export default function GatTayaw3D({
         <directionalLight position={[2.5, 4, 3]} intensity={2.2} />
         <directionalLight position={[-3, 2, -2]} intensity={0.9} color="#9DC4FF" />
 
-        <Frame height={TARGET_HEIGHT} />
+        <Frame />
 
         <Suspense fallback={null}>
           {/* No offset group: he stands on y = 0 and the camera looks at his

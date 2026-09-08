@@ -50,8 +50,8 @@ incidentally:
 
 | Resource | Specification |
 |---|---|
-| Development machine | HP ProBook 450 G3 — Intel Core i-series, 8 GB RAM, 256 GB SSD *(confirm against your unit)* |
-| Operating system | Linux (Ubuntu-based), kernel 7.0 |
+| Development machine | Intel Core i3 10105f, 32 GB RAM, 512 GB NVME, 515 HDD HDD Hard drive, RX5600 XT|
+| Operating system | Windows 11 |
 | Runtime | Node.js 20 LTS or newer |
 | Package manager | npm |
 | Editor | Visual Studio Code |
