@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight, User, BookOpen, Pause, Play } from 'lucide-r
 
 const GatTayaw3D = dynamic(() => import('@/components/GatTayaw3D'), {
   ssr: false,
-  loading: () => <div style={{ width: 170, height: 230 }} />,
+  loading: () => <div style={{ width: 230, height: 310 }} />,
 });
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -32,12 +32,23 @@ export interface Story {
 
 const AUTOPLAY_MS = 9000;
 
-/* The figure and the strip below it, named because three places have to agree
-   on them: the container's height, where he stands, and how far he is offset
-   to be centred over a slide. */
-const FIGURE_W = 170;
-const FIGURE_H = 230;
-const RAIL_H = 46;
+/* The storyteller and the strip he walks along.
+ *
+ * He stands in front of the slide, not below it. Keeping him clear of it meant
+ * reserving his whole height underneath, which left a band of empty cream
+ * between his feet and the titles and made him small to fit — and he was still
+ * being cut off, because anything of him that reached up into the slide went
+ * behind it. Standing him in front solves all three: he can be large, he
+ * overlaps the picture the way a presenter stands in front of a screen, and
+ * his feet sit on the rail rather than floating above it. */
+const FIGURE_W = 230;
+const FIGURE_H = 310;
+/** The progress bar and the titles under it. */
+const RAIL_H = 44;
+/** How much of him rises above the rail area and over the slide. */
+const OVERLAP = 160;
+/** Clear air between his feet and the progress bar. */
+const STAND_GAP = 6;
 
 /**
  * The stories, one at a time, with Gat Tayaw walking to the one he introduces.
@@ -200,16 +211,15 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
       {/* ── The rail he walks along ──
           Each story takes an equal share of the width, so his position is the
           index expressed as a percentage and nothing has to be measured. */}
-      {/* The rail has to be tall enough to hold him.
-          It was 210px with a 200px figure sitting 64px off the bottom, so he
-          reached 54px above his own container and disappeared behind the slide
-          — which is its own stacking context, being rounded and clipped. All
-          that showed of the storyteller was a pair of feet below the picture.
-          The height is now the figure plus the labels beneath it. */}
-      <div className="relative mt-3" style={{ height: FIGURE_H + RAIL_H }}>
+      {/* The rail reserves only what sits below him. The rest of his height
+          rises over the slide, which works because the slide is positioned
+          without a z-index of its own — so a later sibling that has one paints
+          in front of it, and nothing between here and the section root clips
+          overflow. */}
+      <div className="relative" style={{ height: OVERLAP + RAIL_H, marginTop: -OVERLAP }}>
         <motion.div
-          className="absolute pointer-events-none"
-          style={{ width: FIGURE_W, marginLeft: -FIGURE_W / 2, bottom: RAIL_H }}
+          className="absolute pointer-events-none z-20"
+          style={{ width: FIGURE_W, marginLeft: -FIGURE_W / 2, bottom: RAIL_H + STAND_GAP }}
           animate={{ left: `${((index + 0.5) / count) * 100}%` }}
           transition={{ type: 'spring', stiffness: 90, damping: 18 }}
         >

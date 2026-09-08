@@ -49,8 +49,15 @@ const TARGET_HEIGHT = 1.65;
 /** Roughly how wide he is with his arms out, used so a narrow panel does not clip them. */
 const BODY_WIDTH = 0.95;
 
-/** Air around him, so he is not wedged against the edges of his own panel. */
-const FRAME_MARGIN = 1.18;
+/**
+ * Air around him, so he is not wedged against the edges of his own panel.
+ *
+ * Kept tight. The cropped framing this replaced made him look large by showing
+ * a fraction of him, so fitting the whole body reads as a sudden shrink unless
+ * he fills most of the frame. Six per cent is enough that an arm swinging out
+ * mid-animation does not touch the edge.
+ */
+const FRAME_MARGIN = 1.06;
 
 /**
  * Puts the camera where the whole of him fits.
