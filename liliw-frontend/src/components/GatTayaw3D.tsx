@@ -59,6 +59,32 @@ const BODY_WIDTH = 0.95;
  */
 const FRAME_MARGIN = 1.06;
 
+const FOV = 30;
+
+/** His middle. A camera at this height with no rotation looks straight at it. */
+const CAMERA_Y = TARGET_HEIGHT / 2;
+
+/** How far back the whole of him fits, before the panel's shape is known. */
+const BASE_DISTANCE =
+  (TARGET_HEIGHT / 2) / Math.tan((FOV * Math.PI) / 180 / 2) * FRAME_MARGIN;
+
+/**
+ * Defined once, at module scope, and this matters.
+ *
+ * react-three-fiber rebuilds the camera whenever the `camera` prop differs by
+ * a shallow compare — and an object literal in JSX carries a brand new
+ * `position` array on every single render. So every slide change and every
+ * autoplay tick threw away wherever the camera had been put and rebuilt it at
+ * the literal's own values, looking at the origin. That camera sees roughly
+ * -0.86 to +0.86 in height while he stands from 0 to 1.65, which is why he was
+ * cropped to the legs no matter what the framing code did.
+ *
+ * One frozen object cannot differ from itself. The values are also the correct
+ * framing rather than a placeholder, so he is composed properly from the first
+ * frame, and Frame below only refines the distance for narrow panels.
+ */
+const CAMERA = { position: [0, CAMERA_Y, BASE_DISTANCE] as [number, number, number], fov: FOV };
+
 /**
  * Puts the camera where the whole of him fits.
  *
@@ -86,15 +112,12 @@ function Frame({ height }: { height: number }) {
     const forWidth = (BODY_WIDTH / 2) / (Math.tan(vFov / 2) * Math.max(aspect, 0.01));
 
     const distance = Math.max(forHeight, forWidth) * FRAME_MARGIN;
-    const centre = height / 2;
 
-    cam.position.set(0, centre, distance);
-    cam.lookAt(0, centre, 0);
-    /* A three.js camera is a mutable object, not React state — the rule reads
-       it as the latter. near and far have no setters. */
-    // eslint-disable-next-line react-hooks/immutability
-    cam.near = 0.1;
-    cam.far = distance * 4;
+    /* Position only, and no lookAt. The camera sits level with his middle and
+       an unrotated camera already looks straight down -Z, so there is nothing
+       to aim — and leaving the rotation alone means nothing here can be undone
+       by a camera rebuild except the distance itself. */
+    cam.position.set(0, height / 2, distance);
     cam.updateProjectionMatrix();
   }, [camera, size.width, size.height, height]);
 
@@ -271,11 +294,9 @@ export default function GatTayaw3D({
       {/* Closer, and a narrower lens. He was framed like a wide establishing
           shot: a small figure adrift in a box mostly full of nothing, which is
           a waste of both the model and the column it sits in. */}
-      {/* The position here is a starting value only — Frame replaces it once it
-          knows the panel's shape. */}
       <Canvas
         dpr={[1, 2]}
-        camera={{ position: [0, 0.9, 3.2], fov: 30 }}
+        camera={CAMERA}
         gl={{ antialias: true, alpha: true }}
         style={{ background: 'transparent' }}
       >
