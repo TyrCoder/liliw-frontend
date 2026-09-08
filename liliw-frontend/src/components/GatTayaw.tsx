@@ -2,6 +2,14 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+/* A Canvas cannot render on the server, and three plus the loader is a large
+   bundle that only matters once someone reaches a story. */
+const GatTayaw3D = dynamic(() => import('@/components/GatTayaw3D'), {
+  ssr: false,
+  loading: () => <div style={{ width: 178, height: 178 * (1911 / 1274) }} />,
+});
 
 type Lang = 'en' | 'fil';
 
@@ -63,6 +71,27 @@ export default function GatTayaw({ defaultKey }: Props) {
   const [lang, setLang]       = useState<Lang>('en');
   const [idx]                 = useState(startIdx);
   const [playing, setPlaying] = useState(false);
+
+  /*
+   * Whether this browser can actually draw him.
+   *
+   * Asked once, on the client, by trying for a context rather than sniffing
+   * the user agent — hardware acceleration can be off on a machine whose
+   * browser claims full support. Starts false so the server and the first
+   * paint agree on the flat rig, and upgrades after mount if the answer is
+   * yes; the other way round would flash a canvas that never renders.
+   */
+  const [can3D, setCan3D] = useState(false);
+  useEffect(() => {
+    /* Deliberately a setState in an effect. Deciding this during render would
+       mean the server said "no canvas" and the client said "yes", which is a
+       hydration mismatch; one extra render on mount is the cheaper of the two. */
+    try {
+      const c = document.createElement('canvas');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCan3D(!!(c.getContext('webgl2') || c.getContext('webgl')));
+    } catch { /* no canvas at all — the flat rig is already what is showing */ }
+  }, []);
   const [muted, setMuted]     = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -224,28 +253,40 @@ export default function GatTayaw({ defaultKey }: Props) {
 
       <div className="w-full mb-6">
 
-        {/* ── Character (rigged layers, centered) ── */}
+        {/* ── Character ──
+            The rigged model, with the old cut-out rig kept underneath it as
+            the fallback. Not every device that opens this page can run WebGL —
+            an old phone, a locked-down school machine, a browser with hardware
+            acceleration off — and on those the storyteller should still be
+            standing there rather than leaving a hole beside his own speech. */}
         <div className="flex justify-center mb-0">
-          <div
-            className={playing ? 'gat-talking' : ''}
-            style={{ filter: 'drop-shadow(0 10px 22px rgba(11,61,145,0.3))' }}
-          >
-            {/* aspect ratio matches the 1274×1911 source art */}
-            <div className="gat-rig" style={{ width: 178, height: 178 * (1911 / 1274) }}>
-              {/* eslint-disable @next/next/no-img-element */}
-              <div className="gat-layer gat-armF"><img src="/images/gat/arm-free.png"  alt="" aria-hidden /></div>
-              {/* Static neck slice behind the body. Cutting the head out left a
-                  hole; once the head turns, its base swings clear of the collar
-                  and this fills what would otherwise be a gap at the neck. */}
-              <div className="gat-layer"><img src="/images/gat/neck.png"      alt="" aria-hidden /></div>
-              <div className="gat-layer"><img src="/images/gat/body.png"      alt="Gat Tayaw" /></div>
-              <div className="gat-layer"><img src="/images/gat/arm-staff.png" alt="" aria-hidden /></div>
-              <div className="gat-layer gat-head">
-                <img src="/images/gat/head.png" alt="" aria-hidden />
-                <img src="/images/gat/head-speaking.png" className="gat-mouth" alt="" aria-hidden />
+          <div style={{ filter: 'drop-shadow(0 10px 22px rgba(11,61,145,0.3))' }}>
+            {can3D ? (
+              <GatTayaw3D
+                speaking={playing}
+                greetKey={NARRATIONS[idx]?.key ?? 'welcome'}
+                height={178 * (1911 / 1274)}
+              />
+            ) : (
+              <div className={playing ? 'gat-talking' : ''}>
+                {/* aspect ratio matches the 1274×1911 source art */}
+                <div className="gat-rig" style={{ width: 178, height: 178 * (1911 / 1274) }}>
+                  {/* eslint-disable @next/next/no-img-element */}
+                  <div className="gat-layer gat-armF"><img src="/images/gat/arm-free.png"  alt="" aria-hidden /></div>
+                  {/* Static neck slice behind the body. Cutting the head out left a
+                      hole; once the head turns, its base swings clear of the collar
+                      and this fills what would otherwise be a gap at the neck. */}
+                  <div className="gat-layer"><img src="/images/gat/neck.png"      alt="" aria-hidden /></div>
+                  <div className="gat-layer"><img src="/images/gat/body.png"      alt="Gat Tayaw" /></div>
+                  <div className="gat-layer"><img src="/images/gat/arm-staff.png" alt="" aria-hidden /></div>
+                  <div className="gat-layer gat-head">
+                    <img src="/images/gat/head.png" alt="" aria-hidden />
+                    <img src="/images/gat/head-speaking.png" className="gat-mouth" alt="" aria-hidden />
+                  </div>
+                  {/* eslint-enable @next/next/no-img-element */}
+                </div>
               </div>
-              {/* eslint-enable @next/next/no-img-element */}
-            </div>
+            )}
           </div>
         </div>
 
