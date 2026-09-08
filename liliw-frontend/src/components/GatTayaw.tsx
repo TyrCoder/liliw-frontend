@@ -264,7 +264,11 @@ export default function GatTayaw({ defaultKey }: Props) {
             {can3D ? (
               <GatTayaw3D
                 speaking={playing}
-                greetKey={NARRATIONS[idx]?.key ?? 'welcome'}
+                /* The story, not the narration selected within it. Feeding
+                   the narration key made him bow again every time the visitor
+                   changed topic, which is a greeting in the middle of a
+                   conversation. He bows when the page opens. */
+                greetKey={defaultKey ?? 'welcome'}
                 height={178 * (1911 / 1274)}
               />
             ) : (

@@ -32,6 +32,15 @@ const CLIP = {
   waiting:'preset:biped:fold_arms',
 } as const;
 
+/**
+ * What he does while he is telling a story, in order.
+ *
+ * One clip on a loop was the same sixteen seconds over and over for a
+ * narration that can run several minutes — the eye stops seeing it. Three in
+ * turn is long enough that the repeat is not obvious.
+ */
+const TELLING = [CLIP.talk, CLIP.waiting, CLIP.idle] as const;
+
 /** Height in world units to normalise every model to, whatever it was authored at. */
 const TARGET_HEIGHT = 1.65;
 
@@ -71,36 +80,63 @@ function Figure({ speaking, greetKey }: { speaking: boolean; greetKey: string })
   }, [scene]);
 
   /*
-   * Bow once when he first appears and whenever the visitor moves to another
-   * story, then settle. A character who greets you every few seconds is one
-   * nobody reads past.
+   * Three states, driven by the mixer rather than by timers.
    *
-   * The end of the bow is taken from the mixer rather than a timer. The clip
-   * runs five seconds, and any hardcoded number is either short — cutting him
-   * off halfway down — or long, leaving him held at the bottom of a bow he
-   * finished a moment ago.
+   *   greet   one bow, when the story page opens
+   *   telling the other three clips in turn, for as long as he is narrating
+   *   resting idle, on a loop, when he has nothing to say
+   *
+   * Every clip in the first two runs LoopOnce and hands over on the mixer's
+   * finished event. Timing them by hand would mean knowing that the bow is
+   * five seconds and the other three are fifteen, sixteen and seventeen — and
+   * being wrong the moment any of them is re-exported.
    */
-  const [greeting, setGreeting] = useState(true);
-  useEffect(() => { setGreeting(true); }, [greetKey]);
+  const [phase, setPhase] = useState<'greet' | 'telling' | 'resting'>('greet');
+  const [step, setStep] = useState(0);
 
+  // A fresh story is a fresh greeting. Tied to the story, not to which
+  // narration is selected within it, so switching topics does not make him
+  // bow again mid-visit.
+  useEffect(() => { setPhase('greet'); setStep(0); }, [greetKey]);
+
+  // Starting and stopping the narration moves him between telling and resting,
+  // but never interrupts a bow — being cut off mid-greeting to start talking
+  // looks like a glitch rather than a transition.
   useEffect(() => {
-    const done = (e: { action: THREE.AnimationAction }) => {
-      if (e.action.getClip().name === CLIP.greet) setGreeting(false);
+    setPhase(p => (p === 'greet' ? p : speaking ? 'telling' : 'resting'));
+    if (speaking) setStep(0);
+  }, [speaking]);
+
+  const wanted =
+    phase === 'greet'   ? CLIP.greet :
+    phase === 'telling' ? TELLING[step % TELLING.length] :
+                          CLIP.idle;
+
+  /* Advance on the mixer's word: the bow hands over to whatever is next, and
+     each telling clip hands over to the one after it, so the three cycle for
+     as long as the narration lasts. */
+  useEffect(() => {
+    const onFinished = (e: { action: THREE.AnimationAction }) => {
+      const name = e.action.getClip().name;
+      if (name === CLIP.greet) {
+        setPhase(speaking ? 'telling' : 'resting');
+        setStep(0);
+        return;
+      }
+      if (TELLING.includes(name as (typeof TELLING)[number])) setStep(n => n + 1);
     };
-    mixer.addEventListener('finished', done as never);
-    return () => { mixer.removeEventListener('finished', done as never); };
-  }, [mixer]);
+    mixer.addEventListener('finished', onFinished as never);
+    return () => { mixer.removeEventListener('finished', onFinished as never); };
+  }, [mixer, speaking]);
 
-  // Whatever else happens, he does not stay bowing: a clip that never fires
-  // its finished event, because the tab was hidden or the mixer was paused,
-  // would otherwise leave him folded over for the rest of the visit.
+  /* A floor under the bow. If its finished event never arrives — a hidden tab
+     pauses the mixer — he would otherwise stay folded over for the whole
+     visit. Only the greeting needs this; the other phases loop harmlessly. */
   useEffect(() => {
-    if (!greeting) return;
-    const t = setTimeout(() => setGreeting(false), 6000);
+    if (phase !== 'greet') return;
+    const t = setTimeout(() => setPhase(speaking ? 'telling' : 'resting'), 8000);
     return () => clearTimeout(t);
-  }, [greeting]);
-
-  const wanted = greeting ? CLIP.greet : speaking ? CLIP.talk : CLIP.idle;
+  }, [phase, speaking]);
 
   useEffect(() => {
     const next = actions[wanted];
@@ -109,18 +145,21 @@ function Figure({ speaking, greetKey }: { speaking: boolean; greetKey: string })
     // Crossfade rather than cut: switching clips on a skeleton mid-pose snaps
     // the limbs, which is far more noticeable than the transition itself.
     next.reset().setEffectiveWeight(1).fadeIn(0.35).play();
-    if (wanted === CLIP.greet) {
+
+    if (phase === 'resting') {
+      next.setLoop(THREE.LoopRepeat, Infinity);
+    } else {
+      // Greeting and telling both hand over when the clip ends, so both run
+      // once and hold their last pose until the crossfade takes them.
       next.setLoop(THREE.LoopOnce, 1);
       /* An AnimationAction is a mutable three.js object and has no setter for
          this flag. The rule reads it as React state, which it is not. */
       // eslint-disable-next-line react-hooks/immutability
       next.clampWhenFinished = true;
-    } else {
-      next.setLoop(THREE.LoopRepeat, Infinity);
     }
 
     return () => { next.fadeOut(0.35); };
-  }, [wanted, actions, mixer]);
+  }, [wanted, phase, actions, mixer]);
 
   return <group ref={group}><primitive object={model} /></group>;
 }
