@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import SearchProvider from "@/components/SearchProvider";
 import AIChat from "@/components/AIChat";
+import PeekingDog from "@/components/PeekingDog";
 import PWAHandler from "@/components/PWAHandler";
 import AnalyticsInit from "@/components/AnalyticsInit";
 import PassportHost from "@/components/PassportHost";
@@ -103,6 +104,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             {children}
             <Footer />
             <AIChat />
+            {/* Site-wide: he looks in from the edge of every page, not just
+                the stories listing where he started. */}
+            <PeekingDog />
             <PassportHost />
             <Toaster richColors position="bottom-left" closeButton />
           </FavoritesProvider>

@@ -5,12 +5,12 @@ import { motion } from 'framer-motion';
 import DogMascot from '@/components/DogMascot';
 
 /**
- * The dog, peeking in from the edge of the page.
+ * The dog, peeking in from the edge of the page — mounted in the root layout,
+ * so he looks in on every page rather than only the stories listing where he
+ * started.
  *
- * He used to sit in a fixed column beside the stories, which on a page rebuilt
- * around a slideshow left him stranded in a margin doing nothing. Here he is
- * mostly off-screen and only his head comes round the edge, the way a dog
- * looks round a door — and a tap sends him back out of sight.
+ * He is mostly off-screen and only his head comes round the edge, the way a
+ * dog looks round a door — and a tap sends him back out of sight.
  *
  * He does not stay gone. Hiding him is meant to be the joke rather than a
  * dismissal, so he waits a while and looks in again; anyone who genuinely
