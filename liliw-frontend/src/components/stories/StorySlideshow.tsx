@@ -216,7 +216,13 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
           without a z-index of its own — so a later sibling that has one paints
           in front of it, and nothing between here and the section root clips
           overflow. */}
-      <div className="relative" style={{ height: OVERLAP + RAIL_H, marginTop: -OVERLAP }}>
+      {/* pointer-events-none on the container, not just on the figure.
+          This block is pulled up over the slide across its whole width, so
+          while it was clickable it lay across "Read this story" and swallowed
+          the click — the button was visible, unobstructed to look at, and
+          dead. The rail buttons below opt back in. */}
+      <div className="relative pointer-events-none"
+        style={{ height: OVERLAP + RAIL_H, marginTop: -OVERLAP }}>
         <motion.div
           className="absolute pointer-events-none z-20"
           style={{ width: FIGURE_W, marginLeft: -FIGURE_W / 2, bottom: RAIL_H + STAND_GAP }}
@@ -227,7 +233,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
             greetKey="stories-slideshow" speaking={false} />
         </motion.div>
 
-        <div className="absolute inset-x-0 bottom-0 flex gap-2">
+        <div className="absolute inset-x-0 bottom-0 flex gap-2 pointer-events-auto">
           {stories.map((s, i) => (
             <button key={s.slug} onClick={() => { setPlaying(false); goTo(i); }}
               aria-label={`Go to ${s.title}`}

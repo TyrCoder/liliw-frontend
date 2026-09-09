@@ -121,9 +121,29 @@ function Figure({ speaking, greetKey, turn }: { speaking: boolean; greetKey: str
   const model = useMemo(() => {
     const clone = SkeletonUtils.clone(scene) as THREE.Group;
 
-    // The export is quantized, so its raw coordinates mean nothing on their
-    // own — the box has to be measured after the loader has applied the scale.
-    const box = new THREE.Box3().setFromObject(clone);
+    /*
+     * Measure him from his own vertices, and only from the mesh.
+     *
+     * The export is quantized, so the raw coordinates in the file mean nothing
+     * until the loader has applied its scale — the box has to be taken from
+     * the built scene. Two details in how it is taken matter:
+     *
+     * World matrices are refreshed first. A clone that has never been rendered
+     * carries stale ones, and Box3 reads them rather than recomputing.
+     *
+     * And only meshes are measured, with `precise`, so the box comes from real
+     * vertex positions rather than from a cached geometry bound — and nothing
+     * that has no visible surface can widen it. Everything downstream is a
+     * ratio against this box, so if it is wrong by a third, so is he.
+     */
+    clone.updateMatrixWorld(true);
+
+    const box = new THREE.Box3();
+    clone.traverse(o => {
+      const mesh = o as THREE.Mesh;
+      if (mesh.isMesh && mesh.geometry) box.expandByObject(mesh, true);
+    });
+
     const size = box.getSize(new THREE.Vector3());
     const centre = box.getCenter(new THREE.Vector3());
     const scale = size.y > 0 ? TARGET_HEIGHT / size.y : 1;
