@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { BookOpen, Play } from 'lucide-react';
+import PeekingDog from '@/components/PeekingDog';
 import StorySlideshow from '@/components/stories/StorySlideshow';
 import PageBanner from '@/components/liliw/PageBanner';
 
@@ -109,6 +110,9 @@ export default function StoriesPage() {
 
   return (
     <div className="min-h-screen page-ground" suppressHydrationWarning>
+
+      {/* He looks in from the edge of the whole page. */}
+      <PeekingDog />
 
       <PageBanner
         title="Stories of Liliw"
