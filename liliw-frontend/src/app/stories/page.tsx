@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { BookOpen, Play } from 'lucide-react';
-import DogMascot from '@/components/DogMascot';
+import PeekingDog from '@/components/PeekingDog';
 import StorySlideshow from '@/components/stories/StorySlideshow';
 import PageBanner from '@/components/liliw/PageBanner';
 
@@ -111,6 +111,10 @@ export default function StoriesPage() {
   return (
     <div className="min-h-screen page-ground" suppressHydrationWarning>
 
+      {/* Not in a column any more — he looks in from the edge of the whole
+          page, which is also what gives the slideshow its full width back. */}
+      <PeekingDog />
+
       <PageBanner
         title="Stories of Liliw"
         subtitle="Narratives, history, and the people that make Liliw alive"
@@ -141,16 +145,7 @@ export default function StoriesPage() {
         )}
 
         {!loading && stories.length > 0 && (
-          <div className="flex gap-6 xl:gap-10 items-start">
-            <div className="flex-1 min-w-0">
-              <StorySlideshow stories={ordered} />
-            </div>
-
-            {/* The dog keeps his corner. */}
-            <div className="hidden xl:flex w-44 shrink-0 flex-col items-center sticky top-8">
-              <DogMascot size={160} />
-            </div>
-          </div>
+          <StorySlideshow stories={ordered} />
         )}
 
         {/* Featured Videos */}

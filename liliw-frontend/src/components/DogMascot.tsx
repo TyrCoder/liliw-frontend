@@ -4,19 +4,26 @@ import { useState } from 'react';
 
 interface Props {
   size?: number;
+  /**
+   * Whether he responds to his own click with a jump. Off when something
+   * around him owns the click instead — a nested handler that also fires is
+   * how one tap comes to mean two things.
+   */
+  interactive?: boolean;
 }
 
-export default function DogMascot({ size = 160 }: Props) {
+export default function DogMascot({ size = 160, interactive = true }: Props) {
   const [jumping, setJumping] = useState(false);
 
   return (
     <div
       className={jumping ? 'dog-jump' : 'dog-idle'}
-      onClick={() => setJumping(true)}
+      onClick={interactive ? () => setJumping(true) : undefined}
       onAnimationEnd={() => setJumping(false)}
       style={{
         position: 'relative', width: size,
         filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.15))',
+        pointerEvents: interactive ? undefined : 'none',
       }}
     >
       {/* Tail overlay — the source art has no tail, so we draw one and wag it

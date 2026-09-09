@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, User, BookOpen, Pause, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, BookOpen, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { narrationFor, narrationSrc, type NarrationLang } from '@/lib/narrations';
 
 const GatTayaw3D = dynamic(() => import('@/components/GatTayaw3D'), {
   ssr: false,
@@ -28,6 +29,8 @@ export interface Story {
   author: string;
   coverUrl: string;
   date: string;
+  /** The narration an editor picked, when they picked one. */
+  audio_key?: string | null;
 }
 
 const AUTOPLAY_MS = 9000;
@@ -72,6 +75,55 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
 
   const count = stories.length;
 
+  /*
+   * Gat Tayaw reads the story that is showing.
+   *
+   * Not a fixed welcome: that recording exists in English only, so a Filipino
+   * toggle beside it would have nothing to play. Every story narration was
+   * recorded in both, and reading the slide in view is the more useful thing
+   * for him to be doing anyway.
+   */
+  const [lang, setLang] = useState<NarrationLang>('en');
+  const [narrating, setNarrating] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const story = stories[Math.min(index, Math.max(count - 1, 0))];
+  const audioSrc = story
+    ? narrationSrc(narrationFor(story.category, story.slug, story.title, story.audio_key), lang)
+    : '';
+
+  /*
+   * Autoplay, as far as a browser will allow it.
+   *
+   * Sound cannot start on its own before a visitor has interacted with the
+   * page — every current browser refuses, and the promise from play() rejects.
+   * So it is attempted and the refusal is caught rather than logged and
+   * forgotten: `blocked` turns the control into an invitation to press it,
+   * which is the one thing that lifts the restriction. From then on each new
+   * slide starts speaking on its own.
+   */
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el || !audioSrc) return;
+
+    el.load();
+    let cancelled = false;
+
+    el.play()
+      .then(() => { if (!cancelled) { setNarrating(true); setBlocked(false); } })
+      .catch(() => { if (!cancelled) { setNarrating(false); setBlocked(true); } });
+
+    return () => { cancelled = true; };
+  }, [audioSrc]);
+
+  const toggleNarration = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (narrating) { el.pause(); setNarrating(false); return; }
+    el.play().then(() => { setNarrating(true); setBlocked(false); }).catch(() => setBlocked(true));
+  };
+
   /* Which way he turns is the direction of travel, and he squares up again
      once he arrives — a character left permanently at an angle reads as a
      model dropped in rather than one that walked there. */
@@ -110,8 +162,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
 
   useEffect(() => () => clearTimeout(settle.current), []);
 
-  if (!count) return null;
-  const story = stories[index];
+  if (!count || !story) return null;
   const accent = CATEGORY_COLORS[story.category] ?? '#1565C0';
 
   return (
@@ -179,6 +230,35 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
                     style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}>
                     <BookOpen className="w-4 h-4" /> Read this story
                   </Link>
+                  {/* Listen, and the language it is read in. One button each:
+                      the second is a toggle rather than two radio buttons,
+                      because there are exactly two languages and a pair of
+                      buttons where one is always the wrong one is noise. */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={toggleNarration}
+                      aria-label={narrating ? 'Pause narration' : 'Listen to Gat Tayaw'}
+                      className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-sm transition hover:bg-white/20"
+                      style={{
+                        backgroundColor: blocked ? 'rgba(245,197,24,0.22)' : 'rgba(255,255,255,0.12)',
+                        color: '#fff', fontFamily: HL,
+                      }}
+                    >
+                      {narrating ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                      {narrating ? 'Pause' : 'Listen'}
+                    </button>
+
+                    <button
+                      onClick={() => setLang(l => (l === 'en' ? 'fil' : 'en'))}
+                      aria-label={`Narration language: ${lang === 'en' ? 'English' : 'Filipino'}. Tap to switch.`}
+                      title="Switch narration language"
+                      className="px-3 py-2.5 rounded-xl text-xs font-black tracking-wider transition hover:opacity-90"
+                      style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}
+                    >
+                      {lang === 'en' ? 'EN' : 'FIL'}
+                    </button>
+                  </div>
+
                   <span className="flex items-center gap-2 text-gray-300 text-sm" style={{ fontFamily: BL }}>
                     <User className="w-3.5 h-3.5" />{story.author}
                     {story.date && <><span>·</span><span>{story.date}</span></>}
@@ -216,6 +296,18 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
           without a z-index of its own — so a later sibling that has one paints
           in front of it, and nothing between here and the section root clips
           overflow. */}
+      {/* Narration for the slide in view. Not visible: the controls above are
+          the interface, and a second set of native ones would be a second
+          thing to keep in step. */}
+      <audio
+        ref={audioRef}
+        src={audioSrc}
+        preload="auto"
+        onEnded={() => setNarrating(false)}
+        onPause={() => setNarrating(false)}
+        onPlay={() => setNarrating(true)}
+      />
+
       {/* pointer-events-none on the container, not just on the figure.
           This block is pulled up over the slide across its whole width, so
           while it was clickable it lay across "Read this story" and swallowed
@@ -229,8 +321,11 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
           animate={{ left: `${((index + 0.5) / count) * 100}%` }}
           transition={{ type: 'spring', stiffness: 90, damping: 18 }}
         >
+          {/* He works through his clips while the narration is playing and
+              settles when it stops, so the figure and the audio are obviously
+              the same person rather than two things happening at once. */}
           <GatTayaw3D width={FIGURE_W} height={FIGURE_H} facing={facing}
-            greetKey="stories-slideshow" speaking={false} />
+            greetKey="stories-slideshow" speaking={narrating} />
         </motion.div>
 
         <div className="absolute inset-x-0 bottom-0 flex gap-2 pointer-events-auto">

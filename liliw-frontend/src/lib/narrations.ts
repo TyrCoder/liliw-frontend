@@ -36,3 +36,50 @@ export const NARRATION_LABELS: Record<NarrationKey, string> = {
 
 export const isNarrationKey = (v: unknown): v is NarrationKey =>
   typeof v === 'string' && (NARRATION_KEYS as readonly string[]).includes(v);
+
+export type NarrationLang = 'en' | 'fil';
+
+/**
+ * Which narration belongs to a story.
+ *
+ * The editor's choice wins; the keyword search of the slug and title is the
+ * fallback for everything published before that column existed. Lifted out of
+ * the story page so the listing can ask the same question and get the same
+ * answer — two places deciding this independently is how they drift.
+ */
+export function narrationFor(
+  category: string,
+  slug: string,
+  title = '',
+  chosen?: string | null,
+): NarrationKey {
+  if (isNarrationKey(chosen)) return chosen;
+
+  const s = `${slug} ${title}`.toLowerCase();
+  const c = (category || '').toLowerCase();
+
+  if (s.includes('church') || s.includes('simbahan') || s.includes('parish'))   return 'church';
+  if (s.includes('tsinelas') || s.includes('slipper') || s.includes('sapatos')) return 'tsinelas';
+  if (s.includes('ancestral') || s.includes('bahay') || s.includes('house'))    return 'ancestral';
+  if (s.includes('legend') || s.includes('alamat') || s.includes('myth'))       return 'legend';
+
+  if (c === 'history') return 'legend';
+  if (c === 'culture') return 'ancestral';
+  if (c === 'people')  return 'welcome';
+  return 'welcome';
+}
+
+/**
+ * The file for a narration in a language.
+ *
+ * `welcome` is the exception and deliberately so: it was recorded once, with
+ * no Filipino counterpart, so asking for welcome in Filipino returns the only
+ * recording there is rather than a path that 404s. Everything else exists in
+ * both.
+ */
+export const narrationSrc = (key: NarrationKey, lang: NarrationLang): string =>
+  key === 'welcome' ? '/audio/welcome.mp3' : `/audio/${key}-${lang}.mp3`;
+
+/** Whether a narration can actually be heard in this language. */
+export const hasLanguage = (key: NarrationKey, lang: NarrationLang): boolean =>
+  key !== 'welcome' || lang === 'en';
