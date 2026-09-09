@@ -35,7 +35,7 @@ interface Analytics { pageViews: number; uniqueVisitors: number; avgSessionTime:
 interface AuditLog { id: string; event: string; model: string; uid?: string; entry_id: string; entry_title: string; performed_by?: string; changes?: any; created_at: string; }
 interface StrapiActivity { id: string; contentType: string; entryName: string; action: string; at: string; performer: { name: string; email: string; role: string } | null; }
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
-interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
+interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
 export type Tab = 'overview' | 'users' | 'roles' | 'achievements' | 'rewards' | 'redeemcodes' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'communityevents' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms';
 
@@ -117,8 +117,8 @@ const EVENT_COLOR: Record<string, string> = {
   'entry.unpublish': 'bg-yellow-50 text-yellow-700',
 };
 
-const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage', spot: 'Spot', dining: 'Dining' };
-const TYPE_COLORS: Record<string, string> = { heritage: '#F59E0B', spot: '#3B82F6', dining: '#EF4444' };
+const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage', spot: 'Spot', dining: 'Dining', footwear: 'Footwear', stay: 'Stay' };
+const TYPE_COLORS: Record<string, string> = { heritage: '#F59E0B', spot: '#3B82F6', dining: '#EF4444', footwear: '#B45309', stay: '#0D9488' };
 
 function fmt(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -2171,6 +2171,8 @@ function AdminDashboard() {
                 <option value="heritage">Heritage Sites</option>
                 <option value="spot">Tourist Spots</option>
                 <option value="dining">Dining</option>
+                <option value="footwear">Footwear Stores</option>
+                <option value="stay">Places to Stay</option>
               </select>
               <span className="text-xs text-gray-400 shrink-0">{filteredAttractions.length} of {attractions.length}</span>
             </div>
@@ -3430,7 +3432,7 @@ function AdminDashboard() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-bold text-gray-900 text-sm">{attr.attributes.name}</span>
                               <span className="px-2 py-0.5 rounded-full text-xs font-semibold text-white capitalize"
-                                style={{ backgroundColor: attr.type === 'heritage' ? '#F59E0B' : attr.type === 'spot' ? '#3B82F6' : '#EF4444' }}>
+                                style={{ backgroundColor: TYPE_COLORS[attr.type] || '#EF4444' }}>
                                 {attr.type}
                               </span>
                             </div>

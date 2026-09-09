@@ -53,7 +53,7 @@ const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 interface AttractionCard {
   id: string;
   name: string;
-  type: 'heritage' | 'spot' | 'dining';
+  type: 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay';
   location?: string | null;
   rating?: number | null;
   imageUrl?: string | null;
@@ -69,6 +69,8 @@ const TYPE_META: Record<string, { label: string; color: string; Icon: any }> = {
   heritage: { label: 'Heritage', color: '#8B5CF6', Icon: Landmark },
   spot:     { label: 'Attraction', color: '#1565C0', Icon: MapPin },
   dining:   { label: 'Dining',  color: '#F97316', Icon: Utensils },
+  footwear: { label: 'Footwear Store', color: '#B45309', Icon: MapPin },
+  stay:     { label: 'Stay', color: '#0D9488', Icon: MapPin },
 };
 
 /**

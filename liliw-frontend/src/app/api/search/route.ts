@@ -23,7 +23,7 @@ interface Hit {
   objectID: string;
   name: string;
   description: string;
-  type: 'heritage' | 'spot' | 'dining' | 'faq' | 'event' | 'news' | 'itinerary';
+  type: 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay' | 'faq' | 'event' | 'news' | 'itinerary';
   category?: string;
   location?: string;
   rating?: number;
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
         description: stripHtml(at.description ?? '').slice(0, 160),
         // The type the search UI colours by, and the id the page resolves —
         // '<type>-<uuid>', which getAllAttractions has already composed.
-        type: (a.type === 'heritage' ? 'heritage' : a.type === 'dining' ? 'dining' : 'spot'),
+        type: (['heritage', 'dining', 'footwear', 'stay'].includes(a.type) ? a.type : 'spot'),
         location: at.location ?? undefined,
         rating: at.rating ?? undefined,
         url: `/attractions/${a.id}`,

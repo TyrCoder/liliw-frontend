@@ -22,7 +22,7 @@ import { VISIT_DWELL_MS } from '@/lib/visitDwell';
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
-const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food' };
+const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food', footwear: 'Footwear Store', stay: 'Place to Stay' };
 
 // Cost meter — how much a visit runs, at a glance. `filled` peso signs are
 // gold, the rest greyed, so three tiers read instantly without any numbers.
@@ -71,7 +71,7 @@ interface Attraction {
     coordinates?: { latitude: number; longitude: number };
     photos?: Array<{ id: number; name: string; url: string; width?: number; height?: number; formats?: any; mime?: string; }>;
   };
-  type: 'heritage' | 'spot' | 'dining';
+  type: 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay';
 }
 
 interface ExternalReview {

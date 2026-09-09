@@ -24,7 +24,11 @@ async function buildKnowledge(): Promise<string> {
     lines.push('ATTRACTIONS & PLACES:');
     for (const a of attractions.value.slice(0, 40)) {
       const attr = a.attributes;
-      const type = a.type === 'heritage' ? 'Heritage Site' : a.type === 'spot' ? 'Tourist Spot' : 'Dining/Food';
+      const type = a.type === 'heritage' ? 'Heritage Site'
+        : a.type === 'dining' ? 'Dining/Food'
+        : a.type === 'footwear' ? 'Footwear Store'
+        : a.type === 'stay' ? 'Accommodation'
+        : 'Tourist Spot';
       lines.push(
         `- [${type}] ${attr.name}` +
         (attr.location ? ` | ${attr.location}` : '') +

@@ -148,7 +148,11 @@ function selectKnowledge(index: Indexed, context: string): string {
   const lines: string[] = ['=== LILIW REAL DATA (from live database) ===\n'];
 
   const label = (a: any) =>
-    a.type === 'heritage' ? 'Heritage' : a.type === 'spot' ? 'Tourist Spot' : 'Dining';
+    a.type === 'heritage' ? 'Heritage'
+    : a.type === 'dining' ? 'Dining'
+    : a.type === 'footwear' ? 'Footwear Store'
+    : a.type === 'stay' ? 'Accommodation'
+    : 'Tourist Spot';
 
   if (index.attractions.length) {
     const ranked = index.attractions

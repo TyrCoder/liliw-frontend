@@ -15,7 +15,7 @@ interface Entry {
   created_at: string; media?: MediaItem[];
 }
 
-const CATEGORIES = ['heritage', 'tourist_spot', 'dining', 'other'];
+const CATEGORIES = ['heritage', 'tourist_spot', 'dining', 'footwear', 'accommodation', 'other'];
 
 // Drives the ₱ meter on the attraction page. Blank is allowed so an editor
 // who doesn't know the cost isn't forced to guess one.
@@ -30,7 +30,7 @@ const PRICE_LEVELS = [
 const CONFIG: CmsTabConfig<Entry> = {
   slug: 'attractions',
   title: 'Attractions',
-  subtitle: 'Heritage sites, tourist spots, dining',
+  subtitle: 'Heritage sites, tourist spots, dining, footwear stores, accommodations',
   entityLabel: 'Attraction',
   emptyIcon: <MapPin className="w-10 h-10 mb-3 opacity-20" />,
   emptyText: 'No entries yet',

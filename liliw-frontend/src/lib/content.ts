@@ -7,7 +7,7 @@ import { fetchApprovedWithMedia, mediaToPhotos } from './supabase-cms';
  * the code that composes the id so the two can't drift apart.
  */
 export const cmsAttractionId = (publicId: string) =>
-  publicId.replace(/^(heritage|spot|dining)-/, '');
+  publicId.replace(/^(heritage|spot|dining|footwear|stay)-/, '');
 
 /**
  * The other direction: a cms_attractions row to the id its public page uses.
@@ -20,11 +20,15 @@ export const cmsAttractionId = (publicId: string) =>
 export const publicAttractionId = (category: string, uuid: string) =>
   `${CAT_MAP[category] ?? 'spot'}-${uuid}`;
 
-const CAT_MAP: Record<string, 'heritage' | 'spot' | 'dining'> = {
-  heritage:     'heritage',
-  tourist_spot: 'spot',
-  dining:       'dining',
-  other:        'spot',
+export type AttractionType = 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay';
+
+const CAT_MAP: Record<string, AttractionType> = {
+  heritage:      'heritage',
+  tourist_spot:  'spot',
+  dining:        'dining',
+  footwear:      'footwear',
+  accommodation: 'stay',
+  other:         'spot',
 };
 
 const cache = new Map<string, { data: any; at: number }>();

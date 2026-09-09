@@ -25,10 +25,12 @@ function withinLiliw(lat: number, lng: number): boolean {
 }
 
 const CATEGORY_OPTIONS = [
-  { value: 'heritage', label: 'Heritage Site' },
-  { value: 'spot',     label: 'Tourist Spot' },
-  { value: 'dining',   label: 'Dining & Food' },
-  { value: 'other',    label: 'Other' },
+  { value: 'heritage',      label: 'Heritage Site' },
+  { value: 'spot',          label: 'Tourist Spot' },
+  { value: 'dining',        label: 'Dining & Food' },
+  { value: 'footwear',      label: 'Footwear Store' },
+  { value: 'accommodation', label: 'Accommodation' },
+  { value: 'other',         label: 'Other' },
 ];
 
 export default function LBOApplyPage() {

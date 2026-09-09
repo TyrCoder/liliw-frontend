@@ -94,7 +94,7 @@ export interface AttractionAttribute {
 export interface Attraction {
   id: string | number;
   attributes: AttractionAttribute;
-  type?: 'heritage' | 'spot' | 'attraction';
+  type?: 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay' | 'attraction';
 }
 
 // Heritage Site Types
@@ -250,7 +250,7 @@ export interface SearchResult {
   objectID: string;
   name: string;
   description: string;
-  type: 'heritage' | 'spot' | 'faq' | 'event' | 'itinerary' | 'attraction';
+  type: 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay' | 'faq' | 'event' | 'itinerary' | 'attraction';
   category?: string;
   location?: string;
   rating?: number;

@@ -24,6 +24,8 @@ const TYPE_META: Record<string, { label: string; bg: string; text: string }> = {
   heritage: { label: 'Heritage',   bg: '#EDE9FE', text: '#6D28D9' },
   spot:     { label: 'Attraction', bg: '#DBEAFE', text: '#1D4ED8' },
   dining:   { label: 'Dining',     bg: '#FFEDD5', text: '#C2410C' },
+  footwear: { label: 'Footwear',   bg: '#FEF3C7', text: '#B45309' },
+  stay:     { label: 'Stay',       bg: '#CCFBF1', text: '#0F766E' },
   faq:      { label: 'FAQ',        bg: '#F3E8FF', text: '#7C3AED' },
   event:    { label: 'Event',      bg: '#FEE2E2', text: '#B91C1C' },
   news:     { label: 'News',       bg: '#FEF9C3', text: '#A16207' },
@@ -39,13 +41,15 @@ const TYPE_META: Record<string, { label: string; bg: string; text: string }> = {
  * got the full card. Naming the set means a fourth kind of place cannot fall
  * through the same gap.
  */
-const PLACE_TYPES = new Set(['spot', 'heritage', 'dining']);
+const PLACE_TYPES = new Set(['spot', 'heritage', 'dining', 'footwear', 'stay']);
 
 /** The icon and tile each kind of place gets on its card. */
 const PLACE_LOOK: Record<string, { icon: typeof MapPin; gradient: string }> = {
   spot:     { icon: MapPin,   gradient: 'linear-gradient(135deg,#0B3D91,#1565C0)' },
   heritage: { icon: Landmark, gradient: 'linear-gradient(135deg,#6D28D9,#8B5CF6)' },
   dining:   { icon: Utensils, gradient: 'linear-gradient(135deg,#C2410C,#F97316)' },
+  footwear: { icon: MapPin,   gradient: 'linear-gradient(135deg,#7C2D12,#B45309)' },
+  stay:     { icon: MapPin,   gradient: 'linear-gradient(135deg,#0F766E,#0D9488)' },
 };
 
 function StarRow({ rating }: { rating: number }) {

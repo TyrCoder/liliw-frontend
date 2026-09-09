@@ -112,14 +112,16 @@ interface Day  { day: number; theme: string; stops: Stop[]; }
 interface GeneratedPlan { title: string; summary: string; days: Day[]; tips: string[]; estimatedCostPerDay: string; }
 interface SavedTrip { id: string; savedAt: string; title: string; plan: GeneratedPlan; duration: string; budget: string; isPublic: boolean; }
 
-const INTEREST_TO_TYPES: Record<string, ('heritage' | 'spot' | 'dining')[]> = {
+type ItineraryPlaceType = 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay';
+
+const INTEREST_TO_TYPES: Record<string, ItineraryPlaceType[]> = {
   'Heritage & History':   ['heritage'],
   'Local Food & Cuisine': ['dining'],
-  'Arts & Crafts':        ['heritage', 'spot'],
+  'Arts & Crafts':        ['heritage', 'spot', 'footwear'],
   'Nature & Outdoors':    ['spot'],
   'Family Activities':    ['heritage', 'spot', 'dining'],
   'Photography':          ['heritage', 'spot', 'dining'],
-  'Shopping':             ['spot', 'heritage'],
+  'Shopping':             ['footwear', 'spot', 'heritage'],
   'Culture & Festivals':  ['heritage'],
 };
 
@@ -674,7 +676,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
         ? interests.flatMap(i => INTEREST_TO_TYPES[i] || (['heritage', 'spot', 'dining'] as const))
         : (['heritage', 'spot', 'dining'] as const)
     )
-  ) as ('heritage' | 'spot' | 'dining')[];
+  ) as ItineraryPlaceType[];
 
   const filteredAttractions = allAttractions.filter(a => allowedTypes.includes(a.type));
 
@@ -947,10 +949,10 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
                           className="w-full font-bold text-gray-900 text-sm border-b border-blue-200 focus:outline-none focus:border-blue-400 bg-white pb-0.5 appearance-none pr-5 cursor-pointer"
                           style={{ fontFamily: HL }}>
                           <option value="">Pick a place…</option>
-                          {(['heritage', 'spot', 'dining'] as const)
+                          {(['heritage', 'spot', 'dining', 'footwear', 'stay'] as const)
                             .filter(type => filteredAttractions.some(a => a.type === type))
                             .map(type => {
-                              const label = type === 'heritage' ? 'Heritage' : type === 'spot' ? 'Tourist Spots' : 'Dining';
+                              const label = type === 'heritage' ? 'Heritage' : type === 'spot' ? 'Tourist Spots' : type === 'dining' ? 'Dining' : type === 'footwear' ? 'Footwear Stores' : 'Places to Stay';
                               return (
                                 <optgroup key={type} label={label}>
                                   {filteredAttractions
@@ -1580,7 +1582,7 @@ function ItineraryWizard() {
                         <p className={`font-semibold text-sm truncate ${picked ? 'text-rose-700' : 'text-gray-800'}`}
                           style={{ fontFamily: HL }}>{fav.name}</p>
                         <p className="text-xs text-gray-400 capitalize" style={{ fontFamily: BL }}>
-                          {fav.type === 'heritage' ? 'Heritage' : fav.type === 'dining' ? 'Dining' : 'Tourist Spot'}
+                          {fav.type === 'heritage' ? 'Heritage' : fav.type === 'dining' ? 'Dining' : fav.type === 'footwear' ? 'Footwear Store' : fav.type === 'stay' ? 'Stay' : 'Tourist Spot'}
                         </p>
                       </div>
                       {picked && (

@@ -40,13 +40,13 @@ const FIELDS_TO_CHANGE = [
 
 type Tab = 'dashboard' | 'overview' | 'requests' | 'visitors' | 'ratings';
 
-const CATEGORIES = ['heritage', 'spot', 'dining'] as const;
+const CATEGORIES = ['heritage', 'spot', 'dining', 'footwear', 'accommodation'] as const;
 type AttrCategory = typeof CATEGORIES[number];
-const CATEGORY_LABELS: Record<AttrCategory, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food' };
-const CATEGORY_ICONS: Record<AttrCategory, string> = { heritage: '🏛️', spot: '🌿', dining: '🍽️' };
+const CATEGORY_LABELS: Record<AttrCategory, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food', footwear: 'Footwear Store', accommodation: 'Accommodation' };
+const CATEGORY_ICONS: Record<AttrCategory, string> = { heritage: '🏛️', spot: '🌿', dining: '🍽️', footwear: '🥿', accommodation: '🛏️' };
 
-const TYPE_COLORS: Record<string, string> = { heritage: '#F59E0B', spot: '#3B82F6', dining: '#EF4444' };
-const TYPE_LABELS: Record<string, string>  = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food' };
+const TYPE_COLORS: Record<string, string> = { heritage: '#F59E0B', spot: '#3B82F6', dining: '#EF4444', footwear: '#B45309', stay: '#0D9488', accommodation: '#0D9488' };
+const TYPE_LABELS: Record<string, string>  = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food', footwear: 'Footwear Store', stay: 'Place to Stay', accommodation: 'Accommodation' };
 
 const CR_STATUS_COLOR: Record<string, string> = {
   pending:     'bg-yellow-50 text-yellow-700',
@@ -1161,6 +1161,25 @@ function LboDashboard() {
                           </div>
                         </div>
                       </>}
+
+                      {(arForm.category === 'footwear' || arForm.category === 'accommodation') && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contact Number <span className="text-xs font-normal text-gray-400">(optional)</span></label>
+                            <input type="text" value={arForm.contact_number}
+                              onChange={e => setArForm(f => ({ ...f, contact_number: e.target.value }))}
+                              placeholder="e.g. 09171234567"
+                              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Opening Hours <span className="text-xs font-normal text-gray-400">(optional)</span></label>
+                            <input type="text" value={arForm.opening_hours}
+                              onChange={e => setArForm(f => ({ ...f, opening_hours: e.target.value }))}
+                              placeholder="e.g. 9AM – 6PM daily"
+                              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                          </div>
+                        </div>
+                      )}
 
                       {/* Virtual Tour checkbox */}
                       <label className="flex items-center gap-3 cursor-pointer select-none">

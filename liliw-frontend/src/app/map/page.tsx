@@ -20,12 +20,14 @@ const TYPE_CONFIG = {
   heritage: { color: '#EF4444', label: 'Heritage' },
   spot:     { color: '#22C55E', label: 'Spots'    },
   dining:   { color: '#F97316', label: 'Dining'   },
+  footwear: { color: '#B45309', label: 'Footwear' },
+  stay:     { color: '#0D9488', label: 'Stays'    },
 };
 
 interface MapAttraction {
   id: string;
   name: string;
-  type: 'heritage' | 'spot' | 'dining';
+  type: 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay';
   description?: string;
   lat: number;
   lng: number;
@@ -42,7 +44,7 @@ interface RouteInfo {
   steps: Array<{ instruction: string; distance: string }>;
 }
 
-type FilterType = 'all' | 'heritage' | 'spot' | 'dining';
+type FilterType = 'all' | 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay';
 type TravelMode = 'driving' | 'walking' | 'motorcycle';
 
 const CarIcon = () => (
@@ -426,7 +428,7 @@ export default function MapPage() {
             return {
               id: String(a.id),
               name: a.attributes.name,
-              type: a.type as 'heritage' | 'spot' | 'dining',
+              type: a.type as 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay',
               description: a.attributes.description,
               lat, lng, photos,
               rating: a.attributes.rating || 0,
@@ -566,7 +568,7 @@ export default function MapPage() {
           )}
         </div>
         <div className="flex gap-1.5 ml-auto overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
-          {(['all', 'heritage', 'spot', 'dining'] as FilterType[]).map(f => (
+          {(['all', 'heritage', 'spot', 'dining', 'footwear', 'stay'] as FilterType[]).map(f => (
             <button key={f} onClick={() => {
               setFilter(f);
               setSelected(prev => (prev && f !== 'all' && prev.type !== f) ? null : prev);
