@@ -259,8 +259,9 @@ function AttractionQuickModal({ placeName, onClose }: { placeName: string; onClo
   );
 }
 
-function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userLocation, locationStatus }: {
+function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, duration, userLocation, locationStatus }: {
   plan: GeneratedPlan; onReset: () => void; onSave: (editedPlan: GeneratedPlan) => void; saved: boolean; isLoggedIn: boolean; interests: string[];
+  duration: string;
   userLocation: [number, number] | null; locationStatus: 'idle' | 'pending' | 'granted' | 'denied';
 }) {
   const [localPlan, setLocalPlan] = useState<GeneratedPlan>(() => JSON.parse(JSON.stringify(plan)));
@@ -670,12 +671,22 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, userL
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on stopsSignature, not localPlan; see comment above
   }, [showMap, userLocation, stopsSignature, allAttractions]);
 
+  /* A place to stay only makes sense when the trip runs past a single day.
+     A half-day or full-day tour ends with you going home, so accommodation
+     is left out of the picker entirely; a 2+ day trip (or one the plan
+     itself split across days) gets it as its own group. */
+  const isMultiDay =
+    (localPlan.days?.length ?? 1) > 1 ||
+    /\b([2-9]|\d{2,})\s*days?\b/i.test(duration) ||
+    /\bovernight\b|\bnights?\b|\bweekend\b/i.test(duration);
+
   const allowedTypes = Array.from(
-    new Set(
-      interests.length > 0
+    new Set([
+      ...(interests.length > 0
         ? interests.flatMap(i => INTEREST_TO_TYPES[i] || (['heritage', 'spot', 'dining'] as const))
-        : (['heritage', 'spot', 'dining'] as const)
-    )
+        : (['heritage', 'spot', 'dining'] as const)),
+      ...(isMultiDay ? (['stay'] as const) : []),
+    ])
   ) as ItineraryPlaceType[];
 
   const filteredAttractions = allAttractions.filter(a => allowedTypes.includes(a.type));
@@ -1634,7 +1645,7 @@ function ItineraryWizard() {
           {step === 'result' && plan && (
             <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <PlanResult plan={plan} onReset={reset} onSave={saveTrip} saved={tripSaved} isLoggedIn={!!user} interests={interests}
-                userLocation={userLocation} locationStatus={locationStatus} />
+                duration={effectiveDuration} userLocation={userLocation} locationStatus={locationStatus} />
             </motion.div>
           )}
 

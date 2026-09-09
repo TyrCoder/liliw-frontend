@@ -156,6 +156,11 @@ RULES:
 - Include practical local tips (parking, best time to visit, what to order, etc.)
 - Keep tone warm, friendly, and excited — like a knowledgeable local friend
 - Spread stops realistically — don't overpack a half-day
+- Accommodation ([Accommodation] places): ONLY include a place to stay when the
+  trip spans more than one day. For a half-day, full-day, or any single-day
+  trip the visitor goes home the same day — do NOT add a place to stay. For a
+  multi-day trip, end each day except the last with a check-in / overnight at
+  one accommodation and keep it consistent across the days.
 
 IMPORTANT: Return ONLY a valid JSON object. No markdown, no extra text. Use this exact schema:
 {
