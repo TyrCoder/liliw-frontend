@@ -3,6 +3,24 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Loader2, CheckCircle, AlertCircle, ClipboardList, Eye, X } from 'lucide-react';
 import StatusBadge from './StatusBadge';
+import SafeHtml from '@/components/SafeHtml';
+
+// Columns that are plumbing rather than content — hidden in the View panel.
+const HIDDEN_FIELDS = new Set([
+  'id', 'status', 'created_at', 'updated_at', 'created_by', 'reviewed_by',
+  'published_at', 'reject_remarks', 'slug', 'legacy_strapi_user_id', 'documentId',
+]);
+
+// Pull readable text out of Strapi-style rich-text blocks.
+function blocksText(v: unknown): string {
+  if (!Array.isArray(v)) return '';
+  return v
+    .flatMap((b: any) => (Array.isArray(b?.children) ? b.children.map((c: any) => c?.text ?? '') : []))
+    .join(' ')
+    .trim();
+}
+
+const humanize = (k: string) => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
 interface PendingEntry {
   id: string;
@@ -53,6 +71,9 @@ export default function ContentApprovalsTab({ token }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [batchRunning, setBatchRunning] = useState(false);
   const [batchReject, setBatchReject] = useState(false);
+  // The entry being previewed in the View panel, and its load state.
+  const [viewEntry, setViewEntry] = useState<{ data: Record<string, unknown>; title: string; type: string } | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
   const h: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -104,6 +125,19 @@ export default function ContentApprovalsTab({ token }: Props) {
     }
     setSaving(null);
     setTimeout(() => setMsg(null), 4000);
+  };
+
+  // Fetch the full row so a reviewer can read the actual content before acting.
+  const openView = async (entry: PendingEntry) => {
+    setViewLoading(true); setViewEntry(null); setMsg(null);
+    const res = await fetch(`/api/cms/${entry.content_type}/${entry.id}`, { headers: h }).catch(() => null);
+    const d = res ? await res.json().catch(() => ({})) : {};
+    if (res && res.ok && d.data) {
+      setViewEntry({ data: d.data, title: entry.title, type: entry.content_type });
+    } else {
+      setMsg({ ok: false, text: d.error || 'Could not load the entry.' });
+    }
+    setViewLoading(false);
   };
 
   const openReject = (entry: PendingEntry) => {
@@ -290,6 +324,12 @@ export default function ContentApprovalsTab({ token }: Props) {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
                           <button
+                            onClick={() => openView(entry)}
+                            disabled={viewLoading}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600 transition disabled:opacity-50">
+                            <Eye className="w-3 h-3" /> View
+                          </button>
+                          <button
                             onClick={() => approve(entry)}
                             disabled={saving === entry.id}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-200 text-green-700 hover:bg-green-50 transition disabled:opacity-50">
@@ -356,6 +396,59 @@ export default function ContentApprovalsTab({ token }: Props) {
                 {(batchRunning || (!!rejectModal && saving === rejectModal.id)) ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertCircle className="w-4 h-4" />}
                 Reject
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View panel — the full submitted content, so a reviewer sees what they
+          are approving. */}
+      {(viewLoading || viewEntry) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => { setViewEntry(null); setViewLoading(false); }}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+              <div className="min-w-0">
+                <h3 className="font-bold text-gray-900 truncate">{viewEntry?.title ?? 'Loading…'}</h3>
+                {viewEntry && <p className="text-xs text-gray-400 mt-0.5">{TYPE_LABELS[viewEntry.type] ?? viewEntry.type}</p>}
+              </div>
+              <button onClick={() => { setViewEntry(null); setViewLoading(false); }}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 transition shrink-0">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-6 py-5 overflow-y-auto space-y-5">
+              {viewLoading && (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} />
+                </div>
+              )}
+              {viewEntry && Object.entries(viewEntry.data)
+                .filter(([k, v]) => !HIDDEN_FIELDS.has(k) && v != null && v !== '')
+                .map(([k, v]) => {
+                  let node: React.ReactNode;
+                  if (typeof v === 'string') {
+                    node = /<[a-z][\s\S]*>/i.test(v)
+                      ? <SafeHtml html={v} className="prose prose-sm max-w-none text-gray-700" />
+                      : <p className="text-sm text-gray-700 whitespace-pre-wrap">{v}</p>;
+                  } else if (Array.isArray(v)) {
+                    const txt = blocksText(v);
+                    node = txt
+                      ? <p className="text-sm text-gray-700 whitespace-pre-wrap">{txt}</p>
+                      : <p className="text-xs text-gray-400">{v.length} item{v.length !== 1 ? 's' : ''}</p>;
+                  } else if (typeof v === 'boolean' || typeof v === 'number') {
+                    node = <p className="text-sm text-gray-700">{String(v)}</p>;
+                  } else {
+                    node = <p className="text-xs text-gray-400">—</p>;
+                  }
+                  return (
+                    <div key={k}>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{humanize(k)}</p>
+                      {node}
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>
