@@ -53,6 +53,39 @@ const FIGURE_RATIO = 1.14;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
 
+// The card's background. With more than one photo it cross-fades between them;
+// with one it holds still; with none it falls back to a brand gradient. Remount
+// it (key on the story) to restart at the first photo when the story changes.
+function StoryBackdrop({ images }: { images: string[] }) {
+  const [i, setI] = useState(0);
+
+  useEffect(() => {
+    if (images.length < 2) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const id = setInterval(() => setI(p => (p + 1) % images.length), 5500);
+    return () => clearInterval(id);
+  }, [images]);
+
+  if (images.length === 0) {
+    return <div className="w-full h-full" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }} />;
+  }
+  return (
+    <AnimatePresence>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <motion.img
+        key={i}
+        src={images[i % images.length]}
+        alt=""
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 1.4, ease: 'easeInOut' }}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+    </AnimatePresence>
+  );
+}
+
 // Stories one at a time, read in full. Gat Tayaw stands in the card's right-side
 // deadspace and reads the current one. No auto-advance — paging is manual.
 export default function StorySlideshow({ stories }: { stories: Story[] }) {
@@ -89,6 +122,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
   const speaking = narrating && !!audioSrc;
   const bubbleText = (story?.storyteller_text ?? '').trim();
   const coverImage = story?.coverUrl || story?.images?.[0] || '';
+  const bgImages = story?.images?.length ? story.images : (coverImage ? [coverImage] : []);
 
   // Try to autoplay; browsers block sound before interaction, so `blocked`
   // turns the button into an invitation to press it.
@@ -155,13 +189,11 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
       aria-label="Stories of Liliw"
     >
       <article className="relative rounded-3xl overflow-hidden shadow-xl" style={{ backgroundColor: '#0B1836' }}>
-        {/* The story's cover photo fills the card, darkened at the edges
-            (vignette) and down the left so the light text stays readable. */}
+        {/* The story's photos fill the card (cross-fading when there are
+            several), darkened at the edges (vignette) and down the left so the
+            light text stays readable. */}
         <div className="absolute inset-0" aria-hidden>
-          {coverImage
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={coverImage} alt="" className="w-full h-full object-cover" />
-            : <div className="w-full h-full" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }} />}
+          <StoryBackdrop key={story.slug} images={bgImages} />
           <div className="absolute inset-0"
             style={{ background: 'radial-gradient(130% 130% at 50% 35%, transparent 42%, rgba(2,8,24,0.62) 100%)' }} />
           <div className="absolute inset-0"
@@ -210,17 +242,6 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
               : story.excerpt
                 ? <p className="max-w-[62ch] text-white/90 leading-relaxed" style={{ fontFamily: BL }}>{story.excerpt}</p>
                 : null}
-
-            {/* Photographs, when there are any. */}
-            {story.images && story.images.length > 0 && (
-              <div className="mt-7 flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-                {story.images.slice(0, 6).map((src, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={src + i} src={src} alt={`${story.title} ${i + 1}`} loading="lazy"
-                    className="h-32 sm:h-44 w-auto rounded-2xl object-cover shrink-0 border border-gray-100" />
-                ))}
-              </div>
-            )}
 
             <div className="mt-7 pt-5 border-t border-white/20 flex items-center gap-4 flex-wrap">
               <span className="flex items-center gap-2 text-sm text-white/75" style={{ fontFamily: BL }}>
