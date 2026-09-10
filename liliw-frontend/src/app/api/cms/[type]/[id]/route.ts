@@ -4,6 +4,7 @@ import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES, slugify, lab
 import { logCmsAction } from '@/lib/cms-audit';
 import { contentProblem } from '@/lib/cms-validate';
 import { invalidateContentCache } from '@/lib/content';
+import { getSnapshot } from '@/lib/cms-snapshot';
 
 type Params = { params: Promise<{ type: string; id: string }> };
 
@@ -25,7 +26,9 @@ export async function GET(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  return NextResponse.json({ data });
+  // Staff also get the last-approved snapshot, so the review view can diff.
+  const snapshot = role ? await getSnapshot(type, id) : null;
+  return NextResponse.json({ data, snapshot });
 }
 
 export async function PUT(req: NextRequest, { params }: Params) {

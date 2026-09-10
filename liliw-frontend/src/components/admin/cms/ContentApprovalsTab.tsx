@@ -22,6 +22,28 @@ function blocksText(v: unknown): string {
 
 const humanize = (k: string) => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
+const isEmpty = (v: unknown) => v == null || v === '' || (Array.isArray(v) && v.length === 0);
+const sameVal = (a: unknown, b: unknown) =>
+  (isEmpty(a) && isEmpty(b)) || JSON.stringify(a) === JSON.stringify(b);
+
+// One field's value, rendered for reading: HTML as rich text, rich-text blocks
+// flattened, everything else as plain text.
+function FieldValue({ v }: { v: unknown }) {
+  if (typeof v === 'string') {
+    return /<[a-z][\s\S]*>/i.test(v)
+      ? <SafeHtml html={v} className="prose prose-sm max-w-none text-gray-700" />
+      : <p className="text-sm text-gray-700 whitespace-pre-wrap">{v}</p>;
+  }
+  if (Array.isArray(v)) {
+    const txt = blocksText(v);
+    return txt
+      ? <p className="text-sm text-gray-700 whitespace-pre-wrap">{txt}</p>
+      : <p className="text-xs text-gray-400">{v.length} item{v.length !== 1 ? 's' : ''}</p>;
+  }
+  if (typeof v === 'boolean' || typeof v === 'number') return <p className="text-sm text-gray-700">{String(v)}</p>;
+  return <p className="text-xs text-gray-400">—</p>;
+}
+
 interface PendingEntry {
   id: string;
   title: string;
@@ -72,8 +94,11 @@ export default function ContentApprovalsTab({ token }: Props) {
   const [batchRunning, setBatchRunning] = useState(false);
   const [batchReject, setBatchReject] = useState(false);
   // The entry being previewed in the View panel, and its load state.
-  const [viewEntry, setViewEntry] = useState<{ data: Record<string, unknown>; title: string; type: string } | null>(null);
+  const [viewEntry, setViewEntry] = useState<{
+    data: Record<string, unknown>; snapshot: Record<string, unknown> | null; title: string; type: string;
+  } | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
+  const [showAllFields, setShowAllFields] = useState(false);
 
   const h: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -129,11 +154,11 @@ export default function ContentApprovalsTab({ token }: Props) {
 
   // Fetch the full row so a reviewer can read the actual content before acting.
   const openView = async (entry: PendingEntry) => {
-    setViewLoading(true); setViewEntry(null); setMsg(null);
+    setViewLoading(true); setViewEntry(null); setShowAllFields(false); setMsg(null);
     const res = await fetch(`/api/cms/${entry.content_type}/${entry.id}`, { headers: h }).catch(() => null);
     const d = res ? await res.json().catch(() => ({})) : {};
     if (res && res.ok && d.data) {
-      setViewEntry({ data: d.data, title: entry.title, type: entry.content_type });
+      setViewEntry({ data: d.data, snapshot: d.snapshot ?? null, title: entry.title, type: entry.content_type });
     } else {
       setMsg({ ok: false, text: d.error || 'Could not load the entry.' });
     }
@@ -424,31 +449,76 @@ export default function ContentApprovalsTab({ token }: Props) {
                   <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} />
                 </div>
               )}
-              {viewEntry && Object.entries(viewEntry.data)
-                .filter(([k, v]) => !HIDDEN_FIELDS.has(k) && v != null && v !== '')
-                .map(([k, v]) => {
-                  let node: React.ReactNode;
-                  if (typeof v === 'string') {
-                    node = /<[a-z][\s\S]*>/i.test(v)
-                      ? <SafeHtml html={v} className="prose prose-sm max-w-none text-gray-700" />
-                      : <p className="text-sm text-gray-700 whitespace-pre-wrap">{v}</p>;
-                  } else if (Array.isArray(v)) {
-                    const txt = blocksText(v);
-                    node = txt
-                      ? <p className="text-sm text-gray-700 whitespace-pre-wrap">{txt}</p>
-                      : <p className="text-xs text-gray-400">{v.length} item{v.length !== 1 ? 's' : ''}</p>;
-                  } else if (typeof v === 'boolean' || typeof v === 'number') {
-                    node = <p className="text-sm text-gray-700">{String(v)}</p>;
-                  } else {
-                    node = <p className="text-xs text-gray-400">—</p>;
-                  }
-                  return (
-                    <div key={k}>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{humanize(k)}</p>
-                      {node}
-                    </div>
-                  );
-                })}
+              {viewEntry && (() => {
+                const { data, snapshot } = viewEntry;
+                const isNew = !snapshot;
+                const rows = Object.keys(data)
+                  .filter(k => !HIDDEN_FIELDS.has(k) && !isEmpty(data[k]))
+                  .map(k => {
+                    const cur = data[k];
+                    const old = snapshot?.[k];
+                    const state: 'new' | 'changed' | 'same' =
+                      isNew ? 'new'
+                      : isEmpty(old) && !isEmpty(cur) ? 'new'
+                      : !sameVal(cur, old) ? 'changed'
+                      : 'same';
+                    return { k, cur, old, state };
+                  });
+                const changed = rows.filter(r => r.state !== 'same');
+                const shown = (isNew || showAllFields || changed.length === 0) ? rows : changed;
+
+                return (
+                  <>
+                    {isNew ? (
+                      <div className="text-xs font-semibold px-3 py-2 rounded-lg bg-green-50 text-green-700 border border-green-100">
+                        New submission — all content is new.
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-gray-500">
+                          {changed.length === 0
+                            ? 'No changes from the published version.'
+                            : `${changed.length} field${changed.length !== 1 ? 's' : ''} changed`}
+                        </span>
+                        {changed.length > 0 && (
+                          <button onClick={() => setShowAllFields(s => !s)}
+                            className="text-xs font-semibold text-blue-600 hover:underline shrink-0">
+                            {showAllFields ? 'Show only changes' : 'Show all fields'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {shown.map(({ k, cur, old, state }) => (
+                      <div key={k} className={
+                        state === 'changed' ? 'border-l-2 border-amber-300 pl-3'
+                        : state === 'new' && !isNew ? 'border-l-2 border-green-300 pl-3'
+                        : ''
+                      }>
+                        <p className="text-[10px] font-bold uppercase tracking-widest mb-1 flex items-center gap-2 text-gray-400">
+                          {humanize(k)}
+                          {state === 'new' && !isNew && <span className="text-green-600">Added</span>}
+                          {state === 'changed' && <span className="text-amber-600">Changed</span>}
+                        </p>
+                        {state === 'changed' ? (
+                          <div className="space-y-1.5">
+                            <div className="rounded-lg bg-red-50 px-3 py-2">
+                              <p className="text-[9px] font-bold text-red-400 uppercase tracking-widest mb-0.5">Was</p>
+                              <FieldValue v={old} />
+                            </div>
+                            <div className="rounded-lg bg-green-50 px-3 py-2">
+                              <p className="text-[9px] font-bold text-green-500 uppercase tracking-widest mb-0.5">Now</p>
+                              <FieldValue v={cur} />
+                            </div>
+                          </div>
+                        ) : (
+                          <FieldValue v={cur} />
+                        )}
+                      </div>
+                    ))}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

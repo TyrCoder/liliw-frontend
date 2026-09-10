@@ -3,6 +3,7 @@ import { supabaseServer, explainDbError } from '@/lib/supabase-server';
 import { getCmsIdentity, CMS_TABLES } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
 import { invalidateContentCache } from '@/lib/content';
+import { saveSnapshot } from '@/lib/cms-snapshot';
 
 type Params = { params: Promise<{ type: string; id: string }> };
 
@@ -34,6 +35,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     .eq('id', id);
 
   if (error) return NextResponse.json({ error: explainDbError(error) }, { status: 500 });
+
+  // Record the now-approved content as the baseline the next edit diffs against.
+  await saveSnapshot(type, id, existing);
 
   const entryTitle = existing.name || existing.title || existing.question || id;
   logCmsAction({ table, entryId: id, entryTitle: String(entryTitle), event: 'entry.publish', performedBy: email, role });

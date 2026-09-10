@@ -3,6 +3,7 @@ import { supabaseServer, explainDbError } from '@/lib/supabase-server';
 import { getCmsIdentity, CMS_TABLES } from '@/lib/cms-auth';
 import { logCmsAction } from '@/lib/cms-audit';
 import { invalidateContentCache } from '@/lib/content';
+import { saveSnapshots } from '@/lib/cms-snapshot';
 
 type Params = { params: Promise<{ type: string }> };
 
@@ -64,6 +65,9 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const { error } = await supabaseServer.from(table).update(patch).in('id', eligibleIds);
   if (error) return NextResponse.json({ error: explainDbError(error) }, { status: 500 });
+
+  // Snapshot the approved content as the baseline future edits diff against.
+  if (action === 'approve') await saveSnapshots(type, eligible);
 
   const event = action === 'submit' ? 'entry.submit' : action === 'approve' ? 'entry.publish' : 'entry.unpublish';
   for (const r of eligible) {
