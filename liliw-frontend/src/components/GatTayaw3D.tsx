@@ -53,6 +53,24 @@ const BODY_WIDTH = 0.95;
 const FRAME_MARGIN = 1.08;
 
 /**
+ * How much of him is in shot.
+ *
+ * `full` is the whole standing figure. `bust` runs from his head down past his
+ * hands — far enough to keep them, because folding his arms and looking about
+ * are gestures made with the hands, and at full height they are too small to
+ * read. It stops around the hip, above legs that do nothing while he talks.
+ *
+ * Both are measured against a body normalised to TARGET_HEIGHT and centred on
+ * the origin, so the camera needs only a height to fit and a point to look at.
+ */
+const FRAMING = {
+  full: { height: TARGET_HEIGHT, centreY: 0,    width: BODY_WIDTH },
+  bust: { height: 1.08,          centreY: 0.29, width: BODY_WIDTH },
+} as const;
+
+export type Framing = keyof typeof FRAMING;
+
+/**
  * An orthographic camera, and the reason is that the framing kept being wrong.
  *
  * With a perspective camera the composition is trigonometry — a distance, a
@@ -80,21 +98,25 @@ const CAMERA = { position: [0, 0, 8] as [number, number, number], zoom: 100, nea
  * divided by his — and the same for width, taking whichever is the tighter of
  * the two so a narrow panel trims nothing.
  */
-function Frame() {
+function Frame({ framing }: { framing: Framing }) {
   const camera = useThree(s => s.camera);
   const size = useThree(s => s.size);
 
   useEffect(() => {
     const cam = camera as THREE.OrthographicCamera;
-    const byHeight = size.height / (TARGET_HEIGHT * FRAME_MARGIN);
-    const byWidth  = size.width  / (BODY_WIDTH   * FRAME_MARGIN);
+    const shot = FRAMING[framing];
+    const byHeight = size.height / (shot.height * FRAME_MARGIN);
+    const byWidth  = size.width  / (shot.width  * FRAME_MARGIN);
 
     /* A three.js camera is a mutable object, not React state — the rule reads
        it as the latter, and zoom has no setter. */
     // eslint-disable-next-line react-hooks/immutability
     cam.zoom = Math.max(Math.min(byHeight, byWidth), 1);
+    // Level with the middle of whatever is in shot, which for a bust sits
+    // above his own centre.
+    cam.position.setY(shot.centreY);
     cam.updateProjectionMatrix();
-  }, [camera, size.width, size.height]);
+  }, [camera, size.width, size.height, framing]);
 
   return null;
 }
@@ -273,6 +295,7 @@ export default function GatTayaw3D({
   speaking = false,
   greetKey = 'default',
   facing = 'front',
+  framing = 'full',
   width = 220,
   height = 300,
 }: {
@@ -282,6 +305,8 @@ export default function GatTayaw3D({
   greetKey?: string;
   /** Which way he is turned, for when he is being moved across a track. */
   facing?: 'left' | 'right' | 'front';
+  /** How much of him is in shot — the whole figure, or head down past his hands. */
+  framing?: Framing;
   width?: number;
   height?: number;
 }) {
@@ -318,7 +343,7 @@ export default function GatTayaw3D({
         <directionalLight position={[2.5, 4, 3]} intensity={2.2} />
         <directionalLight position={[-3, 2, -2]} intensity={0.9} color="#9DC4FF" />
 
-        <Frame />
+        <Frame framing={framing} />
 
         <Suspense fallback={null}>
           {/* No offset group: he stands on y = 0 and the camera looks at his

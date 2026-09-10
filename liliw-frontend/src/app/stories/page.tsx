@@ -94,6 +94,19 @@ export default function StoriesPage() {
             category: a?.category ?? 'history',
             author: a?.author ?? 'Liliw Tourism Office',
             coverUrl: item._coverUrl ?? '',
+            /* The page reads the story rather than teasing it, so the body and
+               every photograph come down with the listing — the endpoint has
+               always returned both. */
+            content: typeof a?.content === 'string' ? a.content : '',
+            /* Without these the reader would fall back to the keyword guess
+               and ignore whatever an editor uploaded, which is the whole point
+               of letting them upload it. */
+            audio_key: a?.audio_key ?? null,
+            audio_en:  a?.audio_en ?? null,
+            audio_fil: a?.audio_fil ?? null,
+            images: Array.isArray(item._allImages) && item._allImages.length > 0
+              ? item._allImages
+              : item._coverUrl ? [item._coverUrl] : [],
             featured: a?.featured ?? false,
             date: a?.publishedAt ? new Date(a.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
           };

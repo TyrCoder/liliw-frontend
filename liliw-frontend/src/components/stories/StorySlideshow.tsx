@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, User, BookOpen, Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { storyNarrationSrc, type NarrationLang } from '@/lib/narrations';
+import SafeHtml from '@/components/SafeHtml';
 
 const GatTayaw3D = dynamic(() => import('@/components/GatTayaw3D'), {
   ssr: false,
@@ -29,6 +30,9 @@ export interface Story {
   author: string;
   coverUrl: string;
   date: string;
+  /** The story itself. The page shows it rather than teasing it. */
+  content?: string;
+  images?: string[];
   /** The narration an editor picked, when they picked one. */
   audio_key?: string | null;
   /** Recordings uploaded through the CMS, which take precedence. */
@@ -55,11 +59,11 @@ const AUTOPLAY_MS = 9000;
  * component actually has. */
 
 /** Of the container's width, at the extremes it is allowed to reach. */
-const FIGURE_SHARE = 0.21;
-const FIGURE_MIN = 104;
-const FIGURE_MAX = 230;
-/** His drawn proportions, kept whatever the width works out to. */
-const FIGURE_RATIO = 310 / 230;
+const FIGURE_SHARE = 0.30;
+const FIGURE_MIN = 150;
+const FIGURE_MAX = 300;
+/** Close up he is nearly square: head down past the hands, no legs. */
+const FIGURE_RATIO = 1.02;
 /** How much of his height rises over the slide. */
 const OVERLAP_SHARE = 0.52;
 /** Clear air between his feet and the progress bar. */
@@ -124,10 +128,6 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
   const overlap = figureH * OVERLAP_SHARE;
   const showTitles = width >= TITLES_MIN_WIDTH;
   const railH = showTitles ? 44 : 16;
-  /* Portrait on a phone. A 16:9 slide on a 360px screen is 202px tall, and the
-     category, title, two lines of summary and a row of buttons do not fit in
-     202px — they overflow it, or crush the picture to a stripe behind them. */
-  const portrait = width > 0 && width < 520;
 
   /*
    * Gat Tayaw reads the story that is showing.
@@ -231,134 +231,131 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
       aria-roledescription="carousel"
       aria-label="Stories of Liliw"
     >
-      <div className="relative rounded-3xl overflow-hidden shadow-xl" style={{ backgroundColor: '#0B3D91' }}>
-        <div className="relative"
-          style={portrait
-            ? { aspectRatio: '4 / 5', maxHeight: '76vh' }
-            : { aspectRatio: '16 / 9', minHeight: 300 }}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={story.slug}
-              initial={{ opacity: 0, scale: 1.04 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="absolute inset-0"
-            >
-              {story.coverUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={story.coverUrl} alt={story.title} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }} />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
-            </motion.div>
-          </AnimatePresence>
+      {/* ── The story, in full ──
+          This was a photograph with a title and two lines of summary over it,
+          and a button to go and read the rest. These stories run a hundred and
+          fifty words; putting a click between someone and a minute of reading
+          is asking them to want it before they have seen it. The page is the
+          reader now, and paging moves between stories rather than between
+          teasers for them. */}
+      <article className="relative rounded-3xl overflow-hidden shadow-xl bg-white">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={story.slug}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35 }}
+            className="px-5 sm:px-9 lg:px-12 py-7 sm:py-9"
+          >
+            {/* Kicker: which chapter, and what kind of story. */}
+            <div className="flex items-center gap-3 flex-wrap mb-3">
+              <span className="text-[34px] sm:text-[42px] leading-none font-black tabular-nums"
+                style={{ color: 'rgba(11,61,145,0.16)', fontFamily: HL }}>
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <span className="text-[11px] font-black uppercase tracking-[0.22em] px-2.5 py-1 rounded-full text-white"
+                style={{ backgroundColor: accent, fontFamily: HL }}>
+                {story.category}
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em]"
+                style={{ color: 'rgba(11,61,145,0.45)', fontFamily: HL }}>
+                {index + 1} of {count}
+              </span>
+            </div>
 
-          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-7 lg:p-9">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={story.slug}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.35 }}
-              >
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full text-white capitalize"
-                    style={{ backgroundColor: accent, fontFamily: HL }}>
-                    {story.category}
-                  </span>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/20 text-white"
-                    style={{ fontFamily: HL }}>
-                    {index + 1} of {count}
-                  </span>
-                </div>
+            <h2 className="text-2xl sm:text-4xl lg:text-[44px] font-bold leading-[1.1] mb-3 max-w-3xl"
+              style={{ color: '#0B3D91', fontFamily: DL }}>
+              {story.title}
+            </h2>
 
-                <h2 className="text-xl sm:text-3xl lg:text-4xl font-bold text-white mb-2 max-w-3xl leading-tight" style={{ fontFamily: DL }}>
-                  {story.title}
-                </h2>
+            <div className="w-16 h-1 rounded-full mb-5" style={{ backgroundColor: '#F5C518' }} />
 
-                {story.excerpt && (
-                  <p className="text-gray-200 text-[13px] sm:text-base line-clamp-2 sm:line-clamp-2 max-w-2xl mb-3 sm:mb-4" style={{ fontFamily: BL }}>
-                    {story.excerpt}
-                  </p>
-                )}
+            {/* The story itself. Sanitised like every other piece of CMS
+                rich text, and held to a reading measure rather than the full
+                width of the card. */}
+            {story.content
+              ? <SafeHtml html={story.content}
+                  className="prose prose-sm sm:prose-base max-w-[62ch] text-gray-700 leading-relaxed"
+                  style={{ fontFamily: BL }} />
+              : story.excerpt
+                ? <p className="max-w-[62ch] text-gray-700 leading-relaxed" style={{ fontFamily: BL }}>{story.excerpt}</p>
+                : null}
 
-                {/* The storyteller stands over the right-hand side of this
-                    block, so the controls keep to the left and stop short of
-                    him — on a phone a button under his feet is a button that
-                    cannot be pressed. */}
-                <div className="flex items-center gap-2 sm:gap-3 flex-wrap"
-                  style={{ maxWidth: portrait ? 'calc(100% - 4.5rem)' : undefined }}>
-                  <Link href={`/stories/${story.slug}`}
-                    className="inline-flex items-center gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-[13px] sm:text-sm transition hover:opacity-90"
-                    style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}>
-                    <BookOpen className="w-4 h-4 shrink-0" />
-                    <span className="whitespace-nowrap">Read{portrait ? '' : ' this story'}</span>
-                  </Link>
-                  {/* Listen, and the language it is read in. One button each:
-                      the second is a toggle rather than two radio buttons,
-                      because there are exactly two languages and a pair of
-                      buttons where one is always the wrong one is noise. */}
-                  {/* No control when there is nothing to play. A story whose
-                      narration has not been recorded should not offer a button
-                      that produces silence — that failure looks identical to a
-                      recording still loading, so nobody reports it. */}
-                  <div className={`items-center gap-2 ${audioSrc ? 'flex' : 'hidden'}`}>
-                    <button
-                      onClick={toggleNarration}
-                      aria-label={speaking ? 'Pause narration' : 'Listen to Gat Tayaw'}
-                      className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl font-bold text-[13px] sm:text-sm transition hover:bg-white/20"
-                      style={{
-                        backgroundColor: blocked ? 'rgba(245,197,24,0.22)' : 'rgba(255,255,255,0.12)',
-                        color: '#fff', fontFamily: HL,
-                      }}
-                    >
-                      {speaking ? <VolumeX className="w-4 h-4 shrink-0" /> : <Volume2 className="w-4 h-4 shrink-0" />}
-                      <span className="whitespace-nowrap">{speaking ? 'Pause' : 'Listen'}</span>
-                    </button>
+            {/* Photographs, when there are any. Two of these stories have none
+                yet, so the layout has to read properly without them rather
+                than leave a hole where a picture was assumed. */}
+            {story.images && story.images.length > 0 && (
+              <div className="mt-7 flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+                {story.images.slice(0, 6).map((src, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={src + i} src={src} alt={`${story.title} ${i + 1}`} loading="lazy"
+                    className="h-32 sm:h-44 w-auto rounded-2xl object-cover shrink-0 border border-gray-100" />
+                ))}
+              </div>
+            )}
 
-                    <button
-                      onClick={() => setLang(l => (l === 'en' ? 'fil' : 'en'))}
-                      aria-label={`Narration language: ${lang === 'en' ? 'English' : 'Filipino'}. Tap to switch.`}
-                      title="Switch narration language"
-                      className="px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-black tracking-wider transition hover:opacity-90"
-                      style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}
-                    >
-                      {lang === 'en' ? 'EN' : 'FIL'}
-                    </button>
-                  </div>
+            <div className="mt-7 pt-5 border-t border-gray-100 flex items-center gap-4 flex-wrap">
+              <span className="flex items-center gap-2 text-sm text-gray-500" style={{ fontFamily: BL }}>
+                <User className="w-3.5 h-3.5 shrink-0" />{story.author}
+                {story.date && <><span>·</span><span>{story.date}</span></>}
+              </span>
 
-                  {!portrait && (
-                    <span className="flex items-center gap-2 text-gray-300 text-sm" style={{ fontFamily: BL }}>
-                      <User className="w-3.5 h-3.5 shrink-0" />{story.author}
-                      {story.date && <><span>·</span><span>{story.date}</span></>}
-                    </span>
-                  )}
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
+              {/* Demoted to what it now is: a link to this story on its own,
+                  for sharing. It is no longer the way to read it. */}
+              <Link href={`/stories/${story.slug}`}
+                className="inline-flex items-center gap-1.5 text-sm font-bold hover:underline"
+                style={{ color: '#1565C0', fontFamily: HL }}>
+                <BookOpen className="w-4 h-4" /> Open on its own page
+              </Link>
+            </div>
+          </motion.div>
+        </AnimatePresence>
 
-          {count > 1 && (
-            <>
-              <button onClick={() => { setPlaying(false); prev(); }} aria-label="Previous story"
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/65 text-white flex items-center justify-center transition">
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button onClick={() => { setPlaying(false); next(); }} aria-label="Next story"
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/65 text-white flex items-center justify-center transition">
-                <ChevronRight className="w-5 h-5" />
-              </button>
-              <button onClick={() => setPlaying(p => !p)}
-                aria-label={playing ? 'Pause slideshow' : 'Play slideshow'}
-                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 hover:bg-black/65 text-white flex items-center justify-center transition">
-                {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              </button>
-            </>
-          )}
-        </div>
+        {count > 1 && (
+          <>
+            <button onClick={() => { setPlaying(false); prev(); }} aria-label="Previous story"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full text-white flex items-center justify-center transition hover:opacity-90"
+              style={{ backgroundColor: 'rgba(11,61,145,0.55)' }}>
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button onClick={() => { setPlaying(false); next(); }} aria-label="Next story"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full text-white flex items-center justify-center transition hover:opacity-90"
+              style={{ backgroundColor: 'rgba(11,61,145,0.55)' }}>
+              <ChevronRight className="w-5 h-5" />
+            </button>
+            <button onClick={() => setPlaying(p => !p)}
+              aria-label={playing ? 'Pause slideshow' : 'Play slideshow'}
+              className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition hover:opacity-90"
+              style={{ backgroundColor: 'rgba(11,61,145,0.12)', color: '#0B3D91' }}>
+              {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            </button>
+          </>
+        )}
+      </article>
+
+      {/* Listen to this one, and in which language. Under the story rather
+          than over a photograph, next to the storyteller who reads it. */}
+      <div className={`mt-4 items-center gap-2 ${audioSrc ? 'flex' : 'hidden'}`}>
+        <button
+          onClick={toggleNarration}
+          aria-label={speaking ? 'Pause narration' : 'Listen to Gat Tayaw'}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-white transition hover:opacity-90"
+          style={{ backgroundColor: blocked ? '#B45309' : '#0B3D91', fontFamily: HL }}
+        >
+          {speaking ? <VolumeX className="w-4 h-4 shrink-0" /> : <Volume2 className="w-4 h-4 shrink-0" />}
+          <span className="whitespace-nowrap">{speaking ? 'Pause' : 'Listen'}</span>
+        </button>
+
+        <button
+          onClick={() => setLang(l => (l === 'en' ? 'fil' : 'en'))}
+          aria-label={`Narration language: ${lang === 'en' ? 'English' : 'Filipino'}. Tap to switch.`}
+          title="Switch narration language"
+          className="px-3 py-2.5 rounded-xl text-xs font-black tracking-wider transition hover:opacity-90"
+          style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}
+        >
+          {lang === 'en' ? 'EN' : 'FIL'}
+        </button>
       </div>
 
       {/* ── The rail he walks along ──
@@ -397,7 +394,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
           {/* He works through his clips while the narration is playing and
               settles when it stops, so the figure and the audio are obviously
               the same person rather than two things happening at once. */}
-          <GatTayaw3D width={figureW} height={figureH} facing={facing}
+          <GatTayaw3D width={figureW} height={figureH} facing={facing} framing="bust"
             greetKey="stories-slideshow" speaking={speaking} />
         </motion.div>
 
