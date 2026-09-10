@@ -292,6 +292,12 @@ export default function StoryDetail() {
             content:  Array.isArray(a?.content) ? a.content : (typeof a?.content === 'string' ? a.content : []),
             category: a?.category ?? 'history',
             author:   a?.author ?? 'Liliw Tourism Office',
+            // The editor's chosen narration and any uploaded recordings — the
+            // same fields the /stories slideshow reads. Omitting them here is
+            // why this page ignored the updated voice and guessed from keywords.
+            audio_key: a?.audio_key ?? null,
+            audio_en:  a?.audio_en ?? null,
+            audio_fil: a?.audio_fil ?? null,
             coverUrl: found._coverUrl ?? '',
             images:   Array.isArray(found._allImages) && found._allImages.length > 0
                         ? found._allImages
