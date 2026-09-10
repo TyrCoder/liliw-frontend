@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, User, BookOpen, Volume2, VolumeX } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, BookOpen, Volume2, VolumeX, HelpCircle, X, MessageCircle, Languages } from 'lucide-react';
 import { storyNarrationSrc, type NarrationLang } from '@/lib/narrations';
 import SafeHtml from '@/components/SafeHtml';
 
@@ -113,6 +113,9 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
   const [narrating, setNarrating] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // The "how this works" legend.
+  const [showHelp, setShowHelp] = useState(false);
 
   // Typewriter reveal of the speech bubble, restarted on each story.
   const [typed, setTyped] = useState('');
@@ -309,6 +312,63 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
             </button>
           </>
         )}
+
+        {/* How-this-works: what every control on the card does. */}
+        <button onClick={() => setShowHelp(true)} aria-label="How this works"
+          className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full flex items-center justify-center text-white transition hover:opacity-90"
+          style={{ backgroundColor: 'rgba(11,61,145,0.55)' }}>
+          <HelpCircle className="w-5 h-5" />
+        </button>
+
+        <AnimatePresence>
+          {showHelp && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowHelp(false)}
+              className="absolute inset-0 z-40 flex items-center justify-center p-4"
+              style={{ backgroundColor: 'rgba(2,8,24,0.82)', backdropFilter: 'blur(2px)' }}>
+              <motion.div
+                initial={{ scale: 0.96, y: 8 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, y: 8 }}
+                onClick={e => e.stopPropagation()}
+                className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
+                  <p className="font-bold text-gray-900" style={{ fontFamily: HL }}>How to explore the stories</p>
+                  <button onClick={() => setShowHelp(false)} aria-label="Close"
+                    className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <ul className="p-4 space-y-3.5 max-h-[62vh] overflow-y-auto">
+                  {[
+                    { icon: <User className="w-4 h-4" />, title: 'Gat Tayaw, your storyteller',
+                      desc: 'The guide standing on the card. He reads the story on screen and moves while he speaks.' },
+                    { icon: <MessageCircle className="w-4 h-4" />, title: 'His speech bubble',
+                      desc: 'A short line from Gat Tayaw, typed out as he talks.' },
+                    { icon: <Volume2 className="w-4 h-4" />, title: 'Listen',
+                      desc: 'Hear Gat Tayaw narrate the story aloud. Tap again to pause.' },
+                    { icon: <Languages className="w-4 h-4" />, title: 'EN / FIL',
+                      desc: 'Switch the narration between English and Filipino.' },
+                    { icon: <ChevronRight className="w-4 h-4" />, title: 'Arrows & the bar below',
+                      desc: 'Move between stories. The bar shows how many there are and which one you are on.' },
+                    { icon: <BookOpen className="w-4 h-4" />, title: 'Open on its own page',
+                      desc: 'Read the full story on its own page, with a link you can share.' },
+                  ].map((it, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{ backgroundColor: 'rgba(11,61,145,0.08)', color: '#1565C0' }}>
+                        {it.icon}
+                      </span>
+                      <div>
+                        <p className="text-sm font-bold text-gray-900" style={{ fontFamily: HL }}>{it.title}</p>
+                        <p className="text-[13px] text-gray-500 leading-snug" style={{ fontFamily: BL }}>{it.desc}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </article>
 
       {/* Listen to this one, and in which language. */}
