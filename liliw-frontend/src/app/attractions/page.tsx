@@ -121,7 +121,7 @@ export default function AttractionsPage() {
   const [selectedType, setSelectedType]         = useState('all');
 
   useEffect(() => {
-    fetch('/api/content/attractions')
+    fetch('/api/content/attractions', { cache: 'no-store' })
       .then(r => r.json())
       .then(json => { const data: Attraction[] = json.data ?? []; setAll(data); setResults(data); })
       .catch(err => { logger.error('Failed to load attractions:', err); setError('Failed to load attractions'); })

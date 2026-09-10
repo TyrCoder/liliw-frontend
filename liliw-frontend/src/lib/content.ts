@@ -66,9 +66,13 @@ async function getRatingsByItemId(): Promise<Record<string, number>> {
   );
 }
 
-export const getAllAttractions = async () => {
-  const cached = getCached('all-attractions');
-  if (cached) return cached;
+export const getAllAttractions = async (opts?: { fresh?: boolean }) => {
+  // The public listing passes fresh so a just-approved attraction is never
+  // hidden behind a stale per-instance cache; the AI callers still use it.
+  if (!opts?.fresh) {
+    const cached = getCached('all-attractions');
+    if (cached) return cached;
+  }
   try {
     const [items, ratings] = await Promise.all([
       fetchApprovedWithMedia('cms_attractions', 'attraction',

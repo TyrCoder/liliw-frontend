@@ -11,9 +11,11 @@ import { getAllAttractions } from '@/lib/content';
 // It now delegates, so there is one mapping and both paths stay in step.
 export async function GET() {
   try {
-    const data = await getAllAttractions();
+    // Fresh read + a short edge cache, so approving an attraction shows it on
+    // the next load rather than up to five minutes later.
+    const data = await getAllAttractions({ fresh: true });
     return NextResponse.json({ data }, {
-      headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=60' },
+      headers: { 'Cache-Control': 's-maxage=5, stale-while-revalidate=10' },
     });
   } catch {
     return NextResponse.json({ data: [] });
