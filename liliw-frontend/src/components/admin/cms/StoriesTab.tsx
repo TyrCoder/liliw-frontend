@@ -53,7 +53,11 @@ const CONFIG: CmsTabConfig<Entry> = {
       hint: 'MP3. Replaces the built-in English recording for this story.' },
     { name: 'audio_fil', label: 'Filipino narration', type: 'audio', colSpan: 1,
       hint: 'MP3. Replaces the built-in Filipino recording for this story.' },
-    { name: 'media',    label: 'Cover Photo', type: 'media', maxFiles: 1 },
+    /* The story page has had a carousel for these all along; only this cap
+       kept it to one. The first is the cover — it is what the listing and the
+       slideshow show — and the rest appear in the carousel on the story. */
+    { name: 'media',    label: 'Photos', type: 'media', maxFiles: 8,
+      hint: 'The first photo is the cover. The rest appear in the story\u2019s gallery.' },
   ],
   columns: [
     { header: 'Title', primary: true, render: e => <p className="font-semibold text-gray-900">{e.title}</p> },

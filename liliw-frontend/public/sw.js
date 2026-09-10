@@ -37,7 +37,6 @@ const PRECACHE_URLS = [
 
 // Local assets to pre-cache (audio + images)
 const PRECACHE_ASSETS = [
-  '/audio/welcome.mp3',
   '/audio/ancestral-en.mp3', '/audio/ancestral-fil.mp3',
   '/audio/church-en.mp3',    '/audio/church-fil.mp3',
   '/audio/legend-en.mp3',    '/audio/legend-fil.mp3',

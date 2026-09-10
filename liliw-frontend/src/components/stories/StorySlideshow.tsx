@@ -144,6 +144,11 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
 
   const story = stories[Math.min(index, Math.max(count - 1, 0))];
   const audioSrc = story ? storyNarrationSrc(story, lang) : '';
+  /* Derived, not stored. Setting it to false when the source goes away would
+     be a setState inside an effect for something already knowable from the
+     two values in hand — and a `true` left over from the previous slide would
+     have the storyteller talking with nothing playing. */
+  const speaking = narrating && !!audioSrc;
 
   /*
    * Autoplay, as far as a browser will allow it.
@@ -172,7 +177,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
   const toggleNarration = () => {
     const el = audioRef.current;
     if (!el) return;
-    if (narrating) { el.pause(); setNarrating(false); return; }
+    if (speaking) { el.pause(); setNarrating(false); return; }
     el.play().then(() => { setNarrating(true); setBlocked(false); }).catch(() => setBlocked(true));
   };
 
@@ -296,18 +301,22 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
                       the second is a toggle rather than two radio buttons,
                       because there are exactly two languages and a pair of
                       buttons where one is always the wrong one is noise. */}
-                  <div className="flex items-center gap-2">
+                  {/* No control when there is nothing to play. A story whose
+                      narration has not been recorded should not offer a button
+                      that produces silence — that failure looks identical to a
+                      recording still loading, so nobody reports it. */}
+                  <div className={`items-center gap-2 ${audioSrc ? 'flex' : 'hidden'}`}>
                     <button
                       onClick={toggleNarration}
-                      aria-label={narrating ? 'Pause narration' : 'Listen to Gat Tayaw'}
+                      aria-label={speaking ? 'Pause narration' : 'Listen to Gat Tayaw'}
                       className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl font-bold text-[13px] sm:text-sm transition hover:bg-white/20"
                       style={{
                         backgroundColor: blocked ? 'rgba(245,197,24,0.22)' : 'rgba(255,255,255,0.12)',
                         color: '#fff', fontFamily: HL,
                       }}
                     >
-                      {narrating ? <VolumeX className="w-4 h-4 shrink-0" /> : <Volume2 className="w-4 h-4 shrink-0" />}
-                      <span className="whitespace-nowrap">{narrating ? 'Pause' : 'Listen'}</span>
+                      {speaking ? <VolumeX className="w-4 h-4 shrink-0" /> : <Volume2 className="w-4 h-4 shrink-0" />}
+                      <span className="whitespace-nowrap">{speaking ? 'Pause' : 'Listen'}</span>
                     </button>
 
                     <button
@@ -389,7 +398,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
               settles when it stops, so the figure and the audio are obviously
               the same person rather than two things happening at once. */}
           <GatTayaw3D width={figureW} height={figureH} facing={facing}
-            greetKey="stories-slideshow" speaking={narrating} />
+            greetKey="stories-slideshow" speaking={speaking} />
         </motion.div>
 
         <div className="absolute inset-x-0 bottom-0 flex gap-2 pointer-events-auto">

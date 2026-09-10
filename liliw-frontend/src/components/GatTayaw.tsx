@@ -114,11 +114,11 @@ export default function GatTayaw({ defaultKey, audioOverride }: Props) {
 
   const narration = NARRATIONS[idx];
   const uploaded  = (lang === 'fil' ? audioOverride?.fil : audioOverride?.en)?.trim();
-  const audioSrc  = uploaded
-    ? uploaded
-    : narration.key === 'welcome'
-      ? `/audio/welcome.mp3`
-      : `/audio/${narration.key}-${lang}.mp3`;
+  /* Empty means there is nothing to play: the welcome narration is words only
+     now, having been the one recording with no story to attach it to and so no
+     way to replace it from the CMS. The controls below disappear rather than
+     offering silence. */
+  const audioSrc  = uploaded || (narration.key === 'welcome' ? '' : `/audio/${narration.key}-${lang}.mp3`);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -377,8 +377,11 @@ export default function GatTayaw({ defaultKey, audioOverride }: Props) {
             </p>
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-3 px-5 pb-5">
+          {/* Controls — only when there is a recording behind them.
+              The narration still reads on screen without one; what disappears
+              is the offer to hear it, because a Listen button that produces
+              silence is indistinguishable from one still loading. */}
+          <div className={`items-center gap-3 px-5 pb-5 ${audioSrc ? 'flex' : 'hidden'}`}>
             <button onClick={toggle} aria-label={playing ? 'Pause narration' : 'Play narration'}
               className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all active:scale-95 hover:brightness-110"
               style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}>

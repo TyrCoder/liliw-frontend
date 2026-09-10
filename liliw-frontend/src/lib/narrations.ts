@@ -70,19 +70,23 @@ export function narrationFor(
 }
 
 /**
- * The file for a narration in a language.
+ * The file for a narration in a language, or nothing.
  *
- * `welcome` is the exception and deliberately so: it was recorded once, with
- * no Filipino counterpart, so asking for welcome in Filipino returns the only
- * recording there is rather than a path that 404s. Everything else exists in
- * both.
+ * `welcome` has no recording. It was the one narration with no Filipino
+ * counterpart and no story to attach it to, so it could never be replaced
+ * through the CMS the way the others now can — it has been retired as audio
+ * and kept only as the words in Gat Tayaw's bubble.
+ *
+ * An empty string means "there is nothing to play", and callers are expected
+ * to hide the control rather than offer a button that does nothing. Silence
+ * behind a Listen button is the failure nobody reports, because it looks
+ * exactly like a recording that has not started yet.
  */
 export const narrationSrc = (key: NarrationKey, lang: NarrationLang): string =>
-  key === 'welcome' ? '/audio/welcome.mp3' : `/audio/${key}-${lang}.mp3`;
+  key === 'welcome' ? '' : `/audio/${key}-${lang}.mp3`;
 
-/** Whether a narration can actually be heard in this language. */
-export const hasLanguage = (key: NarrationKey, lang: NarrationLang): boolean =>
-  key !== 'welcome' || lang === 'en';
+/** Whether a narration has a recording at all, in any language. */
+export const hasRecording = (key: NarrationKey): boolean => key !== 'welcome';
 
 /**
  * The recording to play for a story, in a language.
