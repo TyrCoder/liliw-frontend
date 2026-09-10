@@ -46,9 +46,9 @@ export interface Story {
 const TITLES_MIN_WIDTH = 560;
 
 // Gat Tayaw's size, as a share of the card width so he fits at any width.
-const FIGURE_SHARE = 0.38;
-const FIGURE_MIN = 200;
-const FIGURE_MAX = 380;
+const FIGURE_SHARE = 0.40;
+const FIGURE_MIN = 210;
+const FIGURE_MAX = 420;
 const FIGURE_RATIO = 1.14;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
@@ -215,7 +215,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
             transition={{ duration: 0.35 }}
             /* Roomier card, text centred vertically; right padding reserves the
                deadspace the storyteller stands in. */
-            className="relative z-10 flex flex-col justify-start sm:justify-center sm:min-h-115 lg:min-h-130 pl-5 sm:pl-9 lg:pl-12 pr-5 sm:pr-[42%] py-8 sm:py-10"
+            className="relative z-10 flex flex-col justify-start sm:justify-center sm:min-h-140 lg:min-h-170 pl-5 sm:pl-10 lg:pl-16 pr-5 sm:pr-[42%] py-10 sm:py-12 lg:py-16"
             style={{ textShadow: '0 1px 12px rgba(0,0,0,0.5)' }}
           >
             {/* Kicker: which chapter, and what kind of story. */}
@@ -234,7 +234,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
               </span>
             </div>
 
-            <h2 className="text-2xl sm:text-4xl lg:text-[44px] font-bold leading-[1.1] mb-3 max-w-3xl"
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] mb-4 max-w-3xl"
               style={{ color: '#ffffff', fontFamily: DL }}>
               {story.title}
             </h2>
@@ -244,10 +244,10 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
             {/* The story itself, sanitised and held to a reading measure. */}
             {story.content
               ? <SafeHtml html={story.content}
-                  className="prose prose-invert prose-sm sm:prose-base max-w-[62ch] text-white/90 leading-relaxed"
+                  className="prose prose-invert prose-base sm:prose-lg max-w-[62ch] text-white/90 leading-relaxed"
                   style={{ fontFamily: BL }} />
               : story.excerpt
-                ? <p className="max-w-[62ch] text-white/90 leading-relaxed" style={{ fontFamily: BL }}>{story.excerpt}</p>
+                ? <p className="max-w-[62ch] text-base sm:text-lg text-white/90 leading-relaxed" style={{ fontFamily: BL }}>{story.excerpt}</p>
                 : null}
 
             <div className="mt-7 pt-5 border-t border-white/20 flex items-center gap-4 flex-wrap">
