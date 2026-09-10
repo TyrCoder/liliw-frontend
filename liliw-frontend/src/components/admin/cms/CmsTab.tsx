@@ -233,51 +233,47 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
 
   const reject = (id: string) => { setRejectTarget(id); setRejectRemarks(''); };
 
-  const confirmReject = async () => {
-    if (!rejectTarget || !rejectRemarks.trim()) return;
-    setRejecting(true);
-    setMsg(null);
-    if (rejectTarget === '__batch__') {
-      // Same remarks sent back with every selected pending entry.
-      const targets = entries.filter(e => selected.has(e.id) && e.status === 'pending');
-      let ok = 0;
-      for (const e of targets) {
-        if (await act(`/api/cms/${slug}/${e.id}/reject`,
-          { method: 'POST', headers: h, body: JSON.stringify({ remarks: rejectRemarks }) },
-          'Could not reject')) ok++;
-      }
-      setMsg({ ok: true, text: `Sent ${ok} back to the author.` });
+  // Every selected id in one request; the server applies the action to the
+  // eligible ones and skips the rest.
+  const runBulk = async (action: 'submit' | 'approve' | 'reject', remarks?: string) => {
+    setBatchRunning(true); setMsg(null);
+    const res = await fetch(`/api/cms/${slug}/bulk`, {
+      method: 'POST', headers: h,
+      body: JSON.stringify({ action, ids: [...selected], remarks }),
+    }).catch(() => null);
+    const d = res ? await res.json() : {};
+    if (res && res.ok) {
+      const verb = action === 'submit' ? 'Sent for review' : action === 'approve' ? 'Published' : 'Sent back to the author';
+      setMsg({ ok: true, text: `${verb}: ${d.count}${d.skipped ? ` · ${d.skipped} skipped` : ''}.` });
       setSelected(new Set());
     } else {
-      const ok = await act(
-        `/api/cms/${slug}/${rejectTarget}/reject`,
-        { method: 'POST', headers: h, body: JSON.stringify({ remarks: rejectRemarks }) },
-        'Could not reject',
-      );
-      if (ok) setMsg({ ok: true, text: 'Sent back to the author.' });
+      setMsg({ ok: false, text: d.error || 'Batch action failed.' });
     }
+    setBatchRunning(false);
+    load(statusFilter);
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget || !rejectRemarks.trim()) return;
+    if (rejectTarget === '__batch__') {
+      setRejecting(true);
+      await runBulk('reject', rejectRemarks.trim());
+      setRejecting(false); setRejectTarget(null); setRejectRemarks('');
+      return;
+    }
+    setRejecting(true); setMsg(null);
+    const ok = await act(
+      `/api/cms/${slug}/${rejectTarget}/reject`,
+      { method: 'POST', headers: h, body: JSON.stringify({ remarks: rejectRemarks }) },
+      'Could not reject',
+    );
+    if (ok) setMsg({ ok: true, text: 'Sent back to the author.' });
     setRejecting(false); setRejectTarget(null); setRejectRemarks('');
     load(statusFilter);
   };
 
-  // Batch actions run the per-item endpoint over each eligible selected row.
-  const runBatch = async (
-    eligible: (s: string) => boolean, path: string, done: (n: number) => string,
-  ) => {
-    const targets = entries.filter(e => selected.has(e.id) && eligible(e.status));
-    if (targets.length === 0) return;
-    setBatchRunning(true); setMsg(null);
-    let ok = 0;
-    for (const e of targets) {
-      if (await act(`/api/cms/${slug}/${e.id}/${path}`, { method: 'POST', headers: h }, `Could not ${path}`)) ok++;
-    }
-    setMsg({ ok: true, text: done(ok) });
-    setBatchRunning(false); setSelected(new Set());
-    load(statusFilter);
-  };
-
-  const batchSubmit  = () => runBatch(s => s === 'draft' || s === 'rejected', 'submit',  n => `Sent ${n} for review.`);
-  const batchApprove = () => runBatch(s => s === 'pending', 'approve', n => `Published ${n}.`);
+  const batchSubmit  = () => runBulk('submit');
+  const batchApprove = () => runBulk('approve');
   const batchDecline = () => { setRejectTarget('__batch__'); setRejectRemarks(''); };
 
   /** Archive, restore, or destroy — whichever the open dialog asked for. */
