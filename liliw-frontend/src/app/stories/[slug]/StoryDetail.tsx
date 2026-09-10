@@ -416,7 +416,7 @@ export default function StoryDetail() {
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
 
             {/* ── Left sidebar: GatTayaw (sticky) ── */}
-            <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-8">
+            <div className="w-full lg:w-90 shrink-0 lg:sticky lg:top-8">
               <GatTayaw defaultKey={audioKey}
                 audioOverride={{ en: story.audio_en, fil: story.audio_fil }} />
             </div>

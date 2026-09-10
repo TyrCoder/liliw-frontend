@@ -9,8 +9,8 @@ import dynamic from 'next/dynamic';
 /* One size for the storyteller, so the placeholder that holds his space while
    three.js loads is the same shape as the figure that replaces it — otherwise
    the speech bubble beneath him jumps when the canvas arrives. */
-const FIGURE_W = 250;
-const FIGURE_H = 330;
+const FIGURE_W = 300;
+const FIGURE_H = 396;
 
 const GatTayaw3D = dynamic(() => import('@/components/GatTayaw3D'), {
   ssr: false,
