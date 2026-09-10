@@ -46,9 +46,9 @@ export interface Story {
 const TITLES_MIN_WIDTH = 560;
 
 // Gat Tayaw's size, as a share of the card width so he fits at any width.
-const FIGURE_SHARE = 0.34;
-const FIGURE_MIN = 180;
-const FIGURE_MAX = 340;
+const FIGURE_SHARE = 0.38;
+const FIGURE_MIN = 200;
+const FIGURE_MAX = 380;
 const FIGURE_RATIO = 1.14;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
@@ -210,8 +210,9 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.35 }}
-            /* Right padding reserves the deadspace the storyteller stands in. */
-            className="relative z-10 pl-5 sm:pl-9 lg:pl-12 pr-5 sm:pr-[40%] py-7 sm:py-9"
+            /* Roomier card, text centred vertically; right padding reserves the
+               deadspace the storyteller stands in. */
+            className="relative z-10 flex flex-col justify-center min-h-95 sm:min-h-115 lg:min-h-130 pl-5 sm:pl-9 lg:pl-12 pr-5 sm:pr-[42%] py-8 sm:py-10"
             style={{ textShadow: '0 1px 12px rgba(0,0,0,0.5)' }}
           >
             {/* Kicker: which chapter, and what kind of story. */}
@@ -261,11 +262,11 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
           </motion.div>
         </AnimatePresence>
 
-        {/* Gat Tayaw in the right-side deadspace, facing the text, with his
-            speech bubble above him. Outside the crossfade so the 3D canvas
+        {/* Gat Tayaw centred in the right-side deadspace, facing the text, with
+            his speech bubble above him. Outside the crossfade so the 3D canvas
             persists across slides. Hidden on mobile. */}
-        <div className="hidden sm:flex flex-col items-end gap-2 absolute right-2 lg:right-5 bottom-0 z-10 pointer-events-none"
-          style={{ width: figureW }}>
+        <div className="hidden sm:flex flex-col items-center gap-2 absolute right-0 bottom-0 z-10 pointer-events-none"
+          style={{ width: '42%' }}>
           {bubbleText && (
             <motion.div
               key={story.slug}
