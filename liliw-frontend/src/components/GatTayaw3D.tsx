@@ -287,7 +287,19 @@ export default function GatTayaw3D({
 }) {
   const turn = facing === 'left' ? 0.6 : facing === 'right' ? -0.6 : 0;
   return (
-    <div style={{ width, height }} className="select-none">
+    /* He is scenery, and scenery must not take clicks.
+     *
+     * A parent's `pointer-events: none` does not settle this: react-three-fiber
+     * puts `pointer-events: auto` on its own container div, and a descendant
+     * saying auto overrides an ancestor saying none — that is simply how the
+     * property works. So the slideshow marking its whole block as
+     * non-interactive was quietly undone here, and on the first slide, where he
+     * stands over the left of the picture, he was sitting on top of "Read this
+     * story" and swallowing the click.
+     *
+     * The style prop is spread after that default inside the library, so this
+     * is the one place that can win. */
+    <div style={{ width, height, pointerEvents: 'none' }} className="select-none">
       {/* Closer, and a narrower lens. He was framed like a wide establishing
           shot: a small figure adrift in a box mostly full of nothing, which is
           a waste of both the model and the column it sits in. */}
@@ -296,7 +308,7 @@ export default function GatTayaw3D({
         dpr={[1, 2]}
         camera={CAMERA}
         gl={{ antialias: true, alpha: true }}
-        style={{ background: 'transparent' }}
+        style={{ background: 'transparent', pointerEvents: 'none' }}
       >
         {/* Lit by hand rather than by an environment map: drei's presets fetch
             an HDR from a CDN, which is one more thing to be blocked, to fail
