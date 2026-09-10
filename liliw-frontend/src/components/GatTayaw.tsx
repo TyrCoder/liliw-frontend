@@ -65,9 +65,20 @@ const NARRATIONS = [
   },
 ];
 
-interface Props { defaultKey?: string; }
+interface Props {
+  defaultKey?: string;
+  /**
+   * Recordings uploaded for this particular story, per language.
+   *
+   * When one exists it is played instead of the file that goes with the
+   * narration key — that is the whole point of letting an editor upload it.
+   * The two languages are independent: English recorded and Filipino not yet
+   * should play the new English rather than wait for the pair.
+   */
+  audioOverride?: { en?: string | null; fil?: string | null };
+}
 
-export default function GatTayaw({ defaultKey }: Props) {
+export default function GatTayaw({ defaultKey, audioOverride }: Props) {
   // When defaultKey is provided, lock to that narration only
   const locked = !!defaultKey;
   const startIdx = defaultKey
@@ -102,9 +113,12 @@ export default function GatTayaw({ defaultKey }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const narration = NARRATIONS[idx];
-  const audioSrc  = narration.key === 'welcome'
-    ? `/audio/welcome.mp3`
-    : `/audio/${narration.key}-${lang}.mp3`;
+  const uploaded  = (lang === 'fil' ? audioOverride?.fil : audioOverride?.en)?.trim();
+  const audioSrc  = uploaded
+    ? uploaded
+    : narration.key === 'welcome'
+      ? `/audio/welcome.mp3`
+      : `/audio/${narration.key}-${lang}.mp3`;
 
   useEffect(() => {
     const audio = audioRef.current;

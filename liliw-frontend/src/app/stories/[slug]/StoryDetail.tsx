@@ -411,7 +411,8 @@ export default function StoryDetail() {
 
             {/* ── Left sidebar: GatTayaw (sticky) ── */}
             <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-8">
-              <GatTayaw defaultKey={audioKey} />
+              <GatTayaw defaultKey={audioKey}
+                audioOverride={{ en: story.audio_en, fil: story.audio_fil }} />
             </div>
 
             {/* ── Center: Article body ── */}

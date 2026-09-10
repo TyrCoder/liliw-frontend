@@ -10,6 +10,9 @@ interface Entry {
   author: string; slug: string; status: string; created_by: string;
   /** Which narration Gat Tayaw reads. Empty means work it out from the title. */
   audio_key: string | null;
+  /** Recordings uploaded for this story, one per language. */
+  audio_en: string | null;
+  audio_fil: string | null;
   reject_remarks: string | null; created_at: string; media?: MediaItem[];
 }
 
@@ -24,7 +27,7 @@ const CONFIG: CmsTabConfig<Entry> = {
   emptyText: 'No stories yet',
   empty: {
     title: '', category: 'heritage', content: '', author: '', slug: '',
-    audio_key: '', reject_remarks: null, media: [],
+    audio_key: '', audio_en: '', audio_fil: '', reject_remarks: null, media: [],
   },
   fields: [
     { name: 'title',    label: 'Title',    type: 'text', required: true },
@@ -39,18 +42,32 @@ const CONFIG: CmsTabConfig<Entry> = {
       options: [
         { value: '', label: 'Choose automatically' },
         ...NARRATION_KEYS.map(k => ({ value: k, label: NARRATION_LABELS[k] })),
-      ] },
+      ],
+      hint: 'Only used when no recording is uploaded below.' },
+
+    /* Uploaded recordings win over the built-in ones. Both optional and both
+       independent: a story may have English recorded and Filipino not yet,
+       and should play the new English and fall back for the other rather than
+       wait for the pair. */
+    { name: 'audio_en',  label: 'English narration',  type: 'audio', colSpan: 1,
+      hint: 'MP3. Replaces the built-in English recording for this story.' },
+    { name: 'audio_fil', label: 'Filipino narration', type: 'audio', colSpan: 1,
+      hint: 'MP3. Replaces the built-in Filipino recording for this story.' },
     { name: 'media',    label: 'Cover Photo', type: 'media', maxFiles: 1 },
   ],
   columns: [
     { header: 'Title', primary: true, render: e => <p className="font-semibold text-gray-900">{e.title}</p> },
     { header: 'Category', render: e => <span className="text-gray-500 capitalize">{e.category}</span> },
     { header: 'Author', render: e => <span className="text-gray-500">{e.author || '—'}</span> },
-    { header: 'Narration', render: e => (
-      <span className="text-gray-500">
-        {e.audio_key ? NARRATION_LABELS[e.audio_key as keyof typeof NARRATION_LABELS] ?? e.audio_key : 'Automatic'}
-      </span>
-    ) },
+    { header: 'Narration', render: e => {
+      const own = [e.audio_en && 'EN', e.audio_fil && 'FIL'].filter(Boolean);
+      if (own.length) return <span className="text-gray-500">Uploaded ({own.join(' + ')})</span>;
+      return (
+        <span className="text-gray-500">
+          {e.audio_key ? NARRATION_LABELS[e.audio_key as keyof typeof NARRATION_LABELS] ?? e.audio_key : 'Automatic'}
+        </span>
+      );
+    } },
     statusColumn<Entry>(),
   ],
 };

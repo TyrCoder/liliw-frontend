@@ -5,6 +5,7 @@ import { Loader2, Plus, Edit2, Trash2, Send, CheckCircle, AlertCircle, X, Archiv
 import StatusBadge from './StatusBadge';
 import RichTextEditor from './RichTextEditor';
 import MediaUploader, { MediaItem } from './MediaUploader';
+import AudioUploader from './AudioUploader';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import RejectModal from './RejectModal';
 import ConfirmDialog, { IrreversibleNote } from './ConfirmDialog';
@@ -26,7 +27,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export type CmsFieldType =
   | 'text' | 'textarea' | 'number' | 'select' | 'richtext' | 'media'
-  | 'datetime' | 'checkbox';
+  | 'datetime' | 'checkbox' | 'audio';
 
 export interface CmsField {
   /**
@@ -334,6 +335,19 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
         );
       case 'media':
         return <MediaUploader value={media} onChange={setMedia} maxFiles={f.maxFiles} />;
+
+      /* Audio is a single URL on the row rather than a row in cms_media.
+         The gallery table is built for many files with an order and alt text;
+         a narration is one file per language, and giving it the same shape
+         would mean asking which of them is the recording every time. */
+      case 'audio':
+        return (
+          <AudioUploader
+            value={(val(f.name) as string) || ''}
+            onChange={url => setField(f.name, url)}
+            label={f.label.toLowerCase()}
+          />
+        );
       default:
         return <input value={(val(f.name) as string) || ''} placeholder={f.placeholder}
           onChange={e => setField(f.name, e.target.value)} className={inputCls} />;

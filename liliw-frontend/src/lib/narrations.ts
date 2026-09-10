@@ -83,3 +83,26 @@ export const narrationSrc = (key: NarrationKey, lang: NarrationLang): string =>
 /** Whether a narration can actually be heard in this language. */
 export const hasLanguage = (key: NarrationKey, lang: NarrationLang): boolean =>
   key !== 'welcome' || lang === 'en';
+
+/**
+ * The recording to play for a story, in a language.
+ *
+ * An uploaded file wins over the built-in one. The two languages are decided
+ * independently on purpose: a story may have English recorded and Filipino
+ * still to come, and it should play the new English rather than wait for the
+ * pair to be complete.
+ *
+ * Falling back to the built-in recording is what keeps every story published
+ * before uploads existed working exactly as it did.
+ */
+export function storyNarrationSrc(
+  story: {
+    category: string; slug: string; title: string;
+    audio_key?: string | null; audio_en?: string | null; audio_fil?: string | null;
+  },
+  lang: NarrationLang,
+): string {
+  const uploaded = (lang === 'fil' ? story.audio_fil : story.audio_en)?.trim();
+  if (uploaded) return uploaded;
+  return narrationSrc(narrationFor(story.category, story.slug, story.title, story.audio_key), lang);
+}

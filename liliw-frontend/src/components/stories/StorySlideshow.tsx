@@ -5,7 +5,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, User, BookOpen, Pause, Play, Volume2, VolumeX } from 'lucide-react';
-import { narrationFor, narrationSrc, type NarrationLang } from '@/lib/narrations';
+import { storyNarrationSrc, type NarrationLang } from '@/lib/narrations';
 
 const GatTayaw3D = dynamic(() => import('@/components/GatTayaw3D'), {
   ssr: false,
@@ -31,6 +31,9 @@ export interface Story {
   date: string;
   /** The narration an editor picked, when they picked one. */
   audio_key?: string | null;
+  /** Recordings uploaded through the CMS, which take precedence. */
+  audio_en?: string | null;
+  audio_fil?: string | null;
 }
 
 const AUTOPLAY_MS = 9000;
@@ -140,9 +143,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const story = stories[Math.min(index, Math.max(count - 1, 0))];
-  const audioSrc = story
-    ? narrationSrc(narrationFor(story.category, story.slug, story.title, story.audio_key), lang)
-    : '';
+  const audioSrc = story ? storyNarrationSrc(story, lang) : '';
 
   /*
    * Autoplay, as far as a browser will allow it.
@@ -365,7 +366,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
       <audio
         ref={audioRef}
         src={audioSrc}
-        preload="auto"
+        preload="none"
         onEnded={() => setNarrating(false)}
         onPause={() => setNarrating(false)}
         onPlay={() => setNarrating(true)}
