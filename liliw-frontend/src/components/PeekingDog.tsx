@@ -18,8 +18,16 @@ import DogMascot from '@/components/DogMascot';
  * will find.
  */
 
-/** How wide he is drawn. */
-const SIZE = 160;
+/**
+ * How wide he is drawn, and how much of that stays past the edge.
+ *
+ * Sized against the viewport, not fixed. At 160 he was 44 per cent of a 360px
+ * phone, and a mascot that wide stops being a glance round a door and starts
+ * being something in the way of the page.
+ */
+const SIZE_SHARE = 0.28;
+const SIZE_MIN = 92;
+const SIZE_MAX = 160;
 /** How much of that stays past the edge — the rest of him is the head. */
 const HIDDEN_FRACTION = 0.56;
 
@@ -28,7 +36,17 @@ const RETURN_MS = 26000;
 
 export default function PeekingDog() {
   const [peeking, setPeeking] = useState(false);
+  const [size, setSize] = useState(SIZE_MAX);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    const measure = () => setSize(
+      Math.min(Math.max(window.innerWidth * SIZE_SHARE, SIZE_MIN), SIZE_MAX),
+    );
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
 
   const schedule = useCallback((delay: number) => {
     clearTimeout(timer.current);
@@ -57,15 +75,15 @@ export default function PeekingDog() {
       aria-label={peeking ? 'Hide the dog' : 'The dog is hiding'}
       title="Shoo!"
       initial={false}
-      animate={{ x: peeking ? SIZE * HIDDEN_FRACTION : SIZE + 12 }}
+      animate={{ x: peeking ? size * HIDDEN_FRACTION : size + 12 }}
       transition={{ type: 'spring', stiffness: 120, damping: 16 }}
       className="fixed right-0 z-40 cursor-pointer bg-transparent border-0 p-0"
       /* Above the chat button rather than beside it: the assistant lives in
          the bottom-right corner, and two things competing for one corner is
          how a mascot becomes an obstruction. */
-      style={{ top: '38%', width: SIZE, lineHeight: 0 }}
+      style={{ top: '38%', width: size, lineHeight: 0 }}
     >
-      <DogMascot size={SIZE} interactive={false} />
+      <DogMascot size={size} interactive={false} />
     </motion.button>
   );
 }

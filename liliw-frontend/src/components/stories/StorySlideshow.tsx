@@ -43,15 +43,36 @@ const AUTOPLAY_MS = 9000;
  * being cut off, because anything of him that reached up into the slide went
  * behind it. Standing him in front solves all three: he can be large, he
  * overlaps the picture the way a presenter stands in front of a screen, and
- * his feet sit on the rail rather than floating above it. */
-const FIGURE_W = 230;
-const FIGURE_H = 310;
-/** The progress bar and the titles under it. */
-const RAIL_H = 44;
-/** How much of him rises above the rail area and over the slide. */
-const OVERLAP = 160;
+ * his feet sit on the rail rather than floating above it.
+ *
+ * These are proportions rather than pixels. Written as fixed sizes he was 230
+ * wide — nearly two thirds of a 360px phone — and rose 160px over a slide that
+ * was only 200 tall there, which is not a presenter in front of a screen but a
+ * character standing on one. Everything below is derived from the width the
+ * component actually has. */
+
+/** Of the container's width, at the extremes it is allowed to reach. */
+const FIGURE_SHARE = 0.21;
+const FIGURE_MIN = 104;
+const FIGURE_MAX = 230;
+/** His drawn proportions, kept whatever the width works out to. */
+const FIGURE_RATIO = 310 / 230;
+/** How much of his height rises over the slide. */
+const OVERLAP_SHARE = 0.52;
 /** Clear air between his feet and the progress bar. */
 const STAND_GAP = 6;
+
+/**
+ * Below this the rail shows bars without titles.
+ *
+ * Four story titles sharing 360px is 85px each, which truncates every one of
+ * them to a word and a half — four identical grey stubs that say nothing and
+ * still take up the room. The bars alone still show how many there are and
+ * which one is up, and the title is on the slide directly above them.
+ */
+const TITLES_MIN_WIDTH = 560;
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
 
 /**
  * The stories, one at a time, with Gat Tayaw walking to the one he introduces.
@@ -74,6 +95,36 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
   const settle = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const count = stories.length;
+
+  /*
+   * The width the component actually has, not the width of the window.
+   *
+   * The slideshow sits inside a page container with its own padding and a
+   * maximum, so the viewport is the wrong thing to measure — and a breakpoint
+   * would only be right at the two widths it was chosen for. A ResizeObserver
+   * is correct at every width, including the ones nobody tests: a folded
+   * phone, a tablet held sideways, a desktop window dragged narrow.
+   */
+  const stage = useRef<HTMLElement | null>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const figureW = clamp(width * FIGURE_SHARE, FIGURE_MIN, FIGURE_MAX);
+  const figureH = figureW * FIGURE_RATIO;
+  const overlap = figureH * OVERLAP_SHARE;
+  const showTitles = width >= TITLES_MIN_WIDTH;
+  const railH = showTitles ? 44 : 16;
+  /* Portrait on a phone. A 16:9 slide on a 360px screen is 202px tall, and the
+     category, title, two lines of summary and a row of buttons do not fit in
+     202px — they overflow it, or crush the picture to a stripe behind them. */
+  const portrait = width > 0 && width < 520;
 
   /*
    * Gat Tayaw reads the story that is showing.
@@ -167,6 +218,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
 
   return (
     <section
+      ref={stage}
       className="relative"
       onMouseEnter={() => setPlaying(false)}
       onMouseLeave={() => setPlaying(true)}
@@ -174,7 +226,10 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
       aria-label="Stories of Liliw"
     >
       <div className="relative rounded-3xl overflow-hidden shadow-xl" style={{ backgroundColor: '#0B3D91' }}>
-        <div className="relative" style={{ aspectRatio: '16 / 9', minHeight: 300 }}>
+        <div className="relative"
+          style={portrait
+            ? { aspectRatio: '4 / 5', maxHeight: '76vh' }
+            : { aspectRatio: '16 / 9', minHeight: 300 }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={story.slug}
@@ -194,7 +249,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
             </motion.div>
           </AnimatePresence>
 
-          <div className="absolute inset-x-0 bottom-0 p-6 sm:p-9">
+          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-7 lg:p-9">
             <AnimatePresence mode="wait">
               <motion.div
                 key={story.slug}
@@ -214,21 +269,27 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
                   </span>
                 </div>
 
-                <h2 className="text-2xl sm:text-4xl font-bold text-white mb-2 max-w-3xl" style={{ fontFamily: DL }}>
+                <h2 className="text-xl sm:text-3xl lg:text-4xl font-bold text-white mb-2 max-w-3xl leading-tight" style={{ fontFamily: DL }}>
                   {story.title}
                 </h2>
 
                 {story.excerpt && (
-                  <p className="text-gray-200 text-sm sm:text-base line-clamp-2 max-w-2xl mb-4" style={{ fontFamily: BL }}>
+                  <p className="text-gray-200 text-[13px] sm:text-base line-clamp-2 sm:line-clamp-2 max-w-2xl mb-3 sm:mb-4" style={{ fontFamily: BL }}>
                     {story.excerpt}
                   </p>
                 )}
 
-                <div className="flex items-center gap-4 flex-wrap">
+                {/* The storyteller stands over the right-hand side of this
+                    block, so the controls keep to the left and stop short of
+                    him — on a phone a button under his feet is a button that
+                    cannot be pressed. */}
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap"
+                  style={{ maxWidth: portrait ? 'calc(100% - 4.5rem)' : undefined }}>
                   <Link href={`/stories/${story.slug}`}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90"
+                    className="inline-flex items-center gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-[13px] sm:text-sm transition hover:opacity-90"
                     style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}>
-                    <BookOpen className="w-4 h-4" /> Read this story
+                    <BookOpen className="w-4 h-4 shrink-0" />
+                    <span className="whitespace-nowrap">Read{portrait ? '' : ' this story'}</span>
                   </Link>
                   {/* Listen, and the language it is read in. One button each:
                       the second is a toggle rather than two radio buttons,
@@ -238,31 +299,33 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
                     <button
                       onClick={toggleNarration}
                       aria-label={narrating ? 'Pause narration' : 'Listen to Gat Tayaw'}
-                      className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-sm transition hover:bg-white/20"
+                      className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl font-bold text-[13px] sm:text-sm transition hover:bg-white/20"
                       style={{
                         backgroundColor: blocked ? 'rgba(245,197,24,0.22)' : 'rgba(255,255,255,0.12)',
                         color: '#fff', fontFamily: HL,
                       }}
                     >
-                      {narrating ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                      {narrating ? 'Pause' : 'Listen'}
+                      {narrating ? <VolumeX className="w-4 h-4 shrink-0" /> : <Volume2 className="w-4 h-4 shrink-0" />}
+                      <span className="whitespace-nowrap">{narrating ? 'Pause' : 'Listen'}</span>
                     </button>
 
                     <button
                       onClick={() => setLang(l => (l === 'en' ? 'fil' : 'en'))}
                       aria-label={`Narration language: ${lang === 'en' ? 'English' : 'Filipino'}. Tap to switch.`}
                       title="Switch narration language"
-                      className="px-3 py-2.5 rounded-xl text-xs font-black tracking-wider transition hover:opacity-90"
+                      className="px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-black tracking-wider transition hover:opacity-90"
                       style={{ backgroundColor: '#F5C518', color: '#0B3D91', fontFamily: HL }}
                     >
                       {lang === 'en' ? 'EN' : 'FIL'}
                     </button>
                   </div>
 
-                  <span className="flex items-center gap-2 text-gray-300 text-sm" style={{ fontFamily: BL }}>
-                    <User className="w-3.5 h-3.5" />{story.author}
-                    {story.date && <><span>·</span><span>{story.date}</span></>}
-                  </span>
+                  {!portrait && (
+                    <span className="flex items-center gap-2 text-gray-300 text-sm" style={{ fontFamily: BL }}>
+                      <User className="w-3.5 h-3.5 shrink-0" />{story.author}
+                      {story.date && <><span>·</span><span>{story.date}</span></>}
+                    </span>
+                  )}
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -314,17 +377,17 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
           the click — the button was visible, unobstructed to look at, and
           dead. The rail buttons below opt back in. */}
       <div className="relative pointer-events-none"
-        style={{ height: OVERLAP + RAIL_H, marginTop: -OVERLAP }}>
+        style={{ height: overlap + railH, marginTop: -overlap }}>
         <motion.div
           className="absolute pointer-events-none z-20"
-          style={{ width: FIGURE_W, marginLeft: -FIGURE_W / 2, bottom: RAIL_H + STAND_GAP }}
+          style={{ width: figureW, marginLeft: -figureW / 2, bottom: railH + STAND_GAP }}
           animate={{ left: `${((index + 0.5) / count) * 100}%` }}
           transition={{ type: 'spring', stiffness: 90, damping: 18 }}
         >
           {/* He works through his clips while the narration is playing and
               settles when it stops, so the figure and the audio are obviously
               the same person rather than two things happening at once. */}
-          <GatTayaw3D width={FIGURE_W} height={FIGURE_H} facing={facing}
+          <GatTayaw3D width={figureW} height={figureH} facing={facing}
             greetKey="stories-slideshow" speaking={narrating} />
         </motion.div>
 
@@ -336,10 +399,12 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
               className="flex-1 group text-left">
               <span className="block h-1.5 rounded-full transition-all"
                 style={{ backgroundColor: i === index ? accent : 'rgba(11,61,145,0.18)' }} />
-              <span className="mt-2 block text-[11px] font-semibold truncate transition-colors"
-                style={{ fontFamily: BL, color: i === index ? '#0B3D91' : 'rgba(11,61,145,0.45)' }}>
-                {s.title}
-              </span>
+              {showTitles && (
+                <span className="mt-2 block text-[11px] font-semibold truncate transition-colors"
+                  style={{ fontFamily: BL, color: i === index ? '#0B3D91' : 'rgba(11,61,145,0.45)' }}>
+                  {s.title}
+                </span>
+              )}
             </button>
           ))}
         </div>
