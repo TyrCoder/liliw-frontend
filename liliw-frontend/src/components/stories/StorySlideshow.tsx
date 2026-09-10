@@ -201,6 +201,9 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
             style={{ background: 'radial-gradient(130% 130% at 50% 35%, transparent 42%, rgba(2,8,24,0.62) 100%)' }} />
           <div className="absolute inset-0"
             style={{ background: 'linear-gradient(90deg, rgba(2,8,24,0.90) 0%, rgba(2,8,24,0.72) 50%, rgba(2,8,24,0.28) 78%, rgba(2,8,24,0.50) 100%)' }} />
+          {/* On mobile the text is full width, so darken the whole photo evenly
+              (the left scrim above only covers one side). */}
+          <div className="absolute inset-0 sm:hidden" style={{ backgroundColor: 'rgba(2,8,24,0.45)' }} />
         </div>
 
         <AnimatePresence mode="wait">
@@ -212,7 +215,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
             transition={{ duration: 0.35 }}
             /* Roomier card, text centred vertically; right padding reserves the
                deadspace the storyteller stands in. */
-            className="relative z-10 flex flex-col justify-center min-h-95 sm:min-h-115 lg:min-h-130 pl-5 sm:pl-9 lg:pl-12 pr-5 sm:pr-[42%] py-8 sm:py-10"
+            className="relative z-10 flex flex-col justify-start sm:justify-center sm:min-h-115 lg:min-h-130 pl-5 sm:pl-9 lg:pl-12 pr-5 sm:pr-[42%] py-8 sm:py-10"
             style={{ textShadow: '0 1px 12px rgba(0,0,0,0.5)' }}
           >
             {/* Kicker: which chapter, and what kind of story. */}
@@ -262,11 +265,11 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
           </motion.div>
         </AnimatePresence>
 
-        {/* Gat Tayaw centred in the right-side deadspace, facing the text, with
-            his speech bubble above him. Outside the crossfade so the 3D canvas
-            persists across slides. Hidden on mobile. */}
-        <div className="hidden sm:flex flex-col items-center gap-2 absolute right-0 bottom-0 z-10 pointer-events-none"
-          style={{ width: '42%' }}>
+        {/* Gat Tayaw with his speech bubble above him. On mobile he stands
+            below the text in normal flow; from sm up he is centred in the
+            right-side deadspace. Outside the crossfade so the 3D canvas persists
+            across slides. */}
+        <div className="flex flex-col items-center gap-2 z-10 pointer-events-none w-full pb-6 sm:pb-0 sm:w-auto sm:absolute sm:bottom-0 sm:left-[79%] sm:-translate-x-1/2">
           {bubbleText && (
             <motion.div
               key={story.slug}
