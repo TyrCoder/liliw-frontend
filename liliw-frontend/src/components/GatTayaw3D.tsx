@@ -319,7 +319,8 @@ export default function GatTayaw3D({
   width?: number;
   height?: number;
 }) {
-  const turn = facing === 'left' ? 0.6 : facing === 'right' ? -0.6 : 0;
+  // +Y rotation faces screen-right, so 'right' is the positive value (was swapped).
+  const turn = facing === 'left' ? -0.6 : facing === 'right' ? 0.6 : 0;
   return (
     /* He is scenery, and scenery must not take clicks.
      *
