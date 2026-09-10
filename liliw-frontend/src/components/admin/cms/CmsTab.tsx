@@ -132,6 +132,9 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
   const [deleting, setDeleting] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
+  // Ids ticked for a batch action.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [batchRunning, setBatchRunning] = useState(false);
   // Which destructive action the confirm dialog is currently asking about.
   const [confirmAction, setConfirmAction] =
     useState<{ kind: 'archive' | 'restore' | 'purge'; entry: T } | null>(null);
@@ -186,7 +189,7 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
 
   // `load` is recreated every render; depending on it would refetch in a loop.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(statusFilter); }, [statusFilter]);
+  useEffect(() => { load(statusFilter); setSelected(new Set()); }, [statusFilter]);
 
   const openCreate = () => { setEditing({ ...config.empty } as Partial<T>); setMedia([]); setMsg(null); };
   const openEdit = (e: T) => { setEditing({ ...e }); setMedia(e.media || []); setMsg(null); };
@@ -234,15 +237,48 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
     if (!rejectTarget || !rejectRemarks.trim()) return;
     setRejecting(true);
     setMsg(null);
-    const ok = await act(
-      `/api/cms/${slug}/${rejectTarget}/reject`,
-      { method: 'POST', headers: h, body: JSON.stringify({ remarks: rejectRemarks }) },
-      'Could not reject',
-    );
-    if (ok) setMsg({ ok: true, text: 'Sent back to the author.' });
+    if (rejectTarget === '__batch__') {
+      // Same remarks sent back with every selected pending entry.
+      const targets = entries.filter(e => selected.has(e.id) && e.status === 'pending');
+      let ok = 0;
+      for (const e of targets) {
+        if (await act(`/api/cms/${slug}/${e.id}/reject`,
+          { method: 'POST', headers: h, body: JSON.stringify({ remarks: rejectRemarks }) },
+          'Could not reject')) ok++;
+      }
+      setMsg({ ok: true, text: `Sent ${ok} back to the author.` });
+      setSelected(new Set());
+    } else {
+      const ok = await act(
+        `/api/cms/${slug}/${rejectTarget}/reject`,
+        { method: 'POST', headers: h, body: JSON.stringify({ remarks: rejectRemarks }) },
+        'Could not reject',
+      );
+      if (ok) setMsg({ ok: true, text: 'Sent back to the author.' });
+    }
     setRejecting(false); setRejectTarget(null); setRejectRemarks('');
     load(statusFilter);
   };
+
+  // Batch actions run the per-item endpoint over each eligible selected row.
+  const runBatch = async (
+    eligible: (s: string) => boolean, path: string, done: (n: number) => string,
+  ) => {
+    const targets = entries.filter(e => selected.has(e.id) && eligible(e.status));
+    if (targets.length === 0) return;
+    setBatchRunning(true); setMsg(null);
+    let ok = 0;
+    for (const e of targets) {
+      if (await act(`/api/cms/${slug}/${e.id}/${path}`, { method: 'POST', headers: h }, `Could not ${path}`)) ok++;
+    }
+    setMsg({ ok: true, text: done(ok) });
+    setBatchRunning(false); setSelected(new Set());
+    load(statusFilter);
+  };
+
+  const batchSubmit  = () => runBatch(s => s === 'draft' || s === 'rejected', 'submit',  n => `Sent ${n} for review.`);
+  const batchApprove = () => runBatch(s => s === 'pending', 'approve', n => `Published ${n}.`);
+  const batchDecline = () => { setRejectTarget('__batch__'); setRejectRemarks(''); };
 
   /** Archive, restore, or destroy — whichever the open dialog asked for. */
   const runConfirmed = async () => {
@@ -363,6 +399,17 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
         .some(v => typeof v === 'string' && v.toLowerCase().includes(q)))
     : entries;
 
+  // Batch selection, scoped to the rows currently shown.
+  const toggleOne = (id: string) =>
+    setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const allShownSelected = filteredEntries.length > 0 && filteredEntries.every(e => selected.has(e.id));
+  const toggleAll = () =>
+    setSelected(allShownSelected ? new Set() : new Set(filteredEntries.map(e => e.id)));
+
+  const selectedShown  = filteredEntries.filter(e => selected.has(e.id));
+  const submittableCount = canEdit ? selectedShown.filter(e => ['draft', 'rejected'].includes(e.status)).length : 0;
+  const approvableCount  = (isOfficer || isAdmin) ? selectedShown.filter(e => e.status === 'pending').length : 0;
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -420,6 +467,37 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
         )}
       </div>
 
+      {/* Batch action bar — appears once rows are ticked. */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 flex-wrap px-4 py-3 rounded-xl border" style={{ backgroundColor: 'rgba(21,101,192,0.06)', borderColor: 'rgba(21,101,192,0.25)' }}>
+          <span className="text-sm font-bold" style={{ color: '#1565C0' }}>{selected.size} selected</span>
+          <div className="flex items-center gap-2 ml-auto">
+            {submittableCount > 0 && (
+              <button onClick={batchSubmit} disabled={batchRunning}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-yellow-300 text-yellow-800 bg-white hover:bg-yellow-50 transition disabled:opacity-50">
+                {batchRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />} Submit ({submittableCount})
+              </button>
+            )}
+            {approvableCount > 0 && (
+              <>
+                <button onClick={batchApprove} disabled={batchRunning}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-300 text-green-700 bg-white hover:bg-green-50 transition disabled:opacity-50">
+                  {batchRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />} Approve ({approvableCount})
+                </button>
+                <button onClick={batchDecline} disabled={batchRunning}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-300 text-red-600 bg-white hover:bg-red-50 transition disabled:opacity-50">
+                  <AlertCircle className="w-3.5 h-3.5" /> Decline ({approvableCount})
+                </button>
+              </>
+            )}
+            <button onClick={() => setSelected(new Set())}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-100 transition">
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* List */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
@@ -435,12 +513,20 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                <th className="pl-5 pr-2 py-3 w-8">
+                  <input type="checkbox" aria-label="Select all" checked={allShownSelected}
+                    onChange={toggleAll} className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-blue-600" />
+                </th>
                 {columns.map(c => <th key={c.header} className="px-5 py-3 text-left">{c.header}</th>)}
                 <th className="px-5 py-3 text-left">Actions</th>
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredEntries.map(e => (
-                  <tr key={e.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={e.id} className={`transition-colors ${selected.has(e.id) ? 'bg-blue-50/60' : 'hover:bg-gray-50'}`}>
+                    <td className="pl-5 pr-2 py-4">
+                      <input type="checkbox" aria-label={`Select ${e.id}`} checked={selected.has(e.id)}
+                        onChange={() => toggleOne(e.id)} className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-blue-600" />
+                    </td>
                     {columns.map(c => (
                       <td key={c.header} className="px-5 py-4">
                         {c.render(e)}
