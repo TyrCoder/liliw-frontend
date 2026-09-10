@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, User, BookOpen, Volume2, VolumeX, MessageCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, BookOpen, Volume2, VolumeX } from 'lucide-react';
 import { storyNarrationSrc, type NarrationLang } from '@/lib/narrations';
 import SafeHtml from '@/components/SafeHtml';
 
