@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, ReactNode } from 'react';
-import { Loader2, Plus, Edit2, Trash2, Send, CheckCircle, AlertCircle, X, Archive, RotateCcw } from 'lucide-react';
+import { Loader2, Plus, Edit2, Trash2, Send, CheckCircle, AlertCircle, X, Archive, RotateCcw, Search } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import RichTextEditor from './RichTextEditor';
 import MediaUploader, { MediaItem } from './MediaUploader';
@@ -131,6 +131,7 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
   const [msg, setMsg]           = useState<{ ok: boolean; text: string } | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [search, setSearch] = useState('');
   // Which destructive action the confirm dialog is currently asking about.
   const [confirmAction, setConfirmAction] =
     useState<{ kind: 'archive' | 'restore' | 'purge'; entry: T } | null>(null);
@@ -354,6 +355,14 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
     }
   };
 
+  // Client-side text filter over the loaded (status-filtered) rows, matching
+  // any string field — name/title, category, author, slug, and so on.
+  const q = search.trim().toLowerCase();
+  const filteredEntries = q
+    ? entries.filter(e => Object.values(e as Record<string, unknown>)
+        .some(v => typeof v === 'string' && v.toLowerCase().includes(q)))
+    : entries;
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -394,14 +403,33 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
         </div>
       )}
 
+      {/* Search */}
+      <div className="relative">
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder={`Search ${config.title.toLowerCase()} by name…`}
+          className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+        />
+        {search && (
+          <button onClick={() => setSearch('')} aria-label="Clear search"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
       {/* List */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#1565C0' }} /></div>
-        ) : entries.length === 0 ? (
+        ) : filteredEntries.length === 0 ? (
           <div className="flex flex-col items-center py-16 text-gray-400">
             {config.emptyIcon}
-            <p className="font-semibold text-sm">{config.emptyText}</p>
+            <p className="font-semibold text-sm">
+              {q ? `No ${config.entityLabel.toLowerCase()}s match “${search.trim()}”.` : config.emptyText}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -411,7 +439,7 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
                 <th className="px-5 py-3 text-left">Actions</th>
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
-                {entries.map(e => (
+                {filteredEntries.map(e => (
                   <tr key={e.id} className="hover:bg-gray-50 transition-colors">
                     {columns.map(c => (
                       <td key={c.header} className="px-5 py-4">
