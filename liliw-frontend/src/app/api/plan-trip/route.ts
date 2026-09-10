@@ -27,7 +27,7 @@ async function buildKnowledge(): Promise<string> {
       const type = a.type === 'heritage' ? 'Heritage Site'
         : a.type === 'dining' ? 'Dining/Food'
         : a.type === 'footwear' ? 'Footwear Store'
-        : a.type === 'stay' ? 'Accommodation'
+        : a.type === 'stay' ? 'Accommodations'
         : 'Tourist Spot';
       lines.push(
         `- [${type}] ${attr.name}` +

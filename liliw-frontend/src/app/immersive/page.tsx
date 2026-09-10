@@ -617,7 +617,7 @@ export default function ImmersivePage() {
                             </div>
                             <div className="flex items-center justify-between gap-2 mt-1">
                               <span className="text-[11px]" style={{ color: '#8FA6CC' }}>
-                                {attraction.type === 'heritage' ? 'Heritage' : attraction.type === 'dining' ? 'Dining' : attraction.type === 'footwear' ? 'Footwear Store' : attraction.type === 'stay' ? 'Accommodation' : 'Tourist Spot'}
+                                {attraction.type === 'heritage' ? 'Heritage' : attraction.type === 'dining' ? 'Dining' : attraction.type === 'footwear' ? 'Footwear Store' : attraction.type === 'stay' ? 'Accommodations' : 'Tourist Spot'}
                               </span>
                               {attraction.attributes.has_virtual_tour && (
                                 <span className="shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded"

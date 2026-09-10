@@ -151,7 +151,7 @@ function selectKnowledge(index: Indexed, context: string): string {
     a.type === 'heritage' ? 'Heritage'
     : a.type === 'dining' ? 'Dining'
     : a.type === 'footwear' ? 'Footwear Store'
-    : a.type === 'stay' ? 'Accommodation'
+    : a.type === 'stay' ? 'Accommodations'
     : 'Tourist Spot';
 
   if (index.attractions.length) {

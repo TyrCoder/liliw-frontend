@@ -21,7 +21,7 @@ const TYPE_CONFIG = {
   spot:     { color: '#22C55E', label: 'Spots'    },
   dining:   { color: '#F97316', label: 'Dining'   },
   footwear: { color: '#B45309', label: 'Footwear' },
-  stay:     { color: '#0D9488', label: 'Accommodation' },
+  stay:     { color: '#0D9488', label: 'Accommodations' },
 };
 
 interface MapAttraction {

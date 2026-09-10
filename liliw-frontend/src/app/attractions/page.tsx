@@ -60,7 +60,7 @@ interface Attraction {
   type: 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay';
 }
 
-const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage', spot: 'Tourist Spot', dining: 'Dining', footwear: 'Footwear Store', stay: 'Accommodation' };
+const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage', spot: 'Tourist Spot', dining: 'Dining', footwear: 'Footwear Store', stay: 'Accommodations' };
 const TYPE_COLORS: Record<string, string> = { heritage: '#EF4444', spot: '#22C55E', dining: '#F97316', footwear: '#B45309', stay: '#0D9488' };
 
 function coverUrl(photos: any[] = []): string | null {
@@ -210,7 +210,7 @@ export default function AttractionsPage() {
               <option value="spot">Tourist Spots</option>
               <option value="dining">Dining &amp; Food</option>
               <option value="footwear">Footwear Stores</option>
-              <option value="stay">Accommodation</option>
+              <option value="stay">Accommodations</option>
             </select>
             {hasFilters && (
               <button onClick={clearAll} className="px-4 py-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 font-semibold text-sm transition flex items-center gap-1">

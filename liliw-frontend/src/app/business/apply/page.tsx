@@ -29,7 +29,7 @@ const CATEGORY_OPTIONS = [
   { value: 'spot',          label: 'Tourist Spot' },
   { value: 'dining',        label: 'Dining & Food' },
   { value: 'footwear',      label: 'Footwear Store' },
-  { value: 'accommodation', label: 'Accommodation' },
+  { value: 'accommodation', label: 'Accommodations' },
   { value: 'other',         label: 'Other' },
 ];
 

@@ -70,7 +70,7 @@ const TYPE_META: Record<string, { label: string; color: string; Icon: any }> = {
   spot:     { label: 'Attraction', color: '#1565C0', Icon: MapPin },
   dining:   { label: 'Dining',  color: '#F97316', Icon: Utensils },
   footwear: { label: 'Footwear Store', color: '#B45309', Icon: MapPin },
-  stay:     { label: 'Accommodation', color: '#0D9488', Icon: MapPin },
+  stay:     { label: 'Accommodations', color: '#0D9488', Icon: MapPin },
 };
 
 /**

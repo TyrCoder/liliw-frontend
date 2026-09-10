@@ -19,7 +19,7 @@ const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 /* ─── types & helpers ───────────────────────────────────── */
-const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage', spot: 'Nature Spot', dining: 'Dining', footwear: 'Footwear Store', stay: 'Accommodation' };
+const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage', spot: 'Nature Spot', dining: 'Dining', footwear: 'Footwear Store', stay: 'Accommodations' };
 const TYPE_BADGE:  Record<string, string> = { heritage: '#EF4444',  spot: '#22C55E',       dining: '#F97316', footwear: '#B45309', stay: '#0D9488' };
 const TYPE_BGRADS: Record<string, string[]> = {
   heritage: ['#7B4E00', '#3D2000'],

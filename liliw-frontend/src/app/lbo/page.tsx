@@ -42,11 +42,11 @@ type Tab = 'dashboard' | 'overview' | 'requests' | 'visitors' | 'ratings';
 
 const CATEGORIES = ['heritage', 'spot', 'dining', 'footwear', 'accommodation'] as const;
 type AttrCategory = typeof CATEGORIES[number];
-const CATEGORY_LABELS: Record<AttrCategory, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food', footwear: 'Footwear Store', accommodation: 'Accommodation' };
+const CATEGORY_LABELS: Record<AttrCategory, string> = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food', footwear: 'Footwear Store', accommodation: 'Accommodations' };
 const CATEGORY_ICONS: Record<AttrCategory, string> = { heritage: '🏛️', spot: '🌿', dining: '🍽️', footwear: '🥿', accommodation: '🛏️' };
 
 const TYPE_COLORS: Record<string, string> = { heritage: '#F59E0B', spot: '#3B82F6', dining: '#EF4444', footwear: '#B45309', stay: '#0D9488', accommodation: '#0D9488' };
-const TYPE_LABELS: Record<string, string>  = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food', footwear: 'Footwear Store', stay: 'Accommodation', accommodation: 'Accommodation' };
+const TYPE_LABELS: Record<string, string>  = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food', footwear: 'Footwear Store', stay: 'Accommodations', accommodation: 'Accommodations' };
 
 const CR_STATUS_COLOR: Record<string, string> = {
   pending:     'bg-yellow-50 text-yellow-700',
