@@ -25,7 +25,7 @@ const TYPE_META: Record<string, { label: string; bg: string; text: string }> = {
   spot:     { label: 'Attraction', bg: '#DBEAFE', text: '#1D4ED8' },
   dining:   { label: 'Dining',     bg: '#FFEDD5', text: '#C2410C' },
   footwear: { label: 'Footwear',   bg: '#FEF3C7', text: '#B45309' },
-  stay:     { label: 'Stay',       bg: '#CCFBF1', text: '#0F766E' },
+  stay:     { label: 'Accommodation', bg: '#CCFBF1', text: '#0F766E' },
   faq:      { label: 'FAQ',        bg: '#F3E8FF', text: '#7C3AED' },
   event:    { label: 'Event',      bg: '#FEE2E2', text: '#B91C1C' },
   news:     { label: 'News',       bg: '#FEF9C3', text: '#A16207' },

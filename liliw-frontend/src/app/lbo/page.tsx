@@ -46,7 +46,7 @@ const CATEGORY_LABELS: Record<AttrCategory, string> = { heritage: 'Heritage Site
 const CATEGORY_ICONS: Record<AttrCategory, string> = { heritage: '🏛️', spot: '🌿', dining: '🍽️', footwear: '🥿', accommodation: '🛏️' };
 
 const TYPE_COLORS: Record<string, string> = { heritage: '#F59E0B', spot: '#3B82F6', dining: '#EF4444', footwear: '#B45309', stay: '#0D9488', accommodation: '#0D9488' };
-const TYPE_LABELS: Record<string, string>  = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food', footwear: 'Footwear Store', stay: 'Place to Stay', accommodation: 'Accommodation' };
+const TYPE_LABELS: Record<string, string>  = { heritage: 'Heritage Site', spot: 'Tourist Spot', dining: 'Dining & Food', footwear: 'Footwear Store', stay: 'Accommodation', accommodation: 'Accommodation' };
 
 const CR_STATUS_COLOR: Record<string, string> = {
   pending:     'bg-yellow-50 text-yellow-700',

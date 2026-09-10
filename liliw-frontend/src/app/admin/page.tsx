@@ -117,7 +117,7 @@ const EVENT_COLOR: Record<string, string> = {
   'entry.unpublish': 'bg-yellow-50 text-yellow-700',
 };
 
-const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage', spot: 'Spot', dining: 'Dining', footwear: 'Footwear', stay: 'Stay' };
+const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage', spot: 'Spot', dining: 'Dining', footwear: 'Footwear', stay: 'Accommodation' };
 const TYPE_COLORS: Record<string, string> = { heritage: '#F59E0B', spot: '#3B82F6', dining: '#EF4444', footwear: '#B45309', stay: '#0D9488' };
 
 function fmt(dateStr: string) {
@@ -2172,7 +2172,7 @@ function AdminDashboard() {
                 <option value="spot">Tourist Spots</option>
                 <option value="dining">Dining</option>
                 <option value="footwear">Footwear Stores</option>
-                <option value="stay">Places to Stay</option>
+                <option value="stay">Accommodation</option>
               </select>
               <span className="text-xs text-gray-400 shrink-0">{filteredAttractions.length} of {attractions.length}</span>
             </div>

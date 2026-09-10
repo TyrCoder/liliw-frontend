@@ -963,7 +963,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
                           {(['heritage', 'spot', 'dining', 'footwear', 'stay'] as const)
                             .filter(type => filteredAttractions.some(a => a.type === type))
                             .map(type => {
-                              const label = type === 'heritage' ? 'Heritage' : type === 'spot' ? 'Tourist Spots' : type === 'dining' ? 'Dining' : type === 'footwear' ? 'Footwear Stores' : 'Places to Stay';
+                              const label = type === 'heritage' ? 'Heritage' : type === 'spot' ? 'Tourist Spots' : type === 'dining' ? 'Dining' : type === 'footwear' ? 'Footwear Stores' : 'Accommodation';
                               return (
                                 <optgroup key={type} label={label}>
                                   {filteredAttractions
@@ -1593,7 +1593,7 @@ function ItineraryWizard() {
                         <p className={`font-semibold text-sm truncate ${picked ? 'text-rose-700' : 'text-gray-800'}`}
                           style={{ fontFamily: HL }}>{fav.name}</p>
                         <p className="text-xs text-gray-400 capitalize" style={{ fontFamily: BL }}>
-                          {fav.type === 'heritage' ? 'Heritage' : fav.type === 'dining' ? 'Dining' : fav.type === 'footwear' ? 'Footwear Store' : fav.type === 'stay' ? 'Stay' : 'Tourist Spot'}
+                          {fav.type === 'heritage' ? 'Heritage' : fav.type === 'dining' ? 'Dining' : fav.type === 'footwear' ? 'Footwear Store' : fav.type === 'stay' ? 'Accommodation' : 'Tourist Spot'}
                         </p>
                       </div>
                       {picked && (
