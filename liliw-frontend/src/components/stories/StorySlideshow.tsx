@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, User, BookOpen, Volume2, VolumeX } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, BookOpen, Volume2, VolumeX, MessageCircle } from 'lucide-react';
 import { storyNarrationSrc, type NarrationLang } from '@/lib/narrations';
 import SafeHtml from '@/components/SafeHtml';
 
@@ -81,6 +81,9 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
   const [blocked, setBlocked] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Typewriter reveal of the speech bubble, restarted on each story.
+  const [typed, setTyped] = useState('');
+
   const story = stories[Math.min(index, Math.max(count - 1, 0))];
   const audioSrc = story ? storyNarrationSrc(story, lang) : '';
   const speaking = narrating && !!audioSrc;
@@ -123,6 +126,23 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [next, prev]);
+
+  // Reveal the bubble one character at a time (skipped for reduced motion).
+  useEffect(() => {
+    if (!bubbleText) { setTyped(''); return; }
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setTyped(bubbleText);
+      return;
+    }
+    setTyped('');
+    let i = 0;
+    const id = setInterval(() => {
+      i += 1;
+      setTyped(bubbleText.slice(0, i));
+      if (i >= bubbleText.length) clearInterval(id);
+    }, 26);
+    return () => clearInterval(id);
+  }, [bubbleText]);
 
   if (!count || !story) return null;
   const accent = CATEGORY_COLORS[story.category] ?? '#1565C0';
@@ -223,15 +243,30 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
         <div className="hidden sm:flex flex-col items-end gap-2 absolute right-2 lg:right-5 bottom-0 z-10 pointer-events-none"
           style={{ width: figureW }}>
           {bubbleText && (
-            <div className="relative" style={{ width: Math.min(figureW * 1.15, 320) }}>
-              <div className="rounded-2xl rounded-br-md bg-white shadow-lg ring-1 ring-black/5 px-4 py-3">
-                <p className="text-[13px] leading-snug text-gray-700 line-clamp-5" style={{ fontFamily: BL }}>
-                  {bubbleText}
+            <motion.div
+              key={story.slug}
+              initial={{ opacity: 0, y: 8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+              className="relative"
+              style={{ width: Math.min(figureW * 1.2, 340) }}
+            >
+              <div className="rounded-2xl rounded-br-md bg-white shadow-xl ring-1 ring-black/5 px-4 pt-2.5 pb-3">
+                <p className="mb-1 flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.16em]"
+                  style={{ color: '#1565C0', fontFamily: HL }}>
+                  <Volume2 className="w-3 h-3" /> Gat Tayaw says
+                </p>
+                <p className="text-[13px] leading-snug text-gray-700 line-clamp-6" style={{ fontFamily: BL }}>
+                  {typed}
+                  {typed.length < bubbleText.length && (
+                    <span className="inline-block w-0.5 h-[0.95em] ml-0.5 align-middle animate-pulse"
+                      style={{ backgroundColor: '#1565C0' }} />
+                  )}
                 </p>
               </div>
               {/* tail pointing down toward him */}
               <span className="absolute -bottom-1 right-8 w-3 h-3 rotate-45 bg-white" />
-            </div>
+            </motion.div>
           )}
           <div style={{ width: figureW, height: figureH }}>
             <GatTayaw3D width={figureW} height={figureH} facing="left" framing="bust"
