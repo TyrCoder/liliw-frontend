@@ -46,9 +46,9 @@ export interface Story {
 const TITLES_MIN_WIDTH = 560;
 
 // Gat Tayaw's size, as a share of the card width so he fits at any width.
-const FIGURE_SHARE = 0.30;
-const FIGURE_MIN = 160;
-const FIGURE_MAX = 300;
+const FIGURE_SHARE = 0.34;
+const FIGURE_MIN = 180;
+const FIGURE_MAX = 340;
 const FIGURE_RATIO = 1.14;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
@@ -85,6 +85,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
   const audioSrc = story ? storyNarrationSrc(story, lang) : '';
   const speaking = narrating && !!audioSrc;
   const bubbleText = (story?.storyteller_text ?? '').trim();
+  const coverImage = story?.coverUrl || story?.images?.[0] || '';
 
   // Try to autoplay; browsers block sound before interaction, so `blocked`
   // turns the button into an invitation to press it.
@@ -133,7 +134,20 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
       aria-roledescription="carousel"
       aria-label="Stories of Liliw"
     >
-      <article className="relative rounded-3xl overflow-hidden shadow-xl bg-white">
+      <article className="relative rounded-3xl overflow-hidden shadow-xl" style={{ backgroundColor: '#0B1836' }}>
+        {/* The story's cover photo fills the card, darkened at the edges
+            (vignette) and down the left so the light text stays readable. */}
+        <div className="absolute inset-0" aria-hidden>
+          {coverImage
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={coverImage} alt="" className="w-full h-full object-cover" />
+            : <div className="w-full h-full" style={{ background: 'linear-gradient(135deg,#0B3D91,#1565C0)' }} />}
+          <div className="absolute inset-0"
+            style={{ background: 'radial-gradient(130% 130% at 50% 35%, transparent 42%, rgba(2,8,24,0.62) 100%)' }} />
+          <div className="absolute inset-0"
+            style={{ background: 'linear-gradient(90deg, rgba(2,8,24,0.90) 0%, rgba(2,8,24,0.72) 50%, rgba(2,8,24,0.28) 78%, rgba(2,8,24,0.50) 100%)' }} />
+        </div>
+
         <AnimatePresence mode="wait">
           <motion.div
             key={story.slug}
@@ -142,12 +156,13 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.35 }}
             /* Right padding reserves the deadspace the storyteller stands in. */
-            className="pl-5 sm:pl-9 lg:pl-12 pr-5 sm:pr-[38%] py-7 sm:py-9"
+            className="relative z-10 pl-5 sm:pl-9 lg:pl-12 pr-5 sm:pr-[40%] py-7 sm:py-9"
+            style={{ textShadow: '0 1px 12px rgba(0,0,0,0.5)' }}
           >
             {/* Kicker: which chapter, and what kind of story. */}
             <div className="flex items-center gap-3 flex-wrap mb-3">
               <span className="text-[34px] sm:text-[42px] leading-none font-black tabular-nums"
-                style={{ color: 'rgba(11,61,145,0.16)', fontFamily: HL }}>
+                style={{ color: 'rgba(255,255,255,0.30)', fontFamily: HL }}>
                 {String(index + 1).padStart(2, '0')}
               </span>
               <span className="text-[11px] font-black uppercase tracking-[0.22em] px-2.5 py-1 rounded-full text-white"
@@ -155,13 +170,13 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
                 {story.category}
               </span>
               <span className="text-[11px] font-bold uppercase tracking-[0.18em]"
-                style={{ color: 'rgba(11,61,145,0.45)', fontFamily: HL }}>
+                style={{ color: 'rgba(255,255,255,0.75)', fontFamily: HL }}>
                 {index + 1} of {count}
               </span>
             </div>
 
             <h2 className="text-2xl sm:text-4xl lg:text-[44px] font-bold leading-[1.1] mb-3 max-w-3xl"
-              style={{ color: '#0B3D91', fontFamily: DL }}>
+              style={{ color: '#ffffff', fontFamily: DL }}>
               {story.title}
             </h2>
 
@@ -170,10 +185,10 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
             {/* The story itself, sanitised and held to a reading measure. */}
             {story.content
               ? <SafeHtml html={story.content}
-                  className="prose prose-sm sm:prose-base max-w-[62ch] text-gray-700 leading-relaxed"
+                  className="prose prose-invert prose-sm sm:prose-base max-w-[62ch] text-white/90 leading-relaxed"
                   style={{ fontFamily: BL }} />
               : story.excerpt
-                ? <p className="max-w-[62ch] text-gray-700 leading-relaxed" style={{ fontFamily: BL }}>{story.excerpt}</p>
+                ? <p className="max-w-[62ch] text-white/90 leading-relaxed" style={{ fontFamily: BL }}>{story.excerpt}</p>
                 : null}
 
             {/* Photographs, when there are any. */}
@@ -187,15 +202,15 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
               </div>
             )}
 
-            <div className="mt-7 pt-5 border-t border-gray-100 flex items-center gap-4 flex-wrap">
-              <span className="flex items-center gap-2 text-sm text-gray-500" style={{ fontFamily: BL }}>
+            <div className="mt-7 pt-5 border-t border-white/20 flex items-center gap-4 flex-wrap">
+              <span className="flex items-center gap-2 text-sm text-white/75" style={{ fontFamily: BL }}>
                 <User className="w-3.5 h-3.5 shrink-0" />{story.author}
                 {story.date && <><span>·</span><span>{story.date}</span></>}
               </span>
 
               <Link href={`/stories/${story.slug}`}
                 className="inline-flex items-center gap-1.5 text-sm font-bold hover:underline"
-                style={{ color: '#1565C0', fontFamily: HL }}>
+                style={{ color: '#F5C518', fontFamily: HL }}>
                 <BookOpen className="w-4 h-4" /> Open on its own page
               </Link>
             </div>
