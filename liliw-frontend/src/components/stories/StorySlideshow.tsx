@@ -190,8 +190,11 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
       if (wrapped !== prev) setFacing(wrapped > prev ? 'right' : 'left');
       return wrapped;
     });
+    /* Held slightly longer than the spring takes to settle, so the walk ends
+       after he has arrived rather than a moment before, with the last of the
+       movement done sliding. */
     clearTimeout(settle.current);
-    settle.current = setTimeout(() => setFacing('front'), 900);
+    settle.current = setTimeout(() => setFacing('front'), 1100);
   }, [count]);
 
   const next = useCallback(() => goTo(index + 1), [goTo, index]);
@@ -394,7 +397,12 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
           {/* He works through his clips while the narration is playing and
               settles when it stops, so the figure and the audio are obviously
               the same person rather than two things happening at once. */}
+          {/* `facing` already carries "he is on the move, and this way" — it is
+              set when the story changes and cleared when he arrives. Walking
+              is that same window, so the two cannot disagree about whether he
+              is travelling. */}
           <GatTayaw3D width={figureW} height={figureH} facing={facing} framing="bust"
+            moving={facing !== 'front'}
             greetKey="stories-slideshow" speaking={speaking} />
         </motion.div>
 

@@ -32,6 +32,7 @@ const CLIP = {
   talk:   'preset:biped:look_around',
   greet:  'preset:biped:bow',
   waiting:'preset:biped:fold_arms',
+  walk:   'preset:biped:walk',
 } as const;
 
 /**
@@ -121,7 +122,7 @@ function Frame({ framing }: { framing: Framing }) {
   return null;
 }
 
-function Figure({ speaking, greetKey, turn }: { speaking: boolean; greetKey: string; turn: number }) {
+function Figure({ speaking, greetKey, turn, moving }: { speaking: boolean; greetKey: string; turn: number; moving: boolean }) {
   const group = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(MODEL);
   const { actions, mixer } = useAnimations(animations, group);
@@ -216,7 +217,12 @@ function Figure({ speaking, greetKey, turn }: { speaking: boolean; greetKey: str
     if (speaking) setStep(0);
   }, [speaking]);
 
+  /* Walking wins over every other state. It is the only clip tied to
+     something the visitor did — moving to another story — rather than to the
+     passage of time, so it must be able to interrupt a bow or a narration
+     gesture rather than queue behind one. */
   const wanted =
+    moving              ? CLIP.walk :
     phase === 'greet'   ? CLIP.greet :
     phase === 'telling' ? TELLING[step % TELLING.length] :
                           CLIP.idle;
@@ -270,7 +276,7 @@ function Figure({ speaking, greetKey, turn }: { speaking: boolean; greetKey: str
     // the limbs, which is far more noticeable than the transition itself.
     next.reset().setEffectiveWeight(1).fadeIn(0.35).play();
 
-    if (phase === 'resting') {
+    if (moving || phase === 'resting') {
       next.setLoop(THREE.LoopRepeat, Infinity);
     } else {
       // Greeting and telling both hand over when the clip ends, so both run
@@ -283,7 +289,7 @@ function Figure({ speaking, greetKey, turn }: { speaking: boolean; greetKey: str
     }
 
     return () => { next.fadeOut(0.35); };
-  }, [wanted, phase, actions, mixer, bindAttempt]);
+  }, [wanted, phase, moving, actions, mixer, bindAttempt]);
 
   /* Turning is done here rather than by flipping the canvas in CSS: a mirrored
      transform would put his staff in the wrong hand and reverse the lighting
@@ -296,6 +302,7 @@ export default function GatTayaw3D({
   greetKey = 'default',
   facing = 'front',
   framing = 'full',
+  moving = false,
   width = 220,
   height = 300,
 }: {
@@ -307,6 +314,8 @@ export default function GatTayaw3D({
   facing?: 'left' | 'right' | 'front';
   /** How much of him is in shot — the whole figure, or head down past his hands. */
   framing?: Framing;
+  /** True while he is being carried to another position, so he walks rather than slides. */
+  moving?: boolean;
   width?: number;
   height?: number;
 }) {
@@ -350,7 +359,7 @@ export default function GatTayaw3D({
               middle, which is what Frame works out. Nudging the model up or
               down to make a fixed camera work is how the framing drifted in
               the first place. */}
-          <Figure speaking={speaking} greetKey={greetKey} turn={turn} />
+          <Figure speaking={speaking} greetKey={greetKey} turn={turn} moving={moving} />
         </Suspense>
       </Canvas>
     </div>
