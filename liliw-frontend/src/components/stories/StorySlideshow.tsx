@@ -38,6 +38,8 @@ export interface Story {
   /** Recordings uploaded through the CMS, which take precedence. */
   audio_en?: string | null;
   audio_fil?: string | null;
+  /** A short line shown in his speech bubble. Empty means no bubble. */
+  storyteller_text?: string | null;
 }
 
 // Below this the rail shows bars only — titles would truncate to a word each.
@@ -82,6 +84,7 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
   const story = stories[Math.min(index, Math.max(count - 1, 0))];
   const audioSrc = story ? storyNarrationSrc(story, lang) : '';
   const speaking = narrating && !!audioSrc;
+  const bubbleText = (story?.storyteller_text ?? '').trim();
 
   // Try to autoplay; browsers block sound before interaction, so `blocked`
   // turns the button into an invitation to press it.
@@ -199,12 +202,26 @@ export default function StorySlideshow({ stories }: { stories: Story[] }) {
           </motion.div>
         </AnimatePresence>
 
-        {/* Gat Tayaw in the right-side deadspace, facing the text. Outside the
-            crossfade so the 3D canvas persists across slides. Hidden on mobile. */}
-        <div className="hidden sm:block absolute right-2 lg:right-5 bottom-0 z-10 pointer-events-none"
-          style={{ width: figureW, height: figureH }}>
-          <GatTayaw3D width={figureW} height={figureH} facing="left" framing="bust"
-            greetKey={story.slug} speaking={speaking} />
+        {/* Gat Tayaw in the right-side deadspace, facing the text, with his
+            speech bubble above him. Outside the crossfade so the 3D canvas
+            persists across slides. Hidden on mobile. */}
+        <div className="hidden sm:flex flex-col items-end gap-2 absolute right-2 lg:right-5 bottom-0 z-10 pointer-events-none"
+          style={{ width: figureW }}>
+          {bubbleText && (
+            <div className="relative" style={{ width: Math.min(figureW * 1.15, 320) }}>
+              <div className="rounded-2xl rounded-br-md bg-white shadow-lg ring-1 ring-black/5 px-4 py-3">
+                <p className="text-[13px] leading-snug text-gray-700 line-clamp-5" style={{ fontFamily: BL }}>
+                  {bubbleText}
+                </p>
+              </div>
+              {/* tail pointing down toward him */}
+              <span className="absolute -bottom-1 right-8 w-3 h-3 rotate-45 bg-white" />
+            </div>
+          )}
+          <div style={{ width: figureW, height: figureH }}>
+            <GatTayaw3D width={figureW} height={figureH} facing="left" framing="bust"
+              greetKey={story.slug} speaking={speaking} />
+          </div>
         </div>
 
         {count > 1 && (

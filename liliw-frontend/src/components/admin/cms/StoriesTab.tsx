@@ -8,6 +8,8 @@ import { NARRATION_KEYS, NARRATION_LABELS } from '@/lib/narrations';
 interface Entry {
   id: string; title: string; category: string; content: string;
   author: string; slug: string; status: string; created_by: string;
+  /** Short line shown in Gat Tayaw's speech bubble on the stories page. */
+  storyteller_text: string | null;
   /** Which narration Gat Tayaw reads. Empty means work it out from the title. */
   audio_key: string | null;
   /** Recordings uploaded for this story, one per language. */
@@ -27,7 +29,7 @@ const CONFIG: CmsTabConfig<Entry> = {
   emptyText: 'No stories yet',
   empty: {
     title: '', category: 'heritage', content: '', author: '', slug: '',
-    audio_key: '', audio_en: '', audio_fil: '', reject_remarks: null, media: [],
+    storyteller_text: '', audio_key: '', audio_en: '', audio_fil: '', reject_remarks: null, media: [],
   },
   fields: [
     { name: 'title',    label: 'Title',    type: 'text', required: true },
@@ -35,6 +37,9 @@ const CONFIG: CmsTabConfig<Entry> = {
       options: CATEGORIES.map(c => ({ value: c, label: c })) },
     { name: 'author',   label: 'Author',   type: 'text', colSpan: 1 },
     { name: 'content',  label: 'Content',  type: 'richtext', placeholder: 'Write the story…' },
+    { name: 'storyteller_text', label: 'Speech bubble', type: 'textarea',
+      placeholder: 'A short line Gat Tayaw says…',
+      hint: 'Shown in Gat Tayaw’s speech bubble on the stories page. Leave empty for no bubble.' },
     /* Blank is a real answer and the default: the page falls back to reading
        the title, which is what every story published before this existed
        relies on. It is only worth setting when that guess would be wrong. */

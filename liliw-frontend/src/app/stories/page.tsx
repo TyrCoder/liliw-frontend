@@ -104,6 +104,7 @@ export default function StoriesPage() {
             audio_key: a?.audio_key ?? null,
             audio_en:  a?.audio_en ?? null,
             audio_fil: a?.audio_fil ?? null,
+            storyteller_text: a?.storyteller_text ?? null,
             images: Array.isArray(item._allImages) && item._allImages.length > 0
               ? item._allImages
               : item._coverUrl ? [item._coverUrl] : [],
