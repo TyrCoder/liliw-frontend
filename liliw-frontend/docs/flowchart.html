@@ -212,7 +212,9 @@
   <p class="subtitle">Liliw Virtual Guide — Culture, History, Arts and Tourism Office</p>
   <div class="ornament-rule"><span class="line"></span><span class="mark"></span><span class="line"></span></div>
   <div class="meta">
-    <span><b>9</b> process diagrams</span>
+    <span><b>9</b> process flows</span>
+    <span class="sep">·</span>
+    <span><b>2</b> architecture diagrams</span>
     <span class="sep">·</span>
     <span><b>5</b> user roles</span>
     <span class="sep">·</span>
@@ -233,6 +235,8 @@
       <li><a href="#fig-7">Itinerary Checklist</a></li>
       <li><a href="#fig-8">LBO Change Requests</a></li>
       <li><a href="#fig-9">Role &amp; Access Overview</a></li>
+      <li><a href="#fig-10">Layered Architecture</a></li>
+      <li><a href="#fig-11">Request Flow</a></li>
     </ol>
   </nav>
 
@@ -265,6 +269,7 @@ flowchart TD
     OfficerFlow --> End2
     AdminFlow --> End2
 
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
     classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
@@ -303,6 +308,7 @@ flowchart TD
     M -- LBO --> N[Redirect to /lbo dashboard]
     M -- Editor/Officer/Admin --> O[Redirect to /admin dashboard\nCMS reached from there]
 
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
     classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
@@ -352,6 +358,7 @@ flowchart TD
     U --> V{Restored later?}
     V -- Yes --> E
 
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
     classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
@@ -396,6 +403,7 @@ flowchart TD
     Q -- No --> P
     L --> S[Review form becomes\navailable for this place]
 
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
     classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
@@ -441,6 +449,7 @@ flowchart TD
     M --> T{Wants a 360-degree tour?}
     T -- Yes --> U[Requests a virtual tour\nCHATO schedules a shoot]
 
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
     classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
@@ -448,7 +457,7 @@ flowchart TD
     classDef declined fill:#FFFFFF,color:#1A2340,stroke:#C89A0F,stroke-width:2px,stroke-dasharray:4 3
     class A,A2,H,P term
     class I,N,Q,T decision
-    class D,E,F,A3,L,M,O,S,U action
+    class D,E,F,G,A3,L,M,O,S,U action
     class K,R success
     class J declined
 </pre>
@@ -481,6 +490,7 @@ flowchart TD
     M -- Yes --> N[Saved to profile,\nbecomes a checklist]
     M -- No --> O([Itinerary remains\nunsaved])
 
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
     classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
@@ -511,6 +521,7 @@ flowchart TD
     G -- No --> H([Visitor continues\nthe itinerary])
     G -- Yes --> I([Itinerary complete])
 
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
     classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
@@ -544,6 +555,7 @@ flowchart TD
     I --> K([LBO sees the update\nreflected on their dashboard])
     J --> K
 
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
     classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
     classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
@@ -601,6 +613,7 @@ flowchart LR
         A5[View reports and audit log]
     end
 
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.3px
     classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.3px
     classDef limit fill:#FFFFFF,color:#1A2340,stroke:#C89A0F,stroke-width:1.6px,stroke-dasharray:4 3
     classDef cluster fill:#FBF6EA,stroke:#0B3D91,stroke-width:1.4px,color:#0B3D91,font-weight:700
@@ -610,6 +623,65 @@ flowchart LR
 </pre>
       </div></div>
       <p class="plate-caption"><b>Figure 9.</b> Role &amp; Access Overview &mdash; dashed nodes mark a deliberate limit, not a gap.</p>
+    </section>
+
+    <section class="figure" id="fig-10">
+      <p class="figure-eyebrow"><span class="tag">10</span> System Manual &sect;3</p>
+      <h3>Layered Architecture</h3>
+      <p class="desc">The application in four layers. Shading deepens toward the data it protects; external services sit outside the stack in a dashed outline, since the system depends on them but does not own them.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'14px'},'flowchart':{'curve':'basis','nodeSpacing':34,'rankSpacing':30}} }%%
+flowchart TD
+    P["PRESENTATION LAYER\nPages, components, offline shell (PWA)"]
+    AP["APPLICATION LAYER\nAPI endpoints -- business rules, role checks, validation"]
+    D["DATA LAYER\nRelational database -- persistence, access control"]
+    X["EXTERNAL SERVICES\nAI inference &middot; Maps &middot; Media hosting &middot; Email"]
+    P --> AP --> D --> X
+
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
+    classDef l1 fill:#FFFFFF,stroke:#0B3D91,stroke-width:1.6px,color:#1A2340
+    classDef l2 fill:#E9EFFA,stroke:#0B3D91,stroke-width:1.6px,color:#1A2340
+    classDef l3 fill:#CFDDF3,stroke:#0B3D91,stroke-width:1.6px,color:#0B3D91
+    classDef l4 fill:#FFFFFF,stroke:#C89A0F,stroke-width:2px,stroke-dasharray:5 3,color:#1A2340
+    class P l1
+    class AP l2
+    class D l3
+    class X l4
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 10.</b> Layered Architecture &mdash; presentation down to the data it protects.</p>
+    </section>
+
+    <section class="figure" id="fig-11">
+      <p class="figure-eyebrow"><span class="tag">11</span> System Manual &sect;3.1</p>
+      <h3>Request Flow</h3>
+      <p class="desc">Every request enters through one door. The application is the only thing that talks to the database directly; everything past it is a third-party service the application calls out to, never the other way around.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#1A2340','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'14px'},'flowchart':{'curve':'basis','nodeSpacing':30,'rankSpacing':42}} }%%
+flowchart TD
+    Browser([Visitor's browser]) -- HTTPS --> Edge[Hosting edge network]
+    Edge --> App["Application\npage rendering + API endpoints"]
+    App --> DB[(Database)]
+    App --> AI[AI service]
+    App --> Maps[Maps service]
+    App --> Media[Media host]
+    App --> Email[Email service]
+
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
+    classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
+    classDef core fill:#0B3D91,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
+    classDef data fill:#CFDDF3,stroke:#0B3D91,stroke-width:1.8px,color:#0B3D91
+    classDef ext fill:#FFFFFF,stroke:#C89A0F,stroke-width:2px,stroke-dasharray:5 3,color:#1A2340
+    class Browser term
+    class Edge core
+    class App core
+    class DB data
+    class AI,Maps,Media,Email ext
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 11.</b> Request Flow &mdash; one entry point, five outbound services.</p>
     </section>
 
   </main>

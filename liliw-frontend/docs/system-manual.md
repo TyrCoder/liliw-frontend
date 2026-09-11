@@ -92,38 +92,31 @@ optional third-party services (maps, AI) are temporarily unavailable.
 
 The application follows a layered architecture:
 
+```mermaid
+flowchart TD
+    P[PRESENTATION LAYER<br/>Pages, React components, offline shell]
+    AP[APPLICATION LAYER<br/>API endpoints — rules, role checks, validation]
+    D[DATA LAYER<br/>Relational database — persistence, access control]
+    X[EXTERNAL SERVICES<br/>AI inference · Maps · Media hosting · Email]
+    P --> AP --> D --> X
 ```
-┌─────────────────────────────────────────────────────┐
-│  PRESENTATION LAYER                                  │
-│  Pages, React components, offline shell (PWA)        │
-├─────────────────────────────────────────────────────┤
-│  APPLICATION LAYER                                    │
-│  Server API endpoints — business rules, role checks,  │
-│  validation, orchestration                            │
-├─────────────────────────────────────────────────────┤
-│  DATA LAYER                                            │
-│  Relational database — persistence, access control     │
-├─────────────────────────────────────────────────────┤
-│  EXTERNAL SERVICES                                     │
-│  AI inference · Maps · Media hosting · Email           │
-└─────────────────────────────────────────────────────┘
-```
+
+*A designed, printable version of this figure is in `docs/flowchart.html` (Figure 10).*
 
 ### 3.1 Request Flow
 
+```mermaid
+flowchart TD
+    Browser([Visitor's browser]) -- HTTPS --> Edge[Hosting edge network]
+    Edge --> App[Application<br/>page rendering + API endpoints]
+    App --> DB[(Database)]
+    App --> AI[AI service]
+    App --> Maps[Maps service]
+    App --> Media[Media host]
+    App --> Email[Email service]
 ```
- Visitor's browser
-        │  HTTPS
-        ▼
- Hosting edge network
-        │
-        ▼
- Application (page rendering + API endpoints)
-        │
-   ┌────┼──────────┬─────────────┬──────────────┐
-   ▼    ▼          ▼             ▼              ▼
- Database   AI service      Maps service    Media host     Email service
-```
+
+*A designed, printable version of this figure is in `docs/flowchart.html` (Figure 11).*
 
 ### 3.2 Design Principles
 
