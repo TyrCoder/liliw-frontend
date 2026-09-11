@@ -165,6 +165,21 @@
   pre.mermaid{margin:0;background:transparent;font-family:var(--font-body);}
   pre.mermaid svg{max-width:none!important;width:auto!important;height:auto!important;}
 
+  .erd-panel{margin:0 0 40px;}
+  .erd-panel:last-child{margin-bottom:0;}
+  .erd-panel-label{
+    font-family:var(--font-heading);font-weight:700;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--navy);margin:0 0 6px;
+  }
+  .erd-panel-desc{
+    font-family:var(--font-body);font-size:13.5px;line-height:1.6;color:var(--ink-muted);
+    max-width:70ch;margin:0 0 14px;
+  }
+  .erd-panel-desc code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;
+    background:rgba(11,61,145,.07);padding:1px 5px;border-radius:4px;color:var(--navy);
+  }
+
   /* ── database schema reference ───────────────────────────────────── */
   .schema-domain{margin:0 0 40px;}
   .schema-domain:last-child{margin-bottom:0;}
@@ -290,7 +305,7 @@
       <li><a href="#fig-9">Role &amp; Access Overview</a></li>
       <li><a href="#fig-10">Layered Architecture</a></li>
       <li><a href="#fig-11">Request Flow</a></li>
-      <li><a href="#fig-12">Database Schema &mdash; ERD</a></li>
+      <li><a href="#fig-12">Database Schema &mdash; ERDs</a></li>
       <li><a href="#fig-13">Database Schema Reference</a></li>
     </ol>
   </nav>
@@ -741,13 +756,15 @@ flowchart TD
 
     <section class="figure" id="fig-12">
       <p class="figure-eyebrow"><span class="tag">12</span> System Manual &sect;4</p>
-      <h3>Database Schema &mdash; Entity Relationship Diagram</h3>
-      <p class="desc">All 42 tables in the live database, grouped by domain. Solid lines are real foreign-key constraints &mdash; there are only four. Dashed lines are logical relationships the application code enforces on its own: a shared email, a status looked up by a public attraction id, or a <code>content_type</code>/<code>content_id</code> pair standing in for a foreign key Postgres never declared.</p>
-      <div class="plate"><div class="plate-inner">
+      <h3>Database Schema &mdash; Entity Relationship Diagrams</h3>
+      <p class="desc">All 42 tables in the live database, one domain at a time. Solid lines are real foreign-key constraints &mdash; there are only four in the whole schema. Dashed lines are logical relationships the application code enforces on its own: a shared email, a status looked up by a public attraction id, or a <code>content_type</code>/<code>content_id</code> pair standing in for a foreign key Postgres never declared. Thin cross-referenced boxes (no attribute list) point to a table detailed in another panel.</p>
+      <div class="erd-panel" id="fig-12-identity">
+        <p class="erd-panel-label">1 of 7 &mdash; Identity</p>
+        <p class="erd-panel-desc">The two identity surfaces, joined only by a shared email &mdash; there is no foreign key between them.</p>
+        <div class="plate"><div class="plate-inner">
 <pre class="mermaid">
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'12.5px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
 erDiagram
-    %% -- Identity --
     profiles {
         uuid id PK
         text email
@@ -758,7 +775,18 @@ erDiagram
         text username
         text user_type
     }
-    %% -- Content --
+    profiles ||..o| tourist_profiles : "extends (by email)"
+</pre>
+        </div></div>
+        <p class="plate-caption"><b>Figure 12.1.</b> Identity &mdash; 2 tables.</p>
+      </div>
+      <div class="erd-panel" id="fig-12-content">
+        <p class="erd-panel-label">2 of 7 &mdash; Content</p>
+        <p class="erd-panel-desc">Nine publishable content types, plus the two polymorphic tables that attach to any of them by a <code>content_type</code>/<code>content_id</code> pair instead of a formal foreign key. <code>cms_faqs</code> and <code>cms_itineraries</code> stand alone &mdash; nothing attaches media or snapshots to them.</p>
+        <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+erDiagram
     cms_attractions {
         uuid id PK
         text name
@@ -816,7 +844,31 @@ erDiagram
         text content_id PK
         jsonb data
     }
-    %% -- Business --
+    cms_attractions ||..o{ cms_media : "content_id (content_type)"
+    cms_events ||..o{ cms_media : "content_id (content_type)"
+    cms_news ||..o{ cms_media : "content_id (content_type)"
+    cms_art_forms ||..o{ cms_media : "content_id (content_type)"
+    cms_artisans ||..o{ cms_media : "content_id (content_type)"
+    cms_stories ||..o{ cms_media : "content_id (content_type)"
+    cms_community_events ||..o{ cms_media : "content_id (content_type)"
+    cms_attractions ||..o| cms_snapshots : "content_id (content_type)"
+    cms_events ||..o| cms_snapshots : "content_id (content_type)"
+    cms_news ||..o| cms_snapshots : "content_id (content_type)"
+    cms_art_forms ||..o| cms_snapshots : "content_id (content_type)"
+    cms_artisans ||..o| cms_snapshots : "content_id (content_type)"
+    cms_stories ||..o| cms_snapshots : "content_id (content_type)"
+    cms_community_events ||..o| cms_snapshots : "content_id (content_type)"
+</pre>
+        </div></div>
+        <p class="plate-caption"><b>Figure 12.2.</b> Content &mdash; 11 tables.</p>
+      </div>
+      <div class="erd-panel" id="fig-12-business">
+        <p class="erd-panel-label">3 of 7 &mdash; Business (LBO)</p>
+        <p class="erd-panel-desc">The Local Business Owner track. All three follow-on request tables key off the applicant’s email, not the application’s id.</p>
+        <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+erDiagram
     lbo_applications {
         bigint id PK
         varchar email
@@ -842,7 +894,20 @@ erDiagram
         int month
         int year
     }
-    %% -- Engagement --
+    lbo_applications ||..o{ lbo_attraction_requests : "requests (by email)"
+    lbo_applications ||..o{ lbo_change_requests : "requests (by email)"
+    lbo_applications ||..o{ lbo_visitor_records : "reports (by email)"
+</pre>
+        </div></div>
+        <p class="plate-caption"><b>Figure 12.3.</b> Business (LBO) &mdash; 4 tables.</p>
+      </div>
+      <div class="erd-panel" id="fig-12-engagement">
+        <p class="erd-panel-label">4 of 7 &mdash; Engagement</p>
+        <p class="erd-panel-desc">The tourist-facing loop. <code>achievements&rarr;user_achievements</code> and <code>rewards&rarr;reward_redemptions</code> are real foreign keys; everything back to a user or an attraction is enforced by application code, matched on the attraction’s public <code>&lt;type&gt;-&lt;uuid&gt;</code> id rather than a database reference. <code>profiles</code> and <code>cms_attractions</code> are shown thin here &mdash; see the Identity and Content panels for their own columns.</p>
+        <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+erDiagram
     user_points {
         uuid id PK
         uuid user_id
@@ -858,7 +923,7 @@ erDiagram
     user_achievements {
         uuid id PK
         uuid user_id
-        uuid achievement_id
+        uuid achievement_id FK
         timestamptz earned_at
     }
     rewards {
@@ -869,7 +934,7 @@ erDiagram
     reward_redemptions {
         uuid id PK
         uuid user_id
-        uuid reward_id
+        uuid reward_id FK
         text status
     }
     attraction_visit_checkins {
@@ -894,10 +959,38 @@ erDiagram
         uuid user_id
         text title
     }
-    %% -- Participation --
+    profiles {
+        string _ "see Identity panel"
+    }
+    cms_attractions {
+        string _ "see Content panel"
+    }
+    achievements ||--o{ user_achievements : "achievement_id"
+    rewards ||--o{ reward_redemptions : "reward_id"
+    profiles ||..o{ user_points : "user_id (app-enforced)"
+    profiles ||..o{ user_achievements : "user_id (app-enforced)"
+    profiles ||..o{ reward_redemptions : "user_id (app-enforced)"
+    profiles ||..o{ attraction_visit_checkins : "user_id (app-enforced)"
+    profiles ||..o{ saved_favorites : "user_id (app-enforced)"
+    profiles ||..o{ saved_itineraries : "user_id (app-enforced)"
+    cms_attractions ||..o{ attraction_visit_checkins : "attraction_id (public id)"
+    cms_attractions ||..o{ saved_favorites : "attraction_id (public id)"
+    cms_attractions ||..o{ reviews : "item_id (public id)"
+    cms_attractions ||..o{ user_points : "reference_id (public id)"
+</pre>
+        </div></div>
+        <p class="plate-caption"><b>Figure 12.4.</b> Engagement &mdash; 9 tables.</p>
+      </div>
+      <div class="erd-panel" id="fig-12-participation">
+        <p class="erd-panel-label">5 of 7 &mdash; Participation</p>
+        <p class="erd-panel-desc">Public sign-ups, forms, and submissions. <code>event_forms&rarr;event_form_responses</code> and <code>cms_community_events&rarr;community_event_signups</code> are real foreign keys; the older <code>event_signups</code> table matches events only by convention. <code>participation_requests</code>, <code>community_submissions</code>, <code>submissions</code>, and <code>newsletter_subscribers</code> stand alone, with no declared relationship to any other table.</p>
+        <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+erDiagram
     community_event_signups {
         uuid id PK
-        uuid event_id
+        uuid event_id FK
         text email
         text status
     }
@@ -908,7 +1001,7 @@ erDiagram
     }
     event_form_responses {
         uuid id PK
-        uuid form_id
+        uuid form_id FK
         text respondent_email
     }
     event_signups {
@@ -938,7 +1031,26 @@ erDiagram
         uuid id PK
         text email
     }
-    %% -- Operations --
+    cms_community_events {
+        string _ "see Content panel"
+    }
+    cms_events {
+        string _ "see Content panel"
+    }
+    event_forms ||--o{ event_form_responses : "form_id"
+    cms_community_events ||--o{ community_event_signups : "event_id"
+    cms_events ||..o{ event_signups : "event_id (logical)"
+</pre>
+        </div></div>
+        <p class="plate-caption"><b>Figure 12.5.</b> Participation &mdash; 8 tables.</p>
+      </div>
+      <div class="erd-panel" id="fig-12-operations">
+        <p class="erd-panel-label">6 of 7 &mdash; Operations</p>
+        <p class="erd-panel-desc">Logging, session, inbox, and one-time-code tables that support the running system. None declare a foreign key to anything else &mdash; each is written and read independently by the feature that owns it.</p>
+        <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+erDiagram
     audit_logs {
         uuid id PK
         text event
@@ -976,51 +1088,26 @@ erDiagram
         text strapi_id
         text attraction_name
     }
-    %% -- Legacy (unused) --
+</pre>
+        </div></div>
+        <p class="plate-caption"><b>Figure 12.6.</b> Operations &mdash; 7 tables.</p>
+      </div>
+      <div class="erd-panel" id="fig-12-legacy">
+        <p class="erd-panel-label">7 of 7 &mdash; Legacy (unused)</p>
+        <p class="erd-panel-desc">Carried over from the CMS this project replaced. Nothing in the current application queries or references this table.</p>
+        <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+erDiagram
     tourist_spots {
         int id PK
         varchar name
         varchar slug
     }
-    %% -- Real foreign keys --
-    rewards ||--o{ reward_redemptions : "reward_id"
-    achievements ||--o{ user_achievements : "achievement_id"
-    event_forms ||--o{ event_form_responses : "form_id"
-    cms_community_events ||--o{ community_event_signups : "event_id"
-    %% -- Logical relationships, enforced by application code --
-    profiles ||..o{ user_points : "earns (app-enforced)"
-    profiles ||..o{ user_achievements : "earns (app-enforced)"
-    profiles ||..o{ reward_redemptions : "redeems (app-enforced)"
-    profiles ||..o{ attraction_visit_checkins : "checks in (app-enforced)"
-    profiles ||..o{ saved_favorites : "saves (app-enforced)"
-    profiles ||..o{ saved_itineraries : "saves (app-enforced)"
-    cms_attractions ||..o{ attraction_visit_checkins : "visited at (public id)"
-    cms_attractions ||..o{ saved_favorites : "favorite of (public id)"
-    cms_attractions ||..o{ reviews : "reviewed via (public id)"
-    cms_attractions ||..o{ user_points : "credited for (public id)"
-    cms_events ||..o{ event_signups : "signed up for (logical)"
-    lbo_applications ||..o{ lbo_attraction_requests : "requests (by email)"
-    lbo_applications ||..o{ lbo_change_requests : "requests (by email)"
-    lbo_applications ||..o{ lbo_visitor_records : "reports (by email)"
-    profiles ||..o{ tourist_profiles : "extends (by email)"
-    %% -- Polymorphic media/snapshot links --
-    cms_attractions ||..o{ cms_media : "content_id (content_type)"
-    cms_events ||..o{ cms_media : "content_id (content_type)"
-    cms_news ||..o{ cms_media : "content_id (content_type)"
-    cms_art_forms ||..o{ cms_media : "content_id (content_type)"
-    cms_artisans ||..o{ cms_media : "content_id (content_type)"
-    cms_stories ||..o{ cms_media : "content_id (content_type)"
-    cms_community_events ||..o{ cms_media : "content_id (content_type)"
-    cms_attractions ||..o| cms_snapshots : "content_id (content_type)"
-    cms_events ||..o| cms_snapshots : "content_id (content_type)"
-    cms_news ||..o| cms_snapshots : "content_id (content_type)"
-    cms_art_forms ||..o| cms_snapshots : "content_id (content_type)"
-    cms_artisans ||..o| cms_snapshots : "content_id (content_type)"
-    cms_stories ||..o| cms_snapshots : "content_id (content_type)"
-    cms_community_events ||..o| cms_snapshots : "content_id (content_type)"
 </pre>
-      </div></div>
-      <p class="plate-caption"><b>Figure 12.</b> Database Schema ERD &mdash; 42 tables across seven domains; dashed lines mark relationships the application enforces, not Postgres.</p>
+        </div></div>
+        <p class="plate-caption"><b>Figure 12.7.</b> Legacy (unused) &mdash; 1 table.</p>
+      </div>
     </section>
 
     <section class="figure" id="fig-13">
