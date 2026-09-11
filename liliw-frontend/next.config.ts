@@ -48,6 +48,11 @@ const CSP = [
     "https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com",
     "https://nominatim.openstreetmap.org",     // address lookup
     "https://api.apify.com",                   // external review scraping
+    // img-src covers <img src>; a Download button fetches the same host by
+    // JS instead, which img-src does not cover — the gap left the QR
+    // download buttons (per-attraction and site-wide) one CSP enforcement
+    // away from failing silently.
+    "https://api.qrserver.com",
   ].join(' '),
   // The hero video, served from Cloudinary. Without this it falls to
   // default-src 'self' and the home page loses its hero the moment this

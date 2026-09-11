@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Mail, MapPin, Download, CheckCircle, X, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Wave from '@/components/liliw/Wave';
+import ShareSite from '@/components/ShareSite';
 
 // PLACEHOLDER — not the office's real address, and deliberately inert.
 //
@@ -223,6 +224,12 @@ export default function Footer() {
               <p className="text-white/40 text-[11px] mt-4 leading-relaxed" style={{ fontFamily: BL }}>
                 Culture, History, Arts and Tourism Office
               </p>
+              {/* Reaching the office and sending someone here belong together —
+                  the second is what every other share button on the site was
+                  missing: none of them pointed at the site itself. */}
+              <div className="mt-4 flex justify-center sm:justify-start">
+                <ShareSite />
+              </div>
             </div>
           </div>
 
