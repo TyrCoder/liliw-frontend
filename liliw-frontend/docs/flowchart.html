@@ -782,7 +782,7 @@ erDiagram
       </div>
       <div class="erd-panel" id="fig-12-content">
         <p class="erd-panel-label">2 of 7 &mdash; Content</p>
-        <p class="erd-panel-desc">Nine publishable content types, plus the two polymorphic tables that attach to any of them by a <code>content_type</code>/<code>content_id</code> pair instead of a formal foreign key. <code>cms_faqs</code> and <code>cms_itineraries</code> stand alone &mdash; nothing attaches media or snapshots to them.</p>
+        <p class="erd-panel-desc">Nine publishable content types, plus the two polymorphic tables that attach to any of them by a <code>content_type</code>/<code>content_id</code> pair instead of a formal foreign key. Only <code>cms_attractions</code> is drawn connected below to keep the diagram legible &mdash; the identical pattern also links <code>cms_events</code>, <code>cms_news</code>, <code>cms_art_forms</code>, <code>cms_artisans</code>, <code>cms_stories</code>, and <code>cms_community_events</code>. <code>cms_faqs</code> and <code>cms_itineraries</code> stand alone &mdash; nothing attaches media or snapshots to them.</p>
         <div class="plate"><div class="plate-inner">
 <pre class="mermaid">
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
@@ -844,20 +844,8 @@ erDiagram
         text content_id PK
         jsonb data
     }
-    cms_attractions ||..o{ cms_media : "content_id (content_type)"
-    cms_events ||..o{ cms_media : "content_id (content_type)"
-    cms_news ||..o{ cms_media : "content_id (content_type)"
-    cms_art_forms ||..o{ cms_media : "content_id (content_type)"
-    cms_artisans ||..o{ cms_media : "content_id (content_type)"
-    cms_stories ||..o{ cms_media : "content_id (content_type)"
-    cms_community_events ||..o{ cms_media : "content_id (content_type)"
-    cms_attractions ||..o| cms_snapshots : "content_id (content_type)"
-    cms_events ||..o| cms_snapshots : "content_id (content_type)"
-    cms_news ||..o| cms_snapshots : "content_id (content_type)"
-    cms_art_forms ||..o| cms_snapshots : "content_id (content_type)"
-    cms_artisans ||..o| cms_snapshots : "content_id (content_type)"
-    cms_stories ||..o| cms_snapshots : "content_id (content_type)"
-    cms_community_events ||..o| cms_snapshots : "content_id (content_type)"
+    cms_attractions ||..o{ cms_media : "content_id -- and 6 more content tables, same pattern"
+    cms_attractions ||..o| cms_snapshots : "content_id -- and 6 more content tables, same pattern"
 </pre>
         </div></div>
         <p class="plate-caption"><b>Figure 12.2.</b> Content &mdash; 11 tables.</p>
