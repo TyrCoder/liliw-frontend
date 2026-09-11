@@ -11,6 +11,7 @@ import PassportHost from "@/components/PassportHost";
 import { AuthProvider } from "@/context/AuthContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { Toaster } from "sonner";
+import { siteUrl } from '@/lib/siteUrl';
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-display",
@@ -33,9 +34,23 @@ const plusJakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
+const SITE = siteUrl();
+const SITE_TITLE = "Liliw Tourism - Discover the Beauty of Laguna";
+const SITE_DESCRIPTION = "Explore heritage sites, tourist attractions, and cultural experiences in Liliw, Laguna. Book tours, discover local artisans, and immerse yourself in authentic Filipino culture.";
+
 export const metadata: Metadata = {
-  title: "Liliw Tourism - Discover the Beauty of Laguna",
-  description: "Explore heritage sites, tourist attractions, and cultural experiences in Liliw, Laguna. Book tours, discover local artisans, and immerse yourself in authentic Filipino culture.",
+  /*
+   * The one thing that was missing and broke everything downstream of it.
+   * Without a base, a relative openGraph image (the icon below, and every
+   * per-page image a route's own generateMetadata supplies) has no absolute
+   * URL to resolve against — Next emits it as written, "/icons/…", which is
+   * not a valid Open Graph image and not something Messenger, Facebook, or
+   * any link-preview crawler can fetch. Setting this here fixes it site-wide,
+   * for pages that override metadata and pages that never do.
+   */
+  metadataBase: new URL(siteUrl()),
+  title: { default: SITE_TITLE, template: "%s | Liliw Tourism" },
+  description: SITE_DESCRIPTION,
   keywords: "Liliw, tourism, heritage, attractions, tours, Laguna, Philippines, travel",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -45,6 +60,38 @@ export const metadata: Metadata = {
     startupImage: "/icons/icon-512x512.png",
   },
   formatDetection: { telephone: true },
+  /*
+   * Every dynamic page — an attraction, a story, a community event — was
+   * serving this exact block and nothing else, because none of them ever
+   * called generateMetadata. A visitor sharing a specific place's link sent
+   * their friend a card titled "Liliw Tourism", not the place; some
+   * link-preview clients resolve the shared card through this data rather
+   * than the raw URL, which is what made a shared attraction open the
+   * homepage instead of itself. The three dynamic routes now generate their
+   * own openGraph block; this is the fallback for everything else, and it is
+   * a real fallback now rather than the only answer the whole site had.
+   */
+  openGraph: {
+    type: "website",
+    siteName: "Liliw Tourism",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    /*
+     * Absolute, built by hand rather than left relative for metadataBase to
+     * resolve. metadataBase does resolve openGraph.url correctly (verified —
+     * a page's relative url comes back with the domain attached), but not
+     * this images array in the installed Next version: left as "/icons/…" it
+     * rendered exactly that, with no domain, on every page including the
+     * homepage. A crawler cannot fetch a path with no host.
+     */
+    images: [{ url: `${SITE}/icons/icon-512x512.png`, width: 512, height: 512 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [`${SITE}/icons/icon-512x512.png`],
+  },
 };
 
 export const viewport: Viewport = {
@@ -88,10 +135,18 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <meta name="msapplication-config" content="none" />
         <meta name="mobile-web-app-capable" content="yes" />
 
-        {/* Open Graph for share previews */}
-        <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="Liliw Tourism" />
-        <meta property="og:image" content="/icons/icon-512x512.png" />
+        {/*
+         * Open Graph used to be hand-written here as three raw <meta> tags,
+         * separate from and unaware of the `metadata` export above — so
+         * og:type and og:site_name silently duplicated what the export
+         * already declared, and og:image duplicated it with a *relative*
+         * path that could never resolve, sitting first in the document
+         * ahead of whichever page's real, absolute image the export
+         * produced. A crawler that takes the first og:image tag it finds
+         * took the broken one. Removed: the metadata export is the one
+         * source of Open Graph data for every page now, root and dynamic
+         * routes alike.
+         */}
       </head>
       <body className="min-h-full flex flex-col overflow-x-hidden" style={{ backgroundColor: '#F9F6F0', color: '#1A1A2E' }}>
         <AuthProvider>
