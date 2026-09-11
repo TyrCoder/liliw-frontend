@@ -164,6 +164,56 @@
 
   pre.mermaid{margin:0;background:transparent;font-family:var(--font-body);}
 
+  /* ── database schema reference ───────────────────────────────────── */
+  .schema-domain{margin:0 0 40px;}
+  .schema-domain:last-child{margin-bottom:0;}
+  .schema-domain h4{
+    font-family:var(--font-heading);font-weight:700;font-size:12px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--navy);margin:0 0 8px;padding-bottom:8px;
+    border-bottom:2px solid var(--gold-bright);
+  }
+  .schema-domain-desc{
+    font-family:var(--font-body);font-size:13.5px;line-height:1.6;color:var(--ink-muted);
+    max-width:70ch;margin:0 0 18px;
+  }
+  .schema-domain-desc code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;
+    background:rgba(11,61,145,.07);padding:1px 5px;border-radius:4px;color:var(--navy);
+  }
+  .schema-table-wrap{margin:0 0 22px;break-inside:avoid;page-break-inside:avoid;}
+  .schema-table-wrap:last-child{margin-bottom:0;}
+  .schema-table-name{
+    font-family:var(--font-heading);font-weight:700;font-size:13.5px;color:var(--navy-deep);
+    margin:0 0 2px;
+  }
+  .schema-table-name code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  table.schema-table{
+    width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0 0;
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;
+  }
+  table.schema-table th{
+    text-align:left;font-family:var(--font-heading);font-weight:700;font-size:10px;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted);
+    padding:7px 12px;border-bottom:1px solid var(--line);background:rgba(11,61,145,.03);
+  }
+  table.schema-table td{
+    padding:6px 12px;border-bottom:1px solid var(--line);color:var(--ink);
+  }
+  table.schema-table tr:last-child td{border-bottom:none;}
+  table.schema-table .col-name{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;
+  }
+  table.schema-table .col-type{color:var(--ink-muted);}
+  .key-pk,.key-fk,.key-notnull{
+    font-family:var(--font-heading);font-weight:700;font-size:10px;letter-spacing:.04em;
+  }
+  .key-pk{color:var(--gold);}
+  .key-fk{color:var(--navy);}
+  .key-notnull{color:var(--ink-muted);font-weight:600;text-transform:lowercase;}
+  @media print{
+    .schema-domain{break-inside:auto;}
+  }
+
   /* ── print bar ────────────────────────────────────────────────────── */
   .print-bar{
     position:fixed;top:16px;right:16px;z-index:20;
@@ -218,6 +268,8 @@
     <span class="sep">·</span>
     <span><b>5</b> user roles</span>
     <span class="sep">·</span>
+    <span><b>42</b> database tables</span>
+    <span class="sep">·</span>
     <span>Municipality of Liliw, Laguna</span>
   </div>
 </header>
@@ -237,6 +289,8 @@
       <li><a href="#fig-9">Role &amp; Access Overview</a></li>
       <li><a href="#fig-10">Layered Architecture</a></li>
       <li><a href="#fig-11">Request Flow</a></li>
+      <li><a href="#fig-12">Database Schema &mdash; ERD</a></li>
+      <li><a href="#fig-13">Database Schema Reference</a></li>
     </ol>
   </nav>
 
@@ -682,6 +736,1126 @@ flowchart TD
 </pre>
       </div></div>
       <p class="plate-caption"><b>Figure 11.</b> Request Flow &mdash; one entry point, five outbound services.</p>
+    </section>
+
+    <section class="figure" id="fig-12">
+      <p class="figure-eyebrow"><span class="tag">12</span> System Manual &sect;4</p>
+      <h3>Database Schema &mdash; Entity Relationship Diagram</h3>
+      <p class="desc">All 42 tables in the live database, grouped by domain. Solid lines are real foreign-key constraints &mdash; there are only four. Dashed lines are logical relationships the application code enforces on its own: a shared email, a status looked up by a public attraction id, or a <code>content_type</code>/<code>content_id</code> pair standing in for a foreign key Postgres never declared.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'12.5px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+erDiagram
+    %% -- Identity --
+    profiles {
+        uuid id PK
+        text email
+        text role
+    }
+    tourist_profiles {
+        text email PK
+        text username
+        text user_type
+    }
+    %% -- Content --
+    cms_attractions {
+        uuid id PK
+        text name
+        text category
+        text status
+    }
+    cms_events {
+        uuid id PK
+        text title
+        text status
+    }
+    cms_news {
+        uuid id PK
+        text title
+        text status
+    }
+    cms_art_forms {
+        uuid id PK
+        text name
+        text status
+    }
+    cms_artisans {
+        uuid id PK
+        text name
+        text status
+    }
+    cms_stories {
+        uuid id PK
+        text title
+        text status
+    }
+    cms_faqs {
+        uuid id PK
+        text question
+        text status
+    }
+    cms_itineraries {
+        uuid id PK
+        text title
+        text status
+    }
+    cms_community_events {
+        uuid id PK
+        text title
+        text status
+    }
+    cms_media {
+        uuid id PK
+        text content_type
+        uuid content_id
+        text url
+    }
+    cms_snapshots {
+        text content_type PK
+        text content_id PK
+        jsonb data
+    }
+    %% -- Business --
+    lbo_applications {
+        bigint id PK
+        varchar email
+        varchar business_name
+        varchar status
+    }
+    lbo_attraction_requests {
+        uuid id PK
+        text lbo_email
+        text attraction_name
+        text status
+    }
+    lbo_change_requests {
+        int id PK
+        varchar lbo_email
+        varchar attraction_id
+        varchar status
+    }
+    lbo_visitor_records {
+        bigint id PK
+        text lbo_email
+        text attraction_name
+        int month
+        int year
+    }
+    %% -- Engagement --
+    user_points {
+        uuid id PK
+        uuid user_id
+        text action
+        text reference_id
+        int points
+    }
+    achievements {
+        uuid id PK
+        text name
+        text trigger_type
+    }
+    user_achievements {
+        uuid id PK
+        uuid user_id
+        uuid achievement_id
+        timestamptz earned_at
+    }
+    rewards {
+        uuid id PK
+        text name
+        int points_cost
+    }
+    reward_redemptions {
+        uuid id PK
+        uuid user_id
+        uuid reward_id
+        text status
+    }
+    attraction_visit_checkins {
+        uuid user_id PK
+        text attraction_id PK
+        text via
+    }
+    reviews {
+        uuid id PK
+        text item_id
+        text author
+        int rating
+    }
+    saved_favorites {
+        uuid id PK
+        uuid user_id
+        text attraction_id
+        text type
+    }
+    saved_itineraries {
+        uuid id PK
+        uuid user_id
+        text title
+    }
+    %% -- Participation --
+    community_event_signups {
+        uuid id PK
+        uuid event_id
+        text email
+        text status
+    }
+    event_forms {
+        uuid id PK
+        text event_slug
+        bool is_active
+    }
+    event_form_responses {
+        uuid id PK
+        uuid form_id
+        text respondent_email
+    }
+    event_signups {
+        uuid id PK
+        text event_id
+        text email
+        text status
+    }
+    participation_requests {
+        int id PK
+        varchar email
+        varchar type
+    }
+    community_submissions {
+        uuid id PK
+        text email
+        text type
+        text status
+    }
+    submissions {
+        int id PK
+        varchar email
+        varchar type
+        varchar status
+    }
+    newsletter_subscribers {
+        uuid id PK
+        text email
+    }
+    %% -- Operations --
+    audit_logs {
+        uuid id PK
+        text event
+        text model
+        text performed_by
+    }
+    page_views {
+        bigint id PK
+        text path
+        text entity_type
+        text entity_id
+    }
+    active_sessions {
+        text session_id PK
+        text page
+    }
+    inbox_state {
+        text source PK
+        text ref_id PK
+        text status
+    }
+    inbox_replies {
+        uuid id PK
+        text source
+        text ref_id
+        text sent_by
+    }
+    email_otps {
+        text purpose PK
+        text key PK
+        text otp
+    }
+    external_reviews {
+        uuid id PK
+        text strapi_id
+        text attraction_name
+    }
+    %% -- Legacy (unused) --
+    tourist_spots {
+        int id PK
+        varchar name
+        varchar slug
+    }
+    %% -- Real foreign keys --
+    rewards ||--o{ reward_redemptions : "reward_id"
+    achievements ||--o{ user_achievements : "achievement_id"
+    event_forms ||--o{ event_form_responses : "form_id"
+    cms_community_events ||--o{ community_event_signups : "event_id"
+    %% -- Logical relationships, enforced by application code --
+    profiles ||..o{ user_points : "earns (app-enforced)"
+    profiles ||..o{ user_achievements : "earns (app-enforced)"
+    profiles ||..o{ reward_redemptions : "redeems (app-enforced)"
+    profiles ||..o{ attraction_visit_checkins : "checks in (app-enforced)"
+    profiles ||..o{ saved_favorites : "saves (app-enforced)"
+    profiles ||..o{ saved_itineraries : "saves (app-enforced)"
+    cms_attractions ||..o{ attraction_visit_checkins : "visited at (public id)"
+    cms_attractions ||..o{ saved_favorites : "favorite of (public id)"
+    cms_attractions ||..o{ reviews : "reviewed via (public id)"
+    cms_attractions ||..o{ user_points : "credited for (public id)"
+    cms_events ||..o{ event_signups : "signed up for (logical)"
+    lbo_applications ||..o{ lbo_attraction_requests : "requests (by email)"
+    lbo_applications ||..o{ lbo_change_requests : "requests (by email)"
+    lbo_applications ||..o{ lbo_visitor_records : "reports (by email)"
+    profiles ||..o{ tourist_profiles : "extends (by email)"
+    %% -- Polymorphic media/snapshot links --
+    cms_attractions ||..o{ cms_media : "content_id (content_type)"
+    cms_events ||..o{ cms_media : "content_id (content_type)"
+    cms_news ||..o{ cms_media : "content_id (content_type)"
+    cms_art_forms ||..o{ cms_media : "content_id (content_type)"
+    cms_artisans ||..o{ cms_media : "content_id (content_type)"
+    cms_stories ||..o{ cms_media : "content_id (content_type)"
+    cms_community_events ||..o{ cms_media : "content_id (content_type)"
+    cms_attractions ||..o| cms_snapshots : "content_id (content_type)"
+    cms_events ||..o| cms_snapshots : "content_id (content_type)"
+    cms_news ||..o| cms_snapshots : "content_id (content_type)"
+    cms_art_forms ||..o| cms_snapshots : "content_id (content_type)"
+    cms_artisans ||..o| cms_snapshots : "content_id (content_type)"
+    cms_stories ||..o| cms_snapshots : "content_id (content_type)"
+    cms_community_events ||..o| cms_snapshots : "content_id (content_type)"
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 12.</b> Database Schema ERD &mdash; 42 tables across seven domains; dashed lines mark relationships the application enforces, not Postgres.</p>
+    </section>
+
+    <section class="figure" id="fig-13">
+      <p class="figure-eyebrow"><span class="tag">App.</span> System Manual &sect;4.1</p>
+      <h3>Database Schema Reference</h3>
+      <p class="desc">Every column of every table, as introspected live from the database itself &mdash; not from migration files, since several tables here were created directly in the Supabase dashboard and were never captured in a tracked migration. <span class="key-pk">PK</span> marks a primary key, <span class="key-fk">FK</span> a real foreign key constraint.</p>
+      <div class="schema-domain" id="schema-identity">
+        <h4>Identity</h4>
+        <p class="schema-domain-desc">The two identity surfaces: platform accounts in <code>profiles</code>, and the richer tourist-facing profile in <code>tourist_profiles</code>, joined only by email.</p>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>profiles</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">email</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">username</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">role</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>tourist_profiles</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">email</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">username</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">user_type</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">full_name</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">avatar</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">avatar_updated_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">gender</td><td class="col-type">text</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="schema-domain" id="schema-content">
+        <h4>Content</h4>
+        <p class="schema-domain-desc">Every publishable content type CHATO staff manage, plus the two polymorphic tables &mdash; <code>cms_media</code> and <code>cms_snapshots</code> &mdash; that attach to any of them via a <code>content_type</code> / <code>content_id</code> pair rather than a formal foreign key.</p>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>cms_attractions</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">category</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">description</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">location</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">map_lat</td><td class="col-type">numeric</td><td></td><td></td></tr>
+              <tr><td class="col-name">map_lng</td><td class="col-type">numeric</td><td></td><td></td></tr>
+              <tr><td class="col-name">features</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">sort_order</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">slug</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_by</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">reviewed_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">reject_remarks</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">virtual_tour_photos</td><td class="col-type">jsonb</td><td></td><td></td></tr>
+              <tr><td class="col-name">hotspots</td><td class="col-type">jsonb</td><td></td><td></td></tr>
+              <tr><td class="col-name">opening_hours</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">entrance_fee</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">price_level</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">phone</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">website</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">best_for</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">best_time</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">visitor_tips</td><td class="col-type">text</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>cms_events</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">title</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">category</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">description</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">venue</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">date_start</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">date_end</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">is_joinable</td><td class="col-type">boolean</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">slug</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_by</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">reviewed_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">reject_remarks</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">video_url</td><td class="col-type">text</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>cms_news</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">title</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">category</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">content</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">slug</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_by</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">reviewed_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">reject_remarks</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">video_url</td><td class="col-type">text</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>cms_art_forms</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">icon</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">description</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">features</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">sort_order</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">slug</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_by</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">reviewed_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">reject_remarks</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>cms_artisans</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">craft_type</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">description</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">location</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">contact_number</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">rating</td><td class="col-type">numeric</td><td></td><td></td></tr>
+              <tr><td class="col-name">social_media</td><td class="col-type">jsonb</td><td></td><td></td></tr>
+              <tr><td class="col-name">slug</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_by</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">reviewed_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">reject_remarks</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>cms_stories</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">title</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">category</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">content</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">author</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">slug</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_by</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">reviewed_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">reject_remarks</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">audio_key</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">audio_en</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">audio_fil</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">storyteller_text</td><td class="col-type">text</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>cms_faqs</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">question</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">answer</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">category</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">sort_order</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_by</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">reviewed_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">reject_remarks</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>cms_itineraries</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">title</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">description</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">duration_days</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">category</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">highlights</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">slug</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_by</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">reviewed_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">reject_remarks</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>cms_community_events</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">title</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">category</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">description</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">venue</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">date_start</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">date_end</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">organizer</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">contact_email</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">slots</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">how_to_join</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">is_open</td><td class="col-type">boolean</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">slug</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_by</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">reviewed_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">reject_remarks</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>cms_media</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">content_type</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">content_id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">url</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">public_id</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">alt_text</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">sort_order</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>cms_snapshots</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">content_type</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">content_id</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">data</td><td class="col-type">jsonb</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">snapshot_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="schema-domain" id="schema-business">
+        <h4>Business (LBO)</h4>
+        <p class="schema-domain-desc">The Local Business Owner track: an application, and the change, tour, and visitor-record requests that follow it &mdash; all linked back to the application by email, not by id.</p>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>lbo_applications</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">bigint</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">business_name</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">owner_name</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">email</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">phone</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">address</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">business_type</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">permit_number</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">attraction_name</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">notes</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">documents</td><td class="col-type">jsonb</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">category</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">latitude</td><td class="col-type">numeric</td><td></td><td></td></tr>
+              <tr><td class="col-name">longitude</td><td class="col-type">numeric</td><td></td><td></td></tr>
+              <tr><td class="col-name">strapi_attraction_id</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">strapi_attraction_type</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">document_id</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_by_id</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">updated_by_id</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">locale</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>lbo_attraction_requests</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">lbo_email</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">lbo_name</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">business_name</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">attraction_name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">description</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">category</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">latitude</td><td class="col-type">numeric</td><td></td><td></td></tr>
+              <tr><td class="col-name">longitude</td><td class="col-type">numeric</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">editor_notes</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">officer_notes</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>lbo_change_requests</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">document_id</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">attraction_name</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">attraction_id</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">field_to_change</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">current_value</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">requested_value</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">reason</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">lbo_email</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">lbo_name</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">editor_notes</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_by_id</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">updated_by_id</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">locale</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>lbo_visitor_records</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">bigint</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">attraction_name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">month</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">year</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">local_male</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">local_female</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">other_city_male</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">other_city_female</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">other_province_male</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">other_province_female</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">foreign_male</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">foreign_female</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">lbo_email</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="schema-domain" id="schema-engagement">
+        <h4>Engagement</h4>
+        <p class="schema-domain-desc">Points, achievements, rewards, check-ins, reviews, and saves &mdash; the tourist-facing loop, tied to a user and (where relevant) to an attraction through its public <code>&lt;type&gt;-&lt;uuid&gt;</code> id rather than a database foreign key.</p>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>user_points</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">user_id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">points</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">action</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">reference_id</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">reference_name</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>achievements</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">description</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">icon</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">badge_color</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">trigger_type</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">trigger_value</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">points_reward</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">sort_order</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">is_active</td><td class="col-type">boolean</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>user_achievements</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">user_id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">achievement_id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-fk">FK</span></td></tr>
+              <tr><td class="col-name">earned_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>rewards</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">description</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">icon</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">badge_color</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">points_cost</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">stock</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">is_active</td><td class="col-type">boolean</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">sort_order</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">claim_type</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">image_url</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">image_public_id</td><td class="col-type">text</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>reward_redemptions</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">user_id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">reward_id</td><td class="col-type">uuid</td><td></td><td><span class="key-fk">FK</span></td></tr>
+              <tr><td class="col-name">reward_name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">points_spent</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">redemption_code</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">redeemed_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">redeemed_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">claim_type</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">image_url</td><td class="col-type">text</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>attraction_visit_checkins</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">user_id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">attraction_id</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">started_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">via</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">distance_m</td><td class="col-type">integer</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>reviews</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">item_id</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">item_name</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">author</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">rating</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">comment</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>saved_favorites</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">attraction_id</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">type</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">category</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">user_id</td><td class="col-type">uuid</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>saved_itineraries</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">legacy_strapi_user_id</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">title</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">plan</td><td class="col-type">jsonb</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">duration</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">budget</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">saved_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">user_id</td><td class="col-type">uuid</td><td></td><td></td></tr>
+              <tr><td class="col-name">is_public</td><td class="col-type">boolean</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="schema-domain" id="schema-participation">
+        <h4>Participation</h4>
+        <p class="schema-domain-desc">Sign-ups, forms, and submissions collected from the public around events and community programs.</p>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>community_event_signups</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">event_id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-fk">FK</span></td></tr>
+              <tr><td class="col-name">event_title</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">full_name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">email</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">phone</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">message</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>event_forms</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">event_slug</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">event_title</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">fields</td><td class="col-type">jsonb</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">is_active</td><td class="col-type">boolean</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>event_form_responses</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">form_id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-fk">FK</span></td></tr>
+              <tr><td class="col-name">event_slug</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">respondent_name</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">respondent_email</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">answers</td><td class="col-type">jsonb</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">submitted_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>event_signups</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">event_id</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">event_title</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">full_name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">email</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">phone</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">notes</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">username</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>participation_requests</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">document_id</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">full_name</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">email</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">type</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">message</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_by_id</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">updated_by_id</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">locale</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>community_submissions</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">email</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">phone</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">message</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">type</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">handled_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">handled_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>submissions</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">document_id</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">name</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">email</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">phone</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">message</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">type</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_by_id</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">updated_by_id</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">locale</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>newsletter_subscribers</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">email</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">subscribed_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="schema-domain" id="schema-operations">
+        <h4>Operations</h4>
+        <p class="schema-domain-desc">Logging, session, inbox, and one-time-code tables that support the running system rather than its content.</p>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>audit_logs</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">event</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">model</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">uid</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">entry_id</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">entry_title</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">changes</td><td class="col-type">jsonb</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">performed_by</td><td class="col-type">text</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>page_views</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">bigint</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">path</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">session_id</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">device</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">entity_type</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">entity_id</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>active_sessions</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">session_id</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">page</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">device</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">last_seen</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>inbox_state</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">source</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">ref_id</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">status</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">handled_by</td><td class="col-type">text</td><td></td><td></td></tr>
+              <tr><td class="col-name">handled_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>inbox_replies</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">source</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">ref_id</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">body</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">sent_by</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">sent_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">delivered</td><td class="col-type">boolean</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">delivery_error</td><td class="col-type">text</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>email_otps</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">purpose</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">key</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">otp</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">expiry</td><td class="col-type">bigint</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">attempts</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>external_reviews</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">uuid</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">strapi_id</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">attraction_name</td><td class="col-type">text</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">google_rating</td><td class="col-type">numeric</td><td></td><td></td></tr>
+              <tr><td class="col-name">review_count</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">reviews</td><td class="col-type">jsonb</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+              <tr><td class="col-name">last_scraped_at</td><td class="col-type">timestamptz</td><td><span class="key-notnull">not null</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="schema-domain" id="schema-legacy">
+        <h4>Legacy (unused)</h4>
+        <p class="schema-domain-desc">Carried over from the CMS this project replaced. <code>tourist_spots</code> has no live reference anywhere in the application &mdash; kept in the database, not in use.</p>
+        <div class="schema-table-wrap">
+          <p class="schema-table-name"><code>tourist_spots</code></p>
+          <table class="schema-table">
+            <thead><tr><th>Column</th><th>Type</th><th>Nullable</th><th>Key</th></tr></thead>
+            <tbody>
+              <tr><td class="col-name">id</td><td class="col-type">integer</td><td><span class="key-notnull">not null</span></td><td><span class="key-pk">PK</span></td></tr>
+              <tr><td class="col-name">document_id</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">name</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">description</td><td class="col-type">jsonb</td><td></td><td></td></tr>
+              <tr><td class="col-name">tips</td><td class="col-type">jsonb</td><td></td><td></td></tr>
+              <tr><td class="col-name">best_time_to_visit</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">location</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">rating</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">difficulty_level</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">coordinates</td><td class="col-type">jsonb</td><td></td><td></td></tr>
+              <tr><td class="col-name">has_virtual_tour</td><td class="col-type">boolean</td><td></td><td></td></tr>
+              <tr><td class="col-name">entrance_fee</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">category</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">opening_hours</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">slug</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">place_type</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">published_at</td><td class="col-type">timestamptz</td><td></td><td></td></tr>
+              <tr><td class="col-name">created_by_id</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">updated_by_id</td><td class="col-type">integer</td><td></td><td></td></tr>
+              <tr><td class="col-name">locale</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">google_place_id</td><td class="col-type">varchar(255)</td><td></td><td></td></tr>
+              <tr><td class="col-name">hotspots</td><td class="col-type">jsonb</td><td></td><td></td></tr>
+              <tr><td class="col-name">virtual_tour_photos</td><td class="col-type">jsonb</td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
   </main>
