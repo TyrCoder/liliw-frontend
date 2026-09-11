@@ -763,7 +763,7 @@ flowchart TD
         <p class="erd-panel-desc">The two identity surfaces, joined only by a shared email &mdash; there is no foreign key between them.</p>
         <div class="plate"><div class="plate-inner">
 <pre class="mermaid">
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
 erDiagram
     profiles {
         uuid id PK
@@ -785,7 +785,7 @@ erDiagram
         <p class="erd-panel-desc">Nine publishable content types, plus the two polymorphic tables that attach to any of them by a <code>content_type</code>/<code>content_id</code> pair instead of a formal foreign key. <code>cms_faqs</code> and <code>cms_itineraries</code> stand alone &mdash; nothing attaches media or snapshots to them.</p>
         <div class="plate"><div class="plate-inner">
 <pre class="mermaid">
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
 erDiagram
     cms_attractions {
         uuid id PK
@@ -867,7 +867,7 @@ erDiagram
         <p class="erd-panel-desc">The Local Business Owner track. All three follow-on request tables key off the applicant’s email, not the application’s id.</p>
         <div class="plate"><div class="plate-inner">
 <pre class="mermaid">
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
 erDiagram
     lbo_applications {
         bigint id PK
@@ -906,7 +906,7 @@ erDiagram
         <p class="erd-panel-desc">The tourist-facing loop. <code>achievements&rarr;user_achievements</code> and <code>rewards&rarr;reward_redemptions</code> are real foreign keys; everything back to a user or an attraction is enforced by application code, matched on the attraction’s public <code>&lt;type&gt;-&lt;uuid&gt;</code> id rather than a database reference. <code>profiles</code> and <code>cms_attractions</code> are shown thin here &mdash; see the Identity and Content panels for their own columns.</p>
         <div class="plate"><div class="plate-inner">
 <pre class="mermaid">
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
 erDiagram
     user_points {
         uuid id PK
@@ -986,7 +986,7 @@ erDiagram
         <p class="erd-panel-desc">Public sign-ups, forms, and submissions. <code>event_forms&rarr;event_form_responses</code> and <code>cms_community_events&rarr;community_event_signups</code> are real foreign keys; the older <code>event_signups</code> table matches events only by convention. <code>participation_requests</code>, <code>community_submissions</code>, <code>submissions</code>, and <code>newsletter_subscribers</code> stand alone, with no declared relationship to any other table.</p>
         <div class="plate"><div class="plate-inner">
 <pre class="mermaid">
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
 erDiagram
     community_event_signups {
         uuid id PK
@@ -1049,7 +1049,7 @@ erDiagram
         <p class="erd-panel-desc">Logging, session, inbox, and one-time-code tables that support the running system. None declare a foreign key to anything else &mdash; each is written and read independently by the feature that owns it.</p>
         <div class="plate"><div class="plate-inner">
 <pre class="mermaid">
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
 erDiagram
     audit_logs {
         uuid id PK
@@ -1097,7 +1097,7 @@ erDiagram
         <p class="erd-panel-desc">Carried over from the CMS this project replaced. Nothing in the current application queries or references this table.</p>
         <div class="plate"><div class="plate-inner">
 <pre class="mermaid">
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#0B3D91','primaryTextColor':'#FBF6EA','primaryBorderColor':'#082C6B','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px','attributeBackgroundColorOdd':'#FFFFFF','attributeBackgroundColorEven':'#F4EFE0'}} }%%
 erDiagram
     tourist_spots {
         int id PK
