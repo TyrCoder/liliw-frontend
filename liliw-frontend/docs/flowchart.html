@@ -1,0 +1,624 @@
+<title>Liliw System Flows</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&amp;family=Outfit:wght@400;500;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap">
+
+<style>
+  :root{
+    --paper:#FBF6EA;
+    --surface:#FFFFFF;
+    --ink:#1A2340;
+    --ink-muted:#6B6252;
+    --navy:#0B3D91;
+    --navy-deep:#082C6B;
+    --blue:#1565C0;
+    --gold:#C89A0F;
+    --gold-bright:#F5C518;
+    --line:#E4DCC4;
+    --line-navy:rgba(11,61,145,.16);
+    --shadow:0 1px 2px rgba(26,35,64,.04), 0 8px 24px -12px rgba(26,35,64,.14);
+    --font-display:'Cormorant Garamond',Georgia,serif;
+    --font-heading:'Outfit',system-ui,-apple-system,sans-serif;
+    --font-body:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+  }
+  img{max-width:100%;}
+  [hidden]{display:none!important;}
+
+  a{color:var(--blue);}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--navy);outline-offset:2px;}
+
+  /* ── civic ornament: gold rule with a diamond mark ───────────────── */
+  .ornament-rule{
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    width:100%;max-width:360px;margin:0 auto;
+  }
+  .ornament-rule .line{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+  .ornament-rule .mark{width:7px;height:7px;background:var(--gold-bright);border:1px solid var(--gold);transform:rotate(45deg);flex:none;}
+
+  /* ── monogram ─────────────────────────────────────────────────────── */
+  .monogram{
+    width:64px;height:64px;border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, var(--navy) 0%, var(--navy-deep) 78%);
+    border:2px solid var(--gold-bright);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 22px;
+    box-shadow:0 6px 18px -6px rgba(8,44,107,.45);
+  }
+  .monogram span{
+    font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--paper);
+    line-height:1;transform:translateY(-1px);
+  }
+
+  /* ── masthead ─────────────────────────────────────────────────────── */
+  .masthead{
+    padding:64px 24px 44px;
+    text-align:center;
+    background:
+      radial-gradient(ellipse 900px 260px at 50% -8%, rgba(11,61,145,.06), transparent 70%),
+      var(--paper);
+    border-bottom:1px solid var(--line);
+  }
+  .masthead .eyebrow{
+    font-family:var(--font-heading);font-weight:700;font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--gold);margin:0 0 14px;
+  }
+  .masthead h1{
+    font-family:var(--font-display);font-weight:600;font-style:normal;
+    font-size:clamp(36px,6vw,56px);line-height:1.06;margin:0 0 10px;color:var(--navy-deep);
+    text-wrap:balance;
+  }
+  .masthead .subtitle{
+    font-family:var(--font-heading);font-weight:500;font-size:15px;color:var(--ink-muted);
+    margin:0 0 26px;letter-spacing:.01em;
+  }
+  .masthead .meta{
+    margin:26px auto 0;display:flex;flex-wrap:wrap;justify-content:center;gap:10px 28px;
+    font-size:12.5px;color:var(--ink-muted);font-family:var(--font-heading);
+  }
+  .masthead .meta b{color:var(--navy);font-weight:600;}
+  .masthead .meta .sep{color:var(--line);}
+
+  /* ── layout ───────────────────────────────────────────────────────── */
+  .layout{
+    max-width:1180px;margin:0 auto;padding:40px 24px 96px;
+    display:grid;grid-template-columns:220px 1fr;gap:48px;align-items:start;
+  }
+  @media (max-width:860px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  /* ── table of contents ───────────────────────────────────────────── */
+  .toc{
+    position:sticky;top:24px;
+    border:1px solid var(--line);background:var(--surface);border-radius:10px;
+    padding:18px 16px;box-shadow:var(--shadow);
+  }
+  .toc h2{
+    font-family:var(--font-heading);font-size:10.5px;font-weight:700;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--gold);margin:0 0 12px;
+  }
+  .toc ol{list-style:none;margin:0;padding:0;counter-reset:toc;}
+  .toc li{counter-increment:toc;margin:0;}
+  .toc a{
+    display:flex;gap:10px;align-items:baseline;
+    padding:7px 4px;text-decoration:none;color:var(--ink);
+    font-family:var(--font-heading);font-size:13px;font-weight:500;
+    border-radius:6px;line-height:1.35;
+  }
+  .toc a::before{
+    content:counter(toc,decimal-leading-zero);
+    font-variant-numeric:tabular-nums;color:var(--gold);font-weight:700;font-size:11.5px;flex:none;
+  }
+  .toc a:hover{background:rgba(11,61,145,.06);color:var(--navy);}
+  @media (max-width:860px){
+    .toc{position:static;}
+    .toc ol{columns:2;column-gap:16px;}
+  }
+  @media print{ .toc{display:none;} }
+
+  /* ── figures ──────────────────────────────────────────────────────── */
+  .content{min-width:0;}
+  .figure{
+    margin:0 0 64px;scroll-margin-top:24px;
+  }
+  .figure:last-child{margin-bottom:0;}
+  .figure-eyebrow{
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--font-heading);font-weight:700;font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--gold);margin:0 0 10px;
+  }
+  .figure-eyebrow .tag{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:30px;height:20px;padding:0 6px;border-radius:4px;
+    background:var(--navy);color:var(--paper);font-size:10.5px;letter-spacing:.04em;
+    font-variant-numeric:tabular-nums;
+  }
+  .figure h3{
+    font-family:var(--font-heading);font-weight:700;font-size:23px;color:var(--navy-deep);
+    margin:0 0 10px;text-wrap:balance;
+  }
+  .figure .desc{
+    font-family:var(--font-body);font-size:14.5px;line-height:1.6;color:var(--ink-muted);
+    max-width:66ch;margin:0 0 22px;
+  }
+
+  .plate{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:28px clamp(12px,3vw,32px) 22px;box-shadow:var(--shadow);
+    overflow-x:auto;
+  }
+  .plate-inner{min-width:min-content;}
+  .plate-caption{
+    margin:14px 4px 0;font-family:var(--font-body);font-style:italic;font-size:12.5px;
+    color:var(--ink-muted);text-align:center;
+  }
+  .plate-caption b{font-style:normal;color:var(--ink);}
+
+  pre.mermaid{margin:0;background:transparent;font-family:var(--font-body);}
+
+  /* ── print bar ────────────────────────────────────────────────────── */
+  .print-bar{
+    position:fixed;top:16px;right:16px;z-index:20;
+  }
+  .print-bar button{
+    display:flex;align-items:center;gap:8px;
+    background:var(--navy);color:var(--paper);border:none;border-radius:999px;
+    padding:10px 18px 10px 16px;font-family:var(--font-heading);font-weight:600;font-size:13px;
+    cursor:pointer;box-shadow:0 6px 18px -6px rgba(8,44,107,.5);
+  }
+  .print-bar button:hover{background:var(--navy-deep);}
+  .print-bar svg{width:15px;height:15px;flex:none;}
+  @media print{ .print-bar{display:none;} }
+
+  /* ── footer ───────────────────────────────────────────────────────── */
+  footer{
+    border-top:1px solid var(--line);padding:30px 24px 46px;text-align:center;
+    font-family:var(--font-heading);font-size:12px;color:var(--ink-muted);letter-spacing:.02em;
+  }
+  footer .fline{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;}
+  footer .fline .dot{width:3px;height:3px;border-radius:50%;background:var(--gold);}
+  @media print{ footer{display:none;} }
+
+  /* ── print ────────────────────────────────────────────────────────── */
+  @page{ margin:14mm; }
+  @media print{
+    body{background:#fff;}
+    .masthead{border-bottom:1px solid #ccc;padding:0 0 24px;}
+    .layout{grid-template-columns:1fr;padding:24px 0 0;max-width:100%;}
+    .figure{break-inside:avoid;page-break-inside:avoid;margin-bottom:34px;}
+    .plate{box-shadow:none;break-inside:avoid;}
+  }
+</style>
+
+<div class="print-bar">
+  <button type="button" onclick="window.print()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+    Print / Save as PDF
+  </button>
+</div>
+
+<header class="masthead">
+  <div class="monogram"><span>L</span></div>
+  <p class="eyebrow">Process Documentation</p>
+  <h1>System&nbsp;Flows</h1>
+  <p class="subtitle">Liliw Virtual Guide — Culture, History, Arts and Tourism Office</p>
+  <div class="ornament-rule"><span class="line"></span><span class="mark"></span><span class="line"></span></div>
+  <div class="meta">
+    <span><b>9</b> process diagrams</span>
+    <span class="sep">·</span>
+    <span><b>5</b> user roles</span>
+    <span class="sep">·</span>
+    <span>Municipality of Liliw, Laguna</span>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc" aria-label="Table of contents">
+    <h2>On this page</h2>
+    <ol>
+      <li><a href="#fig-1">Overall System Flow</a></li>
+      <li><a href="#fig-2">Registration &amp; Login</a></li>
+      <li><a href="#fig-3">Content Publishing Workflow</a></li>
+      <li><a href="#fig-4">QR Check-In &amp; Points</a></li>
+      <li><a href="#fig-5">LBO Application Flow</a></li>
+      <li><a href="#fig-6">AI Itinerary Planning</a></li>
+      <li><a href="#fig-7">Itinerary Checklist</a></li>
+      <li><a href="#fig-8">LBO Change Requests</a></li>
+      <li><a href="#fig-9">Role &amp; Access Overview</a></li>
+    </ol>
+  </nav>
+
+  <main class="content">
+
+    <section class="figure" id="fig-1">
+      <p class="figure-eyebrow"><span class="tag">01</span> Whole-system view</p>
+      <h3>Overall System Flow</h3>
+      <p class="desc">How a visit proceeds from arrival to the major path each kind of user takes. Browsing, stories, the map, and the chatbot need no account; an account is the fork into a role-specific dashboard.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#1A2340','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'14px'},'flowchart':{'curve':'basis','nodeSpacing':38,'rankSpacing':46}} }%%
+flowchart TD
+    Start([Visitor opens the website]) --> Browse{Has an account?}
+    Browse -- No --> Public[Browse attractions, stories, map, chatbot&mdash;no account needed]
+    Public --> WantAccount{Wants to check in,\nsave trips, or review?}
+    WantAccount -- No --> End1([Continues browsing])
+    WantAccount -- Yes --> Register[Create an account]
+    Register --> Login
+    Browse -- Yes --> Login[Sign in]
+    Login --> RoleCheck{What role does\nthis account have?}
+    RoleCheck -- Tourist/Visitor --> TouristFlow[Explore, plan trips,\ncheck in, earn points]
+    RoleCheck -- LBO --> LBOFlow[LBO Dashboard]
+    RoleCheck -- CHATO Editor --> EditorFlow[CMS: create/edit content]
+    RoleCheck -- CHATO Officer --> OfficerFlow[CMS: review/approve content]
+    RoleCheck -- Administrator --> AdminFlow[Admin Dashboard]
+    TouristFlow --> End2([Continues using the site])
+    LBOFlow --> End2
+    EditorFlow --> End2
+    OfficerFlow --> End2
+    AdminFlow --> End2
+
+    classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
+    classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
+    classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
+    class Start,End1,End2 term
+    class Browse,WantAccount,RoleCheck decision
+    class Public,Register,Login,TouristFlow,LBOFlow,EditorFlow,OfficerFlow,AdminFlow action
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 1.</b> Overall System Flow — entry points for every role.</p>
+    </section>
+
+    <section class="figure" id="fig-2">
+      <p class="figure-eyebrow"><span class="tag">02</span> Identity</p>
+      <h3>Account Registration &amp; Login</h3>
+      <p class="desc">Password and username rules are enforced identically on the form and on the server. A signed-in account is routed by its role &mdash; every staff role lands on the Admin Dashboard, from which the CMS is reached.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#1A2340','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'14px'},'flowchart':{'curve':'basis','nodeSpacing':34,'rankSpacing':44}} }%%
+flowchart TD
+    A([Start]) --> B{New or\nreturning user?}
+    B -- New --> C[Fill in username, email, password]
+    C --> D{Meets password\n&amp; username rules?}
+    D -- No --> C
+    D -- Yes --> E[Account created\nrole: Tourist]
+    E --> F[Redirect to homepage]
+    B -- Returning --> G[Enter email &amp; password]
+    G --> H{Credentials valid?}
+    H -- No --> I{Forgot password?}
+    I -- Yes --> J[Enter email]
+    J --> K[Receive one-time code by email]
+    K --> L[Enter code &amp; set new password]
+    L --> G
+    I -- No --> G
+    H -- Yes --> M{Account role?}
+    M -- Tourist --> F
+    M -- LBO --> N[Redirect to /lbo dashboard]
+    M -- Editor/Officer/Admin --> O[Redirect to /admin dashboard\nCMS reached from there]
+
+    classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
+    classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
+    classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
+    classDef success fill:#0B3D91,color:#FBF6EA,stroke:#F5C518,stroke-width:2px
+    class A term
+    class B,D,H,I,M decision
+    class C,F,G,J,K,L,N,O action
+    class E success
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 2.</b> Account Registration &amp; Login, including role-based landing pages.</p>
+    </section>
+
+    <section class="figure" id="fig-3">
+      <p class="figure-eyebrow"><span class="tag">03</span> Content lifecycle</p>
+      <h3>Content Publishing Workflow</h3>
+      <p class="desc">Applies uniformly to all nine content types. Authoring and publishing are separate roles by design &mdash; an Officer reviews against a snapshot of the last approved version, and editing live content sends it back to Draft.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#1A2340','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'14px'},'flowchart':{'curve':'basis','nodeSpacing':32,'rankSpacing':42}} }%%
+flowchart TD
+    A([Editor opens the CMS]) --> B[Create new entry\nor edit existing one]
+    B --> C[Fill required fields,\nupload photos]
+    C --> D{Automatic validation\npasses?}
+    D -- No --> C
+    D -- Yes --> E[Save as Draft]
+    E --> F{Editor ready\nto publish?}
+    F -- Not yet --> E
+    F -- Yes --> G[Submit for Review]
+    G --> H[Status: Pending]
+    H --> I([Officer opens\nContent Approvals])
+    I --> J[View entry &mdash; compared\nagainst last approved\nversion if an edit]
+    J --> K{Approve or Reject?}
+    K -- Approve --> L[Status: Approved]
+    L --> M[Published live on\nthe public site]
+    M --> N[Snapshot saved for\nfuture comparison]
+    K -- Reject --> O[Write rejection reason]
+    O --> P[Status: Rejected]
+    P --> Q([Editor sees the reason,\nrevises the entry])
+    Q --> C
+    M --> R{Editor edits the\npublished entry later?}
+    R -- Yes --> S[Status reverts to Draft\nremoved from public site]
+    S --> F
+    R -- No --> Endx([Stays live])
+    L --> T{Admin/Officer\narchives it?}
+    T -- Yes --> U[Status: Archived\nhistory preserved]
+    U --> V{Restored later?}
+    V -- Yes --> E
+
+    classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
+    classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
+    classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
+    classDef success fill:#0B3D91,color:#FBF6EA,stroke:#F5C518,stroke-width:2px
+    classDef declined fill:#FFFFFF,color:#1A2340,stroke:#C89A0F,stroke-width:2px,stroke-dasharray:4 3
+    class A,I,Q,Endx term
+    class D,F,K,R,T,V decision
+    class B,C,E,G,H,J,O,S,U action
+    class L,M,N success
+    class P declined
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 3.</b> Content Publishing Workflow &mdash; draft, review, approval, archive.</p>
+    </section>
+
+    <section class="figure" id="fig-4">
+      <p class="figure-eyebrow"><span class="tag">04</span> Visitor engagement</p>
+      <h3>QR Check-In &amp; Points Flow</h3>
+      <p class="desc">A check-in is credited only after the visitor's location is confirmed against the attraction's coordinates. That single credited visit is what unlocks a review, ticks an itinerary item, and counts toward achievements.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#1A2340','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'14px'},'flowchart':{'curve':'basis','nodeSpacing':34,'rankSpacing':44}} }%%
+flowchart TD
+    A([Visitor arrives at a listed\nattraction or business]) --> B[Finds the printed\nQR poster at the entrance]
+    B --> C[Opens Scan and allows\ncamera access]
+    C --> D[Scans the QR code]
+    D --> E{Signed in?}
+    E -- No --> F[Prompted to sign in\nor create an account]
+    F --> D
+    E -- Yes --> G[System reads the visitor's\ncurrent location]
+    G --> H{Within the required\ndistance of the attraction?}
+    H -- No --> I["Check-in rejected:\n'must be at the location'"]
+    H -- Yes --> J{Already checked in\nhere recently?}
+    J -- Yes --> K[Duplicate check-in\nprevented]
+    J -- No --> L[Visit recorded]
+    L --> M[Points awarded]
+    M --> N{Achievement\nthreshold reached?}
+    N -- Yes --> O[Achievement unlocked\nand shown to the visitor]
+    N -- No --> P[Continue]
+    L --> Q{Place is on a\nsaved itinerary?}
+    Q -- Yes --> R[Itinerary checklist item\nautomatically ticked]
+    Q -- No --> P
+    L --> S[Review form becomes\navailable for this place]
+
+    classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
+    classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
+    classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
+    classDef success fill:#0B3D91,color:#FBF6EA,stroke:#F5C518,stroke-width:2px
+    classDef declined fill:#FFFFFF,color:#1A2340,stroke:#C89A0F,stroke-width:2px,stroke-dasharray:4 3
+    class A term
+    class D,E,H,J,N,Q decision
+    class B,C,F,G,P action
+    class L,M,O,R,S success
+    class I,K declined
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 4.</b> QR Check-In &amp; Points &mdash; proximity check through to rewards.</p>
+    </section>
+
+    <section class="figure" id="fig-5">
+      <p class="figure-eyebrow"><span class="tag">05</span> Business onboarding</p>
+      <h3>LBO Application Flow</h3>
+      <p class="desc">Applying requires no account &mdash; it is a public form. A signed-in tourist can instead apply from their profile. Either way, approval upgrades the account to LBO and future corrections go through a reviewed change request, never a direct edit.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#1A2340','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'14px'},'flowchart':{'curve':'basis','nodeSpacing':34,'rankSpacing':44}} }%%
+flowchart TD
+    A([Prospective business owner]) --> D[Opens Apply as a Business\nno account required]
+    D --> E[Fill in business name, owner,\ncontact, address, type,\npermit number - optional]
+    E --> F[Submit application]
+    F --> G[Status: Pending]
+    A2([Already a signed-in tourist]) --> A3[Applies from\nProfile - Apply as LBO]
+    A3 --> E
+    G --> H([CHATO Officer reviews\nthe application])
+    H --> I{Approve?}
+    I -- No --> J[Application rejected]
+    I -- Yes --> K[Status: Approved\nrole upgraded to LBO]
+    K --> L[Owner signs in,\nauto-redirected to\nLBO Dashboard]
+    L --> M[Views business details,\npublic listing, QR poster]
+    M --> N{Needs a correction?}
+    N -- Yes --> O[Submits a Change Request]
+    O --> P([CHATO reviews the request])
+    P --> Q{Approved?}
+    Q -- Yes --> R[Public listing updated]
+    Q -- No --> M
+    M --> S[Submits monthly\nvisitor records]
+    M --> T{Wants a 360-degree tour?}
+    T -- Yes --> U[Requests a virtual tour\nCHATO schedules a shoot]
+
+    classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
+    classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
+    classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
+    classDef success fill:#0B3D91,color:#FBF6EA,stroke:#F5C518,stroke-width:2px
+    classDef declined fill:#FFFFFF,color:#1A2340,stroke:#C89A0F,stroke-width:2px,stroke-dasharray:4 3
+    class A,A2,H,P term
+    class I,N,Q,T decision
+    class D,E,F,A3,L,M,O,S,U action
+    class K,R success
+    class J declined
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 5.</b> LBO Application Flow &mdash; two entry paths, one review.</p>
+    </section>
+
+    <section class="figure" id="fig-6">
+      <p class="figure-eyebrow"><span class="tag">06</span> AI planning</p>
+      <h3>AI Itinerary Planning Flow</h3>
+      <p class="desc">The planner is grounded &mdash; it selects only from real, published places, never invented ones. Road distance is calculated by an external routing service when reachable, and falls back to a labelled straight-line estimate when it is not.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#1A2340','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'14px'},'flowchart':{'curve':'basis','nodeSpacing':34,'rankSpacing':44}} }%%
+flowchart TD
+    A(["Visitor opens Itinerary,\nchooses 'Plan with AI'"]) --> B[Specifies trip length\nand interests]
+    B --> C[Request sent to the\nAI planning service]
+    C --> D[AI selects only from real,\npublished attractions,\ndining, and activities]
+    D --> E{AI response\nvalid and complete?}
+    E -- No --> F[Automatic retry with\nadjusted parameters]
+    F --> D
+    E -- Yes --> G[Day-by-day itinerary\ngenerated]
+    G --> H[Road distances calculated\nbetween consecutive stops]
+    H --> I{Routing service\navailable?}
+    I -- Yes --> J[Road-accurate route drawn,\none-way streets respected]
+    I -- No --> K[Straight-line distance shown\nas a fallback estimate]
+    J --> L([Itinerary displayed\nwith map and schedule])
+    K --> L
+    L --> M{Visitor saves it?}
+    M -- Yes --> N[Saved to profile,\nbecomes a checklist]
+    M -- No --> O([Itinerary remains\nunsaved])
+
+    classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
+    classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
+    classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
+    classDef success fill:#0B3D91,color:#FBF6EA,stroke:#F5C518,stroke-width:2px
+    class A,L,O term
+    class E,I,M decision
+    class B,C,D,F,H,K action
+    class G,J,N success
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 6.</b> AI Itinerary Planning &mdash; generation through to saving.</p>
+    </section>
+
+    <section class="figure" id="fig-7">
+      <p class="figure-eyebrow"><span class="tag">07</span> Trip progress</p>
+      <h3>Itinerary Checklist Flow</h3>
+      <p class="desc">A saved itinerary &mdash; AI-generated or curated &mdash; becomes a tracker. Each stop is checked off only by a real credited visit, the same fact recorded in Figure 4, never by hand.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#1A2340','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'14px'},'flowchart':{'curve':'basis','nodeSpacing':34,'rankSpacing':44}} }%%
+flowchart TD
+    A([Visitor saves an itinerary]) --> B[Each stop listed as\na checklist item]
+    B --> C{Visitor checks in\nvia QR at a stop?}
+    C -- No --> D[Item remains unchecked]
+    C -- Yes --> E[System matches the check-in\nto the itinerary stop]
+    E --> F[Checklist item marked\nas visited]
+    F --> G{All stops\nchecked off?}
+    G -- No --> H([Visitor continues\nthe itinerary])
+    G -- Yes --> I([Itinerary complete])
+
+    classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
+    classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
+    classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
+    classDef success fill:#0B3D91,color:#FBF6EA,stroke:#F5C518,stroke-width:2px
+    class A,H,I term
+    class C,G decision
+    class B,D,E action
+    class F success
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 7.</b> Itinerary Checklist &mdash; a trip plan that tracks itself.</p>
+    </section>
+
+    <section class="figure" id="fig-8">
+      <p class="figure-eyebrow"><span class="tag">08</span> Business onboarding</p>
+      <h3>LBO Change-Request Flow</h3>
+      <p class="desc">An owner never edits their own public listing. Every correction &mdash; a phone number, an hour, a photo &mdash; is a request CHATO reviews first, keeping the office as the single source of truth for what is published.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#1A2340','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'14px'},'flowchart':{'curve':'basis','nodeSpacing':34,'rankSpacing':44}} }%%
+flowchart TD
+    A([LBO notices incorrect\ninformation on their listing]) --> B[Opens Requests tab\nin the LBO Dashboard]
+    B --> C[Selects the field to change:\nname, hours, fee, photos, etc.]
+    C --> D[Describes the correction]
+    D --> E[Submits the change request]
+    E --> F[Status: Pending]
+    F --> G([CHATO reviews the request\nagainst the current listing])
+    G --> H{Approve?}
+    H -- Yes --> I[Public listing updated,\nrequest marked Resolved]
+    H -- No --> J[Request declined\nwith a reason]
+    I --> K([LBO sees the update\nreflected on their dashboard])
+    J --> K
+
+    classDef term fill:#082C6B,color:#FBF6EA,stroke:#082C6B,stroke-width:2px
+    classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
+    classDef decision fill:#F5C518,color:#1A2340,stroke:#C89A0F,stroke-width:2px
+    classDef success fill:#0B3D91,color:#FBF6EA,stroke:#F5C518,stroke-width:2px
+    classDef declined fill:#FFFFFF,color:#1A2340,stroke:#C89A0F,stroke-width:2px,stroke-dasharray:4 3
+    class A,G,K term
+    class H decision
+    class B,C,D,E,F action
+    class I success
+    class J declined
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 8.</b> LBO Change-Request Flow &mdash; corrections without direct edit access.</p>
+    </section>
+
+    <section class="figure" id="fig-9">
+      <p class="figure-eyebrow"><span class="tag">09</span> Governance</p>
+      <h3>Role &amp; Access Overview</h3>
+      <p class="desc">The separation running through every diagram above, in one view. Authorship and publication are always different roles &mdash; an Editor cannot approve their own work, and an Officer cannot create or edit content.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#1A2340','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','clusterBkg':'#FBF6EA','clusterBorder':'#0B3D91','fontSize':'13.5px'},'flowchart':{'curve':'basis','nodeSpacing':22,'rankSpacing':56}} }%%
+flowchart LR
+    subgraph Tourist["Tourist / Visitor"]
+        T1[Browse and search]
+        T2[Check in via QR]
+        T3[Earn points and rewards]
+        T4[Write reviews - after visiting]
+        T5[Apply for LBO status]
+    end
+    subgraph LBO["Local Business Owner"]
+        L1[View own business record]
+        L2[Request listing changes]
+        L3[Submit visitor records]
+        L4[Request a virtual tour]
+    end
+    subgraph Editor["CHATO Editor"]
+        E1[Create content]
+        E2[Edit content]
+        E3[Submit for review]
+        E4[Upload media and narration]
+        E5[Cannot approve own work]
+    end
+    subgraph Officer["CHATO Officer"]
+        O1[Review pending content]
+        O2[Approve or reject]
+        O3[Approve LBO applications]
+        O4[Cannot create or edit content]
+    end
+    subgraph Admin["Administrator"]
+        A1[All Editor powers]
+        A2[All Officer powers]
+        A3[Manage user accounts]
+        A4[Create staff accounts]
+        A5[View reports and audit log]
+    end
+
+    classDef action fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.3px
+    classDef limit fill:#FFFFFF,color:#1A2340,stroke:#C89A0F,stroke-width:1.6px,stroke-dasharray:4 3
+    classDef cluster fill:#FBF6EA,stroke:#0B3D91,stroke-width:1.4px,color:#0B3D91,font-weight:700
+    class T1,T2,T3,T4,T5,L1,L2,L3,L4,E1,E2,E3,E4,O1,O2,O3,A1,A2,A3,A4,A5 action
+    class E5,O4 limit
+    class Tourist,LBO,Editor,Officer,Admin cluster
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 9.</b> Role &amp; Access Overview &mdash; dashed nodes mark a deliberate limit, not a gap.</p>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <div class="fline">
+    <span>Liliw Virtual Guide</span><span class="dot"></span>
+    <span>CHATO</span><span class="dot"></span>
+    <span>Municipality of Liliw, Laguna</span>
+  </div>
+</footer>
