@@ -175,6 +175,35 @@
     color:var(--ink-muted);
   }
 
+  /* ── IPO charts ───────────────────────────────────────────────────── */
+  .ipo-chart{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:20px clamp(14px,3vw,26px);box-shadow:var(--shadow);margin:0 0 18px;
+    break-inside:avoid;page-break-inside:avoid;
+  }
+  .ipo-chart:last-of-type{margin-bottom:0;}
+  .ipo-chart-name{
+    font-family:var(--font-heading);font-weight:700;font-size:14.5px;color:var(--navy-deep);
+    margin:0 0 14px;
+  }
+  .ipo-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  @media (max-width:720px){ .ipo-cols{grid-template-columns:1fr;} }
+  .ipo-col-head{
+    font-family:var(--font-heading);font-weight:700;font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--gold);margin:0 0 8px;padding-bottom:6px;
+    border-bottom:2px solid var(--gold-bright);
+  }
+  .ipo-col ul{margin:0;padding-left:18px;}
+  .ipo-col li{
+    font-family:var(--font-body);font-size:13px;line-height:1.55;color:var(--ink);
+    margin:0 0 6px;
+  }
+  .ipo-col li:last-child{margin-bottom:0;}
+
+  /* ── hardware / software tables ──────────────────────────────────── */
+  table.hw-table{margin:6px 0 0;}
+  table.hw-table td:first-child{white-space:nowrap;}
+
   .erd-panel{margin:0 0 40px;}
   .erd-panel:last-child{margin-bottom:0;}
   .erd-panel-label{
@@ -288,9 +317,7 @@
   <p class="subtitle">Liliw Virtual Guide — Culture, History, Arts and Tourism Office</p>
   <div class="ornament-rule"><span class="line"></span><span class="mark"></span><span class="line"></span></div>
   <div class="meta">
-    <span><b>9</b> process flows</span>
-    <span class="sep">·</span>
-    <span><b>2</b> architecture diagrams</span>
+    <span><b>18</b> figures</span>
     <span class="sep">·</span>
     <span><b>5</b> user roles</span>
     <span class="sep">·</span>
@@ -317,6 +344,11 @@
       <li><a href="#fig-11">Request Flow</a></li>
       <li><a href="#fig-12">Database Schema &mdash; ERDs</a></li>
       <li><a href="#fig-13">Database Schema Reference</a></li>
+      <li><a href="#fig-14">Use Case Diagram</a></li>
+      <li><a href="#fig-15">System Context Diagram</a></li>
+      <li><a href="#fig-16">Data Flow Diagram</a></li>
+      <li><a href="#fig-17">HIPO Model</a></li>
+      <li><a href="#fig-18">Hardware &amp; Software Resources</a></li>
     </ol>
   </nav>
 
@@ -1666,6 +1698,455 @@ flowchart TD
             </tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <section class="figure" id="fig-14">
+      <p class="figure-eyebrow"><span class="tag">14</span> System Manual &sect;7</p>
+      <h3>Use Case Diagram</h3>
+      <p class="desc">Every actor in the system and the actions available to them, drawn from the module descriptions in System Manual &sect;7. An Administrator is shown sharing the Editor's and Officer's use cases rather than repeating them, matching how the role actually works &mdash; full authoring and publishing power in one account.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'13.5px'},'flowchart':{'curve':'basis','nodeSpacing':18,'rankSpacing':60}} }%%
+flowchart LR
+    Tourist(["Tourist / Visitor"])
+    LBOa(["Local Business Owner"])
+    Editora(["CHATO Editor"])
+    Officera(["CHATO Officer"])
+    Admina(["Administrator"])
+
+    subgraph SYS[" Liliw Virtual Guide -- Use Cases "]
+        direction TB
+        UC1(["Browse & search attractions"])
+        UC2(["Use the interactive map"])
+        UC3(["Check in via QR"])
+        UC4(["Earn points & rewards"])
+        UC5(["Write a review"])
+        UC6(["Save favorites & itineraries"])
+        UC7(["Plan a trip with AI"])
+        UC8(["Chat with Lilio"])
+        UC9(["Apply for LBO status"])
+        UC10(["Manage business listing"])
+        UC11(["Submit visitor records"])
+        UC12(["Request listing changes"])
+        UC13(["Request a virtual tour"])
+        UC14(["Create & edit content"])
+        UC15(["Upload media & narration"])
+        UC16(["Submit content for review"])
+        UC17(["Review pending content"])
+        UC18(["Approve or reject content"])
+        UC19(["Approve LBO applications"])
+        UC20(["Manage user accounts"])
+        UC21(["Create staff accounts"])
+        UC22(["View reports & audit log"])
+    end
+
+    Tourist --- UC1
+    Tourist --- UC2
+    Tourist --- UC3
+    Tourist --- UC4
+    Tourist --- UC5
+    Tourist --- UC6
+    Tourist --- UC7
+    Tourist --- UC8
+    Tourist --- UC9
+
+    LBOa --- UC9
+    LBOa --- UC10
+    LBOa --- UC11
+    LBOa --- UC12
+    LBOa --- UC13
+
+    Editora --- UC14
+    Editora --- UC15
+    Editora --- UC16
+
+    Officera --- UC17
+    Officera --- UC18
+    Officera --- UC19
+
+    Admina --- UC14
+    Admina --- UC17
+    Admina --- UC20
+    Admina --- UC21
+    Admina --- UC22
+
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.3px
+    classDef actor fill:#0B3D91,color:#FBF6EA,stroke:#082C6B,stroke-width:1.6px,font-weight:700
+    classDef usecase fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.3px
+    classDef boundary fill:#FBF6EA,stroke:#0B3D91,stroke-width:1.6px,stroke-dasharray:4 3,color:#0B3D91,font-weight:700
+    class Tourist,LBOa,Editora,Officera,Admina actor
+    class UC1,UC2,UC3,UC4,UC5,UC6,UC7,UC8,UC9,UC10,UC11,UC12,UC13,UC14,UC15,UC16,UC17,UC18,UC19,UC20,UC21,UC22 usecase
+    class SYS boundary
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 14.</b> Use Case Diagram &mdash; 5 actors, 22 use cases.</p>
+    </section>
+
+    <section class="figure" id="fig-15">
+      <p class="figure-eyebrow"><span class="tag">15</span> System Manual &sect;3</p>
+      <h3>System Context Diagram</h3>
+      <p class="desc">The system as a single process (Level 0 of the data-flow model), showing only what crosses its boundary: the three human entities and the four external services from System Manual &sect;2.2 and &sect;4.3. Everything inside the boundary &mdash; every module, every table &mdash; is expanded in the diagrams that follow.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'14px'},'flowchart':{'curve':'basis','nodeSpacing':50,'rankSpacing':90}} }%%
+flowchart LR
+    Tourist[Tourist / Visitor]
+    LBO[Local Business Owner]
+    Staff[CHATO Staff\nEditor / Officer / Administrator]
+
+    SYS((("0\nLiliw Virtual\nGuide System")))
+
+    AI([AI Service\nGroq])
+    Maps([Maps Service\nMapbox])
+    Media([Media Host\nCloudinary])
+    Email([Email Service\nGmail SMTP])
+
+    Tourist <-- "browsing & engagement data" --> SYS
+    LBO <-- "applications & business records" --> SYS
+    Staff <-- "content, approvals & administration" --> SYS
+
+    SYS <-- "chat & itinerary requests / results" --> AI
+    SYS <-- "routing requests / results" --> Maps
+    SYS <-- "media uploads / hosted URLs" --> Media
+    SYS -- "verification codes & notices" --> Email
+
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.4px
+    classDef entity fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
+    classDef ext fill:#FFFFFF,stroke:#C89A0F,stroke-width:2px,stroke-dasharray:5 3,color:#1A2340
+    classDef core fill:#0B3D91,color:#FBF6EA,stroke:#082C6B,stroke-width:2.4px,font-weight:700
+    class Tourist,LBO,Staff entity
+    class AI,Maps,Media,Email ext
+    class SYS core
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 15.</b> System Context Diagram (DFD Level 0).</p>
+    </section>
+
+    <section class="figure" id="fig-16">
+      <p class="figure-eyebrow"><span class="tag">16</span> System Manual &sect;7</p>
+      <h3>Data Flow Diagram &mdash; Level 1</h3>
+      <p class="desc">The system context expanded into its eight modules and the six data stores from &sect;8.1, showing each module's primary read/write path. Several modules also read published Content besides the one primary flow drawn here (Visitor Engagement, AI Services, Itinerary &amp; Mapping, and Immersive Media all look up attraction data) &mdash; omitted as separate lines to keep the diagram legible, the same way Figure 12.2 handles the equivalent case in the ERD.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'13px'},'flowchart':{'curve':'basis','nodeSpacing':40,'rankSpacing':70}} }%%
+flowchart LR
+    Tourist[Tourist / Visitor]
+    LBO[Local Business Owner]
+    Staff[CHATO Staff]
+
+    P1(("1.0\nPublic Tourism\nPortal"))
+    P4(("4.0\nVisitor\nEngagement"))
+    P5(("5.0\nAI Services"))
+    P6(("6.0\nItinerary &\nMapping"))
+    P7(("7.0\nImmersive\nMedia"))
+    P3(("3.0\nLBO Portal"))
+    P2(("2.0\nContent\nManagement"))
+    P8(("8.0\nAdmin &\nAnalytics"))
+
+    D2[(D2 Content)]
+    D4[(D4 Engagement)]
+    D3[(D3 Business)]
+    D1[(D1 Identity)]
+    D6[(D6 Operations)]
+
+    AI([AI Service])
+    Maps([Maps Service])
+    Media([Media Host])
+    Email([Email Service])
+
+    Tourist --> P1 <--> D2
+    Tourist --> P4 <--> D4
+    P4 --> Email
+    Tourist --> P5 <--> AI
+    Tourist --> P6 <--> Maps
+    P6 --> D4
+    Tourist --> P7
+
+    LBO --> P3 <--> D3
+    P3 --> Email
+
+    Staff --> P2 <--> D2
+    P2 <--> Media
+
+    Staff --> P8 <--> D1
+    P8 <--> D6
+    P8 --> Staff
+
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.3px
+    classDef entity fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.5px
+    classDef ext fill:#FFFFFF,stroke:#C89A0F,stroke-width:2px,stroke-dasharray:5 3,color:#1A2340
+    classDef proc fill:#0B3D91,color:#FBF6EA,stroke:#082C6B,stroke-width:1.8px,font-weight:700
+    classDef store fill:#CFDDF3,stroke:#0B3D91,stroke-width:1.6px,color:#0B3D91,font-weight:600
+    class Tourist,LBO,Staff entity
+    class AI,Maps,Media,Email ext
+    class P1,P2,P3,P4,P5,P6,P7,P8 proc
+    class D1,D2,D3,D4,D6 store
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 16.</b> Data Flow Diagram, Level 1 &mdash; 8 processes, 5 data stores.</p>
+    </section>
+
+
+    <section class="figure" id="fig-17">
+      <p class="figure-eyebrow"><span class="tag">17</span> System Manual &sect;7</p>
+      <h3>HIPO Model</h3>
+      <p class="desc">The Hierarchical Input-Process-Output model: a hierarchy chart (the visual table of contents) decomposing the system into its eight modules and their functions, followed by IPO charts detailing three representative functions end to end.</p>
+      <div class="plate"><div class="plate-inner">
+<pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','fontSize':'13px'},'flowchart':{'curve':'basis','nodeSpacing':10,'rankSpacing':80}} }%%
+flowchart LR
+    ROOT["0.0\nLiliw Virtual Guide System"]
+
+    M1["1.0\nPublic Tourism Portal"]
+    M2["2.0\nContent Management"]
+    M3["3.0\nLBO Portal"]
+    M4["4.0\nVisitor Engagement"]
+    M5["5.0\nAI Services"]
+    M6["6.0\nItinerary & Mapping"]
+    M7["7.0\nImmersive Media"]
+    M8["8.0\nAdmin & Analytics"]
+
+    ROOT --> M1
+    ROOT --> M2
+    ROOT --> M3
+    ROOT --> M4
+    ROOT --> M5
+    ROOT --> M6
+    ROOT --> M7
+    ROOT --> M8
+
+    M1a["1.1 Browse listings"]
+    M1b["1.2 Site-wide search"]
+    M1c["1.3 Interactive map"]
+    M1 --> M1a
+    M1 --> M1b
+    M1 --> M1c
+
+    M2a["2.1 Create & edit content"]
+    M2b["2.2 Submit for review"]
+    M2c["2.3 Approve / reject / archive"]
+    M2 --> M2a
+    M2 --> M2b
+    M2 --> M2c
+
+    M3a["3.1 Application & approval"]
+    M3b["3.2 Business dashboard"]
+    M3c["3.3 Visitor records & change requests"]
+    M3 --> M3a
+    M3 --> M3b
+    M3 --> M3c
+
+    M4a["4.1 QR check-in"]
+    M4b["4.2 Points, achievements & rewards"]
+    M4c["4.3 Reviews & favorites"]
+    M4 --> M4a
+    M4 --> M4b
+    M4 --> M4c
+
+    M5a["5.1 Lilio chat assistant"]
+    M5b["5.2 AI itinerary planner"]
+    M5 --> M5a
+    M5 --> M5b
+
+    M6a["6.1 Curated & AI itineraries"]
+    M6b["6.2 Road-accurate routing"]
+    M6 --> M6a
+    M6 --> M6b
+
+    M7a["7.1 360 degree virtual tours"]
+    M7b["7.2 3D storyteller narration"]
+    M7 --> M7a
+    M7 --> M7b
+
+    M8a["8.1 User & staff management"]
+    M8b["8.2 Unified inbox & approvals"]
+    M8c["8.3 Reports & analytics"]
+    M8 --> M8a
+    M8 --> M8b
+    M8 --> M8c
+
+    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.3px
+    classDef root fill:#0B3D91,color:#FBF6EA,stroke:#082C6B,stroke-width:2px,font-weight:700
+    classDef module fill:#CFDDF3,stroke:#0B3D91,stroke-width:1.6px,color:#0B3D91,font-weight:700
+    classDef leaf fill:#FFFFFF,stroke:#0B3D91,stroke-width:1.2px,color:#1A2340
+    class ROOT root
+    class M1,M2,M3,M4,M5,M6,M7,M8 module
+    class M1a,M1b,M1c,M2a,M2b,M2c,M3a,M3b,M3c,M4a,M4b,M4c,M5a,M5b,M6a,M6b,M7a,M7b,M8a,M8b,M8c leaf
+</pre>
+      </div></div>
+      <p class="plate-caption"><b>Figure 17.1.</b> Hierarchy Chart (VTOC) &mdash; 8 modules, 21 functions.</p>
+      <div class="ipo-chart">
+        <p class="ipo-chart-name">4.1 / 4.2 — QR Check-In &amp; Points Award</p>
+        <div class="ipo-cols">
+          <div class="ipo-col ipo-col-input">
+            <p class="ipo-col-head">Input</p>
+            <ul>
+              <li>Scanned QR code (attraction id)</li>
+              <li>Visitor&#x27;s active session</li>
+            </ul>
+          </div>
+          <div class="ipo-col ipo-col-process">
+            <p class="ipo-col-head">Process</p>
+            <ul>
+              <li>Validate the code</li>
+              <li>Look up the attraction</li>
+              <li>Record the check-in</li>
+              <li>Award ledger points</li>
+              <li>Unlock any eligible achievements</li>
+            </ul>
+          </div>
+          <div class="ipo-col ipo-col-output">
+            <p class="ipo-col-head">Output</p>
+            <ul>
+              <li>Confirmation screen</li>
+              <li>Updated points balance</li>
+              <li>Ticked itinerary checklist item (if applicable)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="ipo-chart">
+        <p class="ipo-chart-name">5.2 — AI Itinerary Generation</p>
+        <div class="ipo-cols">
+          <div class="ipo-col ipo-col-input">
+            <p class="ipo-col-head">Input</p>
+            <ul>
+              <li>Visitor&#x27;s stated interests</li>
+              <li>Available time</li>
+              <li>Starting location (optional)</li>
+            </ul>
+          </div>
+          <div class="ipo-col ipo-col-process">
+            <p class="ipo-col-head">Process</p>
+            <ul>
+              <li>Build a prompt from real published attraction data</li>
+              <li>Call the AI service</li>
+              <li>Validate every suggested stop is an actual published place</li>
+              <li>Compute road-accurate routing between stops</li>
+            </ul>
+          </div>
+          <div class="ipo-col ipo-col-output">
+            <p class="ipo-col-head">Output</p>
+            <ul>
+              <li>A generated day itinerary with routed, ordered stops</li>
+              <li>Saved to the visitor&#x27;s account</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="ipo-chart">
+        <p class="ipo-chart-name">2.2 / 2.3 — Content Review &amp; Approval</p>
+        <div class="ipo-cols">
+          <div class="ipo-col ipo-col-input">
+            <p class="ipo-col-head">Input</p>
+            <ul>
+              <li>Draft content submitted by a CHATO Editor</li>
+            </ul>
+          </div>
+          <div class="ipo-col ipo-col-process">
+            <p class="ipo-col-head">Process</p>
+            <ul>
+              <li>Queue the draft for an Officer&#x27;s review</li>
+              <li>Officer inspects the change against the last approved snapshot</li>
+              <li>Officer approves (publish + snapshot) or rejects (return with notes)</li>
+            </ul>
+          </div>
+          <div class="ipo-col ipo-col-output">
+            <p class="ipo-col-head">Output</p>
+            <ul>
+              <li>Published content, publicly visible</li>
+              <li>or a rejected draft with feedback</li>
+              <li>An audit log entry either way</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="plate-caption"><b>Figure 17.2.</b> IPO Charts &mdash; three representative functions, input through output.</p>
+    </section>
+
+    <section class="figure" id="fig-18">
+      <p class="figure-eyebrow"><span class="tag">App. B</span> System Manual &sect;2 &amp; &sect;4</p>
+      <h3>Hardware and Software Resources</h3>
+      <p class="desc">What the system runs on, and what it is built from &mdash; the same inventory as System Manual &sect;2 (System Requirements) and &sect;4 (Technology Stack), reference-formatted here.</p>
+      <div class="schema-domain" id="hw-development">
+        <h4>Development Environment</h4>
+        <table class="schema-table hw-table">
+          <thead><tr><th>Resource</th><th>Role / Purpose</th></tr></thead>
+          <tbody>
+            <tr><td class="col-name">Operating system</td><td>Any (Linux, macOS, Windows)</td></tr>
+            <tr><td class="col-name">Runtime</td><td>Node.js 20 LTS or newer</td></tr>
+            <tr><td class="col-name">Package manager</td><td>npm</td></tr>
+            <tr><td class="col-name">Version control</td><td>Git</td></tr>
+            <tr><td class="col-name">Editor</td><td>Any (Visual Studio Code used in development)</td></tr>
+            <tr><td class="col-name">Browser</td><td>Any modern browser, for testing</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="schema-domain" id="hw-deployment">
+        <h4>Deployment Environment — Hosting Infrastructure</h4>
+        <table class="schema-table hw-table">
+          <thead><tr><th>Resource</th><th>Role / Purpose</th></tr></thead>
+          <tbody>
+            <tr><td class="col-name">Vercel</td><td>Hosts the application: page rendering and all API endpoints, deployed automatically from the Git repository</td></tr>
+            <tr><td class="col-name">Managed PostgreSQL database</td><td>Stores all application data, with row-level access control</td></tr>
+            <tr><td class="col-name">Cloudinary</td><td>Hosts and optimizes images, video, and audio (narration recordings)</td></tr>
+            <tr><td class="col-name">Groq</td><td>Hosted AI inference for the chatbot and itinerary planner</td></tr>
+            <tr><td class="col-name">Mapbox</td><td>Maps, geocoding, and road-based routing</td></tr>
+            <tr><td class="col-name">SMTP (Gmail)</td><td>Outgoing transactional email (verification codes, password resets, staff notifications)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="schema-domain" id="hw-end-user">
+        <h4>End-User Requirements</h4>
+        <table class="schema-table hw-table">
+          <thead><tr><th>Resource</th><th>Role / Purpose</th></tr></thead>
+          <tbody>
+            <tr><td class="col-name">Device</td><td>Any smartphone, tablet, laptop, or desktop from roughly 2018 onward</td></tr>
+            <tr><td class="col-name">Browser</td><td>Current version of Chrome, Edge, Firefox, or Safari</td></tr>
+            <tr><td class="col-name">Connection</td><td>3G or better; previously visited pages remain available offline</td></tr>
+            <tr><td class="col-name">Optional permissions</td><td>Camera (for QR check-in), location (for proximity features)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="schema-domain" id="hw-software">
+        <h4>Software Stack — Core Framework</h4>
+        <table class="schema-table hw-table">
+          <thead><tr><th>Resource</th><th>Role / Purpose</th></tr></thead>
+          <tbody>
+            <tr><td class="col-name">Next.js (App Router)</td><td>Full-stack React framework -- page rendering and API routes in one project</td></tr>
+            <tr><td class="col-name">React</td><td>User interface library</td></tr>
+            <tr><td class="col-name">TypeScript</td><td>Statically typed JavaScript, used throughout the codebase</td></tr>
+            <tr><td class="col-name">Tailwind CSS</td><td>Utility-first styling</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="schema-domain" id="hw-software">
+        <h4>Software Stack — Key Libraries</h4>
+        <table class="schema-table hw-table">
+          <thead><tr><th>Resource</th><th>Role / Purpose</th></tr></thead>
+          <tbody>
+            <tr><td class="col-name">Database client SDK</td><td>Talking to the database and its authentication service</td></tr>
+            <tr><td class="col-name">Framer Motion</td><td>Animation and page transitions</td></tr>
+            <tr><td class="col-name">three.js + React Three Fiber + drei</td><td>Rendering the 3D storyteller model</td></tr>
+            <tr><td class="col-name">Mapbox GL / react-map-gl</td><td>Interactive maps and routing</td></tr>
+            <tr><td class="col-name">AI SDK (Groq)</td><td>Chatbot and itinerary-planner inference</td></tr>
+            <tr><td class="col-name">DOMPurify</td><td>Sanitizing rich-text content before it is displayed, to prevent script injection</td></tr>
+            <tr><td class="col-name">Nodemailer</td><td>Sending transactional email</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="schema-domain" id="hw-software">
+        <h4>Software Stack — Development Tools</h4>
+        <table class="schema-table hw-table">
+          <thead><tr><th>Resource</th><th>Role / Purpose</th></tr></thead>
+          <tbody>
+            <tr><td class="col-name">Git / GitHub</td><td>Version control and source hosting</td></tr>
+            <tr><td class="col-name">Vercel</td><td>Continuous deployment -- every push to the main branch deploys automatically</td></tr>
+            <tr><td class="col-name">ESLint</td><td>Static code analysis</td></tr>
+            <tr><td class="col-name">TypeScript compiler</td><td>Type checking as part of every build</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
