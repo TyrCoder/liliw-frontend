@@ -1706,79 +1706,8 @@ flowchart TD
       <h3>Use Case Diagram</h3>
       <p class="desc">Every actor in the system and the actions available to them, drawn from the module descriptions in System Manual &sect;7. An Administrator is shown sharing the Editor's and Officer's use cases rather than repeating them, matching how the role actually works &mdash; full authoring and publishing power in one account.</p>
       <div class="plate"><div class="plate-inner">
-<pre class="mermaid">
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Plus Jakarta Sans, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#1A2340','primaryBorderColor':'#0B3D91','lineColor':'#0B3D91','tertiaryColor':'#FBF6EA','edgeLabelBackground':'#FBF6EA','fontSize':'13.5px'},'flowchart':{'curve':'basis','nodeSpacing':18,'rankSpacing':60}} }%%
-flowchart LR
-    Tourist(["Tourist / Visitor"])
-    LBOa(["Local Business Owner"])
-    Editora(["CHATO Editor"])
-    Officera(["CHATO Officer"])
-    Admina(["Administrator"])
-
-    subgraph SYS[" Liliw Virtual Guide -- Use Cases "]
-        direction TB
-        UC1(["Browse & search attractions"])
-        UC2(["Use the interactive map"])
-        UC3(["Check in via QR"])
-        UC4(["Earn points & rewards"])
-        UC5(["Write a review"])
-        UC6(["Save favorites & itineraries"])
-        UC7(["Plan a trip with AI"])
-        UC8(["Chat with Lilio"])
-        UC9(["Apply for LBO status"])
-        UC10(["Manage business listing"])
-        UC11(["Submit visitor records"])
-        UC12(["Request listing changes"])
-        UC13(["Request a virtual tour"])
-        UC14(["Create & edit content"])
-        UC15(["Upload media & narration"])
-        UC16(["Submit content for review"])
-        UC17(["Review pending content"])
-        UC18(["Approve or reject content"])
-        UC19(["Approve LBO applications"])
-        UC20(["Manage user accounts"])
-        UC21(["Create staff accounts"])
-        UC22(["View reports & audit log"])
-    end
-
-    Tourist --- UC1
-    Tourist --- UC2
-    Tourist --- UC3
-    Tourist --- UC4
-    Tourist --- UC5
-    Tourist --- UC6
-    Tourist --- UC7
-    Tourist --- UC8
-    Tourist --- UC9
-
-    LBOa --- UC9
-    LBOa --- UC10
-    LBOa --- UC11
-    LBOa --- UC12
-    LBOa --- UC13
-
-    Editora --- UC14
-    Editora --- UC15
-    Editora --- UC16
-
-    Officera --- UC17
-    Officera --- UC18
-    Officera --- UC19
-
-    Admina --- UC14
-    Admina --- UC17
-    Admina --- UC20
-    Admina --- UC21
-    Admina --- UC22
-
-    classDef default fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.3px
-    classDef actor fill:#0B3D91,color:#FBF6EA,stroke:#082C6B,stroke-width:1.6px,font-weight:700
-    classDef usecase fill:#FFFFFF,color:#1A2340,stroke:#0B3D91,stroke-width:1.3px
-    classDef boundary fill:#FBF6EA,stroke:#0B3D91,stroke-width:1.6px,stroke-dasharray:4 3,color:#0B3D91,font-weight:700
-    class Tourist,LBOa,Editora,Officera,Admina actor
-    class UC1,UC2,UC3,UC4,UC5,UC6,UC7,UC8,UC9,UC10,UC11,UC12,UC13,UC14,UC15,UC16,UC17,UC18,UC19,UC20,UC21,UC22 usecase
-    class SYS boundary
-</pre>
+<a class="erd-img-link" href="figures/usecase.png" target="_blank" rel="noopener"><img class="erd-img" src="figures/usecase.png" alt="Use case diagram" loading="lazy"></a>
+        <p class="erd-img-hint">Click to open full size in a new tab &#8599;</p>
       </div></div>
       <p class="plate-caption"><b>Figure 14.</b> Use Case Diagram &mdash; 5 actors, 22 use cases.</p>
     </section>
