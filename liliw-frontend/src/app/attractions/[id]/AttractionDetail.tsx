@@ -72,6 +72,8 @@ interface Attraction {
     photos?: Array<{ id: number; name: string; url: string; width?: number; height?: number; formats?: any; mime?: string; }>;
   };
   type: 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay';
+  /** Other listings this place also belongs to, alongside its primary type. */
+  secondaryTypes?: string[];
 }
 
 interface ExternalReview {
@@ -277,7 +279,9 @@ export default function AttractionDetail({ id }: { id: string }) {
        * it is, where it is, and how it has been rated. */}
       <LiliwScene
         title={attraction.attributes.name}
-        eyebrow={`${TYPE_LABELS[attraction.type] || attraction.type}${attraction.attributes.category ? ` · ${attraction.attributes.category}` : ''}`}
+        eyebrow={[attraction.type, ...(attraction.secondaryTypes ?? [])]
+          .map(t => TYPE_LABELS[t] || t)
+          .join(' · ')}
         footer={
           <div className="flex flex-col items-center gap-2.5">
             {attraction.attributes.location && (

@@ -89,10 +89,18 @@ function OverlayCard({ attraction }: { attraction: Attraction }) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           <FavoriteButton attractionId={String(attraction.id)} attractionName={attraction.attributes?.name || ''} attractionType={attraction.type} attractionCategory={attraction.attributes?.category} className="absolute top-3 right-3 z-20" />
           <div className="absolute bottom-0 left-0 right-0 p-4">
-            <span className="inline-block text-xs font-bold px-2.5 py-1 rounded-full text-white mb-2"
-              style={{ backgroundColor: badgeColor, fontFamily: HL }}>
-              {TYPE_LABELS[attraction.type] ?? attraction.type}
-            </span>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              <span className="inline-block text-xs font-bold px-2.5 py-1 rounded-full text-white"
+                style={{ backgroundColor: badgeColor, fontFamily: HL }}>
+                {TYPE_LABELS[attraction.type] ?? attraction.type}
+              </span>
+              {attraction.secondaryTypes?.map(t => (
+                <span key={t} className="inline-block text-xs font-bold px-2.5 py-1 rounded-full text-white"
+                  style={{ backgroundColor: TYPE_COLORS[t] ?? '#1565C0', fontFamily: HL, opacity: 0.85 }}>
+                  {TYPE_LABELS[t] ?? t}
+                </span>
+              ))}
+            </div>
             <h3 className="text-white font-bold text-base leading-snug line-clamp-2 mb-1" style={{ fontFamily: HL }}>
               {attraction.attributes?.name || 'Unnamed Attraction'}
             </h3>
