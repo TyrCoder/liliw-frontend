@@ -7,3 +7,7 @@ build/
 
 # Local agent settings — machine-specific, not part of the project.
 .claude/
+
+# Local database backups (full table exports, taken before/after schema
+# changes) — real user data, never belongs in version control.
+db-backups/
