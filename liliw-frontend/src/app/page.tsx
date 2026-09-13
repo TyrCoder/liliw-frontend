@@ -386,7 +386,12 @@ export default function Home() {
       .then(d => {
         const data: any[] = d.data || [];
         setAllAttractions(data);
-        setFeatured(getDailyFeatured(data, 6));
+        // Featured is a curated showcase, not a directory — a card with no
+        // photo there is just a gradient standing in for the one thing this
+        // section is meant to sell, so it's excluded here rather than shown
+        // with a placeholder the way a listing page reasonably would.
+        const withPhoto = data.filter(a => photoUrl(a.attributes?.photos ?? []));
+        setFeatured(getDailyFeatured(withPhoto, 6));
       })
       .catch(() => {});
   }, []);
