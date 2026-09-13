@@ -18,6 +18,7 @@ import SafeHtml from '@/components/SafeHtml';
 import PageBanner from '@/components/liliw/PageBanner';
 import { distanceMeters } from '@/lib/geo';
 import ItineraryMap, { useMappedStops } from '@/components/ItineraryMap';
+import ItineraryShareCard from '@/components/ItineraryShareCard';
 import ItineraryChecklist from '@/components/ItineraryChecklist';
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -287,6 +288,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
   const [preSortPlan, setPreSortPlan] = useState<GeneratedPlan | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [allAttractions, setAllAttractions] = useState<any[]>([]);
+  const [showShareCard, setShowShareCard] = useState(false);
 
   // Delete confirm + suggestions
   const [deleteTarget, setDeleteTarget] = useState<{ dayIdx: number; stopIdx: number; place: string } | null>(null);
@@ -391,6 +393,41 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
     // against another, which is not anywhere.
     return distanceMeters(a[1], a[0], b[1], b[0]) / 1000;
   }, [findCoord]);
+
+  /**
+   * Everything the share card needs, derived rather than tracked separately —
+   * the same road-vs-straight-line distance each day's own leg labels already
+   * show, just summed, so the card can never disagree with the itinerary
+   * underneath it.
+   */
+  const shareStats = useMemo(() => {
+    let distanceKm = 0;
+    let hasAnyLeg = false;
+    let placesCount = 0;
+    const routeCoords: [number, number][] = [];
+
+    localPlan.days.forEach((day, dayIdx) => {
+      const stops = day.stops ?? [];
+      placesCount += stops.length;
+      const road = roadLegs[dayIdx];
+      stops.forEach((stop, stopIdx) => {
+        const coord = findCoord(stop.place);
+        if (coord) routeCoords.push(coord);
+        const next = stops[stopIdx + 1];
+        if (!next) return;
+        const roadKm = road && typeof road.legs[stopIdx] === 'number' ? road.legs[stopIdx] / 1000 : null;
+        const km = roadKm ?? legKm(stop.place, next.place);
+        if (km != null) { distanceKm += km; hasAnyLeg = true; }
+      });
+    });
+
+    return {
+      distanceKm: hasAnyLeg ? distanceKm : null,
+      placesCount,
+      daysCount: localPlan.days.length,
+      routeCoords,
+    };
+  }, [localPlan, roadLegs, findCoord, legKm]);
 
   /**
    * Ask Mapbox for the real driving distance of each day's route.
@@ -1117,11 +1154,29 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
           {isLoggedIn ? <BookmarkCheck className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
           {saved ? 'Saved to My Trips' : isLoggedIn ? 'Save This Itinerary' : 'Log In to Save'}
         </motion.button>
+        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowShareCard(true)}
+          className="shrink-0 flex items-center justify-center gap-2 px-5 py-4 rounded-2xl border-2 font-semibold transition"
+          style={{ borderColor: '#1565C0', color: '#1565C0' }}
+          title="Share this trip">
+          <Share2 className="w-4 h-4" />
+        </motion.button>
         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onReset}
           className="shrink-0 flex items-center justify-center gap-2 px-5 py-4 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold hover:border-gray-300 hover:bg-gray-50 transition">
           <RotateCcw className="w-4 h-4" />
         </motion.button>
       </div>
+
+      {showShareCard && (
+        <ItineraryShareCard
+          title={localPlan.title || 'My Liliw Itinerary'}
+          subtitle={localPlan.summary || ''}
+          distanceKm={shareStats.distanceKm}
+          placesCount={shareStats.placesCount}
+          daysCount={shareStats.daysCount}
+          routeCoords={shareStats.routeCoords}
+          onClose={() => setShowShareCard(false)}
+        />
+      )}
 
       <AnimatePresence>
         {selectedPlace && (
