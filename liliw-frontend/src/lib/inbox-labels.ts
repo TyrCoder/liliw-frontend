@@ -6,7 +6,7 @@
  * dragging the service-role client into the client bundle.
  */
 
-export type InboxSource = 'contact' | 'participation' | 'event';
+export type InboxSource = 'contact' | 'participation';
 
 /**
  * The subject was built as `Re: your ${type} to Liliw Tourism`, which reads as
@@ -36,15 +36,11 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 /** The default subject for a reply, e.g. "Re: your offer to volunteer". */
-export function replySubject(source: InboxSource, type: string): string {
-  // An event response's type is the event's own title, so it is quoted rather
-  // than looked up — "Re: your sign-up for Gat Tayaw Festival".
-  if (source === 'event') return `Re: your sign-up for ${type}`;
+export function replySubject(_source: InboxSource, type: string): string {
   return `Re: ${TYPE_PHRASE[type] || 'your message to Liliw Tourism'}`;
 }
 
 /** The same categories written out for display, e.g. in the reading pane. */
-export function typeLabel(source: InboxSource, type: string): string {
-  if (source === 'event') return type;
+export function typeLabel(_source: InboxSource, type: string): string {
   return TYPE_LABEL[type] || type.replace(/_/g, ' ');
 }

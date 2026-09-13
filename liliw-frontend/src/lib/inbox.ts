@@ -2,16 +2,16 @@ import { supabaseServer } from './supabase-server';
 export { replySubject, typeLabel } from './inbox-labels';
 
 /**
- * The three doors the public writes to the office through, behind one shape.
+ * The two doors the public writes to the office through, behind one shape.
  *
- * They were three dashboard tabs backed by three tables with three different
- * column namings — a message meant something different depending on which tab
- * you were looking at, and none of them could be answered. The inbox treats
- * them as one queue, so this is where the differences stop.
+ * They were dashboard tabs backed by tables with different column namings —
+ * a message meant something different depending on which tab you were
+ * looking at, and none of them could be answered. The inbox treats them as
+ * one queue, so this is where the differences stop.
  */
-export type InboxSource = 'contact' | 'participation' | 'event';
+export type InboxSource = 'contact' | 'participation';
 
-export const INBOX_SOURCES: InboxSource[] = ['contact', 'participation', 'event'];
+export const INBOX_SOURCES: InboxSource[] = ['contact', 'participation'];
 
 export interface InboxMessage {
   id: string;                 // composite: `${source}:${refId}`
@@ -20,9 +20,15 @@ export interface InboxMessage {
   name: string;
   email: string;
   phone: string;
-  type: string;               // feedback / volunteer / the event's title …
+  type: string;               // feedback / volunteer …
   message: string;
-  /** Event form answers, which have no single message body. */
+  /**
+   * Structured answers for a source whose submission has no single message
+   * body. Always empty for the sources this inbox carries today (contact,
+   * participation), both of which fill `message` instead — kept on the
+   * shared shape for a future source that might need it again, the way the
+   * removed event-form responses once did.
+   */
   details: { label: string; value: string }[];
   createdAt: string;
   status: string;
@@ -45,16 +51,13 @@ async function safeSelect<T>(run: () => Promise<{ data: T[] | null; error: unkno
 }
 
 export async function loadInbox(): Promise<InboxMessage[]> {
-  const [contact, participation, eventResponses] = await Promise.all([
+  const [contact, participation] = await Promise.all([
     safeSelect<Record<string, unknown>>(() => supabaseServer
       .from('community_submissions').select('*')
       .order('created_at', { ascending: false }).limit(200) as never),
     safeSelect<Record<string, unknown>>(() => supabaseServer
       .from('participation_requests').select('*')
       .order('created_at', { ascending: false }).limit(200) as never),
-    safeSelect<Record<string, unknown>>(() => supabaseServer
-      .from('event_form_responses').select('*, event_forms(event_title, fields)')
-      .order('submitted_at', { ascending: false }).limit(200) as never),
   ]);
 
   const messages: InboxMessage[] = [];
@@ -75,27 +78,6 @@ export async function loadInbox(): Promise<InboxMessage[]> {
       phone: String(r.phone || ''), type: String(r.type || 'feedback'),
       message: String(r.message || ''), createdAt: String(r.created_at || ''),
     }));
-  }
-
-  for (const r of eventResponses) {
-    const form = (r.event_forms || {}) as { event_title?: string; fields?: { id: string; label: string }[] };
-    const answers = (r.answers || {}) as Record<string, unknown>;
-    // An event response is a set of answers, not a paragraph. They are carried
-    // as labelled fields so the reading pane can show the form as filled in
-    // rather than a blob of JSON.
-    const details = (form.fields || []).map(f => ({
-      label: f.label,
-      value: Array.isArray(answers[f.id]) ? (answers[f.id] as unknown[]).join(', ') : String(answers[f.id] ?? '—'),
-    }));
-    messages.push({
-      ...blank({
-        source: 'event', refId: String(r.id),
-        name: String(r.respondent_name || 'Someone'), email: String(r.respondent_email || ''),
-        phone: '', type: form.event_title || 'Event sign-up',
-        message: '', createdAt: String(r.submitted_at || ''),
-      }),
-      details,
-    });
   }
 
   // One queue, newest first — the whole point of merging them.
@@ -133,8 +115,8 @@ async function attachState(messages: InboxMessage[]) {
       .order('sent_at', { ascending: true }) as never),
   ]);
 
-  // ref_ids are only unique within a source — an event response and a contact
-  // message can both be row 3 — so everything is keyed by the pair.
+  // ref_ids are only unique within a source — a participation request and a
+  // contact message can both be row 3 — so everything is keyed by the pair.
   const stateBy = new Map(state.map(s => [`${s.source}:${s.ref_id}`, s]));
   const repliesBy = new Map<string, InboxMessage['replies']>();
   for (const r of replies) {

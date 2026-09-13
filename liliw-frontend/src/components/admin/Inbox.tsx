@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import {
   Mail, Phone, Send, Search, Inbox as InboxIcon, CheckCircle, Archive,
   CornerUpLeft, Clock, AlertTriangle, Loader2, User, MessageSquare,
-  Users, ClipboardList, RefreshCw, Download, CheckCheck,
+  Users, RefreshCw, Download, CheckCheck,
 } from 'lucide-react';
 import { replySubject, typeLabel } from '@/lib/inbox-labels';
 import { exportSheet } from '@/lib/excel';
@@ -15,7 +15,7 @@ export interface InboxReply {
 }
 export interface InboxMessage {
   id: string;
-  source: 'contact' | 'participation' | 'event';
+  source: 'contact' | 'participation';
   refId: string;
   name: string; email: string; phone: string;
   type: string; message: string;
@@ -32,17 +32,16 @@ const FOLDERS = [
   { key: 'unread',        label: 'Unread',        icon: Mail },
   { key: 'contact',       label: 'Contact form',  icon: MessageSquare },
   { key: 'participation', label: 'Participation', icon: Users },
-  { key: 'event',         label: 'Event sign-ups',icon: ClipboardList },
   { key: 'replied',       label: 'Replied',       icon: CheckCircle },
   { key: 'closed',        label: 'Closed',        icon: Archive },
 ] as const;
 type Folder = typeof FOLDERS[number]['key'];
 
 const SOURCE_LABEL: Record<InboxMessage['source'], string> = {
-  contact: 'Contact form', participation: 'Participation', event: 'Event sign-up',
+  contact: 'Contact form', participation: 'Participation',
 };
 const SOURCE_COLOR: Record<InboxMessage['source'], string> = {
-  contact: '#1565C0', participation: '#0D9488', event: '#8B5CF6',
+  contact: '#1565C0', participation: '#0D9488',
 };
 const STATUS_BADGE: Record<string, string> = {
   new: 'bg-blue-50 text-blue-700', read: 'bg-gray-100 text-gray-600',
@@ -93,7 +92,6 @@ export default function Inbox({
     unread:        messages.filter(m => m.status === 'new').length,
     contact:       messages.filter(m => m.source === 'contact').length,
     participation: messages.filter(m => m.source === 'participation').length,
-    event:         messages.filter(m => m.source === 'event').length,
     replied:       messages.filter(m => m.status === 'replied').length,
     closed:        messages.filter(m => m.status === 'closed').length,
   }), [messages]);
@@ -104,7 +102,7 @@ export default function Inbox({
       if (folder === 'unread'  && m.status !== 'new')     return false;
       if (folder === 'replied' && m.status !== 'replied') return false;
       if (folder === 'closed'  && m.status !== 'closed')  return false;
-      if (['contact', 'participation', 'event'].includes(folder) && m.source !== folder) return false;
+      if (['contact', 'participation'].includes(folder) && m.source !== folder) return false;
       // Closed mail stays out of the main view the way an archive does.
       if (folder === 'all' && m.status === 'closed') return false;
       if (!q) return true;
@@ -322,9 +320,7 @@ export default function Inbox({
               <p className="text-xs text-gray-400 mt-1">
                 {query
                   ? 'Try a different search or folder.'
-                  : folder === 'event'
-                    ? 'Event sign-up responses will appear here.'
-                    : 'Messages sent through the website arrive here.'}
+                  : 'Messages sent through the website arrive here.'}
               </p>
             </div>
           ) : filtered.map(m => {

@@ -11,9 +11,9 @@ import {
   RefreshCw, UserCheck, Shield, Activity, MapPin, Edit, Layers,
   Monitor, Smartphone, Tablet, Wifi, Search,
   Building2, X, ChevronDown, ChevronUp, Key, Inbox,
-  Download, BarChart2, Plus, Trash2, ArrowUp, ArrowDown, ClipboardList, Send,
+  Download, BarChart2, Plus, Trash2, ClipboardList,
   LayoutDashboard, FileBarChart, Store, FileEdit, MapPinned, HeartHandshake,
-  FormInput, Globe, ClipboardCheck, Award, Gift, QrCode, ShieldCheck, ScrollText,
+  Globe, ClipboardCheck, Award, Gift, QrCode, ShieldCheck, ScrollText,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import BadgeSVG, { BADGE_ICONS } from '@/components/BadgeSVG';
@@ -37,7 +37,7 @@ interface StrapiActivity { id: string; contentType: string; entryName: string; a
 interface Participation { id: string; full_name: string; email: string; phone?: string; type?: string; message?: string; created_at: string; }
 interface Attraction { id: string; strapiId: string; type: 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay'; attributes: { name: string; location?: string; category?: string; rating?: number; photos?: any[]; coordinates?: { latitude?: number; longitude?: number; lat?: number; lng?: number } }; }
 
-export type Tab = 'overview' | 'users' | 'roles' | 'achievements' | 'rewards' | 'redeemcodes' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'communityevents' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews' | 'eventforms';
+export type Tab = 'overview' | 'users' | 'roles' | 'achievements' | 'rewards' | 'redeemcodes' | 'lbo' | 'changerequests' | 'visitorrecords' | 'attractionrequests' | 'submissions' | 'communityevents' | 'signups' | 'attractions' | 'ratings' | 'audit' | 'reports' | 'externalreviews';
 
 const TRIGGER_TYPE_LABELS: Record<string, string> = {
   event_count: 'Event sign-ups',
@@ -45,12 +45,6 @@ const TRIGGER_TYPE_LABELS: Record<string, string> = {
   attraction_visit_count: 'Tourist spots visited',
   total_points: 'Total points earned',
 };
-
-type FieldType = 'short_text' | 'paragraph' | 'number' | 'dropdown' | 'multiple_choice' | 'checkboxes';
-interface FormField { id: string; type: FieldType; label: string; required: boolean; options: string[]; }
-const FIELD_TYPE_LABELS: Record<FieldType, string> = { short_text: 'Short Text', paragraph: 'Paragraph', number: 'Number', dropdown: 'Dropdown', multiple_choice: 'Multiple Choice', checkboxes: 'Checkboxes' };
-const FIELD_TYPES: FieldType[] = ['short_text', 'paragraph', 'number', 'dropdown', 'multiple_choice', 'checkboxes'];
-function makeField(): FormField { return { id: `f_${Date.now()}_${Math.random().toString(36).slice(2,7)}`, type: 'short_text', label: '', required: false, options: [] }; }
 
 /**
  * Reads a list response, and refuses to pretend a failure is an empty table.
@@ -290,17 +284,6 @@ function AdminDashboard() {
   const [attrType,        setAttrType]        = useState<string>('all');
   const [userRoleFilter,  setUserRoleFilter]  = useState<string>('all');
 
-  // Event forms (editor)
-  const [eventForms,       setEventForms]       = useState<any[]>([]);
-  const [loadingEF,        setLoadingEF]        = useState(false);
-  const [joinableEvents,   setJoinableEvents]   = useState<any[]>([]);
-  const [loadingJE,        setLoadingJE]        = useState(false);
-  const [activeFormSlug,   setActiveFormSlug]   = useState<string | null>(null);
-  const [formBuilderFields, setFormBuilderFields] = useState<FormField[]>([]);
-  const [formIsActive,     setFormIsActive]     = useState(true);
-  const [savingForm,       setSavingForm]       = useState(false);
-  const [formSaveMsg,      setFormSaveMsg]      = useState<{ ok: boolean; text: string } | null>(null);
-
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
   const [syncCount, setSyncCount] = useState<number | null>(null);
@@ -428,22 +411,6 @@ function AdminDashboard() {
       setAttractionReqs(d.data || []);
     }).catch(noteFailure).finally(() => setLoadingAR(false));
 
-    /* Event forms — one fetch, not one per role.
-       An admin satisfies both conditions below, so the editor branch and the
-       officer branch each fired the same request and each cleared the same
-       loading flag: two identical calls on every admin load, and whichever
-       landed first turned the spinner off while the other was still in
-       flight. The list is the same list whoever is asking for it. */
-    if (isChatoEditor || isChatoOfficer || isAdmin) {
-      setLoadingEF(true);
-      panelFetch('/api/admin/event-forms', h).then(readList).then(d => setEventForms(d.data || [])).catch(noteFailure).finally(() => setLoadingEF(false));
-    }
-
-    // Editor — joinable events, for building a form against one
-    if (isChatoEditor || isAdmin) {
-      setLoadingJE(true);
-      fetch('/api/content/events').then(readList).then(d => setJoinableEvents((d.data || []).filter((e: any) => e.attributes?.is_joinable || e.is_joinable).map((e: any) => ({ id: e.id, slug: e.attributes?.slug || e.slug, title: e.attributes?.title || e.title, date_start: e.attributes?.date_start || e.date_start })))).catch(noteFailure).finally(() => setLoadingJE(false));
-    }
   }, [isAdmin, isChatoOfficer, isChatoEditor, isStaff, token]);
 
   /* Live visitors used to be polled here, every ten seconds, for as long as
@@ -936,42 +903,11 @@ function AdminDashboard() {
     return matchType && matchSearch;
   });
 
-  // ── Event form builder helpers ──────────────────────────────
-  const openFormBuilder = (event: any) => {
-    const existing = eventForms.find(f => f.event_slug === event.slug);
-    setActiveFormSlug(event.slug);
-    setFormBuilderFields(existing?.fields ? JSON.parse(JSON.stringify(existing.fields)) : [makeField()]);
-    setFormIsActive(existing?.is_active ?? true);
-    setFormSaveMsg(null);
-  };
-
-  const saveEventForm = async (event: any) => {
-    if (!token) return;
-    setSavingForm(true); setFormSaveMsg(null);
-    try {
-      const res = await fetch('/api/admin/event-forms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ event_slug: event.slug, event_title: event.title, fields: formBuilderFields, is_active: formIsActive }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || 'Save failed');
-      setEventForms(prev => { const idx = prev.findIndex(f => f.event_slug === event.slug); return idx >= 0 ? prev.map((f,i) => i === idx ? d.data : f) : [...prev, d.data]; });
-      setFormSaveMsg({ ok: true, text: 'Form saved!' });
-      setActiveFormSlug(null);
-    } catch (e: any) {
-      setFormSaveMsg({ ok: false, text: e.message });
-    } finally {
-      setSavingForm(false);
-    }
-  };
-
-
   /**
-   * The tab bar was nineteen equal chips wrapping onto two lines, in the order
-   * features happened to be built: Redeem Code between Rewards and Audit Logs,
-   * Attractions between Ratings and Event Forms. Nothing said which tabs
-   * belonged together, so finding one meant reading all of them.
+   * The tab bar was equal chips wrapping onto two lines, in the order
+   * features happened to be built: Redeem Code between Rewards and Audit Logs.
+   * Nothing said which tabs belonged together, so finding one meant reading
+   * all of them.
    *
    * Grouped by the job being done, and moved to the sidebar the CMS already
    * uses — nineteen items is a sidebar's problem, not a tab bar's.
@@ -1003,7 +939,6 @@ function AdminDashboard() {
       items: [
         { key: 'communityevents',    label: 'Community Events',   icon: <HeartHandshake className="w-4 h-4" />,  badge: undefined,                                                                                   roles: ['officer'],                    color: '#0D9488' },
         { key: 'signups',            label: 'Event Sign-ups',     icon: <ClipboardList className="w-4 h-4" />,   badge: signups.length,                                                                              roles: ['officer'],                    color: '#0D9488' },
-        { key: 'eventforms',         label: 'Event Forms',        icon: <FormInput className="w-4 h-4" />,       badge: eventForms.length,                                                                           roles: ['editor'],                     color: '#0D9488' },
       ],
     },
     {
@@ -3531,147 +3466,6 @@ function AdminDashboard() {
             </div>
           );
         })()}
-
-        {/* ── EVENT FORMS (Editor) ─────────────────────────── */}
-        {activeTab === 'eventforms' && (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Event Forms</h2>
-              <p className="text-sm text-gray-400 mt-0.5">Build sign-up forms for joinable events.</p>
-            </div>
-
-            {/* Both lists, not just the events. Each row asks eventForms whether
-                a form exists, so rendering before that list lands labelled
-                every event "No form yet" — including the ones that already
-                have an active form. */}
-            {loadingJE || loadingEF ? (
-              <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
-            ) : joinableEvents.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
-                <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-400 text-sm">No joinable events found in the CMS.<br />Enable <strong>is_joinable</strong> on an event first.</p>
-              </div>
-            ) : joinableEvents.map(event => {
-              const form = eventForms.find(f => f.event_slug === event.slug);
-              const isBuilding = activeFormSlug === event.slug;
-              return (
-                <div key={event.slug} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-bold text-gray-900 truncate">{event.title}</p>
-                        {form ? (
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${form.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                            {form.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">No form yet</span>
-                        )}
-                      </div>
-                      {event.date_start && <p className="text-xs text-gray-400 mt-0.5">{new Date(event.date_start).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {!isBuilding && (
-                        <button onClick={() => openFormBuilder(event)}
-                          className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90"
-                          style={{ backgroundColor: '#1565C0' }}>
-                          {form ? 'Edit Form' : 'Create Form'}
-                        </button>
-                      )}
-                      {isBuilding && (
-                        <button onClick={() => { setActiveFormSlug(null); setFormSaveMsg(null); }}
-                          className="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
-                          Cancel
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Form Builder */}
-                  {isBuilding && (
-                    <div className="border-t border-gray-100 px-6 py-5 space-y-4 bg-gray-50">
-                      <p className="text-sm font-semibold text-gray-700">Form Questions</p>
-
-                      {formBuilderFields.map((field, idx) => (
-                        <div key={field.id} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <div className="flex flex-col gap-1">
-                              <button type="button" disabled={idx === 0} onClick={() => setFormBuilderFields(f => { const a = [...f]; [a[idx-1],a[idx]]=[a[idx],a[idx-1]]; return a; })} className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition"><ArrowUp className="w-3 h-3" /></button>
-                              <button type="button" disabled={idx === formBuilderFields.length-1} onClick={() => setFormBuilderFields(f => { const a = [...f]; [a[idx],a[idx+1]]=[a[idx+1],a[idx]]; return a; })} className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition"><ArrowDown className="w-3 h-3" /></button>
-                            </div>
-                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              <input value={field.label} onChange={e => setFormBuilderFields(f => f.map((x,i) => i===idx ? {...x, label: e.target.value} : x))}
-                                placeholder="Question label *"
-                                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                              <select value={field.type} onChange={e => setFormBuilderFields(f => f.map((x,i) => i===idx ? {...x, type: e.target.value as FieldType, options: []} : x))}
-                                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
-                                {FIELD_TYPES.map(t => <option key={t} value={t}>{FIELD_TYPE_LABELS[t]}</option>)}
-                              </select>
-                            </div>
-                            <label className="flex items-center gap-1.5 text-xs text-gray-500 shrink-0">
-                              <input type="checkbox" checked={field.required} onChange={e => setFormBuilderFields(f => f.map((x,i) => i===idx ? {...x, required: e.target.checked} : x))} className="accent-blue-600" />
-                              Required
-                            </label>
-                            <button onClick={() => setFormBuilderFields(f => f.filter((_,i) => i !== idx))} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                          {/* Options for choice-based fields */}
-                          {['dropdown','multiple_choice','checkboxes'].includes(field.type) && (
-                            <div className="pl-8 space-y-1.5">
-                              <p className="text-xs font-semibold text-gray-500">Options</p>
-                              {(field.options || []).map((opt, oi) => (
-                                <div key={oi} className="flex items-center gap-2">
-                                  <input value={opt} onChange={e => setFormBuilderFields(f => f.map((x,i) => i===idx ? {...x, options: x.options.map((o,j) => j===oi ? e.target.value : o)} : x))}
-                                    placeholder={`Option ${oi+1}`}
-                                    className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                                  <button onClick={() => setFormBuilderFields(f => f.map((x,i) => i===idx ? {...x, options: x.options.filter((_,j) => j!==oi)} : x))} className="p-1 text-gray-400 hover:text-red-500 transition">
-                                    <X className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              ))}
-                              <button onClick={() => setFormBuilderFields(f => f.map((x,i) => i===idx ? {...x, options: [...x.options, '']} : x))}
-                                className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition">
-                                <Plus className="w-3 h-3" /> Add option
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-
-                      <button onClick={() => setFormBuilderFields(f => [...f, makeField()])}
-                        className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-400 hover:border-blue-300 hover:text-blue-500 transition flex items-center justify-center gap-2">
-                        <Plus className="w-4 h-4" /> Add Question
-                      </button>
-
-                      <div className="flex items-center justify-between pt-1">
-                        <label className="flex items-center gap-2 cursor-pointer select-none">
-                          <input type="checkbox" checked={formIsActive} onChange={e => setFormIsActive(e.target.checked)} className="w-4 h-4 accent-blue-600" />
-                          <span className="text-sm font-medium text-gray-700">Form is active (users can sign up)</span>
-                        </label>
-                        <div className="flex items-center gap-3">
-                          {formSaveMsg && (
-                            <span className={`text-xs font-semibold flex items-center gap-1 ${formSaveMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
-                              {formSaveMsg.ok ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
-                              {formSaveMsg.text}
-                            </span>
-                          )}
-                          <button onClick={() => saveEventForm(event)} disabled={savingForm || formBuilderFields.some(f => !f.label.trim())}
-                            className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
-                            style={{ backgroundColor: '#1565C0' }}>
-                            {savingForm ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                            {savingForm ? 'Saving…' : 'Save Form'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
 
         </main>
       </div>

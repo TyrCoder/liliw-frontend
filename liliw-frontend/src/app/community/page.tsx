@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, MessageSquare, Users, Briefcase, Eye, Calendar, CheckCircle, AlertCircle, Loader2, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ChevronRight, MessageSquare, Users, Briefcase, Eye, Calendar } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import ParticipationModal from '@/components/ParticipationModal';
 import CommunityEventsList from '@/components/CommunityEventsList';
@@ -12,161 +12,6 @@ import ThumbPlaceholder from '@/components/liliw/ThumbPlaceholder';
 
 const STRAPI = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
-
-type FormField = { id: string; type: string; label: string; required: boolean; options: string[] };
-
-function EventSignUpModal({ event, onClose }: { event: { id: any; slug: string; title: string; date_start?: string }; onClose: () => void }) {
-  const [form, setForm]   = useState<{ id: string; fields: FormField[] } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [name, setName]   = useState('');
-  const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
-  const [errMsg, setErrMsg] = useState('');
-
-  useEffect(() => {
-    fetch(`/api/event-forms/${event.slug}`)
-      .then(r => r.json())
-      .then(d => setForm(d.form))
-      .catch(() => setForm(null))
-      .finally(() => setLoading(false));
-  }, [event.slug]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form) return;
-    setStatus('submitting'); setErrMsg('');
-    try {
-      const res = await fetch(`/api/event-forms/${event.slug}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ form_id: form.id, respondent_name: name, respondent_email: email, answers }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || 'Submission failed');
-      setStatus('success');
-    } catch (err: any) {
-      setErrMsg(err.message); setStatus('error');
-    }
-  };
-
-  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400';
-
-  return (
-    <AnimatePresence>
-    <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{ backgroundColor: 'rgba(10,20,50,0.6)', backdropFilter: 'blur(6px)' }}
-      onClick={onClose}>
-      <motion.div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-        onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl z-10">
-          <div>
-            <h2 className="font-bold text-gray-900">Sign Up for Event</h2>
-            <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{event.title}</p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition"><X className="w-4 h-4 text-gray-500" /></button>
-        </div>
-
-        <div className="px-6 py-5">
-          {loading && <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>}
-
-          {!loading && !form && (
-            <div className="text-center py-10">
-              <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-400 text-sm">The sign-up form for this event hasn&apos;t been set up yet.<br />Check back soon!</p>
-            </div>
-          )}
-
-          {!loading && form && status === 'success' && (
-            <div className="text-center py-10">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-              <h3 className="font-bold text-gray-900 mb-1">You&apos;re signed up!</h3>
-              <p className="text-sm text-gray-400">Your response has been recorded. See you at the event!</p>
-            </div>
-          )}
-
-          {!loading && form && status !== 'success' && (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Full Name <span className="text-red-400">*</span></label>
-                  <input required value={name} onChange={e => setName(e.target.value)} placeholder="Your name" className={inputCls} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email <span className="text-red-400">*</span></label>
-                  <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" className={inputCls} />
-                </div>
-              </div>
-
-              {form.fields.map(field => (
-                <div key={field.id}>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-                    {field.label} {field.required && <span className="text-red-400">*</span>}
-                  </label>
-                  {field.type === 'short_text' && (
-                    <input value={answers[field.id] || ''} onChange={e => setAnswers(a => ({...a, [field.id]: e.target.value}))} className={inputCls} />
-                  )}
-                  {field.type === 'paragraph' && (
-                    <textarea value={answers[field.id] || ''} onChange={e => setAnswers(a => ({...a, [field.id]: e.target.value}))} rows={3} className={`${inputCls} resize-none`} />
-                  )}
-                  {field.type === 'number' && (
-                    <input type="number" value={answers[field.id] || ''} onChange={e => setAnswers(a => ({...a, [field.id]: e.target.value}))} className={inputCls} />
-                  )}
-                  {field.type === 'dropdown' && (
-                    <select value={answers[field.id] || ''} onChange={e => setAnswers(a => ({...a, [field.id]: e.target.value}))} className={`${inputCls} bg-white`}>
-                      <option value="">Select an option</option>
-                      {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
-                  )}
-                  {field.type === 'multiple_choice' && (
-                    <div className="space-y-2">
-                      {field.options.map(opt => (
-                        <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                          <input type="radio" name={field.id} value={opt} checked={answers[field.id] === opt} onChange={() => setAnswers(a => ({...a, [field.id]: opt}))} className="accent-blue-600" />
-                          <span className="text-sm text-gray-700">{opt}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                  {field.type === 'checkboxes' && (
-                    <div className="space-y-2">
-                      {field.options.map(opt => (
-                        <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" checked={(answers[field.id] || []).includes(opt)}
-                            onChange={e => setAnswers(a => { const cur: string[] = a[field.id] || []; return {...a, [field.id]: e.target.checked ? [...cur, opt] : cur.filter((x: string) => x !== opt)}; })}
-                            className="accent-blue-600 w-4 h-4" />
-                          <span className="text-sm text-gray-700">{opt}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {status === 'error' && (
-                <div className="flex items-center gap-2 text-sm text-red-600 font-semibold">
-                  <AlertCircle className="w-4 h-4" />{errMsg}
-                </div>
-              )}
-
-              <button type="submit" disabled={status === 'submitting'}
-                className="w-full py-3 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-60 flex items-center justify-center gap-2"
-                style={{ backgroundColor: '#0B3D91' }}>
-                {status === 'submitting' ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : 'Submit Sign-Up'}
-              </button>
-            </form>
-          )}
-        </div>
-      </motion.div>
-    </motion.div>
-    </AnimatePresence>
-  );
-}
 
 const HL = 'var(--font-heading), Outfit, sans-serif';
 const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
@@ -246,7 +91,6 @@ export default function CommunityPage() {
   const [activeActivity, setActiveActivity] = useState<{ activity: Activity; step: 'detail' | 'form' } | null>(null);
   const [joinableEvents, setJoinableEvents] = useState<any[]>([]);
   const [loadingJE, setLoadingJE] = useState(true);
-  const [signUpEvent, setSignUpEvent] = useState<any | null>(null);
 
   useEffect(() => {
     fetch('/api/content/events')
@@ -432,19 +276,15 @@ export default function CommunityPage() {
                       </div>
                       <h3 className="font-bold text-gray-900 mb-4 leading-snug flex-1" style={{ fontFamily: HL }}>{event.title}</h3>
                       <div className="flex gap-2 mt-auto">
-                        {/* /events/<slug> is not a route — the page lives at
-                            /community/events/<slug>, so every View button on this
-                            page led to a 404. */}
+                        {/* The sign-up form itself lives on the event's own
+                            page (gated there by the same is_joinable flag),
+                            so one button to it replaces what used to be a
+                            separate "Sign Up" button opening its own modal. */}
                         <Link href={`/community/events/${event.slug}`}
-                          className="flex-1 py-2.5 rounded-xl text-sm font-bold border transition hover:bg-gray-50 flex items-center justify-center gap-1.5"
-                          style={{ borderColor: '#0B3D91', color: '#0B3D91', fontFamily: BL }}>
-                          <Eye className="w-3.5 h-3.5" /> View
-                        </Link>
-                        <button onClick={() => setSignUpEvent(event)}
                           className="flex-1 py-2.5 rounded-xl text-sm font-bold transition hover:opacity-90 flex items-center justify-center gap-1.5"
                           style={{ backgroundColor: '#0B3D91', color: '#F5C518', fontFamily: BL }}>
-                          Sign Up <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
+                          <Eye className="w-3.5 h-3.5" /> View &amp; Sign Up
+                        </Link>
                       </div>
                     </div>
                   </motion.div>
@@ -486,9 +326,6 @@ export default function CommunityPage() {
         />
       )}
 
-      {signUpEvent && (
-        <EventSignUpModal event={signUpEvent} onClose={() => setSignUpEvent(null)} />
-      )}
     </div>
   );
 }
