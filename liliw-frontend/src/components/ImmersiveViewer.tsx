@@ -1569,8 +1569,17 @@ export default function ImmersiveViewer({
           : '0 18px 44px rgba(3,12,36,0.55), 0 0 0 1px rgba(255,255,255,0.04)',
         ...(filling
           ? {
+              // inset: 0 on a fixed element already sizes it to the exact
+              // viewport — an explicit 100vw here used to fight that. Android
+              // Chrome's 100vw is measured against the layout viewport, which
+              // is not always the same width as what is actually on screen
+              // once real (not faux) fullscreen is engaged, and the mismatch
+              // pushed the whole box — and the 50/50 split point Cardboard's
+              // two eyes are rendered around — to the right of true centre.
+              // No such fixed width/height is needed: inset alone is exact on
+              // every platform this runs on.
               position: 'fixed' as const, inset: 0, zIndex: 60,
-              height: '100dvh', width: '100vw', borderRadius: 0, border: 'none',
+              borderRadius: 0, border: 'none',
             }
           : {}),
       }}
