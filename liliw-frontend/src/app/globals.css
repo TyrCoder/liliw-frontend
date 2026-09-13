@@ -173,15 +173,6 @@ canvas {
   );
 }
 
-/* The same weave at low opacity, used as the logo mark's sole texture. */
-.liliw-tread {
-  background-image: repeating-linear-gradient(
-    115deg,
-    rgba(255, 255, 255, 0.22) 0px, rgba(255, 255, 255, 0.22) 2px,
-    transparent 2px, transparent 6px
-  );
-}
-
 /* Hover underline that grows from the centre out. Pure CSS rather than a
    Framer layoutId, because every link animates independently on its own hover
    and a shared layout element would slide between them instead. */

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Mail, MapPin, Download, CheckCircle, X, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Wave from '@/components/liliw/Wave';
@@ -21,7 +22,6 @@ const OFFICE_EMAIL = 'chato@liliw.gov.ph';
 
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 const HL = 'var(--font-heading), Outfit, sans-serif';
-const DL = 'var(--font-display), "Cormorant Garamond", Georgia, serif';
 
 /**
  * Drawn inline because lucide-react no longer ships brand marks — the footer
@@ -67,8 +67,8 @@ function IOSInstallModal({ onClose }: { onClose: () => void }) {
           onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg"
-                style={{ backgroundColor: '#F5C518', color: '#0F5FB5', fontFamily: DL }}>L</div>
+              <Image src="/images/logo.png" alt="Love Liliw" width={36} height={36}
+                className="w-9 h-9 rounded-full shrink-0 object-cover" />
               <div>
                 <p className="text-white font-bold text-sm" style={{ fontFamily: HL }}>Add to Home Screen</p>
                 <p className="text-white/40 text-xs" style={{ fontFamily: BL }}>Liliw Tourism · iOS Safari</p>
@@ -160,11 +160,8 @@ export default function Footer() {
             {/* Who this is */}
             <div>
               <div className="flex items-center gap-3 justify-center sm:justify-start">
-                <div className="relative w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-lg overflow-hidden shrink-0"
-                  style={{ backgroundColor: '#F5C518', color: '#0F5FB5', fontFamily: HL }}>
-                  <span aria-hidden className="liliw-tread absolute inset-0" style={{ opacity: 0.45 }} />
-                  <span className="relative">L</span>
-                </div>
+                <Image src="/images/logo.png" alt="Love Liliw" width={44} height={44}
+                  className="w-11 h-11 rounded-full shrink-0 object-cover" />
                 <div className="text-left">
                   <h3 className="text-xl font-bold leading-none tracking-[0.14em]" style={{ fontFamily: HL }}>LILIW</h3>
                   <p className="text-white/60 text-[10.5px] mt-1 font-medium tracking-wide" style={{ fontFamily: BL }}>

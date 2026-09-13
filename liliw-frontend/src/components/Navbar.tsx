@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, LogOut, LayoutDashboard, User, BookmarkCheck, ChevronDown, Search, Bell, MessageSquare, Users, Building2, MapPin, Newspaper, CalendarDays, Settings, Trophy, Compass, Route, Info, Sparkles, QrCode } from 'lucide-react';
@@ -291,17 +292,10 @@ export default function Navbar() {
             {/* Logo */}
             <motion.div whileHover={{ scale: 1.03 }} className="shrink-0">
               <Link href="/" className="flex items-center gap-2.5 sm:gap-3">
-                <div className="relative w-9 sm:w-11 h-9 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold text-base sm:text-lg overflow-hidden shrink-0"
-                  style={{
-                    backgroundColor: ROYAL,
-                    color: 'var(--festival-yellow)',
-                    fontFamily: HL,
-                    boxShadow: '0 8px 20px -8px rgba(15,95,181,0.75)',
-                  }}>
-                  {/* Sole tread running across the mark */}
-                  <span aria-hidden className="liliw-tread absolute inset-0" />
-                  <span className="relative">L</span>
-                </div>
+                <Image src="/images/logo.png" alt="Love Liliw" width={44} height={44}
+                  priority
+                  className="w-9 sm:w-11 h-9 sm:h-11 rounded-full shrink-0 object-cover"
+                  style={{ boxShadow: '0 8px 20px -8px rgba(15,95,181,0.75)' }} />
                 <div className="hidden sm:block min-w-0">
                   <h1 className="text-lg sm:text-xl font-bold leading-none tracking-[0.14em]"
                     style={{ fontFamily: HL, color: ROYAL }}>LILIW</h1>
