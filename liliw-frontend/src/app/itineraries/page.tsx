@@ -1259,26 +1259,48 @@ function ItineraryWizard() {
     setStep('result');
   };
 
+  const requestItinerary = async () => {
+    const res = await fetch('/api/plan-trip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        duration: effectiveDuration,
+        groupSize: effectiveGroupSize,
+        budget: effectiveBudget,
+        interests,
+        favoriteAttractions: selectedFavs,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.itinerary) {
+      const err = new Error(data.error || 'Failed') as Error & { status?: number };
+      err.status = res.status;
+      throw err;
+    }
+    return data.itinerary;
+  };
+
   const generate = async () => {
     setStep('generating');
     setError('');
     setTripSaved(false);
     await captureLocation();
     try {
-      const res = await fetch('/api/plan-trip', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          duration: effectiveDuration,
-          groupSize: effectiveGroupSize,
-          budget: effectiveBudget,
-          interests,
-          favoriteAttractions: selectedFavs,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.itinerary) throw new Error(data.error || 'Failed');
-      setPlan(data.itinerary);
+      let itinerary;
+      try {
+        itinerary = await requestItinerary();
+      } catch (err) {
+        // A cold serverless instance can take long enough on the very first
+        // request of a session to miss the platform's function timeout, even
+        // though the same request succeeds moments later once warm — the
+        // exact "fails once, works on reload" pattern this used to force on
+        // visitors. One silent retry turns that into "it just worked"
+        // instead. A 429 (rate limited) is the one failure an immediate
+        // retry can't fix, so it's left to surface as a real error.
+        if ((err as { status?: number })?.status === 429) throw err;
+        itinerary = await requestItinerary();
+      }
+      setPlan(itinerary);
       setStep('result');
     } catch {
       setError('Something went wrong. Please try again.');

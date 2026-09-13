@@ -2,7 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllAttractions, getFaqs, getItineraries, getEvents } from '@/lib/content';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { logger } from '@/lib/logger';
-import { groq, GROQ_MODEL, extractJson } from '@/lib/groq';
+import { groq, GROQ_MODEL, REASONING_EFFORT, extractJson } from '@/lib/groq';
+
+/**
+ * Creates a completion with REASONING_EFFORT applied (see src/lib/groq.ts),
+ * falling back to the same call without it if GROQ_MODEL rejects the param.
+ *
+ * This route used to call groq.chat.completions.create() with no effort
+ * hint at all, unlike the chat route — so a reasoning model ran at its
+ * default (unset) effort here instead of 'low', taking noticeably longer
+ * per generation. Combined with a cold serverless instance, that was enough
+ * to occasionally clear Vercel's function timeout on the very first request
+ * of a session and fail with a generic error, while a retry moments later
+ * — warm instance, same model — came back in time. Matching the chat
+ * route's effort setting removes that extra latency here too.
+ */
+async function createCompletion(params: Record<string, unknown>) {
+  const withEffort = REASONING_EFFORT ? { ...params, reasoning_effort: REASONING_EFFORT } : params;
+  try {
+    return await groq!.chat.completions.create(withEffort as any);
+  } catch (err) {
+    const status = (err as { status?: number })?.status;
+    const message = String((err as { message?: string })?.message ?? '');
+    if (status === 400 && /reasoning_effort/i.test(message)) {
+      return groq!.chat.completions.create(params as any);
+    }
+    throw err;
+  }
+}
 
 let knowledgeCache: { text: string; at: number } | null = null;
 
@@ -206,7 +233,7 @@ Return only the JSON object.`;
     let completion;
     try {
       // Strict JSON mode — best for models that support it (e.g. gpt-oss).
-      completion = await groq!.chat.completions.create({
+      completion = await createCompletion({
         messages, model: GROQ_MODEL, temperature: 0.7, max_tokens: 2000,
         response_format: { type: 'json_object' },
       });
@@ -218,7 +245,7 @@ Return only the JSON object.`;
       // and pull the JSON out of the reply ourselves.
       const msg = err instanceof Error ? err.message : String(err);
       if (!/json_validate_failed|response_format|json_object/i.test(msg)) throw err;
-      completion = await groq!.chat.completions.create({
+      completion = await createCompletion({
         messages, model: GROQ_MODEL, temperature: 0.7, max_tokens: 6000,
       });
     }
