@@ -191,7 +191,7 @@ export default function CulturePage() {
       {selectedItem && <CultureModal item={selectedItem} onClose={() => setSelectedItem(null)} />}
 
       <PageBanner
-        title="Culture & Heritage"
+        title="Culture & Tradition"
         subtitle="Living traditions and stories that define Liliw"
         backHref={null}
       />
