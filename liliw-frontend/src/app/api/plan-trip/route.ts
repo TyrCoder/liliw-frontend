@@ -149,6 +149,18 @@ function sanitizeItinerary(it: any): any {
   if (typeof it.estimatedCostPerDay !== 'string' || !it.estimatedCostPerDay.trim()) {
     if (recoveredCost) it.estimatedCostPerDay = recoveredCost;
   }
+
+  // A day missing its own `stops` array, or `days` missing entirely, used to
+  // reach the client as-is and crash the result view the moment it rendered
+  // — several places there (the proximity sort, the map effect, the
+  // duplicate-favorite check) call .map()/.flatMap() straight off
+  // itinerary.days with no guard, on the assumption this route never sends
+  // a shape without it. Normalizing here, once, is what actually keeps that
+  // assumption true instead of just hoping the model cooperates.
+  it.days = (Array.isArray(it.days) ? it.days : [])
+    .filter((d: any) => d && typeof d === 'object')
+    .map((d: any) => ({ ...d, stops: Array.isArray(d.stops) ? d.stops : [] }));
+
   return it;
 }
 
@@ -254,6 +266,15 @@ Return only the JSON object.`;
     // Reasoning models can wrap the JSON in <think> blocks or a code fence,
     // which broke a bare JSON.parse — extractJson unwraps it first.
     const itinerary = sanitizeItinerary(JSON.parse(extractJson(content)));
+
+    // A plan with no days is not a usable itinerary, whatever else is in it —
+    // treating it as success sent the client a shape whose only real content
+    // was missing, for it to fail on visibly instead of retrying invisibly
+    // the way an outright request failure already does.
+    if (!Array.isArray(itinerary?.days) || itinerary.days.length === 0) {
+      logger.error('plan-trip error: model returned no days', { content: content.slice(0, 500) });
+      return NextResponse.json({ error: 'Failed to generate itinerary' }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true, itinerary });
   } catch (err) {

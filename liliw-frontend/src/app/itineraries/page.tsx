@@ -264,7 +264,20 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
   duration: string;
   userLocation: [number, number] | null; locationStatus: 'idle' | 'pending' | 'granted' | 'denied';
 }) {
-  const [localPlan, setLocalPlan] = useState<GeneratedPlan>(() => JSON.parse(JSON.stringify(plan)));
+  // A plan missing its `days` array (or a day missing its own `stops`) used to
+  // crash this view outright — several places below call .map()/.flatMap()
+  // straight off localPlan.days with no guard. The generator route now always
+  // sends a real array, but a trip saved before that fix, or any other future
+  // path into this component, still could not — normalizing once here, at the
+  // one place localPlan is seeded, is what keeps every read of it below safe
+  // rather than repeating the same defensive check at each call site.
+  const [localPlan, setLocalPlan] = useState<GeneratedPlan>(() => {
+    const copy: GeneratedPlan = JSON.parse(JSON.stringify(plan));
+    copy.days = (Array.isArray(copy.days) ? copy.days : [])
+      .filter((d): d is Day => !!d && typeof d === 'object')
+      .map(d => ({ ...d, stops: Array.isArray(d.stops) ? d.stops : [] }));
+    return copy;
+  });
   // An empty plan is one the visitor is about to fill in, so it opens in edit
   // mode rather than showing them an empty day and an Edit button.
   const [isEditing, setIsEditing] = useState(
