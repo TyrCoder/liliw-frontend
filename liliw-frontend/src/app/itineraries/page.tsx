@@ -1208,8 +1208,48 @@ function ItineraryWizard() {
   const [tripSaved, setTripSaved]         = useState(false);
   const [userLocation, setUserLocation]   = useState<[number, number] | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'pending' | 'granted' | 'denied'>('idle');
+  const [wizardAttractions, setWizardAttractions] = useState<any[]>([]);
+
+  // Loaded once, up front, so "closest to you" can be shown the moment
+  // someone picks an interest and shares their location — no reason to wait
+  // for the AI round-trip just to answer a question distance already answers.
+  useEffect(() => {
+    fetch('/api/content/attractions').then(r => r.json()).then(json => setWizardAttractions(json.data ?? [])).catch(() => {});
+  }, []);
 
   const hasFavorites = !!user && favorites.length > 0;
+
+  /**
+   * The closest published attractions matching the visitor's selected
+   * interests, nearest first.
+   *
+   * Someone in Pila wanting "Local Food & Cuisine" doesn't need a generated
+   * day plan to answer "what's closest to me right now" — that's a straight
+   * distance sort against real coordinates, the same haversine the QR
+   * check-in and the result view's proximity sort already use. The AI
+   * itinerary is still generated the normal way; this is a faster, more
+   * literal answer to a question the wizard used to leave to the model.
+   */
+  const nearestMatches = useMemo(() => {
+    if (!userLocation || interests.length === 0) return [];
+    const types = new Set(interests.flatMap(i => INTEREST_TO_TYPES[i] || []));
+    const [lng, lat] = userLocation;
+    return wizardAttractions
+      .map(a => {
+        const type = String(a.id ?? '').split('-')[0];
+        if (!types.has(type as ItineraryPlaceType)) return null;
+        const c = a.attributes?.coordinates;
+        const aLat = c?.latitude ?? c?.lat;
+        const aLng = c?.longitude ?? c?.lng ?? c?.lon;
+        if (typeof aLat !== 'number' || typeof aLng !== 'number') return null;
+        const name = a.attributes?.name;
+        if (!name) return null;
+        return { id: a.id as string, name: name as string, distanceKm: distanceMeters(lat, lng, aLat, aLng) / 1000 };
+      })
+      .filter((x): x is { id: string; name: string; distanceKm: number } => !!x)
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, 3);
+  }, [userLocation, interests, wizardAttractions]);
 
   const toggleInterest = (val: string) =>
     setInterests(prev => prev.includes(val) ? prev.filter(i => i !== val) : [...prev, val]);
@@ -1225,9 +1265,12 @@ function ItineraryWizard() {
   // Ask for location as part of generating rather than making the user click an
   // "Allow" button on the result — the route is far more useful when it can
   // start from where they actually are. Resolves either way so a denied or
-  // unavailable permission never blocks the itinerary.
+  // unavailable permission never blocks the itinerary. Also reused by the
+  // "closest to you" card on the interests step, so a location already
+  // captured there isn't asked for a second time when Generate is pressed.
   const captureLocation = () =>
     new Promise<void>(resolve => {
+      if (userLocation && locationStatus === 'granted') { resolve(); return; }
       if (!navigator.geolocation) { setLocationStatus('denied'); resolve(); return; }
       setLocationStatus('pending');
       navigator.geolocation.getCurrentPosition(
@@ -1567,6 +1610,51 @@ function ItineraryWizard() {
                     selected={interests.includes(value)} onClick={() => toggleInterest(value)} />
                 ))}
               </div>
+
+              {interests.length > 0 && (
+                <div className="mt-4">
+                  {!userLocation ? (
+                    <button onClick={captureLocation} disabled={locationStatus === 'pending'}
+                      className="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition disabled:opacity-60"
+                      style={{ fontFamily: BL }}>
+                      <MapPin className="w-3.5 h-3.5" />
+                      {locationStatus === 'pending' ? 'Finding your location…' : "See what's closest to you"}
+                    </button>
+                  ) : nearestMatches.length > 0 ? (
+                    <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+                      <p className="text-xs font-semibold text-blue-900 mb-2.5 flex items-center gap-1.5" style={{ fontFamily: HL }}>
+                        <MapPin className="w-3.5 h-3.5" /> Closest to your current location
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        {nearestMatches.map(n => {
+                          const picked = selectedFavs.includes(n.name);
+                          return (
+                            <div key={n.id} className="flex items-center justify-between gap-3 bg-white rounded-xl px-3 py-2 border border-blue-100/80">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-gray-800 truncate" style={{ fontFamily: HL }}>{n.name}</p>
+                                <p className="text-xs text-gray-500" style={{ fontFamily: BL }}>
+                                  {n.distanceKm < 1 ? `${Math.round(n.distanceKm * 1000)} m away` : `${n.distanceKm.toFixed(1)} km away`}
+                                </p>
+                              </div>
+                              <button onClick={() => toggleFav(n.name)}
+                                className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full transition ${
+                                  picked ? 'bg-rose-100 text-rose-600' : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }`} style={{ fontFamily: BL }}>
+                                {picked ? 'Added ✓' : 'Add as a stop'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400" style={{ fontFamily: BL }}>
+                      No published spot matching these interests yet — the AI will still plan around them.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {error && (
                 <p className="mt-3 text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3" style={{ fontFamily: BL }}>{error}</p>
               )}
