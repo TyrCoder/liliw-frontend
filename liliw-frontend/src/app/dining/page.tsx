@@ -73,7 +73,8 @@ export default function DiningPage() {
   useEffect(() => {
     fetch('/api/content/attractions')
       .then(r => r.json())
-      .then(json => setPlaces((json.data ?? []).filter((a: any) => a.type === 'dining') as DiningAttraction[]))
+      .then(json => setPlaces((json.data ?? []).filter((a: any) =>
+        a.type === 'dining' || a.secondaryTypes?.includes('dining')) as DiningAttraction[]))
       .catch(() => setError('Failed to load dining places'))
       .finally(() => setLoading(false));
   }, []);

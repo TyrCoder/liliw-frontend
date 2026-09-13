@@ -58,6 +58,8 @@ interface Attraction {
   id: string | number;
   attributes: { name: string; description?: string; location?: string; category?: string; is_featured?: boolean; rating?: number; photos?: Array<{ url: string; formats?: any }>; };
   type: 'heritage' | 'spot' | 'dining' | 'footwear' | 'stay';
+  /** Other listings this place also belongs to, alongside its primary type. */
+  secondaryTypes?: string[];
 }
 
 const TYPE_LABELS: Record<string, string> = { heritage: 'Heritage', spot: 'Tourist Spot', dining: 'Dining', footwear: 'Footwear Store', stay: 'Accommodations' };
@@ -130,7 +132,7 @@ export default function AttractionsPage() {
 
   const applyFilters = useCallback(
     (base: Attraction[], type: string) =>
-      base.filter(a => type === 'all' || a.type === type),
+      base.filter(a => type === 'all' || a.type === type || a.secondaryTypes?.includes(type)),
     [],
   );
 

@@ -84,9 +84,17 @@ export const getAllAttractions = async (opts?: { fresh?: boolean }) => {
       const type = CAT_MAP[item.category] ?? 'spot';
       const photos = mediaToPhotos(item._media);
       const vtPhotos: any[] = Array.isArray(item.virtual_tour_photos) ? item.virtual_tour_photos : [];
+      // The one category above still owns the id and the URL; these are the
+      // *other* listings (Dining, Tourist Spots, …) this same place should
+      // also turn up in — a heritage church that's also a working dining
+      // spot shows on both pages without becoming two different places.
+      const secondaryTypes: string[] = Array.isArray(item.secondary_categories)
+        ? item.secondary_categories.map((c: string) => CAT_MAP[c] ?? 'spot').filter((t: string) => t !== type)
+        : [];
       return {
         id: `${type}-${item.id}`,
         strapiId: item.id,
+        secondaryTypes,
         attributes: {
           name:               item.name,
           description:        item.description ?? '',

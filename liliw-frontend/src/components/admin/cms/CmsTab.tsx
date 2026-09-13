@@ -27,7 +27,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export type CmsFieldType =
   | 'text' | 'textarea' | 'number' | 'select' | 'richtext' | 'media'
-  | 'datetime' | 'checkbox' | 'audio';
+  | 'datetime' | 'checkbox' | 'audio' | 'multicheckbox';
 
 export interface CmsField {
   /**
@@ -40,7 +40,7 @@ export interface CmsField {
   type: CmsFieldType;
   /** Blocks Save until filled. Also drives the `*` in the label. */
   required?: boolean;
-  /** `select` only. */
+  /** `select` and `multicheckbox` only. */
   options?: { value: string; label: string }[];
   placeholder?: string;
   /** Guidance shown under the control, for things a label cannot carry. */
@@ -366,6 +366,26 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
             <span className="text-sm text-gray-700 font-medium">{f.label}</span>
           </label>
         );
+      case 'multicheckbox': {
+        // An entry can belong to more than one of these at once — a category,
+        // most often — stored as a plain string array rather than reusing
+        // `select`'s single value, which had no way to say "both".
+        const current = (val(f.name) as string[] | null) ?? [];
+        const toggle = (v: string) =>
+          setField(f.name, current.includes(v) ? current.filter(x => x !== v) : [...current, v]);
+        return (
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {(f.options ?? []).map(o => (
+              <label key={o.value} className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" className="w-4 h-4 rounded accent-blue-600"
+                  checked={current.includes(o.value)}
+                  onChange={() => toggle(o.value)} />
+                <span className="text-sm text-gray-700">{o.label}</span>
+              </label>
+            ))}
+          </div>
+        );
+      }
       case 'media':
         return <MediaUploader value={media} onChange={setMedia} maxFiles={f.maxFiles} />;
 

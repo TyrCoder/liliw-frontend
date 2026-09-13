@@ -59,7 +59,8 @@ export default function HeritagePage() {
   useEffect(() => {
     fetch('/api/content/attractions')
       .then(r => r.json())
-      .then(json => setHeritage((json.data ?? []).filter((a: any) => a.type === 'heritage')))
+      .then(json => setHeritage((json.data ?? []).filter((a: any) =>
+        a.type === 'heritage' || a.secondaryTypes?.includes('heritage'))))
       .catch(() => setError('Failed to load heritage sites'))
       .finally(() => setLoading(false));
   }, []);

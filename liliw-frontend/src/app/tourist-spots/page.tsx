@@ -73,7 +73,8 @@ export default function TouristSpotsPage() {
   useEffect(() => {
     fetch('/api/content/attractions')
       .then(r => r.json())
-      .then(json => setSpots((json.data ?? []).filter((a: any) => a.type === 'spot')))
+      .then(json => setSpots((json.data ?? []).filter((a: any) =>
+        a.type === 'spot' || a.secondaryTypes?.includes('spot'))))
       .catch(() => setError('Failed to load tourist spots'))
       .finally(() => setLoading(false));
   }, []);

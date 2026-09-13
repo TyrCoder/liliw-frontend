@@ -5,7 +5,7 @@ import CmsTab, { CmsTabConfig, statusColumn } from './CmsTab';
 import { MediaItem } from './MediaUploader';
 
 interface Entry {
-  id: string; name: string; category: string; description: string;
+  id: string; name: string; category: string; secondary_categories: string[]; description: string;
   location: string; map_lat: number | null; map_lng: number | null;
   features: string; sort_order: number; slug: string;
   opening_hours: string; best_time: string; entrance_fee: string; price_level: string;
@@ -35,7 +35,7 @@ const CONFIG: CmsTabConfig<Entry> = {
   emptyIcon: <MapPin className="w-10 h-10 mb-3 opacity-20" />,
   emptyText: 'No entries yet',
   empty: {
-    name: '', category: 'heritage', description: '', location: '',
+    name: '', category: 'heritage', secondary_categories: [], description: '', location: '',
     map_lat: null, map_lng: null, features: '', sort_order: 0, slug: '',
     opening_hours: '', best_time: '', entrance_fee: '', price_level: '', visitor_tips: '',
     phone: '', website: '', best_for: '',
@@ -43,8 +43,16 @@ const CONFIG: CmsTabConfig<Entry> = {
   },
   fields: [
     { name: 'name',        label: 'Name',      type: 'text', required: true },
-    { name: 'category',    label: 'Category',  type: 'select', colSpan: 1,
-      options: CATEGORIES.map(c => ({ value: c, label: c.replace('_', ' ') })) },
+    { name: 'category',    label: 'Primary Category',  type: 'select', colSpan: 1,
+      options: CATEGORIES.map(c => ({ value: c, label: c.replace('_', ' ') })),
+      hint: 'Sets this place’s main listing and its URL.' },
+    // A place can genuinely be more than one thing — a spot that's also a
+    // dining destination, say — without changing which one is "the" category
+    // its URL and id are built from. Checked ones just add it to those other
+    // listings too.
+    { name: 'secondary_categories', label: 'Also Show Under', type: 'multicheckbox', colSpan: 2,
+      options: CATEGORIES.map(c => ({ value: c, label: c.replace('_', ' ') })),
+      hint: 'Optional — check any other listings this place should also appear in.' },
     { name: 'location',    label: 'Location',  type: 'text',   colSpan: 1 },
     { name: 'map_lat',     label: 'Latitude',  type: 'number', colSpan: 1 },
     { name: 'map_lng',     label: 'Longitude', type: 'number', colSpan: 1 },
@@ -72,7 +80,14 @@ const CONFIG: CmsTabConfig<Entry> = {
   ],
   columns: [
     { header: 'Name', primary: true, render: e => <p className="font-semibold text-gray-900">{e.name}</p> },
-    { header: 'Category', render: e => <span className="text-gray-500 capitalize">{e.category?.replace('_', ' ')}</span> },
+    { header: 'Category', render: e => (
+      <span className="text-gray-500 capitalize">
+        {e.category?.replace('_', ' ')}
+        {e.secondary_categories?.length > 0 && (
+          <span className="text-gray-400"> + {e.secondary_categories.map(c => c.replace('_', ' ')).join(', ')}</span>
+        )}
+      </span>
+    ) },
     statusColumn<Entry>(),
     { header: 'Created', render: e => (
       <span className="text-gray-400 text-xs">
