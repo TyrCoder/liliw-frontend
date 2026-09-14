@@ -8,6 +8,7 @@ import { logger } from '@/lib/logger';
 import { searchAlgolia } from '@/lib/algolia';
 import FavoriteButton from '@/components/FavoriteButton';
 import PageBanner from '@/components/liliw/PageBanner';
+import { Pagination, usePaged } from '@/components/Pagination';
 
 const STRAPI_BASE = (process.env.NEXT_PUBLIC_STRAPI_URL || '').replace(/\/$/, '');
 const HL = 'var(--font-heading), Outfit, sans-serif';
@@ -129,6 +130,13 @@ export default function AttractionsPage() {
   const [error, setError]     = useState('');
   const [query, setQuery]     = useState('');
   const [selectedType, setSelectedType]         = useState('all');
+  const paged = usePaged(results, 16);
+  const { setPage } = paged;
+
+  // Searching or switching type re-lists from the top. Without this the view
+  // keeps whatever page it was on, so filtering from page 3 opens the new,
+  // shorter list part-way down for no reason the visitor can see.
+  useEffect(() => { setPage(1); }, [query, selectedType, setPage]);
 
   useEffect(() => {
     fetch('/api/content/attractions', { cache: 'no-store' })
@@ -200,7 +208,7 @@ export default function AttractionsPage() {
       />
 
       {/* Search + Filters */}
-      <div className="page-wrap px-4 py-6">
+      <div className="page-wrap px-4 py-6 pb-20">
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.4 }} className="mb-8 space-y-3">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -250,14 +258,20 @@ export default function AttractionsPage() {
         {!loading && !error && results.length > 0 && (
           <motion.div initial="hidden" animate="visible"
             variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.07 } } }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
-            {results.map((attraction, idx) => (
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paged.slice.map((attraction, idx) => (
               <motion.div key={`${attraction.id}-${idx}`}
                 variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 0.4 } } }}>
                 <OverlayCard attraction={attraction} />
               </motion.div>
             ))}
           </motion.div>
+        )}
+
+        {!loading && !error && (
+          <Pagination page={paged.page} totalPages={paged.totalPages}
+            count={paged.count} pageSize={paged.pageSize}
+            onChange={paged.setPage} label="attractions" />
         )}
 
         {!loading && !error && all.length > 0 && results.length === 0 && (
