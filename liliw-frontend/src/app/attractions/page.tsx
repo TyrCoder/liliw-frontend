@@ -130,7 +130,9 @@ export default function AttractionsPage() {
   const [error, setError]     = useState('');
   const [query, setQuery]     = useState('');
   const [selectedType, setSelectedType]         = useState('all');
-  const paged = usePaged(results, 16);
+  // 15, not the 16 the other listings use: this grid is three columns at its
+  // widest, so 16 leaves a single card alone on a sixth row.
+  const paged = usePaged(results, 15);
   const { setPage } = paged;
 
   // Searching or switching type re-lists from the top. Without this the view
