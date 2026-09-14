@@ -174,6 +174,9 @@ function selectKnowledge(index: Indexed, context: string): string {
       const attr = a.attributes;
       const facts = [
         attr.location && `Location: ${attr.location}`,
+        // Says the pin exists without spelling out the numbers: a visitor
+        // asking where somewhere is wants a street or a map, not a latitude.
+        attr.coordinates && 'Exact spot is pinned on the map on its page',
         attr.entrance_fee && `Entrance fee: ${attr.entrance_fee}`,
         attr.hours && `Open: ${attr.hours}`,
         attr.best_time && `Best time: ${attr.best_time}`,
@@ -336,7 +339,17 @@ RULES:
 6. Use actual data from the database when answering.
 7. Be natural and warm — not formal, like a local friend.
 8. LINKS: When recommending a specific place, format as markdown: [Place Name](/attractions/id). Use the exact URL from the database.
+   Never print a bare /attractions/... path, in brackets or on its own. Only the
+   markdown form is clickable — a raw path reaches the visitor as a long line of
+   characters they cannot tap, in the middle of an otherwise friendly answer.
 9. Use emojis occasionally to keep it fun 🌿
+10. WHERE IS IT: answer with the street or barangay on that place's Location line.
+   "It's in Liliw" is not an answer — the visitor is asking from inside Liliw and
+   already knows that much. Give the specific part ("on Gat Tayaw St.", "in Brgy.
+   Laguan"), then link its page the markdown way so they can open the pin.
+   When a place's Location says no more than the town itself, say that plainly —
+   that the address on file is only the town — and send them to the pin on its page.
+   Never fill the gap with a street, landmark or distance you were not given.
 
 ${knowledge}`;
 }
