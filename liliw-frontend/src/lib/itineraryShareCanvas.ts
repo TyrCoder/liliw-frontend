@@ -16,7 +16,7 @@ export const CARD_H = 1920;
 // the only way to fill the frame with no crop, which matters because a crop
 // could cut off the attribution Mapbox's terms require staying visible.
 export const MAP_PANEL_W = 904;
-export const MAP_PANEL_H = 940;
+export const MAP_PANEL_H = 820;
 
 export interface ShareCardData {
   title: string;
@@ -25,10 +25,17 @@ export interface ShareCardData {
   daysCount: number;
   /** A day's theme or the trip summary — one line of context under the title. */
   subtitle: string;
-  /** Loaded Mapbox static map with the route drawn on it, or null if it couldn't be fetched. */
+  /** Loaded Mapbox static map with the route and numbered pins drawn on it, or null if it couldn't be fetched. */
   mapImage: HTMLImageElement | null;
   /** The site's own mark, drawn in the header. */
   logoImage: HTMLImageElement | null;
+  /**
+   * Stop names in the same order as the numbered pins on the map, so "1" on
+   * the map and "1" in this list are the same place. A pin can only show a
+   * number — Mapbox's marker labels are a single digit or letter — so this
+   * is the only place the actual names appear.
+   */
+  stopNames: string[];
 }
 
 /**
@@ -175,13 +182,82 @@ export function drawItineraryShareCard(ctx: CanvasRenderingContext2D, data: Shar
   ctx.font = `600 26px ${BODY}`;
   ctx.fillText('Liliw, Laguna, Philippines', W / 2, panelY + panelH - 24);
 
+  // The legend the numbered pins on the map actually point at. Each entry is
+  // packed as one unit — "3 Riverfront" never splits into a lone "3" at the
+  // end of a line and "Riverfront" starting the next — and any name too long
+  // for one entry's own share of the line is clipped with an ellipsis rather
+  // than crowding out the rest.
+  const afterPanelY = panelY + panelH;
+  let afterLegendY = afterPanelY;
+  if (data.stopNames.length > 0) {
+    const legendSize = 26;
+    ctx.font = `700 ${legendSize}px ${HEAD}`;
+    const GAP = 36;
+
+    // Only clip a name if it alone can't fit a full line — most real stop
+    // names are nowhere near that wide, so this only ever bites on outliers,
+    // instead of the fixed narrow slot this used to force every name into.
+    const clip = (s: string, max: number) => {
+      let out = s;
+      while (out.length > 0 && ctx.measureText(out).width > max) out = out.slice(0, -1).trimEnd();
+      return out.length < s.length ? `${out}…` : out;
+    };
+    const entries = data.stopNames.map((name, i) => {
+      const label = `${i + 1}  `;
+      const nameMax = maxTextWidth - ctx.measureText(label).width;
+      return label + clip(name, nameMax);
+    });
+
+    const maxLines = 3;
+    const lines: string[][] = [[]];
+    let lineWidth = 0;
+    for (const entry of entries) {
+      const w = ctx.measureText(entry).width;
+      const addWidth = lineWidth === 0 ? w : lineWidth + GAP + w;
+      if (addWidth > maxTextWidth && lineWidth > 0) {
+        if (lines.length === maxLines) break;
+        lines.push([]);
+        lineWidth = w;
+      } else {
+        lineWidth = addWidth;
+      }
+      lines[lines.length - 1].push(entry);
+    }
+
+    // A trip with more stops than fit in three lines still needs every pin
+    // accounted for, so the ones that didn't fit become a "+N more" note
+    // tacked onto the end rather than just vanishing with no explanation.
+    const shown = lines.reduce((n, row) => n + row.length, 0);
+    let remaining = entries.length - shown;
+    if (remaining > 0) {
+      let lastRow = lines[lines.length - 1];
+      while (lastRow.length > 0) {
+        const candidate = [...lastRow, `+${remaining} more`].join('    ');
+        if (ctx.measureText(candidate).width <= maxTextWidth) {
+          lines[lines.length - 1] = [...lastRow, `+${remaining} more`];
+          break;
+        }
+        lastRow = lastRow.slice(0, -1);
+        remaining += 1;
+      }
+      if (lastRow.length === 0) lines[lines.length - 1] = [`+${remaining} more`];
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.textAlign = 'center';
+    const legendLineHeight = legendSize * 1.6;
+    const legendStartY = afterPanelY + 58;
+    lines.forEach((row, i) => ctx.fillText(row.join('    '), W / 2, legendStartY + i * legendLineHeight));
+    afterLegendY = legendStartY + (lines.length - 1) * legendLineHeight;
+  }
+
   // Stat row — the numbers this card exists to show off.
   const stats: [string, string][] = [
     [data.distanceKm != null ? `${data.distanceKm.toFixed(1)}` : '—', 'km'],
     [String(data.placesCount), data.placesCount === 1 ? 'place' : 'places'],
     [String(data.daysCount), data.daysCount === 1 ? 'day' : 'days'],
   ];
-  const statsY = panelY + panelH + 100;
+  const statsY = afterLegendY + 70;
   const colW = W / stats.length;
   stats.forEach(([value, label], i) => drawStat(ctx, colW * i + colW / 2, statsY, value, label));
 

@@ -35,13 +35,13 @@ interface Props {
   distanceKm: number | null;
   placesCount: number;
   daysCount: number;
-  /** Ordered [lng, lat] stops across the whole trip, for the route line. */
-  routeCoords: [number, number][];
+  /** Ordered stops across the whole trip, for the route line, the numbered pins, and the legend under the map. */
+  routeStops: { name: string; coord: [number, number] }[];
   onClose: () => void;
 }
 
 export default function ItineraryShareCard({
-  title, subtitle, distanceKm, placesCount, daysCount, routeCoords, onClose,
+  title, subtitle, distanceKm, placesCount, daysCount, routeStops, onClose,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
@@ -65,10 +65,17 @@ export default function ItineraryShareCard({
 
     (async () => {
       let mapImage: HTMLImageElement | null = null;
-      if (routeCoords.length >= 2 && MAPBOX_TOKEN) {
-        const encoded = encodePolyline(routeCoords.map(([lng, lat]) => [lat, lng] as [number, number]));
+      if (routeStops.length >= 2 && MAPBOX_TOKEN) {
+        const encoded = encodePolyline(routeStops.map(({ coord: [lng, lat] }) => [lat, lng] as [number, number]));
         const path = `path-4+F5C518-1(${encodeURIComponent(encoded)})`;
-        const url = `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/${path}/auto/${MAP_PANEL_W}x${MAP_PANEL_H}@2x?padding=60&access_token=${MAPBOX_TOKEN}`;
+        // One pin per stop, numbered to match the legend drawn under the map
+        // — Mapbox marker labels can only be a single digit/letter, so the
+        // full name only ever appears in that legend, not on the pin itself.
+        const pins = routeStops
+          .map(({ coord: [lng, lat] }, i) => `pin-s-${i + 1}+ffffff(${lng},${lat})`)
+          .join(',');
+        const overlay = `${path},${pins}`;
+        const url = `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/${overlay}/auto/${MAP_PANEL_W}x${MAP_PANEL_H}@2x?padding=60&access_token=${MAPBOX_TOKEN}`;
         mapImage = await loadImage(url);
       }
       const logoImage = await loadImage('/images/logo.png');
@@ -81,7 +88,10 @@ export default function ItineraryShareCard({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      drawItineraryShareCard(ctx, { title, distanceKm, placesCount, daysCount, subtitle, mapImage, logoImage });
+      drawItineraryShareCard(ctx, {
+        title, distanceKm, placesCount, daysCount, subtitle, mapImage, logoImage,
+        stopNames: routeStops.map((s) => s.name),
+      });
       if (cancelled) return;
       setReady(true);
       canvas.toBlob((blob) => {

@@ -404,7 +404,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
     let distanceKm = 0;
     let hasAnyLeg = false;
     let placesCount = 0;
-    const rawCoords: [number, number][] = [];
+    const rawStops: { name: string; coord: [number, number] }[] = [];
 
     localPlan.days.forEach((day, dayIdx) => {
       const stops = day.stops ?? [];
@@ -412,7 +412,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
       const road = roadLegs[dayIdx];
       stops.forEach((stop, stopIdx) => {
         const coord = findCoord(stop.place);
-        if (coord) rawCoords.push(coord);
+        if (coord) rawStops.push({ name: stop.place, coord });
         const next = stops[stopIdx + 1];
         if (!next) return;
         const roadKm = road && typeof road.legs[stopIdx] === 'number' ? road.legs[stopIdx] / 1000 : null;
@@ -433,7 +433,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
      * for the sake of one point that probably isn't actually the place.
      */
     const LILIW_CENTER: [number, number] = [121.4359, 14.1297];
-    const routeCoords = rawCoords.filter(([lng, lat]) =>
+    const routeStops = rawStops.filter(({ coord: [lng, lat] }) =>
       distanceMeters(lat, lng, LILIW_CENTER[1], LILIW_CENTER[0]) <= 8000,
     );
 
@@ -441,7 +441,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
       distanceKm: hasAnyLeg ? distanceKm : null,
       placesCount,
       daysCount: localPlan.days.length,
-      routeCoords,
+      routeStops,
     };
   }, [localPlan, roadLegs, findCoord, legKm]);
 
@@ -1189,7 +1189,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
           distanceKm={shareStats.distanceKm}
           placesCount={shareStats.placesCount}
           daysCount={shareStats.daysCount}
-          routeCoords={shareStats.routeCoords}
+          routeStops={shareStats.routeStops}
           onClose={() => setShowShareCard(false)}
         />
       )}
