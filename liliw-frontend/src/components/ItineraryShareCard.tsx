@@ -43,7 +43,18 @@ function fileSlug(title: string): string {
   return slug || 'liliw-itinerary';
 }
 
-/** The same bbox-bounded lookup the itinerary map falls back to for a stop the site can't place itself. */
+/**
+ * Result types that mean "couldn't find that, here's the town it's in".
+ * Asked for a stop it doesn't know, the geocoder answers with Liliw itself,
+ * so every unknown name comes back as the same municipal centroid.
+ */
+const VAGUE_PLACE_TYPES = new Set(['place', 'locality', 'district', 'region', 'country', 'postcode']);
+
+/**
+ * The same bbox-bounded lookup the itinerary map falls back to for a stop the
+ * site can't place itself, minus the town-level answers: a plan full of
+ * invented stop names would otherwise pin ten different places on one dot.
+ */
 async function geocodeInLiliw(name: string): Promise<[number, number] | null> {
   try {
     const q = encodeURIComponent(`${name}, Liliw, Laguna, Philippines`);
@@ -51,7 +62,10 @@ async function geocodeInLiliw(name: string): Promise<[number, number] | null> {
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${MAPBOX_TOKEN}&limit=1&bbox=${LILIW_BBOX}&country=ph`,
     );
     const d = await r.json();
-    const c = d?.features?.[0]?.center;
+    const feature = d?.features?.[0];
+    const types: string[] = Array.isArray(feature?.place_type) ? feature.place_type : [];
+    if (types.some((t) => VAGUE_PLACE_TYPES.has(t))) return null;
+    const c = feature?.center;
     return Array.isArray(c) && c.length === 2 ? [c[0], c[1]] : null;
   } catch {
     return null;
@@ -153,13 +167,22 @@ export default function ItineraryShareCard({
 
       const nudge = makeNudger();
       const pins: string[] = [];
+      const placed: [number, number][] = [];
       const byDay = new Map<number, [number, number][]>();
       located.forEach((stop, i) => {
         if (!stop.coord) return;
-        const [lng, lat] = nudge(stop.coord);
-        pins.push(`pin-m-${i + 1}+${dayColorHex(stop.day).slice(1)}(${lng.toFixed(5)},${lat.toFixed(5)})`);
+        const shown = nudge(stop.coord);
+        placed.push(shown);
+        pins.push(`pin-m-${i + 1}+${dayColorHex(stop.day).slice(1)}(${shown[0].toFixed(5)},${shown[1].toFixed(5)})`);
+        // The route runs through the pins' own positions, so the line always
+        // joins the markers actually on the card. Stops that land within a
+        // few metres of the previous one are skipped as waypoints — asking
+        // Directions to drive between two copies of one place sends the line
+        // around the block for nothing.
         if (!byDay.has(stop.day)) byDay.set(stop.day, []);
-        byDay.get(stop.day)!.push(stop.coord);
+        const dayCoords = byDay.get(stop.day)!;
+        const prev = dayCoords[dayCoords.length - 1];
+        if (!prev || Math.hypot(shown[0] - prev[0], shown[1] - prev[1]) > 0.0002) dayCoords.push(shown);
       });
 
       const days = Array.from(byDay.entries())
@@ -174,6 +197,13 @@ export default function ItineraryShareCard({
 
       // Casings first, then the coloured routes, then the pins on top — the
       // same stacking the itinerary map uses.
+      // Auto-fit needs something to fit: with one pin it would zoom to the
+      // rooftop, and with none there is nothing to frame, so both fall back
+      // to a view of the town itself.
+      const viewport = placed.length >= 2 ? 'auto'
+        : placed.length === 1 ? `${placed[0][0].toFixed(5)},${placed[0][1].toFixed(5)},14.6,0`
+          : '121.4359,14.1297,13.2,0';
+
       const buildUrl = (useRoads: boolean, casing: boolean) => {
         const overlays: string[] = [];
         for (const { color, road, straight } of roads) {
@@ -182,11 +212,13 @@ export default function ItineraryShareCard({
           overlays.push(`path-5+${color}-1(${line})`);
         }
         overlays.push(...pins);
-        return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${overlays.join(',')}/auto/${layout.mapW}x${layout.mapH}@2x?padding=60&access_token=${MAPBOX_TOKEN}`;
+        const overlayPath = overlays.length ? `${overlays.join(',')}/` : '';
+        const padding = viewport === 'auto' ? 'padding=60&' : '';
+        return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${overlayPath}${viewport}/${layout.mapW}x${layout.mapH}@2x?${padding}access_token=${MAPBOX_TOKEN}`;
       };
 
       let mapImage: HTMLImageElement | null = null;
-      if (pins.length > 0 && MAPBOX_TOKEN) {
+      if (MAPBOX_TOKEN) {
         let url = buildUrl(true, true);
         if (url.length > MAX_URL) url = buildUrl(true, false);
         if (url.length > MAX_URL) url = buildUrl(false, false);
