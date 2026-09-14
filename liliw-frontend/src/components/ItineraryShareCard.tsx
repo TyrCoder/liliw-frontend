@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Share2, Loader2 } from 'lucide-react';
 import {
-  drawItineraryShareCard, CARD_W, CARD_H, MAP_PANEL_W, MAP_PANEL_H,
+  drawItineraryShareCard, measureShareCard, dayColorHex, CARD_W, CARD_H,
 } from '@/lib/itineraryShareCanvas';
 import { encodePolyline } from '@/lib/polyline';
 
@@ -12,6 +12,20 @@ const HL = 'var(--font-heading), Outfit, sans-serif';
 const BL = 'var(--font-body), "Plus Jakarta Sans", sans-serif';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
+
+/** The box the itinerary's own map geocodes inside, so both resolve a name to the same place. */
+const LILIW_BBOX = '121.40,14.10,121.47,14.16';
+
+/** Mapbox rejects a static request much over 8KB, so overlays get simpler as this is approached. */
+const MAX_URL = 8000;
+
+interface RouteStop {
+  name: string;
+  /** 1-based day number — colours this stop's pin and its legend badge. */
+  day: number;
+  /** Resolved from site content, or null when only Mapbox can place it. */
+  coord: [number, number] | null;
+}
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
@@ -29,14 +43,65 @@ function fileSlug(title: string): string {
   return slug || 'liliw-itinerary';
 }
 
+/** The same bbox-bounded lookup the itinerary map falls back to for a stop the site can't place itself. */
+async function geocodeInLiliw(name: string): Promise<[number, number] | null> {
+  try {
+    const q = encodeURIComponent(`${name}, Liliw, Laguna, Philippines`);
+    const r = await fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${q}.json?access_token=${MAPBOX_TOKEN}&limit=1&bbox=${LILIW_BBOX}&country=ph`,
+    );
+    const d = await r.json();
+    const c = d?.features?.[0]?.center;
+    return Array.isArray(c) && c.length === 2 ? [c[0], c[1]] : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The day's route as an encoded polyline that follows actual roads — the same
+ * driving directions the itinerary's own map draws, rather than a straight
+ * line cutting across town between stops. Falls back to the straight line if
+ * Directions can't route it.
+ */
+async function drivingPolyline(coords: [number, number][]): Promise<string> {
+  const straight = () => encodePolyline(coords.map(([lng, lat]) => [lat, lng] as [number, number]));
+  if (coords.length > 25) return straight();
+  try {
+    const waypoints = coords.map(([lng, lat]) => `${lng},${lat}`).join(';');
+    const r = await fetch(
+      `https://api.mapbox.com/directions/v5/mapbox/driving/${waypoints}?geometries=polyline&overview=simplified&access_token=${MAPBOX_TOKEN}`,
+    );
+    const d = await r.json();
+    if (d?.code === 'Ok' && typeof d?.routes?.[0]?.geometry === 'string') return d.routes[0].geometry;
+  } catch {
+    // Falls through to the straight line, same as the itinerary map does.
+  }
+  return straight();
+}
+
+/** Spreads pins that land on near-identical coordinates, the way the itinerary map spreads its markers. */
+function makeNudger() {
+  const used: Record<string, number> = {};
+  return ([lng, lat]: [number, number]): [number, number] => {
+    const key = `${lng.toFixed(4)},${lat.toFixed(4)}`;
+    const count = used[key] || 0;
+    used[key] = count + 1;
+    if (count === 0) return [lng, lat];
+    const angle = count * 137.5 * (Math.PI / 180);
+    const radius = 0.00028 * count;
+    return [lng + Math.cos(angle) * radius, lat + Math.sin(angle) * radius];
+  };
+}
+
 interface Props {
   title: string;
   subtitle: string;
   distanceKm: number | null;
   placesCount: number;
   daysCount: number;
-  /** Ordered stops across the whole trip, for the route line, the numbered pins, and the legend under the map. */
-  routeStops: { name: string; coord: [number, number] }[];
+  /** Every stop in itinerary order — its position here is its number on the map and in the legend. */
+  routeStops: RouteStop[];
   onClose: () => void;
 }
 
@@ -45,7 +110,6 @@ export default function ItineraryShareCard({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [canShareFiles, setCanShareFiles] = useState(false);
   const [sharing, setSharing] = useState(false);
 
@@ -64,21 +128,9 @@ export default function ItineraryShareCard({
     let cancelled = false;
 
     (async () => {
-      let mapImage: HTMLImageElement | null = null;
-      if (routeStops.length >= 2 && MAPBOX_TOKEN) {
-        const encoded = encodePolyline(routeStops.map(({ coord: [lng, lat] }) => [lat, lng] as [number, number]));
-        const path = `path-4+F5C518-1(${encodeURIComponent(encoded)})`;
-        // One pin per stop, numbered to match the legend drawn under the map
-        // — Mapbox marker labels can only be a single digit/letter, so the
-        // full name only ever appears in that legend, not on the pin itself.
-        const pins = routeStops
-          .map(({ coord: [lng, lat] }, i) => `pin-s-${i + 1}+ffffff(${lng},${lat})`)
-          .join(',');
-        const overlay = `${path},${pins}`;
-        const url = `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/${overlay}/auto/${MAP_PANEL_W}x${MAP_PANEL_H}@2x?padding=60&access_token=${MAPBOX_TOKEN}`;
-        mapImage = await loadImage(url);
-      }
-      const logoImage = await loadImage('/images/logo.png');
+      // Measuring against fallback metrics would wrap the title differently
+      // from how it finally draws, so wait for the real fonts first.
+      try { await document.fonts?.ready; } catch { /* system-font metrics will do */ }
       if (cancelled) return;
 
       const canvas = canvasRef.current;
@@ -88,22 +140,70 @@ export default function ItineraryShareCard({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      drawItineraryShareCard(ctx, {
-        title, distanceKm, placesCount, daysCount, subtitle, mapImage, logoImage,
-        stopNames: routeStops.map((s) => s.name),
-      });
+      const stops = routeStops.map(({ name, day }) => ({ name, day }));
+      // The map has to be requested at the size the layout gives it, so
+      // measuring has to happen before anything is fetched.
+      const layout = measureShareCard(ctx, { title, subtitle, stops });
+
+      const located = await Promise.all(routeStops.map(async (stop) => ({
+        ...stop,
+        coord: stop.coord ?? (MAPBOX_TOKEN ? await geocodeInLiliw(stop.name) : null),
+      })));
       if (cancelled) return;
+
+      const nudge = makeNudger();
+      const pins: string[] = [];
+      const byDay = new Map<number, [number, number][]>();
+      located.forEach((stop, i) => {
+        if (!stop.coord) return;
+        const [lng, lat] = nudge(stop.coord);
+        pins.push(`pin-m-${i + 1}+${dayColorHex(stop.day).slice(1)}(${lng.toFixed(5)},${lat.toFixed(5)})`);
+        if (!byDay.has(stop.day)) byDay.set(stop.day, []);
+        byDay.get(stop.day)!.push(stop.coord);
+      });
+
+      const days = Array.from(byDay.entries())
+        .filter(([, coords]) => coords.length >= 2)
+        .sort((a, b) => a[0] - b[0]);
+      const roads = await Promise.all(days.map(async ([day, coords]) => ({
+        color: dayColorHex(day).slice(1),
+        road: await drivingPolyline(coords),
+        straight: encodePolyline(coords.map(([lng, lat]) => [lat, lng] as [number, number])),
+      })));
+      if (cancelled) return;
+
+      // Casings first, then the coloured routes, then the pins on top — the
+      // same stacking the itinerary map uses.
+      const buildUrl = (useRoads: boolean, casing: boolean) => {
+        const overlays: string[] = [];
+        for (const { color, road, straight } of roads) {
+          const line = encodeURIComponent(useRoads ? road : straight);
+          if (casing) overlays.push(`path-9+ffffff-0.9(${line})`);
+          overlays.push(`path-5+${color}-1(${line})`);
+        }
+        overlays.push(...pins);
+        return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${overlays.join(',')}/auto/${layout.mapW}x${layout.mapH}@2x?padding=60&access_token=${MAPBOX_TOKEN}`;
+      };
+
+      let mapImage: HTMLImageElement | null = null;
+      if (pins.length > 0 && MAPBOX_TOKEN) {
+        let url = buildUrl(true, true);
+        if (url.length > MAX_URL) url = buildUrl(true, false);
+        if (url.length > MAX_URL) url = buildUrl(false, false);
+        mapImage = await loadImage(url);
+      }
+      const logoImage = await loadImage('/images/logo.png');
+      if (cancelled) return;
+
+      drawItineraryShareCard(ctx, {
+        title, subtitle, stops, distanceKm, placesCount, daysCount, mapImage, logoImage,
+      });
       setReady(true);
-      canvas.toBlob((blob) => {
-        if (blob && !cancelled) setPreviewUrl(URL.createObjectURL(blob));
-      }, 'image/png');
     })();
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
   const getBlob = (): Promise<Blob | null> =>
     new Promise((resolve) => {
