@@ -52,7 +52,9 @@ const CONFIG: CmsTabConfig<Entry> = {
     // listings too.
     { name: 'secondary_categories', label: 'Also Show Under', type: 'multicheckbox', colSpan: 2,
       options: CATEGORIES.map(c => ({ value: c, label: c.replace('_', ' ') })),
-      hint: 'Optional — check any other listings this place should also appear in.' },
+      toggleLabel: 'This place belongs in more than one category',
+      placeholder: 'Choose the other listings…',
+      hint: 'Optional — it stays in its primary listing either way.' },
     { name: 'location',    label: 'Location',  type: 'text',   colSpan: 1 },
     { name: 'map_lat',     label: 'Latitude',  type: 'number', colSpan: 1 },
     { name: 'map_lng',     label: 'Longitude', type: 'number', colSpan: 1 },

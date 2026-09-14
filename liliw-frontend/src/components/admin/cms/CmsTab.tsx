@@ -10,6 +10,7 @@ import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import RejectModal from './RejectModal';
 import ConfirmDialog, { IrreversibleNote } from './ConfirmDialog';
 import DateTimePicker from './DateTimePicker';
+import MultiSelectField from './MultiSelectField';
 
 // One template for every CMS content type.
 //
@@ -42,6 +43,8 @@ export interface CmsField {
   required?: boolean;
   /** `select` and `multicheckbox` only. */
   options?: { value: string; label: string }[];
+  /** `multicheckbox` only — wording for the tick that reveals the dropdown. Falls back to `label`. */
+  toggleLabel?: string;
   placeholder?: string;
   /** Guidance shown under the control, for things a label cannot carry. */
   hint?: string;
@@ -366,26 +369,18 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
             <span className="text-sm text-gray-700 font-medium">{f.label}</span>
           </label>
         );
-      case 'multicheckbox': {
+      case 'multicheckbox':
         // An entry can belong to more than one of these at once — a category,
         // most often — stored as a plain string array rather than reusing
         // `select`'s single value, which had no way to say "both".
-        const current = (val(f.name) as string[] | null) ?? [];
-        const toggle = (v: string) =>
-          setField(f.name, current.includes(v) ? current.filter(x => x !== v) : [...current, v]);
         return (
-          <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {(f.options ?? []).map(o => (
-              <label key={o.value} className="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" className="w-4 h-4 rounded accent-blue-600"
-                  checked={current.includes(o.value)}
-                  onChange={() => toggle(o.value)} />
-                <span className="text-sm text-gray-700">{o.label}</span>
-              </label>
-            ))}
-          </div>
+          <MultiSelectField
+            value={(val(f.name) as string[] | null) ?? []}
+            options={f.options ?? []}
+            onChange={v => setField(f.name, v)}
+            toggleLabel={f.toggleLabel ?? f.label}
+            placeholder={f.placeholder} />
         );
-      }
       case 'media':
         return <MediaUploader value={media} onChange={setMedia} maxFiles={f.maxFiles} />;
 
