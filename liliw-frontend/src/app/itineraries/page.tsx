@@ -404,7 +404,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
     let distanceKm = 0;
     let hasAnyLeg = false;
     let placesCount = 0;
-    const routeCoords: [number, number][] = [];
+    const rawCoords: [number, number][] = [];
 
     localPlan.days.forEach((day, dayIdx) => {
       const stops = day.stops ?? [];
@@ -412,7 +412,7 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
       const road = roadLegs[dayIdx];
       stops.forEach((stop, stopIdx) => {
         const coord = findCoord(stop.place);
-        if (coord) routeCoords.push(coord);
+        if (coord) rawCoords.push(coord);
         const next = stops[stopIdx + 1];
         if (!next) return;
         const roadKm = road && typeof road.legs[stopIdx] === 'number' ? road.legs[stopIdx] / 1000 : null;
@@ -420,6 +420,22 @@ function PlanResult({ plan, onReset, onSave, saved, isLoggedIn, interests, durat
         if (km != null) { distanceKm += km; hasAnyLeg = true; }
       });
     });
+
+    /**
+     * findCoord falls back to a fuzzy substring match when a stop's name
+     * isn't exact, which occasionally locks onto the wrong attraction
+     * entirely — the share card's route line then shoots out to wherever
+     * that one is, miles from the rest of the trip, and Mapbox's auto-fit
+     * bbox zooms out to fit it, shrinking everything else into a corner.
+     * Liliw itself is a few kilometres across; a resolved stop more than
+     * 8km from its centre is far more likely a bad match than a real stop,
+     * so it's dropped from the route line rather than distorting the map
+     * for the sake of one point that probably isn't actually the place.
+     */
+    const LILIW_CENTER: [number, number] = [121.4359, 14.1297];
+    const routeCoords = rawCoords.filter(([lng, lat]) =>
+      distanceMeters(lat, lng, LILIW_CENTER[1], LILIW_CENTER[0]) <= 8000,
+    );
 
     return {
       distanceKm: hasAnyLeg ? distanceKm : null,

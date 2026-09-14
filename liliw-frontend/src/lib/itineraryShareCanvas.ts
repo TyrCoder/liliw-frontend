@@ -16,7 +16,7 @@ export const CARD_H = 1920;
 // the only way to fill the frame with no crop, which matters because a crop
 // could cut off the attribution Mapbox's terms require staying visible.
 export const MAP_PANEL_W = 904;
-export const MAP_PANEL_H = 1040;
+export const MAP_PANEL_H = 940;
 
 export interface ShareCardData {
   title: string;
@@ -29,6 +29,46 @@ export interface ShareCardData {
   mapImage: HTMLImageElement | null;
   /** The site's own mark, drawn in the header. */
   logoImage: HTMLImageElement | null;
+}
+
+/**
+ * Wraps text to fit a width, word by word, up to maxLines — the last shown
+ * line gets an ellipsis if there was more left over. `ctx.font` must already
+ * be set to the size this should measure and draw at.
+ *
+ * The subtitle used to be drawn with a bare fillText and no width at all, so
+ * an AI-generated summary longer than about eight words ran straight off
+ * both edges of the card instead of wrapping — this is what actually fixes
+ * that, not just the subtitle's font size.
+ */
+function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? `${line} ${w}` : w;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = w;
+      if (lines.length === maxLines) break;
+    } else {
+      line = test;
+    }
+  }
+  if (lines.length < maxLines && line) lines.push(line);
+
+  // Anything left over after maxLines means the last shown line needs an
+  // ellipsis — trimmed word by word until "<line>…" actually fits, rather
+  // than letting the ellipsis push it back over the edge it was added to fix.
+  const consumed = lines.join(' ').split(/\s+/).length;
+  if (consumed < words.length && lines.length === maxLines) {
+    let last = lines[maxLines - 1];
+    while (last.length > 0 && ctx.measureText(last + '…').width > maxWidth) {
+      last = last.slice(0, -1).trimEnd();
+    }
+    lines[maxLines - 1] = last + '…';
+  }
+  return lines;
 }
 
 function drawStat(
@@ -81,39 +121,35 @@ export function drawItineraryShareCard(ctx: CanvasRenderingContext2D, data: Shar
 
   // Title, auto-fit down from a large start size, up to two lines.
   const titleY = 300;
-  const maxTitleWidth = W - 140;
-  const titleSize = helpers.fitText(data.title, maxTitleWidth, 76, (s) => `700 ${s}px ${DISPLAY}`);
+  const maxTextWidth = W - 140;
+  const titleSize = helpers.fitText(data.title, maxTextWidth, 76, (s) => `700 ${s}px ${DISPLAY}`);
   ctx.font = `700 ${titleSize}px ${DISPLAY}`;
   ctx.fillStyle = '#FFFFFF';
-  // Wrap onto a second line if it still doesn't fit at the floor size.
-  const words = data.title.split(' ');
-  const lines: string[] = [];
-  let line = '';
-  for (const w of words) {
-    const test = line ? `${line} ${w}` : w;
-    if (ctx.measureText(test).width > maxTitleWidth && line) {
-      lines.push(line);
-      line = w;
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(line);
-  const shown = lines.slice(0, 2);
-  shown.forEach((l, i) => ctx.fillText(l, W / 2, titleY + i * (titleSize * 1.15)));
+  const titleLines = wrapLines(ctx, data.title, maxTextWidth, 2);
+  const titleLineHeight = titleSize * 1.15;
+  titleLines.forEach((l, i) => ctx.fillText(l, W / 2, titleY + i * titleLineHeight));
 
-  const afterTitleY = titleY + (shown.length - 1) * (titleSize * 1.15);
+  const afterTitleY = titleY + (titleLines.length - 1) * titleLineHeight;
 
+  // Subtitle: wrapped the same way, not a bare fillText with no width at all
+  // — that was the actual cause of a long summary running off both edges of
+  // the card, not a centering problem.
+  let afterSubtitleY = afterTitleY;
   if (data.subtitle) {
     ctx.fillStyle = 'rgba(255,255,255,0.72)';
-    ctx.font = `500 32px ${BODY}`;
-    ctx.fillText(data.subtitle, W / 2, afterTitleY + 60);
+    const subtitleSize = 32;
+    ctx.font = `500 ${subtitleSize}px ${BODY}`;
+    const subtitleLines = wrapLines(ctx, data.subtitle, maxTextWidth, 2);
+    const subtitleLineHeight = subtitleSize * 1.35;
+    const subtitleStartY = afterTitleY + 60;
+    subtitleLines.forEach((l, i) => ctx.fillText(l, W / 2, subtitleStartY + i * subtitleLineHeight));
+    afterSubtitleY = subtitleStartY + (subtitleLines.length - 1) * subtitleLineHeight;
   }
 
   // Map panel: a scalloped cream frame around the route, the same panel
   // shape every poster uses, so a photo-less card still looks designed
   // rather than empty.
-  const panelX = 70, panelY = afterTitleY + 110;
+  const panelX = 70, panelY = afterSubtitleY + 70;
   const panelW = MAP_PANEL_W + 36, panelH = MAP_PANEL_H + 60;
   const mapX = panelX + 18, mapY = panelY + 18;
   helpers.scallopedPanel(panelX, panelY, panelW, panelH);
