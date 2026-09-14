@@ -31,11 +31,20 @@ async function createCompletion(params: Record<string, unknown>) {
   }
 }
 
-let knowledgeCache: { text: string; at: number } | null = null;
+let knowledgeCache: { text: string; places: string[]; at: number } | null = null;
 
-async function buildKnowledge(): Promise<string> {
+/**
+ * How many attractions reach the prompt. It was 40, which silently hid a
+ * sixth of the CMS — and the planner, asked for a farm day with most of the
+ * farms cut, answered with one invented "Farm Hopping Loop" stop repeated
+ * three times instead of naming three real farms. Generous enough that the
+ * whole catalogue fits today, and a bound rather than a limit.
+ */
+const MAX_ATTRACTIONS = 120;
+
+async function buildKnowledge(): Promise<{ text: string; places: string[] }> {
   if (knowledgeCache && Date.now() - knowledgeCache.at < 5 * 60 * 1000) {
-    return knowledgeCache.text;
+    return { text: knowledgeCache.text, places: knowledgeCache.places };
   }
 
   const [attractions, itineraries, events, faqs] = await Promise.allSettled([
@@ -46,18 +55,22 @@ async function buildKnowledge(): Promise<string> {
   ]);
 
   const lines: string[] = ['=== LILIW, LAGUNA — LIVE DATABASE ===\n'];
+  const places: string[] = [];
 
   if (attractions.status === 'fulfilled' && attractions.value.length) {
     lines.push('ATTRACTIONS & PLACES:');
-    for (const a of attractions.value.slice(0, 40)) {
+    for (const a of attractions.value.slice(0, MAX_ATTRACTIONS)) {
       const attr = a.attributes;
       const type = a.type === 'heritage' ? 'Heritage Site'
         : a.type === 'dining' ? 'Dining/Food'
         : a.type === 'footwear' ? 'Footwear Store'
         : a.type === 'stay' ? 'Accommodations'
         : 'Tourist Spot';
+      const name = String(attr.name ?? '').trim();
+      if (!name) continue;
+      places.push(name);
       lines.push(
-        `- [${type}] ${attr.name}` +
+        `- [${type}] ${name}` +
         (attr.location ? ` | ${attr.location}` : '') +
         (attr.description ? ` | ${String(attr.description).slice(0, 120)}` : '') +
         (attr.rating ? ` | Rating: ${attr.rating}/5` : '')
@@ -106,8 +119,122 @@ async function buildKnowledge(): Promise<string> {
   }
 
   const text = lines.join('\n');
-  knowledgeCache = { text, at: Date.now() };
-  return text;
+  knowledgeCache = { text, places, at: Date.now() };
+  return { text, places };
+}
+
+/** Stripped to what a name match should care about: no case, no punctuation, no "(Merienda stop)" aside. */
+function normalizePlace(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/\(.*?\)/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/** Words too common across the catalogue to identify anything on their own. */
+const WEAK_WORDS = new Set(['liliw', 'laguna', 'the', 'and', 'for', 'stop', 'visit', 'tour', 'day', 'local']);
+
+function significantWords(s: string): string[] {
+  return normalizePlace(s).split(' ').filter((w) => w.length > 2 && !WEAK_WORDS.has(w));
+}
+
+/**
+ * Rewrites every stop to a real attraction, and drops the ones that aren't.
+ *
+ * The prompt has always said not to invent places, and the model does it
+ * anyway — "Local Bakeshop (Merienda stop)" for Liliw Bakeshop, or one "Farm
+ * Hopping Loop" standing in for three separate farms. An invented stop can't
+ * be linked, can't be mapped, and geocodes to the middle of town, so nothing
+ * downstream can recover from it: it has to be resolved here or removed.
+ *
+ * Near-misses are matched back to the catalogue. Where a fuzzy match is
+ * ambiguous the unused candidate wins, which is what turns three identical
+ * "Farm Hopping Loop" stops into three different real farms; an exact name
+ * repeats freely, since a multi-day trip is meant to return to one hotel.
+ */
+type PlanStop = { place?: unknown };
+type PlanDay = { day?: number; stops?: PlanStop[] };
+
+function groundStops(itinerary: { days?: PlanDay[] }, places: string[]): { kept: number; dropped: string[] } {
+  const dropped: string[] = [];
+  let kept = 0;
+  if (!places.length) return { kept, dropped };
+
+  const canonical = new Map(places.map((p) => [normalizePlace(p), p]));
+  const used = new Set<string>();
+
+  // How many attractions each word appears in. "Farm", "footwear" and
+  // "restaurant" name a dozen businesses between them, so a stop sharing only
+  // one of those has not named anything — matching on it would pick whichever
+  // farm happened to sort first and present the guess as the plan.
+  const wordFreq = new Map<string, number>();
+  for (const place of places) {
+    for (const word of new Set(significantWords(place))) {
+      wordFreq.set(word, (wordFreq.get(word) ?? 0) + 1);
+    }
+  }
+  const distinctive = (word: string) => (wordFreq.get(word) ?? 0) <= 2;
+
+  const resolve = (raw: string): { name: string; exact: boolean } | null => {
+    const name = normalizePlace(raw);
+    if (!name) return null;
+
+    const exact = canonical.get(name);
+    if (exact) return { name: exact, exact: true };
+
+    // One name inside the other ("Tsinelas Street" inside the Tsinelas
+    // district), longest first so a short name can't claim a longer one.
+    if (significantWords(raw).length >= 2) {
+      const contained = [...canonical.entries()]
+        .filter(([key]) => key.includes(name) || name.includes(key))
+        .sort((a, b) => b[0].length - a[0].length);
+      if (contained.length) return { name: contained[0][1], exact: true };
+    }
+
+    const words = new Set(significantWords(raw));
+    if (!words.size) return null;
+    let best: { name: string; score: number; fresh: boolean } | null = null;
+    for (const place of places) {
+      const placeWords = significantWords(place);
+      if (!placeWords.length) continue;
+      const shared = placeWords.filter((w) => words.has(w));
+      if (!shared.some(distinctive)) continue;
+      const score = shared.length / Math.min(placeWords.length, words.size);
+      if (score < 0.5) continue;
+      const fresh = !used.has(place);
+      if (!best || (fresh && !best.fresh) || (fresh === best.fresh && score > best.score)) {
+        best = { name: place, score, fresh };
+      }
+    }
+    // A guessed match that lands on a place already in the plan is not worth
+    // repeating a stop for: three "Farm Hopping Loop" stops naming one farm
+    // three times reads worse than the two that couldn't be placed going away.
+    if (!best || !best.fresh) return null;
+    return { name: best.name, exact: false };
+  };
+
+  for (const day of itinerary.days ?? []) {
+    day.stops = (day.stops ?? []).flatMap((stop) => {
+      const raw = typeof stop?.place === 'string' ? stop.place : '';
+      const match = resolve(raw);
+      if (!match) {
+        if (raw) dropped.push(raw);
+        return [];
+      }
+      used.add(match.name);
+      kept += 1;
+      return [{ ...stop, place: match.name }];
+    });
+  }
+
+  // A day left with nothing renders as an empty card, and the days after it
+  // would keep numbers that no longer match their position.
+  itinerary.days = (itinerary.days ?? [])
+    .filter((d) => (d.stops?.length ?? 0) > 0)
+    .map((d, i) => ({ ...d, day: i + 1 }));
+
+  return { kept, dropped };
 }
 
 /**
@@ -179,15 +306,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const knowledge = await buildKnowledge();
+    const { text: knowledge, places } = await buildKnowledge();
+
+    const allowedPlaces = places.length
+      ? `\nALLOWED PLACE NAMES — the "place" field must be one of these, copied character for character:\n${places.map((p) => `• ${p}`).join('\n')}\n`
+      : '';
 
     const systemPrompt = `You are an expert local travel planner for Liliw, Laguna, Philippines.
 Your job is to create a personalized, realistic day-by-day itinerary using ONLY places from the database below.
 
 ${knowledge}
-
+${allowedPlaces}
 RULES:
-- Only recommend places that appear in the database above — do NOT invent places
+- Every stop's "place" is copied verbatim from ALLOWED PLACE NAMES. Never invent
+  a name, never describe a stop in that field ("Local Bakeshop (Merienda stop)"),
+  and never collapse several places into one stop ("Farm Hopping Loop") — visiting
+  three farms means three stops naming three different farms. The descriptive
+  wording belongs in "activity" instead.
+- Do not repeat a place, except an accommodation across the nights of one trip
 - Match the budget level and selected interests closely
 - Suit the group size: pick venues that can accommodate the party, and tailor activities
   (e.g. kid-friendly stops for families, intimate spots for couples, group-friendly dining for large parties)
@@ -212,7 +348,7 @@ IMPORTANT: Return ONLY a valid JSON object. No markdown, no extra text. Use this
       "stops": [
         {
           "time": "8:00 AM",
-          "place": "Exact place name from database",
+          "place": "Exact name, copied from ALLOWED PLACE NAMES",
           "activity": "What to do here",
           "duration": "~1 hour",
           "tip": "Local insider tip"
@@ -267,10 +403,16 @@ Return only the JSON object.`;
     // which broke a bare JSON.parse — extractJson unwraps it first.
     const itinerary = sanitizeItinerary(JSON.parse(extractJson(content)));
 
+    const { kept, dropped } = groundStops(itinerary, places);
+    if (dropped.length) {
+      logger.warn('plan-trip: dropped stops that name no real attraction', { kept, dropped });
+    }
+
     // A plan with no days is not a usable itinerary, whatever else is in it —
     // treating it as success sent the client a shape whose only real content
     // was missing, for it to fail on visibly instead of retrying invisibly
-    // the way an outright request failure already does.
+    // the way an outright request failure already does. A plan grounded down
+    // to nothing counts the same: every stop it named was invented.
     if (!Array.isArray(itinerary?.days) || itinerary.days.length === 0) {
       logger.error('plan-trip error: model returned no days', { content: content.slice(0, 500) });
       return NextResponse.json({ error: 'Failed to generate itinerary' }, { status: 500 });
