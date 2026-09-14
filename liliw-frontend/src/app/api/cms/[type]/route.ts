@@ -4,6 +4,7 @@ import { getCmsIdentity, getCmsRole, CMS_TABLES, CMS_CONTENT_TYPES, slugify, lab
 import { logCmsAction } from '@/lib/cms-audit';
 import { invalidateContentCache } from '@/lib/content';
 import { contentProblem } from '@/lib/cms-validate';
+import { fetchMedia, toMediaItems } from '@/lib/supabase-cms';
 
 type Params = { params: Promise<{ type: string }> };
 
@@ -38,7 +39,17 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ data: [], _error: error.message });
-  return NextResponse.json({ data });
+
+  // Photos live in cms_media, not on the row, so a listing that selects only
+  // the table hands the editor an entry whose pictures look deleted. Worse
+  // than a display bug: the form sends whatever it was given straight back on
+  // save, and an empty media array means "remove every image" — so opening a
+  // draft used to wipe its photos within seconds of the first autosave.
+  const rows = data ?? [];
+  const media = await fetchMedia(CMS_CONTENT_TYPES[type], rows.map(r => r.id));
+  return NextResponse.json({
+    data: rows.map(r => ({ ...r, media: toMediaItems(media[r.id]) })),
+  });
 }
 
 export async function POST(req: NextRequest, { params }: Params) {

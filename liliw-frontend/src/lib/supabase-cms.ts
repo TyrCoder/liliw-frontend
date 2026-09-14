@@ -2,8 +2,22 @@ import { supabaseServer } from './supabase-server';
 
 export type CMSMedia = {
   id: string; content_type: string; content_id: string;
-  url: string; alt_text: string | null; sort_order: number;
+  url: string; public_id: string | null; alt_text: string | null; sort_order: number;
 };
+
+/**
+ * cms_media rows in the shape the CMS media uploader edits them in, so an
+ * entry reopened for editing carries the pictures it already has. Sending the
+ * uploader anything else means the next save replaces the real images with
+ * whatever the form thinks it holds.
+ */
+export function toMediaItems(rows: CMSMedia[] | undefined) {
+  return (rows ?? []).map(m => ({
+    url: m.url,
+    public_id: m.public_id ?? '',
+    alt_text: m.alt_text ?? '',
+  }));
+}
 
 export async function fetchApproved(table: string, extra?: (q: any) => any) {
   let q = supabaseServer.from(table).select('*').eq('status', 'approved');

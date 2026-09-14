@@ -5,6 +5,7 @@ import { logCmsAction } from '@/lib/cms-audit';
 import { contentProblem } from '@/lib/cms-validate';
 import { invalidateContentCache } from '@/lib/content';
 import { getSnapshot } from '@/lib/cms-snapshot';
+import { fetchMedia, toMediaItems } from '@/lib/supabase-cms';
 
 type Params = { params: Promise<{ type: string; id: string }> };
 
@@ -28,7 +29,8 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   // Staff also get the last-approved snapshot, so the review view can diff.
   const snapshot = role ? await getSnapshot(type, id) : null;
-  return NextResponse.json({ data, snapshot });
+  const media = await fetchMedia(CMS_CONTENT_TYPES[type], [id]);
+  return NextResponse.json({ data: { ...data, media: toMediaItems(media[id]) }, snapshot });
 }
 
 export async function PUT(req: NextRequest, { params }: Params) {

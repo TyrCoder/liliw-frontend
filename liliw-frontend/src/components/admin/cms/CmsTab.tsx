@@ -130,6 +130,10 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
   const [loading, setLoading]   = useState(true);
   const [editing, setEditing]   = useState<Partial<T> | null>(null);
   const [media, setMedia]       = useState<MediaItem[]>([]);
+  // Whether `media` reflects what the entry actually has. A save sends the
+  // array as the entry's whole set of images, so sending one the form never
+  // loaded deletes them all — it must stay silent until it knows.
+  const [mediaKnown, setMediaKnown] = useState(false);
   const [saving, setSaving]     = useState(false);
   const [msg, setMsg]           = useState<{ ok: boolean; text: string } | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -140,13 +144,14 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
   const [batchRunning, setBatchRunning] = useState(false);
   // Which destructive action the confirm dialog is currently asking about.
   const [confirmAction, setConfirmAction] =
-    useState<{ kind: 'archive' | 'restore' | 'purge'; entry: T } | null>(null);
+    useState<{ kind: 'archive' | 'restore' | 'purge' | 'submit'; entry: T } | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [rejectRemarks, setRejectRemarks] = useState('');
   const [rejecting, setRejecting] = useState(false);
 
   const h: Record<string, string> = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
-  const withMedia = (body: Record<string, unknown>) => (hasMedia ? { ...body, media } : body);
+  const withMedia = (body: Record<string, unknown>) =>
+    (hasMedia && mediaKnown ? { ...body, media } : body);
 
   const autoSaveStatus = useAutoSaveDraft(
     editing?.id,
@@ -194,8 +199,12 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(statusFilter); setSelected(new Set()); }, [statusFilter]);
 
-  const openCreate = () => { setEditing({ ...config.empty } as Partial<T>); setMedia([]); setMsg(null); };
-  const openEdit = (e: T) => { setEditing({ ...e }); setMedia(e.media || []); setMsg(null); };
+  const openCreate = () => {
+    setEditing({ ...config.empty } as Partial<T>); setMedia([]); setMediaKnown(true); setMsg(null);
+  };
+  const openEdit = (e: T) => {
+    setEditing({ ...e }); setMedia(e.media ?? []); setMediaKnown(Array.isArray(e.media)); setMsg(null);
+  };
   const closeForm = () => { setEditing(null); setMsg(null); };
 
   const save = async () => {
@@ -216,14 +225,6 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
       setMsg({ ok: false, text: d.error || 'Save failed' });
     }
     setSaving(false);
-  };
-
-  const submit = async (id: string) => {
-    setMsg(null);
-    if (await act(`/api/cms/${slug}/${id}/submit`, { method: 'POST', headers: h }, 'Could not submit for review')) {
-      setMsg({ ok: true, text: 'Sent for review.' });
-    }
-    load(statusFilter);
   };
 
   const approve = async (id: string) => {
@@ -279,7 +280,7 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
   const batchApprove = () => runBulk('approve');
   const batchDecline = () => { setRejectTarget('__batch__'); setRejectRemarks(''); };
 
-  /** Archive, restore, or destroy — whichever the open dialog asked for. */
+  /** Submit, archive, restore, or destroy — whichever the open dialog asked for. */
   const runConfirmed = async () => {
     if (!confirmAction) return;
     const { kind, entry } = confirmAction;
@@ -294,7 +295,10 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
     setMsg(null);
 
     let ok = false;
-    if (kind === 'archive') {
+    if (kind === 'submit') {
+      ok = await act(`/api/cms/${slug}/${entry.id}/submit`, { method: 'POST', headers: h }, 'Could not submit for review');
+      if (ok) setMsg({ ok: true, text: `"${label}" sent for review.` });
+    } else if (kind === 'archive') {
       ok = await act(`/api/cms/${slug}/${entry.id}`, { method: 'DELETE', headers: h }, 'Could not archive');
       if (ok) setMsg({ ok: true, text: `"${label}" archived. It is off the site and can be restored.` });
     } else if (kind === 'restore') {
@@ -382,7 +386,9 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
             placeholder={f.placeholder} />
         );
       case 'media':
-        return <MediaUploader value={media} onChange={setMedia} maxFiles={f.maxFiles} />;
+        return <MediaUploader value={media}
+          onChange={items => { setMedia(items); setMediaKnown(true); }}
+          maxFiles={f.maxFiles} />;
 
       /* Audio is a single URL on the row rather than a row in cms_media.
          The gallery table is built for many files with an order and alt text;
@@ -554,7 +560,7 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
                           </button>
                         )}
                         {canEdit && ['draft', 'rejected'].includes(e.status) && (
-                          <button onClick={() => submit(e.id)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition">
+                          <button onClick={() => setConfirmAction({ kind: 'submit', entry: e })} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition">
                             <Send className="w-3 h-3" /> Submit
                           </button>
                         )}
@@ -678,6 +684,18 @@ export default function CmsTab<T extends BaseEntry>({ config, token, userEmail, 
         const noun = config.entityLabel.toLowerCase();
 
         const copy = {
+          submit: {
+            tone: 'neutral' as const,
+            title: `Submit this ${noun} for review?`,
+            confirmLabel: 'Submit for review',
+            message: (
+              <>
+                <strong className="text-gray-700">{label}</strong> goes to an officer to
+                approve or send back. You will not be able to keep editing it while it is
+                waiting for review.
+              </>
+            ),
+          },
           archive: {
             tone: 'warning' as const,
             title: `Archive this ${noun}?`,

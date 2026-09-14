@@ -9,7 +9,38 @@ import SafeHtml from '@/components/SafeHtml';
 const HIDDEN_FIELDS = new Set([
   'id', 'status', 'created_at', 'updated_at', 'created_by', 'reviewed_by',
   'published_at', 'reject_remarks', 'slug', 'legacy_strapi_user_id', 'documentId',
+  // Photos get their own strip above the fields: as a field they rendered as
+  // "3 items", and the snapshots they diff against predate media being sent
+  // here at all, so every entry's pictures would be marked newly added.
+  'media',
 ]);
+
+/** The entry's pictures, so a reviewer approves what they can actually see. */
+function MediaStrip({ items }: { items: { url: string; alt_text?: string }[] }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-gray-400">
+        Photos ({items.length})
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {items.map((m, i) => (
+          <a key={`${m.url}-${i}`} href={m.url} target="_blank" rel="noopener noreferrer"
+            className="block w-20 h-20 rounded-lg overflow-hidden border border-gray-200 hover:border-blue-300 transition">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={m.url} alt={m.alt_text || ''} className="w-full h-full object-cover" />
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** cms_media rows as the detail route returns them, told apart from any other array field. */
+function mediaItems(v: unknown): { url: string; alt_text?: string }[] {
+  return Array.isArray(v) && v.every(m => m && typeof m === 'object' && typeof (m as { url?: unknown }).url === 'string')
+    ? (v as { url: string; alt_text?: string }[])
+    : [];
+}
 
 // Pull readable text out of Strapi-style rich-text blocks.
 function blocksText(v: unknown): string {
@@ -467,8 +498,11 @@ export default function ContentApprovalsTab({ token }: Props) {
                 const changed = rows.filter(r => r.state !== 'same');
                 const shown = (isNew || showAllFields || changed.length === 0) ? rows : changed;
 
+                const photos = mediaItems(data.media);
+
                 return (
                   <>
+                    {photos.length > 0 && <MediaStrip items={photos} />}
                     {isNew ? (
                       <div className="text-xs font-semibold px-3 py-2 rounded-lg bg-green-50 text-green-700 border border-green-100">
                         New submission — all content is new.
